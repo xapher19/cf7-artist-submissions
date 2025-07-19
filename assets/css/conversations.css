@@ -1,0 +1,255 @@
+/**
+ * CF7 Artist Submissions - Conversation Styles
+ */
+
+#cf7-conversation-container {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+#cf7-message-thread {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+}
+
+.no-messages {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    margin: 20px 0;
+}
+
+.message-item {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    position: relative;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.message-item.outbound {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    margin-left: 20px;
+}
+
+.message-item.inbound {
+    background: #f3e5f5;
+    border-left: 4px solid #9c27b0;
+    margin-right: 20px;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: #666;
+}
+
+.message-from {
+    font-weight: 600;
+    color: #333;
+}
+
+.message-direction {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.message-direction.outbound {
+    color: #2196f3;
+}
+
+.message-direction.inbound {
+    color: #9c27b0;
+}
+
+.message-subject {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.message-body {
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.message-body p {
+    margin-bottom: 10px;
+}
+
+.message-body p:last-child {
+    margin-bottom: 0;
+}
+
+.message-status {
+    font-size: 11px;
+    color: #888;
+    text-align: right;
+}
+
+.status-pending {
+    color: #ff9800;
+}
+
+.status-sent {
+    color: #4caf50;
+}
+
+.status-delivered {
+    color: #2196f3;
+}
+
+.status-failed {
+    color: #f44336;
+}
+
+#cf7-compose-message {
+    padding: 20px;
+    background: #fff;
+}
+
+#cf7-compose-message h4 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.compose-field {
+    margin-bottom: 15px;
+}
+
+.compose-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #333;
+}
+
+.compose-field input[type="email"],
+.compose-field input[type="text"],
+.compose-field textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.compose-field input[readonly] {
+    background: #f9f9f9;
+    color: #666;
+}
+
+.compose-field textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.compose-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#send-message-btn {
+    padding: 8px 20px;
+}
+
+#send-message-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.send-status {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.send-status.success {
+    color: #4caf50;
+}
+
+.send-status.error {
+    color: #f44336;
+}
+
+.error {
+    color: #f44336;
+    background: #ffebee;
+    padding: 10px;
+    border-radius: 4px;
+    border-left: 4px solid #f44336;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .message-item.outbound {
+        margin-left: 10px;
+    }
+    
+    .message-item.inbound {
+        margin-right: 10px;
+    }
+    
+    .message-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .compose-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #send-message-btn {
+        width: 100%;
+    }
+}
+
+/* Meta box specific styles */
+.postbox #cf7-conversation-container {
+    border: none;
+    box-shadow: none;
+}
+
+/* Scroll styling */
+#cf7-message-thread::-webkit-scrollbar {
+    width: 8px;
+}
+
+#cf7-message-thread::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#cf7-message-thread::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+#cf7-message-thread::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

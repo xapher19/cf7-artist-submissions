@@ -15,6 +15,12 @@ class CF7_Artist_Submissions_Emails {
     private $triggers = array();
     
     /**
+     * Temporary storage for email override
+     */
+    private $temp_from_email = '';
+    private $temp_from_name = '';
+    
+    /**
      * Initialize the email system
      */
     public function init() {
@@ -46,20 +52,25 @@ class CF7_Artist_Submissions_Emails {
         );
         
         // Register email settings page
-        add_action('admin_menu', array($this, 'add_email_settings_page'));
+        // Removed admin menu hook - settings now handled by main settings class
+        // add_action('admin_menu', array($this, 'add_email_settings_page'));
         
         // Add meta box for email logs and manual sending
         add_action('add_meta_boxes', array($this, 'add_email_meta_boxes'));
         
-        // Handle manual email sending
+        // Handle manual email sending and previews
         add_action('wp_ajax_cf7_send_manual_email', array($this, 'ajax_send_manual_email'));
+        add_action('wp_ajax_cf7_preview_email', array($this, 'ajax_preview_email'));
+        add_action('wp_ajax_cf7_preview_wc_template', array($this, 'ajax_preview_wc_template'));
+        add_action('wp_ajax_cf7_test_imap', array($this, 'ajax_test_imap'));
         
         // Register for submission events
         add_action('cf7_artist_submission_created', array($this, 'trigger_submission_received'), 10, 1);
         add_action('cf7_artist_submission_status_changed', array($this, 'handle_status_change'), 10, 3);
         
         // Email settings
-        add_action('admin_init', array($this, 'register_email_settings'));
+        // Email settings now handled by main settings class
+        // add_action('admin_init', array($this, 'register_email_settings'));
     }
     
     /**
@@ -311,7 +322,7 @@ class CF7_Artist_Submissions_Emails {
         $from_email = isset($options['from_email']) ? $options['from_email'] : get_option('admin_email');
         
         echo '<input type="email" id="cf7_artist_submissions_email_options[from_email]" name="cf7_artist_submissions_email_options[from_email]" value="' . esc_attr($from_email) . '" class="regular-text">';
-        echo '<p class="description">' . __('The email address that emails will be sent from.', 'cf7-artist-submissions') . '</p>';
+        echo '<p class="description">' . __('The email address that emails will be sent from. Make sure this email is authorized in your SMTP provider settings.', 'cf7-artist-submissions') . '</p>';
     }
     
     /**
@@ -322,7 +333,7 @@ class CF7_Artist_Submissions_Emails {
         $from_name = isset($options['from_name']) ? $options['from_name'] : get_bloginfo('name');
         
         echo '<input type="text" id="cf7_artist_submissions_email_options[from_name]" name="cf7_artist_submissions_email_options[from_name]" value="' . esc_attr($from_name) . '" class="regular-text">';
-        echo '<p class="description">' . __('The name that emails will be sent from.', 'cf7-artist-submissions') . '</p>';
+        echo '<p class="description">' . __('The name that emails will be sent from (e.g. "Pup and Tiger").', 'cf7-artist-submissions') . '</p>';
     }
     
     /**
@@ -985,14 +996,43 @@ class CF7_Artist_Submissions_Emails {
                 $body = $this->format_woocommerce_email($body, $subject, $email);
             }
             
-            // Set up headers
+            // Get email settings
+            $options = get_option('cf7_artist_submissions_email_options', array());
+            $from_name = isset($options['from_name']) ? $options['from_name'] : get_bloginfo('name');
+            $from_email = isset($options['from_email']) ? $options['from_email'] : get_option('admin_email');
+            
+            // Apply WordPress filters to override from address (SMTP2GO should respect these)
+            $this->temp_from_email = $from_email;
+            $this->temp_from_name = $from_name;
+            add_filter('wp_mail_from', array($this, 'override_from_email'), 10);
+            add_filter('wp_mail_from_name', array($this, 'override_from_name'), 10);
+            
+            // Generate reply token for conversation threading
+            $reply_token = CF7_Artist_Submissions_Conversations::generate_reply_token($submission_id);
+            
+            // Get IMAP settings for reply-to address (this is the email we'll monitor for replies)
+            $imap_options = get_option('cf7_artist_submissions_imap_options', array());
+            $imap_email = isset($imap_options['username']) ? $imap_options['username'] : $from_email;
+            
+            // Create reply-to address using plus addressing with IMAP email for conversation threading
+            $email_parts = explode('@', $imap_email);
+            $local_part = $email_parts[0];
+            $domain_part = isset($email_parts[1]) ? $email_parts[1] : 'example.com';
+            $reply_to_email = $local_part . '+SUB' . $submission_id . '_' . $reply_token . '@' . $domain_part;
+            
+            // Set up headers with conversation threading reply-to
             $headers = array(
                 'Content-Type: text/html; charset=UTF-8',
-                'From: ' . $from_name . ' <' . $from_email . '>'
+                'From: ' . $from_name . ' <' . $from_email . '>',
+                'Reply-To: <' . $reply_to_email . '>'
             );
             
             // Send the email
             $mail_sent = wp_mail($to_email, $subject, $body, $headers);
+            
+            // Remove our temporary filters
+            remove_filter('wp_mail_from', array($this, 'override_from_email'), 10);
+            remove_filter('wp_mail_from_name', array($this, 'override_from_name'), 10);
             
             // Log the email sent
             if ($mail_sent) {
@@ -1013,10 +1053,6 @@ class CF7_Artist_Submissions_Emails {
                     'email_sent',
                     json_encode($log_data)
                 );
-                
-                if ($log_result === false) {
-                    error_log('CF7 Artist Submissions: Failed to log email sent action');
-                }
                 
                 return true;
             } else {
@@ -1109,5 +1145,115 @@ class CF7_Artist_Submissions_Emails {
         }
         
         return '';
+    }
+    
+    /**
+     * Temporarily override wp_mail from email
+     */
+    public function override_from_email($from_email) {
+        return $this->temp_from_email;
+    }
+    
+    /**
+     * Temporarily override wp_mail from name
+     */
+    public function override_from_name($from_name) {
+        return $this->temp_from_name;
+    }
+    
+    /**
+     * Override PHPMailer from settings directly (for plugins that bypass wp_mail filters)
+     */
+    public function override_phpmailer_from($phpmailer) {
+        if (!empty($this->temp_from_email)) {
+            try {
+                $phpmailer->setFrom($this->temp_from_email, $this->temp_from_name);
+            } catch (Exception $e) {
+                // If setFrom fails, just continue - wp_mail will handle the error
+            }
+        }
+    }
+    
+    /**
+     * Override WP Mail SMTP specific options
+     */
+    public function override_wp_mail_smtp_options($options) {
+        if (!empty($this->temp_from_email)) {
+            $options['mail']['from_email'] = $this->temp_from_email;
+            $options['mail']['from_name'] = $this->temp_from_name;
+        }
+        return $options;
+    }
+    
+    /**
+     * AJAX handler for testing IMAP connection
+     */
+    public function ajax_test_imap() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $options = get_option('cf7_artist_submissions_imap_options', array());
+        
+        if (empty($options['server']) || empty($options['username']) || empty($options['password'])) {
+            wp_send_json_error(array('message' => 'IMAP settings incomplete. Please fill in all required fields.'));
+            return;
+        }
+        
+        // Test IMAP connection
+        $server = $options['server'];
+        $port = $options['port'];
+        $username = $options['username'];
+        $password = $options['password'];
+        $encryption = $options['encryption'];
+        
+        // Build connection string
+        $connection_string = '{' . $server . ':' . $port;
+        if ($encryption === 'ssl') {
+            $connection_string .= '/ssl';
+        } elseif ($encryption === 'tls') {
+            $connection_string .= '/tls';
+        }
+        $connection_string .= '}INBOX';
+        
+        try {
+            if (!function_exists('imap_open')) {
+                wp_send_json_error(array('message' => 'IMAP extension not available. Please enable PHP IMAP extension.'));
+                return;
+            }
+            
+            // Try to connect
+            $connection = @imap_open($connection_string, $username, $password);
+            
+            if ($connection === false) {
+                $error = imap_last_error();
+                wp_send_json_error(array('message' => 'IMAP connection failed: ' . $error));
+                return;
+            }
+            
+            // Test successful - get mailbox info
+            $mailbox_info = imap_status($connection, $connection_string, SA_ALL);
+            imap_close($connection);
+            
+            wp_send_json_success(array(
+                'message' => 'IMAP connection successful!',
+                'details' => array(
+                    'messages' => $mailbox_info->messages,
+                    'recent' => $mailbox_info->recent,
+                    'unseen' => $mailbox_info->unseen
+                )
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'IMAP test failed: ' . $e->getMessage()));
+        }
     }
 }

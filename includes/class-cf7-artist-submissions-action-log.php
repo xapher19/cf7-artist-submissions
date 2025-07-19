@@ -37,7 +37,8 @@ class CF7_Artist_Submissions_Action_Log {
         
         // Check if table was created successfully
         if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-            error_log('CF7 Artist Submissions: Failed to create action log table');
+            // Table creation failed
+            return false;
         }
     }
     
@@ -55,7 +56,6 @@ class CF7_Artist_Submissions_Action_Log {
             
             // Check again to make sure it was created
             if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
-                error_log('CF7 Artist Submissions: Action log table does not exist');
                 return false;
             }
         }
@@ -77,8 +77,6 @@ class CF7_Artist_Submissions_Action_Log {
         );
         
         if ($result === false) {
-            // Log the database error
-            error_log('CF7 Artist Submissions: Failed to insert log entry. DB Error: ' . $wpdb->last_error);
             return false;
         }
         

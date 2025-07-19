@@ -49,9 +49,18 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-settings.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-action-log.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-emails.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-conversations.php';
 
 // Initialize the plugin
 function cf7_artist_submissions_init() {
+    // Check if Contact Form 7 is active
+    if (!class_exists('WPCF7')) {
+        add_action('admin_notices', function() {
+            echo '<div class="notice notice-error"><p>CF7 Artist Submissions requires Contact Form 7 to be installed and active.</p></div>';
+        });
+        return;
+    }
+    
     $post_type = new CF7_Artist_Submissions_Post_Type();
     $post_type->init();
     
@@ -71,13 +80,21 @@ function cf7_artist_submissions_init() {
     $emails = new CF7_Artist_Submissions_Emails();
     $emails->init();
     
-    // Add AJAX endpoints for email preview and sending
-    add_action('wp_ajax_cf7_preview_email', array($emails, 'ajax_preview_email'));
-    add_action('wp_ajax_cf7_send_manual_email', array($emails, 'ajax_send_manual_email'));
-    add_action('wp_ajax_cf7_preview_wc_template', array($emails, 'ajax_preview_wc_template'));
+    // Initialize Conversation System
+    CF7_Artist_Submissions_Conversations::init();
 }
 
 add_action('plugins_loaded', 'cf7_artist_submissions_init');
+
+// Add custom cron schedule for every 5 minutes
+add_filter('cron_schedules', 'cf7_artist_submissions_cron_schedules');
+function cf7_artist_submissions_cron_schedules($schedules) {
+    $schedules['every_5_minutes'] = array(
+        'interval' => 300, // 5 minutes in seconds
+        'display' => __('Every 5 Minutes', 'cf7-artist-submissions')
+    );
+    return $schedules;
+}
 
 // Plugin activation
 register_activation_hook(__FILE__, 'cf7_artist_submissions_activate');
@@ -89,6 +106,9 @@ function cf7_artist_submissions_activate() {
     
     // Create action log table
     CF7_Artist_Submissions_Action_Log::create_log_table();
+    
+    // Create conversations table
+    CF7_Artist_Submissions_Conversations::create_conversations_table();
     
     // Flush rewrite rules
     flush_rewrite_rules();

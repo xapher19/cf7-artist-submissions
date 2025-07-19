@@ -44,4 +44,43 @@
         });
     });
     
+    // Test IMAP connection
+    $('#test-imap-connection').on('click', function() {
+        const $button = $(this);
+        const $result = $('#imap-test-result');
+        
+        // Show loading state
+        $button.prop('disabled', true).text('Testing...');
+        $result.html('<div class="notice notice-info"><p>Testing IMAP connection...</p></div>');
+        
+        // Send AJAX request
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7_test_imap',
+                nonce: cf7ArtistSubmissions.nonce
+            },
+            success: function(response) {
+                $button.prop('disabled', false).text('Test Connection');
+                
+                if (response.success) {
+                    let detailsHtml = '';
+                    if (response.data.details) {
+                        detailsHtml = '<br>Messages: ' + response.data.details.messages + 
+                                     ', Recent: ' + response.data.details.recent + 
+                                     ', Unseen: ' + response.data.details.unseen;
+                    }
+                    $result.html('<div class="notice notice-success"><p>' + response.data.message + detailsHtml + '</p></div>');
+                } else {
+                    $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                }
+            },
+            error: function() {
+                $button.prop('disabled', false).text('Test Connection');
+                $result.html('<div class="notice notice-error"><p>Connection error. Please try again.</p></div>');
+            }
+        });
+    });
+    
 })(jQuery);
