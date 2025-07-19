@@ -109,10 +109,12 @@ class CF7_Artist_Submissions_Post_Type {
         
         register_taxonomy('submission_status', 'cf7_submission', $args);
         
-        // Register default terms
-        wp_insert_term('New', 'submission_status');
-        wp_insert_term('Selected', 'submission_status');
-        wp_insert_term('Reviewed', 'submission_status');
+        // Register all status terms with slugs
+        wp_insert_term('New', 'submission_status', array('slug' => 'new'));
+        wp_insert_term('Reviewed', 'submission_status', array('slug' => 'reviewed'));
+        wp_insert_term('Awaiting Information', 'submission_status', array('slug' => 'awaiting-information'));
+        wp_insert_term('Selected', 'submission_status', array('slug' => 'selected'));
+        wp_insert_term('Rejected', 'submission_status', array('slug' => 'rejected'));
     }
     
     /**

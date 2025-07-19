@@ -175,3 +175,100 @@ function loadTabContent(tabId, callback) {
         }
     });
 }
+
+// Status Dropdown Functionality
+$(document).ready(function($) {
+    // Handle status option clicks
+    $(document).on('click', '.cf7-status-option', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const $option = $(this);
+        const $dropdown = $option.closest('.cf7-status-dropdown');
+        const $circle = $dropdown.find('.cf7-status-circle');
+        const newStatus = $option.data('status');
+        const postId = $dropdown.data('post-id');
+        
+        // Don't do anything if it's already the current status
+        if ($option.hasClass('active')) {
+            return;
+        }
+        
+        // Show loading state
+        $circle.prop('disabled', true);
+        $circle.find('.dashicons').addClass('cf7-spinning');
+        
+        // Make AJAX request
+        $.ajax({
+            url: cf7TabsAjax.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7_update_status',
+                post_id: postId,
+                status: newStatus,
+                nonce: cf7TabsAjax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update the circle appearance
+                    $circle.css('background-color', response.data.data.color);
+                    $circle.attr('title', response.data.data.label);
+                    $circle.find('.dashicons')
+                        .removeClass()
+                        .addClass('dashicons dashicons-' + response.data.data.icon);
+                    
+                    // Update active status in dropdown
+                    $dropdown.find('.cf7-status-option').removeClass('active');
+                    $option.addClass('active');
+                    
+                    // Show success feedback
+                    showStatusUpdateFeedback('Status updated to ' + response.data.data.label, 'success');
+                } else {
+                    showStatusUpdateFeedback('Failed to update status: ' + response.data.message, 'error');
+                }
+            },
+            error: function() {
+                showStatusUpdateFeedback('Error updating status', 'error');
+            },
+            complete: function() {
+                // Remove loading state
+                $circle.prop('disabled', false);
+                $circle.find('.dashicons').removeClass('cf7-spinning');
+            }
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.cf7-status-dropdown').length) {
+            $('.cf7-status-menu').hide();
+        }
+    });
+    
+    // Show dropdown on circle click
+    $(document).on('click', '.cf7-status-circle', function(e) {
+        e.stopPropagation();
+        const $menu = $(this).siblings('.cf7-status-menu');
+        $('.cf7-status-menu').not($menu).hide();
+        $menu.toggle();
+    });
+});
+
+// Show status update feedback
+function showStatusUpdateFeedback(message, type) {
+    // Remove existing feedback
+    $('.cf7-status-feedback').remove();
+    
+    // Create feedback element
+    const $feedback = $('<div class="cf7-status-feedback cf7-feedback-' + type + '">' + message + '</div>');
+    
+    // Add to page
+    $('.cf7-custom-header').after($feedback);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(function() {
+        $feedback.fadeOut(function() {
+            $(this).remove();
+        });
+    }, 3000);
+}

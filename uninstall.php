@@ -18,10 +18,10 @@ global $wpdb;
 
 // Delete custom database tables
 $table_name = $wpdb->prefix . 'cf7_conversations';
-$wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS %i", $table_name));
+$wpdb->query("DROP TABLE IF EXISTS `{$table_name}`");
 
 $table_name = $wpdb->prefix . 'cf7_action_log';
-$wpdb->query($wpdb->prepare("DROP TABLE IF EXISTS %i", $table_name));
+$wpdb->query("DROP TABLE IF EXISTS `{$table_name}`");
 
 // Get all submission posts
 $submissions = get_posts(array(

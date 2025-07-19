@@ -8,6 +8,11 @@ class CF7_Artist_Submissions_Tabs {
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_tab_assets'));
         add_action('add_meta_boxes', array(__CLASS__, 'replace_meta_boxes_with_tabs'), 20);
         add_action('wp_ajax_cf7_load_tab_content', array(__CLASS__, 'ajax_load_tab_content'));
+        add_action('wp_ajax_cf7_update_status', array(__CLASS__, 'ajax_update_status'));
+        
+        // Override the post edit page layout
+        add_action('edit_form_after_title', array(__CLASS__, 'render_custom_page_layout'));
+        add_action('admin_head', array(__CLASS__, 'hide_default_elements'));
         
         // Handle saving for fields and notes
         add_action('save_post_cf7_submission', array(__CLASS__, 'save_fields'), 10, 2);
@@ -473,5 +478,205 @@ class CF7_Artist_Submissions_Tabs {
                 do_action('cf7_artist_submission_field_updated', $post_id, 'cf7_curator_notes', $old_notes, $new_notes);
             }
         }
+    }
+    
+    /**
+     * Hide default WordPress post page elements
+     */
+    public static function hide_default_elements() {
+        $screen = get_current_screen();
+        if (!$screen || $screen->post_type !== 'cf7_submission') {
+            return;
+        }
+        ?>
+        <style>
+            /* Hide the title input field */
+            #titlediv {
+                display: none;
+            }
+            
+            /* Hide the publish meta box */
+            #submitdiv {
+                display: none;
+            }
+            
+            /* Hide the slug editor */
+            #edit-slug-box {
+                display: none;
+            }
+            
+            /* Make content area full width */
+            #poststuff {
+                margin-right: 0 !important;
+            }
+            
+            #post-body.columns-2 #postbox-container-1 {
+                display: none;
+            }
+            
+            #post-body.columns-2 #postbox-container-2 {
+                margin-right: 0;
+                width: 100%;
+            }
+            
+            /* Remove postbox styling from our container */
+            #cf7_submission_tabs.postbox {
+                border: none;
+                box-shadow: none;
+                background: transparent;
+            }
+            
+            #cf7_submission_tabs .postbox-header {
+                display: none;
+            }
+            
+            #cf7_submission_tabs .inside {
+                margin: 0;
+                padding: 0;
+            }
+        </style>
+        <?php
+    }
+    
+    /**
+     * Render custom page layout after title
+     */
+    public static function render_custom_page_layout($post) {
+        if (!$post || $post->post_type !== 'cf7_submission') {
+            return;
+        }
+        
+        // Get artist name from submission data
+        $artist_name = get_post_meta($post->ID, 'cf7_artist-name', true);
+        if (empty($artist_name)) {
+            $artist_name = get_post_meta($post->ID, 'cf7_your-name', true);
+        }
+        if (empty($artist_name)) {
+            $artist_name = $post->post_title;
+        }
+        
+        // Get current status
+        $status_terms = wp_get_object_terms($post->ID, 'submission_status');
+        $current_status = !empty($status_terms) ? $status_terms[0]->slug : 'new';
+        
+        ?>
+        <div class="cf7-custom-header">
+            <div class="cf7-header-left">
+                <h1 class="cf7-artist-title"><?php echo esc_html($artist_name); ?></h1>
+                <div class="cf7-status-selector">
+                    <?php echo self::render_status_circle($current_status, $post->ID); ?>
+                </div>
+            </div>
+            <div class="cf7-header-right">
+                <button type="submit" class="cf7-save-button" form="post">
+                    <span class="dashicons dashicons-saved"></span>
+                    <?php _e('Save Changes', 'cf7-artist-submissions'); ?>
+                </button>
+            </div>
+        </div>
+        <?php
+    }
+    
+    /**
+     * Render status circle dropdown
+     */
+    public static function render_status_circle($current_status, $post_id) {
+        $statuses = array(
+            'new' => array(
+                'label' => __('New', 'cf7-artist-submissions'),
+                'color' => '#007cba',
+                'icon' => 'star-filled'
+            ),
+            'reviewed' => array(
+                'label' => __('Reviewed', 'cf7-artist-submissions'),
+                'color' => '#7c3aed',
+                'icon' => 'visibility'
+            ),
+            'awaiting-information' => array(
+                'label' => __('Awaiting Information', 'cf7-artist-submissions'),
+                'color' => '#f59e0b',
+                'icon' => 'clock'
+            ),
+            'selected' => array(
+                'label' => __('Selected', 'cf7-artist-submissions'),
+                'color' => '#10b981',
+                'icon' => 'yes-alt'
+            ),
+            'rejected' => array(
+                'label' => __('Rejected', 'cf7-artist-submissions'),
+                'color' => '#ef4444',
+                'icon' => 'dismiss'
+            )
+        );
+        
+        $current = isset($statuses[$current_status]) ? $statuses[$current_status] : $statuses['new'];
+        
+        ob_start();
+        ?>
+        <div class="cf7-status-dropdown" data-post-id="<?php echo esc_attr($post_id); ?>">
+            <button type="button" class="cf7-status-circle" 
+                    style="background-color: <?php echo esc_attr($current['color']); ?>"
+                    title="<?php echo esc_attr($current['label']); ?>">
+                <span class="dashicons dashicons-<?php echo esc_attr($current['icon']); ?>"></span>
+            </button>
+            <div class="cf7-status-menu">
+                <?php foreach ($statuses as $status_key => $status): ?>
+                    <button type="button" 
+                            class="cf7-status-option <?php echo $status_key === $current_status ? 'active' : ''; ?>"
+                            data-status="<?php echo esc_attr($status_key); ?>"
+                            style="border-left-color: <?php echo esc_attr($status['color']); ?>">
+                        <span class="cf7-status-icon dashicons dashicons-<?php echo esc_attr($status['icon']); ?>" 
+                              style="color: <?php echo esc_attr($status['color']); ?>"></span>
+                        <span class="cf7-status-label"><?php echo esc_html($status['label']); ?></span>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+    
+    /**
+     * AJAX handler for status updates
+     */
+    public static function ajax_update_status() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_tabs_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        $new_status = sanitize_text_field($_POST['status']);
+        
+        // Validate status
+        $valid_statuses = array('new', 'reviewed', 'awaiting-information', 'selected', 'rejected');
+        if (!in_array($new_status, $valid_statuses)) {
+            wp_send_json_error(array('message' => 'Invalid status'));
+            return;
+        }
+        
+        // Update the status
+        wp_set_object_terms($post_id, $new_status, 'submission_status');
+        
+        // Get the new status data for response
+        $statuses = array(
+            'new' => array('label' => __('New', 'cf7-artist-submissions'), 'color' => '#007cba', 'icon' => 'star-filled'),
+            'reviewed' => array('label' => __('Reviewed', 'cf7-artist-submissions'), 'color' => '#7c3aed', 'icon' => 'visibility'),
+            'awaiting-information' => array('label' => __('Awaiting Information', 'cf7-artist-submissions'), 'color' => '#f59e0b', 'icon' => 'clock'),
+            'selected' => array('label' => __('Selected', 'cf7-artist-submissions'), 'color' => '#10b981', 'icon' => 'yes-alt'),
+            'rejected' => array('label' => __('Rejected', 'cf7-artist-submissions'), 'color' => '#ef4444', 'icon' => 'dismiss')
+        );
+        
+        wp_send_json_success(array(
+            'status' => $new_status,
+            'data' => $statuses[$new_status]
+        ));
     }
 }
