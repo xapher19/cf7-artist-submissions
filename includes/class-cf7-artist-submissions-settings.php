@@ -48,6 +48,7 @@ class CF7_Artist_Submissions_Settings {
     public function register_settings() {
         register_setting('cf7_artist_submissions_options', 'cf7_artist_submissions_options', array($this, 'validate_options'));
         register_setting('cf7_artist_submissions_email_options', 'cf7_artist_submissions_email_options', array($this, 'validate_email_options'));
+        register_setting('cf7_artist_submissions_email_templates', 'cf7_artist_submissions_email_templates', array($this, 'validate_email_templates'));
         register_setting('cf7_artist_submissions_imap_options', 'cf7_artist_submissions_imap_options', array($this, 'validate_imap_options'));
         
         add_settings_section(
@@ -161,6 +162,10 @@ class CF7_Artist_Submissions_Settings {
                    class="nav-tab <?php echo $current_tab === 'email' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Email Settings', 'cf7-artist-submissions'); ?>
                 </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=templates" 
+                   class="nav-tab <?php echo $current_tab === 'templates' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Email Templates', 'cf7-artist-submissions'); ?>
+                </a>
                 <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=imap" 
                    class="nav-tab <?php echo $current_tab === 'imap' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('IMAP Settings', 'cf7-artist-submissions'); ?>
@@ -272,6 +277,14 @@ class CF7_Artist_Submissions_Settings {
                                 <?php $this->render_from_name_field(); ?>
                             </td>
                         </tr>
+                        <?php if (class_exists('WooCommerce')): ?>
+                        <tr>
+                            <th scope="row"><?php _e('WooCommerce Email Template', 'cf7-artist-submissions'); ?></th>
+                            <td>
+                                <?php $this->render_wc_template_field(); ?>
+                            </td>
+                        </tr>
+                        <?php endif; ?>
                     </table>
                     
                     <?php submit_button(__('Save Email Settings', 'cf7-artist-submissions')); ?>
@@ -281,6 +294,62 @@ class CF7_Artist_Submissions_Settings {
                         <p><?php _e('Settings functions not available. Please ensure WordPress is properly loaded.', 'cf7-artist-submissions'); ?></p>
                     </div>
                 <?php endif; ?>
+                
+            <?php elseif ($current_tab === 'templates'): ?>
+                
+                <h2><?php _e('Email Templates', 'cf7-artist-submissions'); ?></h2>
+                <p><?php _e('Configure email templates that will be sent to artists for various events and status changes.', 'cf7-artist-submissions'); ?></p>
+                
+                <form action="options.php" method="post">
+                    <?php
+                    settings_fields('cf7_artist_submissions_email_templates');
+                    ?>
+                    
+                    <?php $this->render_email_templates(); ?>
+                    
+                    <?php submit_button(__('Save Email Templates', 'cf7-artist-submissions')); ?>
+                </form>
+                
+                <!-- Merge Tags Reference -->
+                <div class="cf7-artist-email-merge-tags" style="margin-top: 30px;">
+                    <h3><?php _e('Available Merge Tags', 'cf7-artist-submissions'); ?></h3>
+                    <p><?php _e('Use these tags in your email templates to include dynamic content:', 'cf7-artist-submissions'); ?></p>
+                    <table class="widefat fixed">
+                        <thead>
+                            <tr>
+                                <th><?php _e('Tag', 'cf7-artist-submissions'); ?></th>
+                                <th><?php _e('Description', 'cf7-artist-submissions'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>{artist_name}</code></td>
+                                <td><?php _e('The name of the artist', 'cf7-artist-submissions'); ?></td>
+                            </tr>
+                            <tr>
+                                <td><code>{email}</code></td>
+                                <td><?php _e('The email address of the artist', 'cf7-artist-submissions'); ?></td>
+                            </tr>
+                            <tr>
+                                <td><code>{submission_date}</code></td>
+                                <td><?php _e('The date the submission was received', 'cf7-artist-submissions'); ?></td>
+                            </tr>
+                            <tr>
+                                <td><code>{submission_id}</code></td>
+                                <td><?php _e('The ID of the submission', 'cf7-artist-submissions'); ?></td>
+                            </tr>
+                            <tr>
+                                <td><code>{status}</code></td>
+                                <td><?php _e('The current status of the submission', 'cf7-artist-submissions'); ?></td>
+                            </tr>
+                            <tr>
+                                <td><code>{site_name}</code></td>
+                                <td><?php _e('Your website name', 'cf7-artist-submissions'); ?></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p><em><?php _e('You can also use any custom field from the submission by using the format {field_name}', 'cf7-artist-submissions'); ?></em></p>
+                </div>
                 
             <?php elseif ($current_tab === 'imap'): ?>
                 
@@ -848,6 +917,9 @@ class CF7_Artist_Submissions_Settings {
             $valid['from_name'] = sanitize_text_field($input['from_name']);
         }
         
+        // Validate WooCommerce template option
+        $valid['use_wc_template'] = isset($input['use_wc_template']) ? true : false;
+        
         return $valid;
     }
 
@@ -893,5 +965,206 @@ class CF7_Artist_Submissions_Settings {
         
         echo '<input type="text" id="cf7_artist_submissions_email_options[from_name]" name="cf7_artist_submissions_email_options[from_name]" value="' . esc_attr($from_name) . '" class="regular-text">';
         echo '<p class="description">' . __('The name that emails will be sent from (e.g. "Pup and Tiger").', 'cf7-artist-submissions') . '</p>';
+    }
+    
+    /**
+     * Render WooCommerce template field
+     */
+    public function render_wc_template_field() {
+        $options = get_option('cf7_artist_submissions_email_options', array());
+        $use_wc_template = isset($options['use_wc_template']) ? $options['use_wc_template'] : false;
+        
+        echo '<label>';
+        echo '<input type="checkbox" id="cf7_artist_submissions_email_options[use_wc_template]" name="cf7_artist_submissions_email_options[use_wc_template]" value="1" ' . checked(1, $use_wc_template, false) . '>';
+        echo ' ' . __('Use WooCommerce email template', 'cf7-artist-submissions');
+        echo '</label>';
+        echo '<p class="description">' . __('When enabled, emails will be styled using the WooCommerce email template for consistent branding.', 'cf7-artist-submissions') . '</p>';
+        
+        // Preview of WooCommerce template
+        echo '<div class="wc-template-preview" style="margin-top: 10px;">';
+        echo '<a href="#" class="button" id="preview-wc-template">' . __('Preview WooCommerce Template', 'cf7-artist-submissions') . '</a>';
+        echo '</div>';
+        
+        // Add preview modal
+        echo '<div id="wc-template-preview-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:99999;">';
+        echo '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:#fff; padding:20px; max-width:800px; width:90%; max-height:80vh; overflow:auto; border-radius:5px;">';
+        echo '<h3>' . __('WooCommerce Email Template Preview', 'cf7-artist-submissions') . '</h3>';
+        echo '<div id="wc-template-preview-content" style="border:1px solid #ddd; padding:15px; margin:15px 0;"></div>';
+        echo '<button type="button" class="button" id="close-wc-preview">' . __('Close Preview', 'cf7-artist-submissions') . '</button>';
+        echo '</div>';
+        echo '</div>';
+        
+        // Add script for preview
+        $this->add_wc_template_preview_script();
+    }
+    
+    /**
+     * Add WC template preview script
+     */
+    private function add_wc_template_preview_script() {
+        ?>
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                $('#preview-wc-template').on('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Show loading
+                    $('#wc-template-preview-content').html('<p>Loading preview...</p>');
+                    $('#wc-template-preview-modal').show();
+                    
+                    // Load preview via AJAX
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'cf7_preview_wc_template',
+                            nonce: '<?php echo wp_create_nonce('cf7_wc_template_preview_nonce'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#wc-template-preview-content').html(response.data.template);
+                            } else {
+                                $('#wc-template-preview-content').html('<p>Error loading preview: ' + response.data.message + '</p>');
+                            }
+                        },
+                        error: function() {
+                            $('#wc-template-preview-content').html('<p>Error loading preview.</p>');
+                        }
+                    });
+                });
+                
+                $('#close-wc-preview').on('click', function() {
+                    $('#wc-template-preview-modal').hide();
+                });
+            });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Render email templates
+     */
+    public function render_email_templates() {
+        // Available email triggers
+        $triggers = array(
+            'submission_received' => array(
+                'name' => __('Submission Received', 'cf7-artist-submissions'),
+                'description' => __('Sent when a new submission is received', 'cf7-artist-submissions'),
+                'auto' => true,
+            ),
+            'status_changed_to_selected' => array(
+                'name' => __('Status Changed to Selected', 'cf7-artist-submissions'),
+                'description' => __('Sent when an artist is selected', 'cf7-artist-submissions'),
+                'auto' => false,
+            ),
+            'status_changed_to_reviewed' => array(
+                'name' => __('Status Changed to Reviewed', 'cf7-artist-submissions'),
+                'description' => __('Sent when a submission is marked as reviewed', 'cf7-artist-submissions'),
+                'auto' => false,
+            ),
+            'custom_notification' => array(
+                'name' => __('Custom Notification', 'cf7-artist-submissions'),
+                'description' => __('A custom email that can be sent manually at any time', 'cf7-artist-submissions'),
+                'auto' => false,
+            )
+        );
+        
+        foreach ($triggers as $trigger_id => $trigger) {
+            echo '<div class="cf7-email-template-section" style="margin-bottom: 30px; padding: 20px; border: 1px solid #e5e5e5; border-radius: 5px;">';
+            echo '<h3>' . esc_html($trigger['name']) . '</h3>';
+            echo '<p>' . esc_html($trigger['description']) . '</p>';
+            
+            // Get current template settings
+            $templates = get_option('cf7_artist_submissions_email_templates', array());
+            $template = isset($templates[$trigger_id]) ? $templates[$trigger_id] : array(
+                'enabled' => false,
+                'subject' => '',
+                'body' => '',
+                'auto_send' => $trigger['auto']
+            );
+            
+            // Enable/disable toggle
+            echo '<div class="cf7-template-field" style="margin-bottom: 15px;">';
+            echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][enabled]">';
+            echo '<input type="checkbox" id="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][enabled]" name="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][enabled]" value="1" ' . checked(1, $template['enabled'], false) . '>';
+            echo ' ' . __('Enable this email template', 'cf7-artist-submissions');
+            echo '</label>';
+            echo '</div>';
+            
+            // Auto-send toggle (only if applicable)
+            if ($trigger['auto'] !== false) {
+                echo '<div class="cf7-template-field" style="margin-bottom: 15px;">';
+                echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][auto_send]">';
+                echo '<input type="checkbox" id="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][auto_send]" name="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][auto_send]" value="1" ' . checked(1, $template['auto_send'], false) . '>';
+                echo ' ' . __('Automatically send this email when triggered', 'cf7-artist-submissions');
+                echo '</label>';
+                echo '</div>';
+            }
+            
+            // Subject field
+            echo '<div class="cf7-template-field" style="margin-bottom: 15px;">';
+            echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][subject]">' . __('Email Subject:', 'cf7-artist-submissions') . '</label><br>';
+            echo '<input type="text" id="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][subject]" name="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][subject]" value="' . esc_attr($template['subject']) . '" class="large-text">';
+            echo '</div>';
+            
+            // Body field
+            echo '<div class="cf7-template-field">';
+            echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][body]">' . __('Email Body:', 'cf7-artist-submissions') . '</label>';
+            
+            $content = $template['body'];
+            if (empty($content)) {
+                // Default template based on trigger
+                switch ($trigger_id) {
+                    case 'submission_received':
+                        $content = "Dear {artist_name},\n\nThank you for your submission. We have received your application and will review it shortly.\n\nRegards,\n{site_name} Team";
+                        break;
+                    case 'status_changed_to_selected':
+                        $content = "Dear {artist_name},\n\nCongratulations! We are pleased to inform you that your submission has been selected.\n\nRegards,\n{site_name} Team";
+                        break;
+                    case 'status_changed_to_reviewed':
+                        $content = "Dear {artist_name},\n\nThank you for your submission. We have completed our review process.\n\nRegards,\n{site_name} Team";
+                        break;
+                    case 'custom_notification':
+                        $content = "Dear {artist_name},\n\nThis is a custom notification regarding your submission.\n\nRegards,\n{site_name} Team";
+                        break;
+                }
+            }
+            
+            // Use WordPress editor for the email body
+            wp_editor(
+                $content,
+                'cf7_artist_submissions_email_templates_' . $trigger_id . '_body',
+                array(
+                    'textarea_name' => 'cf7_artist_submissions_email_templates[' . $trigger_id . '][body]',
+                    'textarea_rows' => 10,
+                    'media_buttons' => false,
+                    'teeny' => true,
+                    'quicktags' => true,
+                )
+            );
+            echo '</div>';
+            
+            echo '</div>'; // End template section
+        }
+    }
+    
+    /**
+     * Validate email templates
+     */
+    public function validate_email_templates($input) {
+        $valid = array();
+        
+        if (is_array($input)) {
+            foreach ($input as $template_id => $template_data) {
+                $valid[$template_id] = array(
+                    'enabled' => isset($template_data['enabled']) ? true : false,
+                    'auto_send' => isset($template_data['auto_send']) ? true : false,
+                    'subject' => isset($template_data['subject']) ? sanitize_text_field($template_data['subject']) : '',
+                    'body' => isset($template_data['body']) ? wp_kses_post($template_data['body']) : ''
+                );
+            }
+        }
+        
+        return $valid;
     }
 }

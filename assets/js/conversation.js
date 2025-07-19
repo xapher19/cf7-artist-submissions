@@ -55,19 +55,17 @@ jQuery(document).ready(function($) {
         
         var submissionId = $('#submission-id').val();
         var toEmail = $('#message-to').val();
-        var subject = $('#message-subject').val();
         var messageBody = $('#message-body').val();
         
         console.log('Form values:', {
             submissionId: submissionId,
             toEmail: toEmail,
-            subject: subject,
             messageBody: messageBody
         });
         
         // Validation
-        if (!subject.trim() || !messageBody.trim()) {
-            $status.text('Please fill in all fields').addClass('error');
+        if (!messageBody.trim()) {
+            $status.text('Please enter a message').addClass('error');
             return;
         }
         
@@ -93,14 +91,12 @@ jQuery(document).ready(function($) {
                 nonce: cf7Conversations.nonce,
                 submission_id: submissionId,
                 to_email: toEmail,
-                subject: subject,
                 message_body: messageBody
             },
             success: function(response) {
                 console.log('AJAX success response:', response);
                 if (response.success) {
                     $status.text('Message sent!').addClass('success');
-                    $('#message-subject').val('');
                     $('#message-body').val('');
                     
                     // Refresh the page to show the new message and scroll to bottom

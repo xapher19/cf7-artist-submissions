@@ -252,7 +252,7 @@ class CF7_Artist_Submissions_Conversations {
                                 <span class="message-date"><?php echo esc_html(human_time_diff(strtotime($message->sent_at), current_time('timestamp')) . ' ago'); ?></span>
                             </div>
                             <div class="message-bubble">
-                                <div class="message-content"><?php echo wp_kses_post(wpautop($message->message_body)); ?></div>
+                                <div class="message-content"><?php echo esc_html(wp_strip_all_tags($message->message_body)); ?></div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -267,10 +267,6 @@ class CF7_Artist_Submissions_Conversations {
                     <div class="compose-field">
                         <label for="message-to"><?php _e('To:', 'cf7-artist-submissions'); ?></label>
                         <input type="email" id="message-to" value="<?php echo esc_attr($artist_email); ?>" readonly>
-                    </div>
-                    <div class="compose-field">
-                        <label for="message-subject"><?php _e('Subject:', 'cf7-artist-submissions'); ?></label>
-                        <input type="text" id="message-subject" placeholder="Enter subject..." class="widefat">
                     </div>
                     <div class="compose-field">
                         <label for="message-body"><?php _e('Message:', 'cf7-artist-submissions'); ?></label>
@@ -436,8 +432,18 @@ class CF7_Artist_Submissions_Conversations {
         
         $submission_id = intval($_POST['submission_id']);
         $to_email = sanitize_email($_POST['to_email']);
-        $subject = sanitize_text_field($_POST['subject']);
         $message_body = wp_kses_post($_POST['message_body']);
+        
+        // Auto-generate subject line
+        $submission = get_post($submission_id);
+        $submission_date = get_post_meta($submission_id, 'cf7_submission_date', true);
+        if (empty($submission_date)) {
+            $submission_date = $submission ? $submission->post_date : date('Y-m-d');
+        }
+        
+        // Format date nicely
+        $formatted_date = date('F j, Y', strtotime($submission_date));
+        $subject = 'Re: Your Submission to Pup and Tiger on ' . $formatted_date;
         
         if (empty($submission_id) || empty($to_email) || empty($subject) || empty($message_body)) {
             wp_send_json_error(array('message' => 'Missing required fields'));
@@ -505,7 +511,7 @@ class CF7_Artist_Submissions_Conversations {
                         <strong><?php echo esc_html($message->subject); ?></strong>
                     </div>
                     <div class="message-body">
-                        <?php echo wp_kses_post(wpautop($message->message_body)); ?>
+                        <?php echo esc_html(wp_strip_all_tags($message->message_body)); ?>
                     </div>
                     <div class="message-status">
                         Status: <span class="status-<?php echo esc_attr($message->email_status); ?>"><?php echo esc_html(ucfirst($message->email_status)); ?></span>
@@ -561,24 +567,36 @@ class CF7_Artist_Submissions_Conversations {
         $domain_part = isset($email_parts[1]) ? $email_parts[1] : 'example.com';
         $reply_to_email = $local_part . '+SUB' . $submission_id . '_' . $reply_token . '@' . $domain_part;
         
+        // Get email settings and check if WooCommerce template should be used
+        $email_options = get_option('cf7_artist_submissions_email_options', array());
+        $use_wc_template = isset($email_options['use_wc_template']) && $email_options['use_wc_template'] && class_exists('WooCommerce');
+        
+        // Prepare message body
+        $email_body = $message_body;
+        $content_type = 'text/plain';
+        
+        if ($use_wc_template) {
+            // Apply WooCommerce template to the message
+            $email_body = self::format_woocommerce_conversation_email($message_body, $subject);
+            $content_type = 'text/html';
+        }
+        
         // Use headers with reply-to for conversation threading
-        $simple_headers = array(
-            'Content-Type: text/plain; charset=UTF-8',
+        $headers = array(
+            'Content-Type: ' . $content_type . '; charset=UTF-8',
             'From: ' . $from_name . ' <' . $from_email . '>',
             'Reply-To: <' . $reply_to_email . '>'
         );
-        
-        // Send simple text email without wpautop for testing
-        $plain_message = strip_tags($message_body);
         
         // Log what we're trying to send for debugging
         error_log('CF7 Conversations: Attempting to send email');
         error_log('From: ' . $from_name . ' <' . $from_email . '>');
         error_log('To: ' . $to_email);
         error_log('Subject: ' . $subject);
-        error_log('Headers: ' . print_r($simple_headers, true));
+        error_log('WooCommerce template: ' . ($use_wc_template ? 'Yes' : 'No'));
+        error_log('Headers: ' . print_r($headers, true));
         
-        $mail_sent = wp_mail($to_email, $subject, $plain_message, $simple_headers);
+        $mail_sent = wp_mail($to_email, $subject, $email_body, $headers);
         
         // Enhanced error reporting
         if (!$mail_sent) {
@@ -1674,5 +1692,50 @@ class CF7_Artist_Submissions_Conversations {
         ));
         
         return $count > 0;
+    }
+    
+    /**
+     * Format message content using WooCommerce email template
+     */
+    public static function format_woocommerce_conversation_email($content, $heading) {
+        if (!class_exists('WooCommerce')) {
+            return $content;
+        }
+        
+        try {
+            // Make sure WooCommerce is properly initialized
+            require_once(WC_ABSPATH . 'includes/class-wc-emails.php');
+            require_once(WC_ABSPATH . 'includes/emails/class-wc-email.php');
+            
+            $wc_emails = new WC_Emails();
+            $wc_emails->init();
+            
+            // Create a generic WC_Email object to access template methods
+            $email = new WC_Email();
+            
+            // Get the email template content
+            ob_start();
+            
+            // Include the WooCommerce email header
+            wc_get_template('emails/email-header.php', array('email_heading' => $heading));
+            
+            // Add our content with proper formatting
+            echo wpautop($content);
+            
+            // Include the WooCommerce email footer
+            wc_get_template('emails/email-footer.php');
+            
+            // Get the complete email template
+            $formatted_email = ob_get_clean();
+            
+            // Apply WooCommerce inline styles
+            $formatted_email = $email->style_inline($formatted_email);
+            
+            return $formatted_email;
+        } catch (Exception $e) {
+            // If WooCommerce template fails, fall back to plain text
+            error_log('CF7 Conversations: WooCommerce template error: ' . $e->getMessage());
+            return $content;
+        }
     }
 }
