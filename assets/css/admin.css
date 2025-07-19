@@ -1,0 +1,344 @@
+/* CF7 Artist Submissions - Admin Styles */
+
+/* Submission List */
+.post-type-cf7_submission .widefat th.column-submission_date,
+.post-type-cf7_submission .widefat td.column-submission_date {
+    width: 15%;
+}
+
+.post-type-cf7_submission .widefat th.column-status,
+.post-type-cf7_submission .widefat td.column-status {
+    width: 10%;
+}
+
+.post-type-cf7_submission .widefat th.column-notes,
+.post-type-cf7_submission .widefat td.column-notes {
+    width: 20%;
+}
+
+span.submission-status {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 600;
+}
+
+span.status-new {
+    background-color: #eff7ff;
+    color: #0073aa;
+}
+
+span.status-selected {
+    background-color: #e6ffe6;
+    color: #006600;
+}
+
+span.status-reviewed {
+    background-color: #fffbe6;
+    color: #b37400;
+}
+
+/* Submission Details */
+.submission-details th {
+    width: 25%;
+    text-align: left;
+    vertical-align: top;
+    padding: 15px 10px 15px 0;
+}
+
+.submission-details td {
+    padding: 15px 0;
+    vertical-align: top;
+}
+
+/* Editable Fields */
+.field-edit-hint {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 15px;
+}
+
+.editable-field {
+    position: relative;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.editable-field:hover {
+    background-color: #f8f8f8;
+}
+
+.editable-field:hover::after {
+    content: '✎';
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    color: #999;
+    font-size: 16px;
+}
+
+.editable-field.editing {
+    background-color: #f8f8f8;
+    padding: 10px;
+}
+
+.read-only {
+    cursor: default;
+}
+
+.read-only:hover {
+    background-color: transparent;
+}
+
+.read-only:hover::after {
+    content: none;
+}
+
+/* Editing UI */
+.edit-active {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+
+.edit-active:focus {
+    border-color: #007cba;
+    box-shadow: 0 0 0 1px #007cba;
+    outline: none;
+}
+
+textarea.edit-active {
+    min-height: 100px;
+}
+
+.edit-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.edit-success {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #46b450;
+    color: white;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 3px;
+}
+
+/* File Previews */
+.submission-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.file-item {
+    width: calc(33.33% - 20px);
+    min-width: 200px;
+    margin-bottom: 20px;
+}
+
+.file-item h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.file-preview img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.file-preview img:hover {
+    transform: scale(1.03);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+
+.file-download {
+    padding: 10px;
+    background: #f8f8f8;
+    border-radius: 3px;
+}
+
+.file-download a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.file-download .dashicons {
+    margin-right: 5px;
+}
+
+/* Email Management Styles */
+.cf7-email-sending-interface {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+}
+
+.cf7-email-field {
+    margin-bottom: 15px;
+}
+
+.cf7-email-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.cf7-email-actions {
+    display: flex;
+    align-items: center;
+}
+
+.cf7-email-actions .spinner {
+    float: none;
+    margin-left: 10px;
+}
+
+.cf7-email-actions button {
+    margin-right: 10px;
+}
+
+#cf7_email_message {
+    margin: 10px 0 0 0;
+    padding: 5px 10px;
+}
+
+#cf7-email-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cf7-email-preview-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.cf7-email-preview-subject {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.cf7-email-preview-body {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border: 1px solid #eee;
+    border-radius: 3px;
+}
+
+.cf7-email-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.cf7-email-log {
+    margin-top: 20px;
+}
+
+/* Action Log Styles */
+.action-log-table {
+    margin-top: 10px;
+}
+
+.action-log-table th:nth-child(1) {
+    width: 20%;
+}
+
+.action-log-table th:nth-child(2) {
+    width: 15%;
+}
+
+.action-log-table th:nth-child(3) {
+    width: 15%;
+}
+
+.action-log-details {
+    margin: 0;
+}
+
+.action-log-details code {
+    background: none;
+    padding: 0;
+}
+
+.action-log-changed-field {
+    display: inline-block;
+    background: #f0f0f0;
+    border-radius: 3px;
+    padding: 2px 5px;
+    margin-right: 5px;
+    font-family: monospace;
+}
+
+/* Email Settings Page */
+.cf7-template-field {
+    margin-bottom: 20px;
+}
+
+.cf7-template-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.cf7-artist-email-merge-tags {
+    margin-top: 30px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+}
+
+.cf7-artist-email-merge-tags table {
+    margin-top: 10px;
+}
+
+.cf7-artist-email-merge-tags table th:first-child {
+    width: 150px;
+}
+
+@media screen and (max-width: 782px) {
+    .file-item {
+        width: 100%;
+    }
+    
+    .edit-active {
+        max-width: 100%;
+    }
+}

@@ -1,0 +1,102 @@
+<?php
+/**
+ * Plugin Name: CF7 Artist Submissions
+ * Description: Store and manage Contact Form 7 submissions from artists.
+ * Version: 1.0.0
+ * Author: Pup and Tiger
+ * Requires at least: 5.6
+ * Requires PHP: 7.4
+ * Tested up to: 6.4
+ * Text Domain: cf7-artist-submissions
+ */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Define plugin constants
+define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.0.0');
+define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
+
+// Check if Contact Form 7 is active
+add_action('admin_init', 'cf7_artist_submissions_check_cf7');
+function cf7_artist_submissions_check_cf7() {
+    if (is_admin() && current_user_can('activate_plugins') && !class_exists('WPCF7')) {
+        add_action('admin_notices', 'cf7_artist_submissions_admin_notice');
+        deactivate_plugins(plugin_basename(__FILE__));
+        if (isset($_GET['activate'])) {
+            unset($_GET['activate']);
+        }
+    }
+}
+
+// Admin notice if Contact Form 7 is not active
+function cf7_artist_submissions_admin_notice() {
+    ?>
+    <div class="notice notice-error">
+        <p><?php _e('Contact Form 7 is required for the CF7 Artist Submissions plugin.', 'cf7-artist-submissions'); ?></p>
+    </div>
+    <?php
+}
+
+// Include required files
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-post-type.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-form-handler.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-admin.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-settings.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-action-log.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-emails.php';
+
+// Initialize the plugin
+function cf7_artist_submissions_init() {
+    $post_type = new CF7_Artist_Submissions_Post_Type();
+    $post_type->init();
+    
+    $form_handler = new CF7_Artist_Submissions_Form_Handler();
+    $form_handler->init();
+    
+    $admin = new CF7_Artist_Submissions_Admin();
+    $admin->init();
+    
+    $settings = new CF7_Artist_Submissions_Settings();
+    $settings->init();
+    
+    // Initialize Action Log
+    CF7_Artist_Submissions_Action_Log::init();
+    
+    // Initialize Email System
+    $emails = new CF7_Artist_Submissions_Emails();
+    $emails->init();
+    
+    // Add AJAX endpoints for email preview and sending
+    add_action('wp_ajax_cf7_preview_email', array($emails, 'ajax_preview_email'));
+    add_action('wp_ajax_cf7_send_manual_email', array($emails, 'ajax_send_manual_email'));
+    add_action('wp_ajax_cf7_preview_wc_template', array($emails, 'ajax_preview_wc_template'));
+}
+
+add_action('plugins_loaded', 'cf7_artist_submissions_init');
+
+// Plugin activation
+register_activation_hook(__FILE__, 'cf7_artist_submissions_activate');
+function cf7_artist_submissions_activate() {
+    // Create custom post type
+    $post_type = new CF7_Artist_Submissions_Post_Type();
+    $post_type->register_post_type();
+    $post_type->register_taxonomy();
+    
+    // Create action log table
+    CF7_Artist_Submissions_Action_Log::create_log_table();
+    
+    // Flush rewrite rules
+    flush_rewrite_rules();
+}
+
+// Plugin deactivation
+register_deactivation_hook(__FILE__, 'cf7_artist_submissions_deactivate');
+function cf7_artist_submissions_deactivate() {
+    // Flush rewrite rules
+    flush_rewrite_rules();
+}
