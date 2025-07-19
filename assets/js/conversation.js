@@ -7,8 +7,23 @@ jQuery(document).ready(function($) {
      * Scroll conversation to bottom
      */
     function scrollToBottom() {
-        var conversationDiv = $('.conversation-messages');
-        if (conversationDiv.length > 0) {
+        // Try multiple selectors to find the conversation container
+        var conversationSelectors = [
+            '#cf7-message-thread',
+            '.conversation-messages', 
+            '.cf7-conversation-container',
+            '#cf7-conversation-container'
+        ];
+        
+        var conversationDiv = null;
+        for (var i = 0; i < conversationSelectors.length; i++) {
+            conversationDiv = $(conversationSelectors[i]);
+            if (conversationDiv.length > 0) {
+                break;
+            }
+        }
+        
+        if (conversationDiv && conversationDiv.length > 0) {
             // Only scroll if there's content that exceeds the container height
             if (conversationDiv[0].scrollHeight > conversationDiv.height()) {
                 // Use setTimeout to ensure DOM is fully rendered
@@ -20,6 +35,9 @@ jQuery(document).ready(function($) {
             }
         }
     }
+    
+    // Make scrollToBottom globally available for tab integration
+    window.scrollToBottom = scrollToBottom;
     
     // Auto-scroll to bottom on page load
     scrollToBottom();

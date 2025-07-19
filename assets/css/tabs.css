@@ -1,0 +1,204 @@
+/**
+ * CF7 Artist Submissions - Tab Styles
+ */
+
+/* Tab Container */
+.cf7-tabs-container {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    margin-top: 20px;
+}
+
+/* Tab Navigation */
+.cf7-tabs-nav {
+    display: flex;
+    background: #f1f1f1;
+    border-bottom: 1px solid #ccd0d4;
+    margin: 0;
+    padding: 0;
+}
+
+.cf7-tab-nav-item {
+    margin: 0;
+    border-right: 1px solid #ccd0d4;
+}
+
+.cf7-tab-nav-item:last-child {
+    border-right: none;
+}
+
+.cf7-tab-link {
+    display: block;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    background: #f1f1f1;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.cf7-tab-link:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+.cf7-tab-nav-item.active .cf7-tab-link {
+    background: #fff;
+    color: #0073aa;
+    border-bottom: 3px solid #0073aa;
+    font-weight: 600;
+}
+
+.cf7-tab-nav-item.active .cf7-tab-link:hover {
+    background: #fff;
+    color: #0073aa;
+}
+
+/* Tab Content */
+.cf7-tabs-content {
+    position: relative;
+}
+
+.cf7-tab-content {
+    display: none;
+    padding: 20px;
+    min-height: 300px;
+}
+
+.cf7-tab-content.active {
+    display: block;
+}
+
+/* Tab Loading States */
+.cf7-tab-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+    font-style: italic;
+}
+
+.cf7-tab-loading:before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: cf7-spin 1s linear infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.cf7-tab-error {
+    text-align: center;
+    padding: 40px 20px;
+    color: #d63638;
+    background: #fcf0f1;
+    border: 1px solid #d63638;
+    border-radius: 4px;
+    margin: 20px;
+}
+
+@keyframes cf7-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Tab Icons */
+.cf7-tab-link .dashicons {
+    margin-right: 8px;
+    font-size: 16px;
+    line-height: 20px;
+    vertical-align: middle;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .cf7-tabs-nav {
+        flex-direction: column;
+    }
+    
+    .cf7-tab-nav-item {
+        border-right: none;
+        border-bottom: 1px solid #ccd0d4;
+    }
+    
+    .cf7-tab-nav-item:last-child {
+        border-bottom: none;
+    }
+    
+    .cf7-tab-link {
+        text-align: center;
+    }
+}
+
+/* Integration with existing meta boxes */
+.cf7-tab-content .postbox {
+    border: none;
+    box-shadow: none;
+    margin-bottom: 0;
+}
+
+.cf7-tab-content .postbox .hndle {
+    display: none;
+}
+
+.cf7-tab-content .inside {
+    padding: 0;
+    margin: 0;
+}
+
+/* Hide original meta boxes when tabs are active */
+.cf7-tabs-active .postbox {
+    display: none;
+}
+
+.cf7-tabs-active .cf7-tabs-container {
+    display: block;
+}
+
+/* Tab content sections */
+.cf7-tab-section {
+    margin-bottom: 30px;
+}
+
+.cf7-tab-section:last-child {
+    margin-bottom: 0;
+}
+
+.cf7-tab-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+}
+
+/* Two column layout for profile tab */
+.cf7-profile-columns {
+    display: flex;
+    gap: 30px;
+}
+
+.cf7-profile-main {
+    flex: 2;
+}
+
+.cf7-profile-sidebar {
+    flex: 1;
+    min-width: 280px;
+}
+
+@media (max-width: 1024px) {
+    .cf7-profile-columns {
+        flex-direction: column;
+        gap: 20px;
+    }
+}

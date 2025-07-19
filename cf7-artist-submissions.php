@@ -50,6 +50,7 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-action-log.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-emails.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-conversations.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-tabs.php';
 
 // Initialize the plugin
 function cf7_artist_submissions_init() {
@@ -82,6 +83,9 @@ function cf7_artist_submissions_init() {
     
     // Initialize Conversation System
     CF7_Artist_Submissions_Conversations::init();
+    
+    // Initialize Tabbed Interface
+    CF7_Artist_Submissions_Tabs::init();
 }
 
 add_action('plugins_loaded', 'cf7_artist_submissions_init');
