@@ -21,27 +21,6 @@ define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
 
-// Check if Contact Form 7 is active
-add_action('admin_init', 'cf7_artist_submissions_check_cf7');
-function cf7_artist_submissions_check_cf7() {
-    if (is_admin() && current_user_can('activate_plugins') && !class_exists('WPCF7')) {
-        add_action('admin_notices', 'cf7_artist_submissions_admin_notice');
-        deactivate_plugins(plugin_basename(__FILE__));
-        if (isset($_GET['activate'])) {
-            unset($_GET['activate']);
-        }
-    }
-}
-
-// Admin notice if Contact Form 7 is not active
-function cf7_artist_submissions_admin_notice() {
-    ?>
-    <div class="notice notice-error">
-        <p><?php _e('Contact Form 7 is required for the CF7 Artist Submissions plugin.', 'cf7-artist-submissions'); ?></p>
-    </div>
-    <?php
-}
-
 // Include required files
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-post-type.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-form-handler.php';
