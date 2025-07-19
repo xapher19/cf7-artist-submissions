@@ -105,8 +105,22 @@ class CF7_Artist_Submissions_Form_Handler {
                             continue;
                         }
                         
-                        // Get filename
+                        // Get filename and validate it
                         $filename = basename($tmp_path);
+                        
+                        // Validate file type for security
+                        $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip');
+                        $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                        
+                        if (!in_array($file_extension, $allowed_types)) {
+                            continue; // Skip disallowed file types
+                        }
+                        
+                        // Additional security: Check file MIME type
+                        $file_info = wp_check_filetype($filename);
+                        if (!$file_info['type']) {
+                            continue; // Skip files with no valid MIME type
+                        }
                         
                         // Create a unique filename
                         $unique_filename = wp_unique_filename($submission_dir, $filename);
@@ -115,6 +129,9 @@ class CF7_Artist_Submissions_Form_Handler {
                         $new_path = $submission_dir . '/' . $unique_filename;
                         
                         if (@copy($tmp_path, $new_path)) {
+                            // Set proper file permissions
+                            @chmod($new_path, 0644);
+                            
                             // Create and store file URL
                             $file_url = $upload_dir['baseurl'] . '/cf7-submissions/' . $post_id . '/' . $unique_filename;
                             $file_urls[] = esc_url_raw($file_url);

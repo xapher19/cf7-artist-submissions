@@ -268,6 +268,11 @@ class CF7_Artist_Submissions_Post_Type {
             wp_die(__('You do not have permission to export submissions.', 'cf7-artist-submissions'));
         }
         
+        // Verify nonce for bulk actions
+        if (!wp_verify_nonce($_REQUEST['_wpnonce'], 'bulk-posts')) {
+            wp_die(__('Security check failed.', 'cf7-artist-submissions'));
+        }
+        
         // No submissions selected
         if (empty($post_ids)) {
             return $redirect_to;

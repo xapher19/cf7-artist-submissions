@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
                 'taxonomy' => 'submission_status',
                 'name' => 'submission_status',
                 'orderby' => 'name',
-                'selected' => isset($_GET['submission_status']) ? $_GET['submission_status'] : '',
+                'selected' => isset($_GET['submission_status']) ? sanitize_text_field($_GET['submission_status']) : '',
                 'hierarchical' => true,
                 'show_count' => true,
                 'hide_empty' => false,
