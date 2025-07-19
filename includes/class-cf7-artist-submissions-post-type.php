@@ -100,7 +100,7 @@ class CF7_Artist_Submissions_Post_Type {
         $args = array(
             'hierarchical'          => true, // Changed to true to make it work as a radio select
             'labels'                => $labels,
-            'show_ui'               => true,
+            'show_ui'               => false, // Hide from admin menu since we have interactive status on artist pages
             'show_admin_column'     => true,
             'query_var'             => true,
             'rewrite'               => array('slug' => 'submission-status'),
