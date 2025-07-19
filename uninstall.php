@@ -10,6 +10,18 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
 
 // Delete options
 delete_option('cf7_artist_submissions_options');
+delete_option('cf7_debug_messages');
+delete_option('cf7_last_imap_check');
+delete_option('cf7_conversations_db_version');
+
+global $wpdb;
+
+// Delete custom database tables
+$table_name = $wpdb->prefix . 'cf7_conversations';
+$wpdb->query("DROP TABLE IF EXISTS $table_name");
+
+$table_name = $wpdb->prefix . 'cf7_action_log';
+$wpdb->query("DROP TABLE IF EXISTS $table_name");
 
 // Get all submission posts
 $submissions = get_posts(array(

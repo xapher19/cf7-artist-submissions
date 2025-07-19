@@ -6,7 +6,7 @@
  * Author: Pup and Tiger
  * Requires at least: 5.6
  * Requires PHP: 7.4
- * Tested up to: 6.4
+ * Tested up to: 6.8.2
  * Text Domain: cf7-artist-submissions
  */
 
