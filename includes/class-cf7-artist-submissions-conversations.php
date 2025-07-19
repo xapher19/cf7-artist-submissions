@@ -19,6 +19,9 @@ class CF7_Artist_Submissions_Conversations {
         add_action('wp_ajax_cf7_migrate_tokens', array(__CLASS__, 'ajax_migrate_tokens'));
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_scripts'));
         
+        // Ensure table is up to date
+        add_action('admin_init', array(__CLASS__, 'maybe_update_table'));
+        
         // Add custom cron schedule
         add_filter('cron_schedules', array(__CLASS__, 'add_cron_schedules'));
         
@@ -26,6 +29,20 @@ class CF7_Artist_Submissions_Conversations {
         add_action('cf7_check_email_replies', array(__CLASS__, 'check_email_replies'));
         if (!wp_next_scheduled('cf7_check_email_replies')) {
             wp_schedule_event(time(), 'every_5_minutes', 'cf7_check_email_replies');
+        }
+    }
+    
+    /**
+     * Maybe update the conversations table
+     */
+    public static function maybe_update_table() {
+        $version_option = 'cf7_conversations_table_version';
+        $current_version = get_option($version_option, '1.0');
+        $target_version = '1.1'; // Version with template support
+        
+        if (version_compare($current_version, $target_version, '<')) {
+            self::update_conversations_table();
+            update_option($version_option, $target_version);
         }
     }
     
@@ -50,7 +67,9 @@ class CF7_Artist_Submissions_Conversations {
         
         // Check if table already exists
         if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) {
-            return; // Table already exists
+            // Table exists, check if we need to add new columns
+            self::update_conversations_table();
+            return;
         }
         
         $charset_collate = $wpdb->get_charset_collate();
@@ -72,17 +91,47 @@ class CF7_Artist_Submissions_Conversations {
             user_id bigint(20) unsigned DEFAULT NULL,
             read_status tinyint(1) DEFAULT 0,
             email_status enum('pending','sent','delivered','failed') DEFAULT 'pending',
+            is_template tinyint(1) DEFAULT 0,
+            template_id varchar(100) DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY submission_id (submission_id),
             KEY reply_token (reply_token),
             KEY message_id (message_id),
             KEY direction (direction),
-            KEY sent_at (sent_at)
+            KEY sent_at (sent_at),
+            KEY is_template (is_template)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+    }
+    
+    /**
+     * Update conversations table to add template columns
+     */
+    public static function update_conversations_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        // Check if is_template column exists
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'is_template'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table_name ADD COLUMN is_template tinyint(1) DEFAULT 0");
+        }
+        
+        // Check if template_id column exists
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'template_id'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table_name ADD COLUMN template_id varchar(100) DEFAULT NULL");
+        }
+        
+        // Add index for is_template if it doesn't exist
+        $index_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'is_template'");
+        if (empty($index_exists)) {
+            $wpdb->query("ALTER TABLE $table_name ADD INDEX is_template (is_template)");
+        }
     }
     
     /**
@@ -246,9 +295,12 @@ class CF7_Artist_Submissions_Conversations {
                     <p class="no-messages"><?php _e('No messages yet. Start a conversation with the artist below.', 'cf7-artist-submissions'); ?></p>
                 <?php else: ?>
                     <?php foreach ($messages as $message): ?>
-                        <div class="conversation-message <?php echo esc_attr($message->direction === 'outbound' ? 'outgoing' : 'incoming'); ?>">
+                        <div class="conversation-message <?php echo esc_attr($message->direction === 'outbound' ? 'outgoing' : 'incoming'); ?> <?php echo $message->is_template ? 'template-message' : ''; ?>">
                             <div class="message-meta">
                                 <span class="message-type"><?php echo $message->direction === 'outbound' ? 'Sent' : 'Received'; ?></span>
+                                <?php if ($message->is_template): ?>
+                                    <span class="template-badge"><?php _e('Template', 'cf7-artist-submissions'); ?></span>
+                                <?php endif; ?>
                                 <span class="message-date"><?php echo esc_html(human_time_diff(strtotime($message->sent_at), current_time('timestamp')) . ' ago'); ?></span>
                             </div>
                             <div class="message-bubble">
@@ -268,10 +320,59 @@ class CF7_Artist_Submissions_Conversations {
                         <label for="message-to"><?php _e('To:', 'cf7-artist-submissions'); ?></label>
                         <input type="email" id="message-to" value="<?php echo esc_attr($artist_email); ?>" readonly>
                     </div>
+                    
                     <div class="compose-field">
+                        <label for="message-type"><?php _e('Message Type:', 'cf7-artist-submissions'); ?></label>
+                        <select id="message-type">
+                            <option value="custom"><?php _e('Custom Message', 'cf7-artist-submissions'); ?></option>
+                            <?php 
+                            // Get available email templates
+                            $templates = get_option('cf7_artist_submissions_email_templates', array());
+                            
+                            // Define triggers (same as in emails class)
+                            $triggers = array(
+                                'submission_received' => array(
+                                    'name' => __('Submission Received', 'cf7-artist-submissions'),
+                                    'auto' => true,
+                                ),
+                                'status_changed_to_selected' => array(
+                                    'name' => __('Status Changed to Selected', 'cf7-artist-submissions'),
+                                    'auto' => false,
+                                ),
+                                'status_changed_to_reviewed' => array(
+                                    'name' => __('Status Changed to Reviewed', 'cf7-artist-submissions'),
+                                    'auto' => false,
+                                ),
+                                'custom_notification' => array(
+                                    'name' => __('Custom Notification', 'cf7-artist-submissions'),
+                                    'auto' => false,
+                                ),
+                            );
+                            
+                            foreach ($triggers as $trigger_id => $trigger) {
+                                $template = isset($templates[$trigger_id]) ? $templates[$trigger_id] : array('enabled' => false);
+                                // Only show enabled templates
+                                if (isset($template['enabled']) && $template['enabled']) {
+                                    echo '<option value="' . esc_attr($trigger_id) . '">' . esc_html($trigger['name']) . '</option>';
+                                }
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    
+                    <div class="compose-field" id="custom-message-field">
                         <label for="message-body"><?php _e('Message:', 'cf7-artist-submissions'); ?></label>
                         <textarea id="message-body" rows="6" placeholder="Type your message here..." class="widefat"></textarea>
                     </div>
+                    
+                    <div class="compose-field" id="template-preview-field" style="display: none;">
+                        <label><?php _e('Template Preview:', 'cf7-artist-submissions'); ?></label>
+                        <div id="template-preview-content" class="template-preview">
+                            <div class="preview-subject"></div>
+                            <div class="preview-body"></div>
+                        </div>
+                    </div>
+                    
                     <div class="compose-actions">
                         <button type="button" id="send-message-btn" class="button button-primary">
                             <?php _e('Send Message', 'cf7-artist-submissions'); ?>
@@ -283,6 +384,7 @@ class CF7_Artist_Submissions_Conversations {
         </div>
         
         <input type="hidden" id="submission-id" value="<?php echo esc_attr($submission_id); ?>">
+        <input type="hidden" id="cf7-email-nonce" value="<?php echo wp_create_nonce('cf7_send_email_nonce'); ?>">
         <?php
     }
     
@@ -432,9 +534,33 @@ class CF7_Artist_Submissions_Conversations {
         
         $submission_id = intval($_POST['submission_id']);
         $to_email = sanitize_email($_POST['to_email']);
-        $message_body = wp_kses_post($_POST['message_body']);
+        $message_type = sanitize_text_field($_POST['message_type']);
+        $message_body = isset($_POST['message_body']) ? wp_kses_post($_POST['message_body']) : '';
         
-        // Auto-generate subject line
+        // Handle template-based messages
+        if ($message_type !== 'custom') {
+            // Send using email template system
+            $emails = new CF7_Artist_Submissions_Emails();
+            $result = $emails->send_email($message_type, $submission_id, $to_email);
+            
+            if (is_wp_error($result)) {
+                wp_send_json_error(array('message' => $result->get_error_message()));
+                return;
+            }
+            
+            // Don't store the message here - the email system already stores it in conversations
+            // This prevents duplicate messages with different formatting
+            wp_send_json_success(array('message' => 'Template email sent successfully'));
+            return;
+        }
+        
+        // Handle custom messages
+        if (empty($message_body)) {
+            wp_send_json_error(array('message' => 'Message body is required for custom messages'));
+            return;
+        }
+        
+        // Auto-generate subject line for custom messages
         $submission = get_post($submission_id);
         $submission_date = get_post_meta($submission_id, 'cf7_submission_date', true);
         if (empty($submission_date)) {
@@ -1048,6 +1174,49 @@ class CF7_Artist_Submissions_Conversations {
         
         update_option('cf7_debug_messages', array_slice($debug_info, -50));
         return $count > 0;
+    }
+    
+    /**
+     * Store conversation message
+     */
+    public static function store_conversation_message($submission_id, $direction, $from_email, $from_name, $to_email, $to_name, $subject, $message_body, $is_template = false, $template_id = null) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        $reply_token = self::generate_reply_token($submission_id);
+        
+        // Generate a unique message ID
+        $message_id = wp_generate_uuid4();
+        
+        $result = $wpdb->insert(
+            $table_name,
+            array(
+                'submission_id' => $submission_id,
+                'message_id' => $message_id,
+                'direction' => $direction,
+                'from_email' => $from_email,
+                'from_name' => $from_name,
+                'to_email' => $to_email,
+                'to_name' => $to_name,
+                'subject' => $subject,
+                'message_body' => $message_body,
+                'reply_token' => $reply_token,
+                'sent_at' => current_time('mysql'),
+                'user_id' => get_current_user_id(),
+                'email_status' => 'sent',
+                'is_template' => $is_template ? 1 : 0,
+                'template_id' => $template_id
+            ),
+            array(
+                '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%s'
+            )
+        );
+        
+        if ($result === false) {
+            return new WP_Error('db_error', 'Failed to store conversation message');
+        }
+        
+        return $wpdb->insert_id;
     }
     
     /**

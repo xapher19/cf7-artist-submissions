@@ -36,12 +36,117 @@ jQuery(document).ready(function($) {
         scrollToBottom();
     });
     
+    // Handle message type selection
+    $('#message-type').on('change', function() {
+        var messageType = $(this).val();
+        var $customField = $('#custom-message-field');
+        var $templateField = $('#template-preview-field');
+        
+        if (messageType === 'custom') {
+            $customField.show();
+            $templateField.hide();
+        } else {
+            $customField.hide();
+            $templateField.show();
+            
+            // Load template preview
+            loadTemplatePreview(messageType);
+        }
+    });
+    
+    // Function to load template preview
+    function loadTemplatePreview(templateId) {
+        var submissionId = $('#submission-id').val();
+        
+        $.ajax({
+            url: cf7Conversations.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'cf7_preview_email',
+                nonce: cf7Conversations.nonce,
+                template_id: templateId,
+                submission_id: submissionId
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('.preview-subject').html('<strong>Subject:</strong> ' + response.data.subject);
+                    $('.preview-body').html('<strong>Message:</strong><br>' + response.data.body.replace(/\n/g, '<br>'));
+                } else {
+                    $('.preview-subject').text('Error loading template');
+                    $('.preview-body').text('');
+                }
+            },
+            error: function() {
+                $('.preview-subject').text('Error loading template');
+                $('.preview-body').text('');
+            }
+        });
+    }
+    
     // Handle Ctrl+Enter shortcut for sending messages
     $('#message-body').on('keydown', function(e) {
         if (e.ctrlKey && e.which === 13) { // Ctrl+Enter
             $('#send-message-btn').trigger('click');
         }
     });
+    
+    // Handle message type change (custom vs template)
+    $('#message-type').on('change', function() {
+        var messageType = $(this).val();
+        var $customField = $('#custom-message-field');
+        var $previewField = $('#template-preview-field');
+        
+        if (messageType === 'custom') {
+            $customField.show();
+            $previewField.hide();
+        } else {
+            $customField.hide();
+            $previewField.show();
+            
+            // Load template preview
+            loadTemplatePreview(messageType);
+        }
+    });
+    
+    // Function to load template preview
+    function loadTemplatePreview(templateId) {
+        if (!templateId || templateId === 'custom') {
+            return;
+        }
+        
+        var submissionId = $('#submission-id').val();
+        var emailNonce = $('#cf7-email-nonce').val();
+        
+        // Check if we have the email nonce
+        if (!emailNonce) {
+            $('#template-preview-content').html('<p>Error: Email nonce not found</p>');
+            return;
+        }
+        
+        $.ajax({
+            url: cf7Conversations.ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'cf7_preview_email',
+                template_id: templateId,
+                submission_id: submissionId,
+                nonce: emailNonce // Use the email nonce, not conversation nonce
+            },
+            success: function(response) {
+                if (response.success && response.data) {
+                    $('#template-preview-content .preview-subject').html('<strong>Subject:</strong> ' + response.data.subject);
+                    $('#template-preview-content .preview-body').html('<strong>Body:</strong><br>' + response.data.body);
+                } else {
+                    var errorMsg = response.data && response.data.message ? response.data.message : 'Unknown error';
+                    $('#template-preview-content').html('<p>Error loading template preview: ' + errorMsg + '</p>');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Template preview AJAX error:', xhr, status, error);
+                $('#template-preview-content').html('<p>Error loading template preview: ' + error + '</p>');
+            }
+        });
+    }
     
     // Handle send message button
     $('#send-message-btn').on('click', function(e) {
@@ -55,16 +160,18 @@ jQuery(document).ready(function($) {
         
         var submissionId = $('#submission-id').val();
         var toEmail = $('#message-to').val();
-        var messageBody = $('#message-body').val();
+        var messageType = $('#message-type').val();
+        var messageBody = messageType === 'custom' ? $('#message-body').val() : '';
         
         console.log('Form values:', {
             submissionId: submissionId,
             toEmail: toEmail,
+            messageType: messageType,
             messageBody: messageBody
         });
         
         // Validation
-        if (!messageBody.trim()) {
+        if (messageType === 'custom' && !messageBody.trim()) {
             $status.text('Please enter a message').addClass('error');
             return;
         }
@@ -91,13 +198,16 @@ jQuery(document).ready(function($) {
                 nonce: cf7Conversations.nonce,
                 submission_id: submissionId,
                 to_email: toEmail,
+                message_type: messageType,
                 message_body: messageBody
             },
             success: function(response) {
                 console.log('AJAX success response:', response);
                 if (response.success) {
                     $status.text('Message sent!').addClass('success');
-                    $('#message-body').val('');
+                    if (messageType === 'custom') {
+                        $('#message-body').val('');
+                    }
                     
                     // Refresh the page to show the new message and scroll to bottom
                     setTimeout(function() {

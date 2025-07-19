@@ -21,6 +21,13 @@ class CF7_Artist_Submissions_Emails {
     private $temp_from_name = '';
     
     /**
+     * Get available email triggers
+     */
+    public function get_triggers() {
+        return $this->triggers;
+    }
+    
+    /**
      * Initialize the email system
      */
     public function init() {
@@ -55,8 +62,8 @@ class CF7_Artist_Submissions_Emails {
         // Removed admin menu hook - settings now handled by main settings class
         // add_action('admin_menu', array($this, 'add_email_settings_page'));
         
-        // Add meta box for email logs and manual sending
-        add_action('add_meta_boxes', array($this, 'add_email_meta_boxes'));
+        // Email meta box removed - email management now integrated into conversations
+        // add_action('add_meta_boxes', array($this, 'add_email_meta_boxes'));
         
         // Handle manual email sending and previews
         add_action('wp_ajax_cf7_send_manual_email', array($this, 'ajax_send_manual_email'));
@@ -1053,6 +1060,29 @@ class CF7_Artist_Submissions_Emails {
                     'email_sent',
                     json_encode($log_data)
                 );
+                
+                // Store in conversations system
+                if (class_exists('CF7_Artist_Submissions_Conversations')) {
+                    $current_user = wp_get_current_user();
+                    $from_name = $current_user->display_name ?: 'Administrator';
+                    
+                    // Store the clean template body, not the WooCommerce-formatted version
+                    $clean_body = $this->process_merge_tags($template['body'], $submission_id);
+                    $clean_body = wpautop($clean_body); // Only apply wpautop, not WooCommerce template
+                    
+                    CF7_Artist_Submissions_Conversations::store_conversation_message(
+                        $submission_id,
+                        'outbound',
+                        $from_email,
+                        $from_name,
+                        $to_email,
+                        '',
+                        $subject,
+                        $clean_body, // Use clean body instead of $body (which has WC formatting)
+                        true, // is_template
+                        $template_id
+                    );
+                }
                 
                 return true;
             } else {
