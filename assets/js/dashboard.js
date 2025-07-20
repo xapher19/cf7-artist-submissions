@@ -13,14 +13,29 @@
             this.loadingStates = {
                 submissions: false,
                 stats: false,
-                messages: false
+                messages: false,
+                actions: false
             };
 
             this.init();
         }
 
         init() {
+            // Check if required globals are available
+            if (typeof ajaxurl === 'undefined') {
+                console.error('ajaxurl is not defined');
+                this.showToast('AJAX URL not available', 'error');
+                return;
+            }
+            
+            if (typeof cf7_dashboard === 'undefined') {
+                console.error('cf7_dashboard object is not defined');
+                this.showToast('Dashboard configuration not available', 'error');
+                return;
+            }
+            
             this.bindEvents();
+            this.loadStats();
             this.loadOutstandingActions();
             this.loadSubmissions();
             this.loadRecentMessages();
@@ -28,18 +43,68 @@
         }
 
         bindEvents() {
-            // Search functionality
-            $(document).on('input', '.cf7-search-input', (e) => {
+            // Search functionality with new HTML structure - super responsive real-time search
+            $(document).on('input', '#cf7-search-input', (e) => {
                 clearTimeout(this.searchTimeout);
+                
+                // Add visual feedback while typing
+                const $searchContainer = $('.cf7-search-input-container');
+                $searchContainer.addClass('cf7-searching');
+                
                 this.searchTimeout = setTimeout(() => {
+                    this.currentPage = 1; // Reset to first page when searching
                     this.loadSubmissions();
-                }, 300);
+                    $searchContainer.removeClass('cf7-searching');
+                }, 300); // 300ms delay for responsive real-time search
             });
 
-            // Filter changes
-            $(document).on('change', '.cf7-filter-select', () => {
+            // Clear search when field is empty
+            $(document).on('keyup', '#cf7-search-input', (e) => {
+                if (e.target.value === '') {
+                    clearTimeout(this.searchTimeout);
+                    this.currentPage = 1;
+                    this.loadSubmissions();
+                }
+            });
+
+            // Date range validation
+            $(document).on('change', '#cf7-date-from', (e) => {
+                const fromDate = e.target.value;
+                const toDate = $('#cf7-date-to').val();
+                
+                if (fromDate && toDate && fromDate > toDate) {
+                    $('#cf7-date-to').val(fromDate);
+                }
+            });
+
+            $(document).on('change', '#cf7-date-to', (e) => {
+                const toDate = e.target.value;
+                const fromDate = $('#cf7-date-from').val();
+                
+                if (fromDate && toDate && toDate < fromDate) {
+                    $('#cf7-date-from').val(toDate);
+                }
+            });
+
+            // Date preset buttons
+            $(document).on('click', '.cf7-date-preset', (e) => {
+                const range = $(e.target).data('range');
+                this.setDateRange(range);
+                
+                // Update active state
+                $('.cf7-date-preset').removeClass('active');
+                $(e.target).addClass('active');
+            });
+
+            // Filter changes - fix status filter selector and add date filters
+            $(document).on('change', '#cf7-status-filter, #cf7-date-from, #cf7-date-to', () => {
                 this.currentPage = 1;
                 this.loadSubmissions();
+            });
+
+            // Custom status filter display update
+            $(document).on('change', '#cf7-status-filter', (e) => {
+                this.updateStatusFilterDisplay(e.target);
             });
 
             // Bulk selection
@@ -105,10 +170,49 @@
             });
         }
 
-        loadOutstandingActions() {
+        loadStats() {
             if (this.loadingStates.stats) return;
             
             this.loadingStates.stats = true;
+            this.showStatsLoading();
+
+            const data = {
+                action: 'cf7_dashboard_get_stats',
+                nonce: cf7_dashboard.nonce
+            };
+
+            console.log('Loading stats with data:', data);
+            console.log('Using ajaxurl:', ajaxurl);
+
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: data,
+                dataType: 'json'
+            })
+                .done((response) => {
+                    console.log('Stats response:', response);
+                    if (response && response.success) {
+                        this.renderStats(response.data);
+                    } else {
+                        console.error('Stats error:', response);
+                        this.showToast('Error loading stats: ' + (response?.data || 'Unknown error'), 'error');
+                    }
+                })
+                .fail((xhr, status, error) => {
+                    console.error('Stats AJAX failed:', xhr, status, error);
+                    console.error('Response text:', xhr.responseText);
+                    this.showToast('Failed to load statistics', 'error');
+                })
+                .always(() => {
+                    this.loadingStates.stats = false;
+                });
+        }
+
+        loadOutstandingActions() {
+            if (this.loadingStates.actions) return;
+            
+            this.loadingStates.actions = true;
             this.showActionsLoading();
 
             const data = {
@@ -117,23 +221,30 @@
             };
 
             console.log('Loading outstanding actions with data:', data);
+            console.log('Using ajaxurl:', ajaxurl);
 
-            $.post(ajaxurl, data)
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: data,
+                dataType: 'json'
+            })
                 .done((response) => {
                     console.log('Outstanding actions response:', response);
-                    if (response.success) {
+                    if (response && response.success) {
                         this.renderOutstandingActions(response.data);
                     } else {
-                        console.error('Outstanding actions error:', response.data);
-                        this.showToast('Error loading outstanding actions: ' + (response.data || 'Unknown error'), 'error');
+                        console.error('Outstanding actions error:', response);
+                        this.showToast('Error loading outstanding actions: ' + (response?.data || 'Unknown error'), 'error');
                     }
                 })
                 .fail((xhr, status, error) => {
                     console.error('Outstanding actions AJAX failed:', xhr, status, error);
+                    console.error('Response text:', xhr.responseText);
                     this.showToast('Failed to load outstanding actions', 'error');
                 })
                 .always(() => {
-                    this.loadingStates.stats = false;
+                    this.loadingStates.actions = false;
                     this.hideActionsLoading();
                 });
         }
@@ -148,15 +259,28 @@
                 action: 'cf7_dashboard_load_submissions',
                 nonce: cf7_dashboard.nonce,
                 page: this.currentPage,
-                search: $('.cf7-search-input').val(),
-                status: $('.cf7-status-filter').val(),
+                search: $('#cf7-search-input').val(),
+                status: $('#cf7-status-filter').val(),
+                date_from: $('#cf7-date-from').val(),
+                date_to: $('#cf7-date-to').val(),
                 orderby: $('.cf7-order-filter').val()
             };
 
+            // Log the data being sent for debugging
+            console.log('Loading submissions with filters:', {
+                search: data.search,
+                status: data.status,
+                date_from: data.date_from,
+                date_to: data.date_to,
+                page: data.page
+            });
+
             $.post(ajaxurl, data)
                 .done((response) => {
+                    console.log('Submissions response:', response);
                     if (response.success) {
                         this.renderSubmissions(response.data);
+                        this.updateFilterIndicators();
                     } else {
                         this.showToast(response.data || 'Error loading submissions', 'error');
                     }
@@ -189,6 +313,81 @@
                 .always(() => {
                     this.loadingStates.messages = false;
                 });
+        }
+
+        renderStats(stats) {
+            const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected', 'unread_messages'];
+            
+            statTypes.forEach(type => {
+                const $card = $(`.cf7-stat-card[data-type="${type}"]`);
+                let $number = $card.find('.cf7-stat-number');
+                
+                // If the stat card structure was destroyed, rebuild it
+                if ($number.length === 0) {
+                    const iconMap = {
+                        'total': 'dashicons-chart-bar',
+                        'new': 'dashicons-star-filled',
+                        'reviewed': 'dashicons-visibility',
+                        'awaiting-information': 'dashicons-clock',
+                        'selected': 'dashicons-yes-alt',
+                        'rejected': 'dashicons-dismiss',
+                        'unread_messages': 'dashicons-email'
+                    };
+                    
+                    const titleMap = {
+                        'total': 'Total Submissions',
+                        'new': 'New',
+                        'reviewed': 'Reviewed', 
+                        'awaiting-information': 'Awaiting Information',
+                        'selected': 'Selected',
+                        'rejected': 'Rejected',
+                        'unread_messages': 'Unread Messages'
+                    };
+                    
+                    const iconClass = `${type} ${iconMap[type] ? iconMap[type].replace('dashicons-', '') : 'chart-bar'}`;
+                    
+                    $card.html(`
+                        <div class="cf7-stat-header">
+                            <div class="cf7-stat-icon ${type}">
+                                <span class="dashicons ${iconMap[type] || 'dashicons-chart-bar'}"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>${titleMap[type] || type}</h3>
+                                <div class="cf7-stat-number">0</div>
+                            </div>
+                        </div>
+                    `);
+                    $number = $card.find('.cf7-stat-number');
+                }
+                
+                const value = stats[type] || 0;
+                
+                // Update the number
+                $number.text(value);
+                
+                // Update percentage change if available
+                const changeKey = `${type}_change`;
+                if (stats[changeKey] !== undefined) {
+                    let $change = $card.find('.cf7-stat-change');
+                    if ($change.length === 0) {
+                        $change = $('<div class="cf7-stat-change"></div>');
+                        $card.find('.cf7-stat-content').append($change);
+                    }
+                    
+                    const change = stats[changeKey];
+                    const changeText = change > 0 ? `+${change}%` : `${change}%`;
+                    const changeClass = change > 0 ? 'positive' : change < 0 ? 'negative' : 'neutral';
+                    
+                    $change
+                        .removeClass('positive negative neutral')
+                        .addClass(changeClass)
+                        .text(`${changeText} from last week`);
+                }
+            });
+            
+            // Update unread messages count in activity panel
+            const unreadCount = stats.unread_messages || 0;
+            $('#cf7-unread-messages-stat').text(unreadCount);
         }
 
         renderOutstandingActions(data) {
@@ -235,7 +434,9 @@
                             </div>
                         </div>
                         <div class="cf7-action-actions">
-                            <a href="${action.edit_link}" class="cf7-action-btn cf7-btn-primary">View</a>
+                            <a href="${action.edit_link}" class="cf7-action-btn cf7-btn-primary" title="View Submission">
+                                <span class="dashicons dashicons-visibility"></span>
+                            </a>
                         </div>
                     </div>
                 `;
@@ -250,6 +451,16 @@
             
             if (data.submissions && data.submissions.length > 0) {
                 let html = '';
+                
+                // Add search results indicator
+                const searchTerm = $('#cf7-search-input').val();
+                if (searchTerm && data.pagination) {
+                    html += `
+                        <div class="cf7-search-results-info">
+                            <small>Found ${data.pagination.total_items} result${data.pagination.total_items !== 1 ? 's' : ''} for "${searchTerm}"</small>
+                        </div>
+                    `;
+                }
                 
                 data.submissions.forEach(submission => {
                     html += this.buildSubmissionRow(submission);
@@ -266,16 +477,22 @@
         }
 
         buildSubmissionRow(submission) {
-            const date = new Date(submission.date);
+            // Parse the date properly from Y-m-d H:i:s format
+            const date = new Date(submission.date.replace(' ', 'T'));
             const formattedDate = date.toLocaleDateString();
-            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            // Only show time if it's not 00:00
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const formattedTime = (hours === 0 && minutes === 0) ? 
+                '' : 
+                date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             return `
                 <div class="cf7-submission-row" data-id="${submission.id}">
                     <input type="checkbox" class="cf7-submission-checkbox" value="${submission.id}">
                     <div class="cf7-submission-info">
                         <div class="cf7-submission-title">
-                            <a href="${submission.view_url}" target="_blank">${submission.title}</a>
+                            <a href="${submission.view_url}">${submission.title}</a>
                         </div>
                         <div class="cf7-submission-meta">
                             ${submission.email} • ID: ${submission.id}
@@ -283,30 +500,45 @@
                     </div>
                     <div class="cf7-submission-date">
                         <div class="cf7-submission-date-main">${formattedDate}</div>
-                        <div class="cf7-submission-date-time">${formattedTime}</div>
+                        ${formattedTime ? `<div class="cf7-submission-date-time">${formattedTime}</div>` : ''}
                     </div>
                     <div class="cf7-status-badge ${submission.status}">
                         <span class="cf7-status-dot"></span>
                         ${submission.status}
-                    </div>
-                    <div class="cf7-submission-actions">
-                        <button class="cf7-action-btn" data-action="view" title="View Submission">
-                            <span class="dashicons dashicons-visibility"></span>
-                        </button>
-                        <button class="cf7-action-btn" data-action="edit" title="Edit Status">
-                            <span class="dashicons dashicons-edit"></span>
-                        </button>
                     </div>
                 </div>
             `;
         }
 
         buildEmptyState() {
+            const searchTerm = $('#cf7-search-input').val();
+            const statusFilter = $('#cf7-status-filter').val();
+            const dateFrom = $('#cf7-date-from').val();
+            const dateTo = $('#cf7-date-to').val();
+            
+            let message = 'No submissions found';
+            let suggestion = 'Try adjusting your search or filter criteria.';
+            
+            const hasFilters = searchTerm || statusFilter || dateFrom || dateTo;
+            
+            if (hasFilters) {
+                const filterParts = [];
+                if (searchTerm) filterParts.push(`"${searchTerm}"`);
+                if (statusFilter) filterParts.push(`${statusFilter} status`);
+                if (dateFrom && dateTo) filterParts.push(`between ${dateFrom} and ${dateTo}`);
+                else if (dateFrom) filterParts.push(`from ${dateFrom}`);
+                else if (dateTo) filterParts.push(`until ${dateTo}`);
+                
+                message = `No submissions found ${filterParts.join(' with ')}`;
+                suggestion = 'Try adjusting your filters or expanding the date range.';
+            }
+            
             return `
                 <div class="cf7-loading-state">
-                    <div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>
-                    <h3>No submissions found</h3>
-                    <p>Try adjusting your search or filter criteria.</p>
+                    <div style="font-size: 2rem; margin-bottom: 1rem;">�</div>
+                    <h3>${message}</h3>
+                    <p>${suggestion}</p>
+                    ${hasFilters ? `<button class="cf7-btn cf7-btn-ghost" onclick="$('#cf7-search-input, #cf7-status-filter, #cf7-date-from, #cf7-date-to').val('').trigger('change')">Clear All Filters</button>` : ''}
                 </div>
             `;
         }
@@ -549,8 +781,10 @@
             const data = {
                 action: 'cf7_dashboard_export',
                 nonce: cf7_dashboard.nonce,
-                search: $('.cf7-search-input').val(),
-                status: $('.cf7-status-filter').val()
+                search: $('#cf7-search-input').val(),
+                status: $('#cf7-status-filter').val(),
+                date_from: $('#cf7-date-from').val(),
+                date_to: $('#cf7-date-to').val()
             };
 
             $.post(ajaxurl, data)
@@ -568,6 +802,7 @@
         }
 
         refreshAll() {
+            this.loadStats();
             this.loadOutstandingActions();
             this.loadSubmissions();
             this.loadRecentMessages();
@@ -577,10 +812,21 @@
             // Refresh data every 30 seconds
             setInterval(() => {
                 if (!document.hidden) {
+                    this.loadStats();
                     this.loadOutstandingActions();
                     this.loadRecentMessages();
                 }
             }, 30000);
+        }
+
+        showStatsLoading() {
+            $('.cf7-stat-card').each(function() {
+                const $card = $(this);
+                const $number = $card.find('.cf7-stat-number');
+                if ($number.length) {
+                    $number.html('<div class="cf7-loading-spinner" style="width: 20px; height: 20px; margin: 0;"></div>');
+                }
+            });
         }
 
         showActionsLoading() {
@@ -597,10 +843,13 @@
         }
 
         showSubmissionsLoading() {
+            const searchTerm = $('#cf7-search-input').val();
+            const loadingMessage = searchTerm ? `Searching for "${searchTerm}"...` : 'Loading submissions...';
+            
             $('.cf7-submissions-table').html(`
                 <div class="cf7-loading-state">
                     <div class="cf7-loading-spinner"></div>
-                    <div>Loading submissions...</div>
+                    <div>${loadingMessage}</div>
                 </div>
             `);
         }
@@ -733,6 +982,106 @@
             .fail(() => {
                 this.showToast('Failed to mark messages as read', 'error');
             });
+    };
+
+    CF7Dashboard.prototype.setDateRange = function(range) {
+        const today = new Date();
+        let fromDate = '';
+        let toDate = '';
+
+        switch(range) {
+            case 'today':
+                fromDate = toDate = today.toISOString().split('T')[0];
+                break;
+            case 'week':
+                // Last 7 days (including today)
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 6);
+                fromDate = sevenDaysAgo.toISOString().split('T')[0];
+                toDate = today.toISOString().split('T')[0];
+                break;
+            case 'month':
+                // Last 30 days (including today)
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(today.getDate() - 29);
+                fromDate = thirtyDaysAgo.toISOString().split('T')[0];
+                toDate = today.toISOString().split('T')[0];
+                break;
+            case 'clear':
+                fromDate = toDate = '';
+                break;
+        }
+
+        $('#cf7-date-from').val(fromDate);
+        $('#cf7-date-to').val(toDate);
+        
+        this.currentPage = 1;
+        this.loadSubmissions();
+    };
+
+    CF7Dashboard.prototype.updateFilterIndicators = function() {
+        const $filterBar = $('.cf7-date-filter-bar');
+        const hasDateFilter = $('#cf7-date-from').val() || $('#cf7-date-to').val();
+        const hasStatusFilter = $('#cf7-status-filter').val();
+        const hasSearchFilter = $('#cf7-search-input').val();
+        
+        // Add visual indicator if any filters are active
+        if (hasDateFilter || hasStatusFilter || hasSearchFilter) {
+            $filterBar.addClass('cf7-filters-active');
+            
+            // Show active filter summary
+            let filterSummary = [];
+            if (hasSearchFilter) filterSummary.push(`Search: "${hasSearchFilter}"`);
+            if (hasStatusFilter) filterSummary.push(`Status: ${hasStatusFilter}`);
+            if (hasDateFilter) {
+                const fromDate = $('#cf7-date-from').val();
+                const toDate = $('#cf7-date-to').val();
+                if (fromDate && toDate) {
+                    filterSummary.push(`Date: ${fromDate} to ${toDate}`);
+                } else if (fromDate) {
+                    filterSummary.push(`Date: from ${fromDate}`);
+                } else if (toDate) {
+                    filterSummary.push(`Date: until ${toDate}`);
+                }
+            }
+            
+            // Update or create filter summary element
+            let $summary = $('.cf7-filter-summary');
+            if ($summary.length === 0) {
+                $summary = $('<div class="cf7-filter-summary"></div>');
+                $('.cf7-date-filter-bar').append($summary);
+            }
+            $summary.html('<strong>Active filters:</strong> ' + filterSummary.join(', '));
+        } else {
+            $filterBar.removeClass('cf7-filters-active');
+            $('.cf7-filter-summary').remove();
+        }
+    };
+
+    CF7Dashboard.prototype.updateStatusFilterDisplay = function(select) {
+        const $select = $(select);
+        const $display = $('.cf7-status-filter-display');
+        const $icon = $display.find('.cf7-status-icon');
+        const $text = $display.find('.cf7-status-text');
+        
+        const selectedOption = $select.find('option:selected');
+        const value = selectedOption.val();
+        const text = selectedOption.text();
+        const icon = selectedOption.data('icon') || 'dashicons-category';
+        const color = selectedOption.data('color') || '#718096';
+        
+        // Update icon
+        $icon.removeClass().addClass('cf7-status-icon dashicons ' + icon);
+        $icon.css('color', color);
+        
+        // Update text
+        $text.text(text);
+        
+        // Update display status class
+        $display.removeClass('status-new status-reviewed status-awaiting-information status-selected status-rejected');
+        if (value) {
+            $display.addClass('status-' + value);
+        }
     };
 
     CF7Dashboard.prototype.escapeHtml = function(text) {
