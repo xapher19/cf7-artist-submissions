@@ -149,38 +149,53 @@ class CF7_Artist_Submissions_Dashboard {
                         <!-- Statistics Cards Grid (2 rows x 3 columns) -->
             <div class="cf7-stats-grid">
                 <!-- Row 1: Overview & Statuses -->
-                <div class="cf7-stat-card" data-type="total">
+                                <div class="cf7-stat-card" data-type="total">
                     <div class="cf7-stat-header">
-                        <div class="cf7-stat-icon total">
-                            <span class="dashicons dashicons-chart-bar"></span>
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon total">
+                                <span class="dashicons dashicons-chart-bar"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>Total Submissions</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['total']; ?></div>
+                            </div>
                         </div>
-                        <div class="cf7-stat-content">
-                            <h3>Total Submissions</h3>
-                            <div class="cf7-stat-number">0</div>
+                        <div class="cf7-stat-chart total" id="chart-total">
+                            <!-- Chart will be generated here -->
                         </div>
                     </div>
                 </div>
                 
                 <div class="cf7-stat-card" data-type="new">
                     <div class="cf7-stat-header">
-                        <div class="cf7-stat-icon new">
-                            <span class="dashicons dashicons-star-filled"></span>
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon new">
+                                <span class="dashicons dashicons-star-filled"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>New</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['new']; ?></div>
+                            </div>
                         </div>
-                        <div class="cf7-stat-content">
-                            <h3>New</h3>
-                            <div class="cf7-stat-number">0</div>
+                        <div class="cf7-stat-chart new" id="chart-new">
+                            <!-- Chart will be generated here -->
                         </div>
                     </div>
                 </div>
                 
                 <div class="cf7-stat-card" data-type="reviewed">
                     <div class="cf7-stat-header">
-                        <div class="cf7-stat-icon reviewed">
-                            <span class="dashicons dashicons-visibility"></span>
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon reviewed">
+                                <span class="dashicons dashicons-visibility"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>Reviewed</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['reviewed']; ?></div>
+                            </div>
                         </div>
-                        <div class="cf7-stat-content">
-                            <h3>Reviewed</h3>
-                            <div class="cf7-stat-number">0</div>
+                        <div class="cf7-stat-chart reviewed" id="chart-reviewed">
+                            <!-- Chart will be generated here -->
                         </div>
                     </div>
                 </div>
@@ -188,36 +203,51 @@ class CF7_Artist_Submissions_Dashboard {
                 <!-- Row 2: Status Workflow -->
                 <div class="cf7-stat-card" data-type="awaiting-information">
                     <div class="cf7-stat-header">
-                        <div class="cf7-stat-icon awaiting-information">
-                            <span class="dashicons dashicons-clock"></span>
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon awaiting-information">
+                                <span class="dashicons dashicons-clock"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>Awaiting Information</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['awaiting_information']; ?></div>
+                            </div>
                         </div>
-                        <div class="cf7-stat-content">
-                            <h3>Awaiting Information</h3>
-                            <div class="cf7-stat-number">0</div>
+                        <div class="cf7-stat-chart awaiting-information" id="chart-awaiting-information">
+                            <!-- Chart will be generated here -->
                         </div>
                     </div>
                 </div>
                 
                 <div class="cf7-stat-card" data-type="selected">
                     <div class="cf7-stat-header">
-                        <div class="cf7-stat-icon selected">
-                            <span class="dashicons dashicons-yes-alt"></span>
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon selected">
+                                <span class="dashicons dashicons-yes-alt"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>Selected</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['selected']; ?></div>
+                            </div>
                         </div>
-                        <div class="cf7-stat-content">
-                            <h3>Selected</h3>
-                            <div class="cf7-stat-number">0</div>
+                        <div class="cf7-stat-chart selected" id="chart-selected">
+                            <!-- Chart will be generated here -->
                         </div>
                     </div>
                 </div>
                 
                 <div class="cf7-stat-card" data-type="rejected">
                     <div class="cf7-stat-header">
-                        <div class="cf7-stat-icon rejected">
-                            <span class="dashicons dashicons-dismiss"></span>
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon rejected">
+                                <span class="dashicons dashicons-dismiss"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>Rejected</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['rejected']; ?></div>
+                            </div>
                         </div>
-                        <div class="cf7-stat-content">
-                            <h3>Rejected</h3>
-                            <div class="cf7-stat-number">0</div>
+                        <div class="cf7-stat-chart rejected" id="chart-rejected">
+                            <!-- Chart will be generated here -->
                         </div>
                     </div>
                 </div>
@@ -239,18 +269,38 @@ class CF7_Artist_Submissions_Dashboard {
                                 </div>
                             </div>
                             <div class="cf7-status-filter-wrapper">
-                                <select id="cf7-status-filter" class="cf7-status-filter">
-                                    <option value="" data-icon="dashicons-category" data-color="#718096">All Statuses</option>
-                                    <option value="new" data-icon="dashicons-star-filled" data-color="#4299e1">New</option>
-                                    <option value="reviewed" data-icon="dashicons-visibility" data-color="#9f7aea">Reviewed</option>
-                                    <option value="awaiting-information" data-icon="dashicons-clock" data-color="#dd6b20">Awaiting Information</option>
-                                    <option value="selected" data-icon="dashicons-yes-alt" data-color="#48bb78">Selected</option>
-                                    <option value="rejected" data-icon="dashicons-dismiss" data-color="#f56565">Rejected</option>
-                                </select>
-                                <div class="cf7-status-filter-display">
-                                    <span class="cf7-status-icon dashicons dashicons-category"></span>
-                                    <span class="cf7-status-text">All Statuses</span>
-                                    <span class="cf7-status-arrow dashicons dashicons-arrow-down-alt2"></span>
+                                <div class="cf7-status-filter-dropdown" data-current="">
+                                    <div class="cf7-status-filter-display">
+                                        <span class="cf7-status-icon dashicons dashicons-category" style="color: #718096;"></span>
+                                        <span class="cf7-status-text">All Statuses</span>
+                                        <span class="cf7-status-arrow dashicons dashicons-arrow-down-alt2"></span>
+                                    </div>
+                                    <div class="cf7-status-filter-menu">
+                                        <div class="cf7-status-filter-option active" data-value="" data-icon="dashicons-category" data-color="#718096">
+                                            <span class="cf7-status-icon dashicons dashicons-category" style="color: #718096;"></span>
+                                            <span class="cf7-status-label">All Statuses</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="new" data-icon="dashicons-star-filled" data-color="#4299e1">
+                                            <span class="cf7-status-icon dashicons dashicons-star-filled" style="color: #4299e1;"></span>
+                                            <span class="cf7-status-label">New</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="reviewed" data-icon="dashicons-visibility" data-color="#9f7aea">
+                                            <span class="cf7-status-icon dashicons dashicons-visibility" style="color: #9f7aea;"></span>
+                                            <span class="cf7-status-label">Reviewed</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="awaiting-information" data-icon="dashicons-clock" data-color="#dd6b20">
+                                            <span class="cf7-status-icon dashicons dashicons-clock" style="color: #dd6b20;"></span>
+                                            <span class="cf7-status-label">Awaiting Information</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="selected" data-icon="dashicons-yes-alt" data-color="#48bb78">
+                                            <span class="cf7-status-icon dashicons dashicons-yes-alt" style="color: #48bb78;"></span>
+                                            <span class="cf7-status-label">Selected</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="rejected" data-icon="dashicons-dismiss" data-color="#f56565">
+                                            <span class="cf7-status-icon dashicons dashicons-dismiss" style="color: #f56565;"></span>
+                                            <span class="cf7-status-label">Rejected</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -854,9 +904,11 @@ class CF7_Artist_Submissions_Dashboard {
         
         $changes = array();
         
-        foreach (['total', 'new', 'reviewed', 'awaiting_information', 'selected', 'rejected'] as $stat_type) {
-            $current = $current_stats[$stat_type];
-            $previous = $previous_stats[$stat_type] ?? 0;
+        foreach (['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected'] as $stat_type) {
+            // Convert underscore to hyphen for consistency with JavaScript
+            $current_key = str_replace('-', '_', $stat_type);
+            $current = $current_stats[$current_key];
+            $previous = $previous_stats[$current_key] ?? 0;
             
             if ($previous > 0) {
                 $change = (($current - $previous) / $previous) * 100;

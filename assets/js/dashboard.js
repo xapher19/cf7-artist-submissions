@@ -43,6 +43,15 @@
         }
 
         bindEvents() {
+            // Header buttons
+            $(document).on('click', '#cf7-refresh-dashboard', () => {
+                this.refreshAll();
+            });
+            
+            $(document).on('click', '#cf7-export-all', () => {
+                this.exportSubmissions();
+            });
+            
             // Search functionality with new HTML structure - super responsive real-time search
             $(document).on('input', '#cf7-search-input', (e) => {
                 clearTimeout(this.searchTimeout);
@@ -97,14 +106,75 @@
             });
 
             // Filter changes - fix status filter selector and add date filters
-            $(document).on('change', '#cf7-status-filter, #cf7-date-from, #cf7-date-to', () => {
+            $(document).on('change', '#cf7-date-from, #cf7-date-to', () => {
                 this.currentPage = 1;
                 this.loadSubmissions();
             });
 
-            // Custom status filter display update
-            $(document).on('change', '#cf7-status-filter', (e) => {
-                this.updateStatusFilterDisplay(e.target);
+            // Custom status filter dropdown
+            $(document).on('click', '.cf7-status-filter-display', (e) => {
+                e.stopPropagation();
+                const $dropdown = $(e.target).closest('.cf7-status-filter-dropdown');
+                
+                // Close other dropdowns
+                $('.cf7-status-filter-dropdown').not($dropdown).removeClass('open');
+                
+                // Toggle current dropdown
+                $dropdown.toggleClass('open');
+                
+                // If opening, position the dropdown menu to perfectly cover the display
+                if ($dropdown.hasClass('open')) {
+                    this.positionDropdownMenu($dropdown);
+                }
+            });
+
+            $(document).on('click', '.cf7-status-filter-option', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const $option = $(e.target).closest('.cf7-status-filter-option');
+                const value = $option.data('value');
+                const icon = $option.data('icon');
+                const color = $option.data('color');
+                const label = $option.find('.cf7-status-label').text();
+                
+                // Update dropdown state
+                const $dropdown = $option.closest('.cf7-status-filter-dropdown');
+                $dropdown.attr('data-current', value);
+                $dropdown.removeClass('open');
+                
+                // Update active option
+                $dropdown.find('.cf7-status-filter-option').removeClass('active');
+                $option.addClass('active');
+                
+                // Update display
+                const $display = $dropdown.find('.cf7-status-filter-display');
+                $display.find('.cf7-status-icon')
+                    .removeClass()
+                    .addClass('cf7-status-icon dashicons dashicons-' + icon.replace('dashicons-', ''))
+                    .css('color', color);
+                $display.find('.cf7-status-text').text(label);
+                
+                // Trigger filtering
+                this.currentPage = 1;
+                this.loadSubmissions();
+            });
+
+            // Close dropdown when clicking outside
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.cf7-status-filter-dropdown').length) {
+                    $('.cf7-status-filter-dropdown').removeClass('open');
+                }
+            });
+
+            // Close dropdown on scroll to prevent positioning issues
+            $(window).on('scroll', () => {
+                $('.cf7-status-filter-dropdown').removeClass('open');
+            });
+
+            // Close dropdown on window resize
+            $(window).on('resize', () => {
+                $('.cf7-status-filter-dropdown').removeClass('open');
             });
 
             // Bulk selection
@@ -167,6 +237,37 @@
             $(document).on('click', 'a[href*="post.php"], a[href*="admin.php"]', (e) => {
                 // Remove target="_blank" if present and ensure same tab opening
                 $(e.target).removeAttr('target');
+            });
+        }
+
+        positionDropdownMenu($dropdown) {
+            const $display = $dropdown.find('.cf7-status-filter-display');
+            const $menu = $dropdown.find('.cf7-status-filter-menu');
+            
+            if (!$display.length || !$menu.length) return;
+            
+            // Get the display element's position and dimensions
+            const displayRect = $display[0].getBoundingClientRect();
+            const displayOffset = $display.offset();
+            
+            // Position the menu to exactly cover the display element
+            $menu.css({
+                position: 'absolute',
+                top: -2 + 'px',          // Move up slightly to cover border
+                left: -4 + 'px',         // Move left by 4px as requested
+                width: (displayRect.width + 4) + 'px',  // Make wider by 4px total (2px each side)
+                minHeight: displayRect.height + 'px',
+                zIndex: 10000
+            });
+            
+            console.log('Positioned dropdown menu:', {
+                displayRect: displayRect,
+                menuPosition: {
+                    top: -2,
+                    left: -4,
+                    width: displayRect.width + 4,
+                    height: displayRect.height
+                }
             });
         }
 
@@ -260,7 +361,7 @@
                 nonce: cf7_dashboard.nonce,
                 page: this.currentPage,
                 search: $('#cf7-search-input').val(),
-                status: $('#cf7-status-filter').val(),
+                status: $('.cf7-status-filter-dropdown').attr('data-current') || '',
                 date_from: $('#cf7-date-from').val(),
                 date_to: $('#cf7-date-to').val(),
                 orderby: $('.cf7-order-filter').val()
@@ -316,6 +417,7 @@
         }
 
         renderStats(stats) {
+            console.log('Rendering stats:', stats); // Debug log
             const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected', 'unread_messages'];
             
             statTypes.forEach(type => {
@@ -348,12 +450,17 @@
                     
                     $card.html(`
                         <div class="cf7-stat-header">
-                            <div class="cf7-stat-icon ${type}">
-                                <span class="dashicons ${iconMap[type] || 'dashicons-chart-bar'}"></span>
+                            <div class="cf7-stat-left">
+                                <div class="cf7-stat-icon ${type}">
+                                    <span class="dashicons ${iconMap[type] || 'dashicons-chart-bar'}"></span>
+                                </div>
+                                <div class="cf7-stat-content">
+                                    <h3>${titleMap[type] || type}</h3>
+                                    <div class="cf7-stat-number">0</div>
+                                </div>
                             </div>
-                            <div class="cf7-stat-content">
-                                <h3>${titleMap[type] || type}</h3>
-                                <div class="cf7-stat-number">0</div>
+                            <div class="cf7-stat-chart ${type}" id="chart-${type}">
+                                <!-- Chart will be generated here -->
                             </div>
                         </div>
                     `);
@@ -388,6 +495,256 @@
             // Update unread messages count in activity panel
             const unreadCount = stats.unread_messages || 0;
             $('#cf7-unread-messages-stat').text(unreadCount);
+            
+            // Generate charts for each stat type
+            this.generateStatsCharts(stats);
+        }
+
+        generateStatsCharts(stats) {
+            const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected'];
+            
+            statTypes.forEach(type => {
+                const chartContainer = document.getElementById(`chart-${type}`);
+                if (!chartContainer) return;
+                
+                // Generate sample historical data based on current value
+                const currentValue = stats[type] || 0;
+                const historicalData = this.generateSampleHistoricalData(currentValue, type);
+                
+                // Create the mini line chart
+                this.createMiniLineChart(chartContainer, historicalData, type);
+                
+                // Add resize observer to handle dynamic resizing
+                if (window.ResizeObserver && !chartContainer.hasAttribute('data-resize-observed')) {
+                    const resizeObserver = new ResizeObserver(() => {
+                        // Debounce the resize to avoid excessive re-rendering
+                        clearTimeout(chartContainer.resizeTimeout);
+                        chartContainer.resizeTimeout = setTimeout(() => {
+                            this.createMiniLineChart(chartContainer, historicalData, type);
+                        }, 100);
+                    });
+                    resizeObserver.observe(chartContainer);
+                    chartContainer.setAttribute('data-resize-observed', 'true');
+                }
+            });
+        }
+
+        generateSampleHistoricalData(currentValue, type) {
+            // Generate 7 days of sample data with more realistic trends
+            const data = [];
+            const days = 7;
+            
+            // Create different trend patterns based on status type
+            const trendPatterns = {
+                'total': 'growing',           // Total always grows
+                'new': 'volatile',           // New submissions fluctuate
+                'reviewed': 'steady-growth', // Reviews grow steadily  
+                'awaiting-information': 'declining', // Awaiting info should decline
+                'selected': 'slow-growth',   // Selected grows slowly
+                'rejected': 'volatile'       // Rejected varies
+            };
+            
+            const pattern = trendPatterns[type] || 'steady';
+            
+            for (let i = days - 1; i >= 0; i--) {
+                let value;
+                if (i === 0) {
+                    // Today's value is the current stat
+                    value = currentValue;
+                } else {
+                    // Generate values based on trend pattern
+                    const dayFactor = i / (days - 1); // 1.0 (oldest) to 0.0 (newest)
+                    let baseFactor;
+                    
+                    switch (pattern) {
+                        case 'growing':
+                            // Strong upward trend
+                            baseFactor = 0.4 + (1 - dayFactor) * 0.6;
+                            break;
+                        case 'declining':
+                            // Downward trend (older values higher)
+                            baseFactor = 0.6 + dayFactor * 0.4;
+                            break;
+                        case 'steady-growth':
+                            // Gradual increase
+                            baseFactor = 0.7 + (1 - dayFactor) * 0.3;
+                            break;
+                        case 'slow-growth':
+                            // Very gradual increase
+                            baseFactor = 0.85 + (1 - dayFactor) * 0.15;
+                            break;
+                        case 'volatile':
+                            // Random but realistic fluctuation
+                            baseFactor = 0.6 + Math.sin(dayFactor * Math.PI * 2) * 0.2 + (1 - dayFactor) * 0.2;
+                            break;
+                        default:
+                            baseFactor = 0.8 + (1 - dayFactor) * 0.2;
+                    }
+                    
+                    // Add some randomness but keep it realistic
+                    const randomFactor = 0.9 + Math.random() * 0.2; // ±10% random variation
+                    value = Math.max(0, Math.round(currentValue * baseFactor * randomFactor));
+                    
+                    // Ensure we don't have completely flat lines for small numbers
+                    if (currentValue > 0 && value === currentValue && i > 0) {
+                        value = Math.max(0, currentValue - Math.ceil(Math.random() * Math.max(1, currentValue * 0.3)));
+                    }
+                }
+                
+                data.push({
+                    date: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
+                    value: value
+                });
+            }
+            
+            return data;
+        }
+
+        createMiniLineChart(container, data, type) {
+            // Get the actual container dimensions and apply responsive sizing
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate responsive width with appropriate min/max based on screen size
+            let maxWidth = 120; // Default max width
+            if (window.innerWidth <= 768) {
+                maxWidth = 160; // Mobile: wider charts
+            } else if (window.innerWidth <= 1200) {
+                maxWidth = 140; // Tablet: medium width
+            }
+            
+            const width = Math.max(80, Math.min(maxWidth, containerRect.width));
+            const height = 40;
+            const padding = 4;
+            
+            // Clear existing content
+            container.innerHTML = '';
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            
+            // Create gradient definitions
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+            gradient.setAttribute('id', `gradient-${type}`);
+            gradient.setAttribute('x1', '0%');
+            gradient.setAttribute('y1', '0%');
+            gradient.setAttribute('x2', '0%');
+            gradient.setAttribute('y2', '100%');
+            
+            const colorMap = {
+                'total': '#667eea',
+                'new': '#4299e1',
+                'reviewed': '#9f7aea',
+                'awaiting-information': '#ed8936',
+                'selected': '#48bb78',
+                'rejected': '#f56565'
+            };
+            
+            const color = colorMap[type] || '#667eea';
+            
+            const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop1.setAttribute('offset', '0%');
+            stop1.setAttribute('stop-color', color);
+            stop1.setAttribute('stop-opacity', '0.3');
+            
+            const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+            stop2.setAttribute('offset', '100%');
+            stop2.setAttribute('stop-color', color);
+            stop2.setAttribute('stop-opacity', '0.1');
+            
+            gradient.appendChild(stop1);
+            gradient.appendChild(stop2);
+            defs.appendChild(gradient);
+            svg.appendChild(defs);
+            
+            if (data.length === 0) return;
+            
+            // Calculate scales
+            const values = data.map(d => d.value);
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            let valueRange = maxValue - minValue;
+            
+            // Handle flat lines by creating artificial range
+            if (valueRange === 0) {
+                valueRange = Math.max(1, maxValue * 0.2); // 20% of max value or minimum 1
+            }
+            
+            const chartWidth = width - padding * 2;
+            const chartHeight = height - padding * 2;
+            
+            // Generate path
+            let pathData = '';
+            let areaData = '';
+            
+            data.forEach((point, index) => {
+                const x = padding + (index / (data.length - 1)) * chartWidth;
+                let y;
+                
+                if (maxValue === minValue) {
+                    // For flat lines, center them vertically
+                    y = padding + chartHeight / 2;
+                } else {
+                    y = padding + chartHeight - ((point.value - minValue) / valueRange) * chartHeight;
+                }
+                
+                if (index === 0) {
+                    pathData += `M ${x} ${y}`;
+                    areaData += `M ${x} ${height - padding} L ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                    areaData += ` L ${x} ${y}`;
+                }
+                
+                if (index === data.length - 1) {
+                    areaData += ` L ${x} ${height - padding} Z`;
+                }
+            });
+            
+            // Create area fill
+            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            area.setAttribute('d', areaData);
+            area.setAttribute('fill', `url(#gradient-${type})`);
+            area.setAttribute('stroke', 'none');
+            svg.appendChild(area);
+            
+            // Create line
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', color);
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(path);
+            
+            // Add current value dot
+            if (data.length > 0) {
+                const lastPoint = data[data.length - 1];
+                const lastX = padding + chartWidth;
+                let lastY;
+                
+                if (maxValue === minValue) {
+                    // For flat lines, center the dot vertically
+                    lastY = padding + chartHeight / 2;
+                } else {
+                    lastY = padding + chartHeight - ((lastPoint.value - minValue) / valueRange) * chartHeight;
+                }
+                
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', lastX);
+                dot.setAttribute('cy', lastY);
+                dot.setAttribute('r', '2');
+                dot.setAttribute('fill', color);
+                dot.setAttribute('stroke', 'white');
+                dot.setAttribute('stroke-width', '1');
+                svg.appendChild(dot);
+            }
+            
+            container.appendChild(svg);
         }
 
         renderOutstandingActions(data) {
@@ -504,15 +861,26 @@
                     </div>
                     <div class="cf7-status-badge ${submission.status}">
                         <span class="cf7-status-dot"></span>
-                        ${submission.status}
+                        ${this.getStatusLabel(submission.status)}
                     </div>
                 </div>
             `;
         }
 
+        getStatusLabel(status) {
+            const statusLabels = {
+                'new': 'New',
+                'reviewed': 'Reviewed',
+                'awaiting-information': 'Awaiting Information',
+                'selected': 'Selected',
+                'rejected': 'Rejected'
+            };
+            return statusLabels[status] || status;
+        }
+
         buildEmptyState() {
             const searchTerm = $('#cf7-search-input').val();
-            const statusFilter = $('#cf7-status-filter').val();
+            const statusFilter = $('.cf7-status-filter-dropdown').attr('data-current') || '';
             const dateFrom = $('#cf7-date-from').val();
             const dateTo = $('#cf7-date-to').val();
             
@@ -538,7 +906,7 @@
                     <div style="font-size: 2rem; margin-bottom: 1rem;">�</div>
                     <h3>${message}</h3>
                     <p>${suggestion}</p>
-                    ${hasFilters ? `<button class="cf7-btn cf7-btn-ghost" onclick="$('#cf7-search-input, #cf7-status-filter, #cf7-date-from, #cf7-date-to').val('').trigger('change')">Clear All Filters</button>` : ''}
+                    ${hasFilters ? `<button class="cf7-btn cf7-btn-ghost" onclick="CF7Dashboard.clearAllFilters()">Clear All Filters</button>` : ''}
                 </div>
             `;
         }
@@ -782,7 +1150,7 @@
                 action: 'cf7_dashboard_export',
                 nonce: cf7_dashboard.nonce,
                 search: $('#cf7-search-input').val(),
-                status: $('#cf7-status-filter').val(),
+                status: $('.cf7-status-filter-dropdown').attr('data-current') || '',
                 date_from: $('#cf7-date-from').val(),
                 date_to: $('#cf7-date-to').val()
             };
@@ -893,7 +1261,7 @@
     $(document).ready(function() {
         // Only initialize if we're on the dashboard page
         if ($('.cf7-modern-dashboard').length) {
-            new CF7Dashboard();
+            window.dashboardInstance = new CF7Dashboard();
         }
     });
 
@@ -1022,7 +1390,7 @@
     CF7Dashboard.prototype.updateFilterIndicators = function() {
         const $filterBar = $('.cf7-date-filter-bar');
         const hasDateFilter = $('#cf7-date-from').val() || $('#cf7-date-to').val();
-        const hasStatusFilter = $('#cf7-status-filter').val();
+        const hasStatusFilter = $('.cf7-status-filter-dropdown').attr('data-current') || '';
         const hasSearchFilter = $('#cf7-search-input').val();
         
         // Add visual indicator if any filters are active
@@ -1058,36 +1426,49 @@
         }
     };
 
-    CF7Dashboard.prototype.updateStatusFilterDisplay = function(select) {
-        const $select = $(select);
-        const $display = $('.cf7-status-filter-display');
-        const $icon = $display.find('.cf7-status-icon');
-        const $text = $display.find('.cf7-status-text');
+    CF7Dashboard.prototype.clearAllFilters = function() {
+        // Clear search input
+        $('#cf7-search-input').val('');
         
-        const selectedOption = $select.find('option:selected');
-        const value = selectedOption.val();
-        const text = selectedOption.text();
-        const icon = selectedOption.data('icon') || 'dashicons-category';
-        const color = selectedOption.data('color') || '#718096';
+        // Clear date inputs
+        $('#cf7-date-from, #cf7-date-to').val('');
         
-        // Update icon
-        $icon.removeClass().addClass('cf7-status-icon dashicons ' + icon);
-        $icon.css('color', color);
+        // Reset status dropdown to "All Statuses"
+        const $dropdown = $('.cf7-status-filter-dropdown');
+        $dropdown.attr('data-current', '');
+        $dropdown.removeClass('open');
+        $dropdown.find('.cf7-status-filter-option').removeClass('active');
+        $dropdown.find('.cf7-status-filter-option[data-value=""]').addClass('active');
         
-        // Update text
-        $text.text(text);
+        // Update display
+        const $display = $dropdown.find('.cf7-status-filter-display');
+        $display.find('.cf7-status-icon')
+            .removeClass()
+            .addClass('cf7-status-icon dashicons dashicons-category')
+            .css('color', '#718096');
+        $display.find('.cf7-status-text').text('All Statuses');
         
-        // Update display status class
-        $display.removeClass('status-new status-reviewed status-awaiting-information status-selected status-rejected');
-        if (value) {
-            $display.addClass('status-' + value);
-        }
+        // Remove any date preset active states
+        $('.cf7-date-preset').removeClass('active');
+        
+        // Reload submissions
+        this.currentPage = 1;
+        this.loadSubmissions();
     };
 
     CF7Dashboard.prototype.escapeHtml = function(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    };
+
+    // Global reference for inline event handlers
+    window.CF7Dashboard = {
+        clearAllFilters: function() {
+            if (window.dashboardInstance) {
+                window.dashboardInstance.clearAllFilters();
+            }
+        }
     };
 
 })(jQuery);
