@@ -16,6 +16,7 @@ class CF7_Artist_Submissions_Dashboard {
         add_action('wp_ajax_cf7_dashboard_get_stats', array($this, 'ajax_get_stats'));
         add_action('wp_ajax_cf7_dashboard_get_outstanding_actions', array($this, 'ajax_get_outstanding_actions'));
         add_action('wp_ajax_cf7_dashboard_export', array($this, 'ajax_export'));
+        add_action('wp_ajax_cf7_dashboard_download_csv', array($this, 'ajax_download_csv'));
         add_action('wp_ajax_cf7_dashboard_submission_action', array($this, 'ajax_submission_action'));
         add_action('wp_ajax_cf7_dashboard_mark_message_read', array($this, 'ajax_mark_message_read'));
         add_action('wp_ajax_cf7_dashboard_mark_submission_read', array($this, 'ajax_mark_submission_read'));
@@ -131,7 +132,7 @@ class CF7_Artist_Submissions_Dashboard {
             <div class="cf7-dashboard-header">
                 <div class="cf7-header-content">
                     <h1 class="cf7-dashboard-title">Artist Submissions Dashboard</h1>
-                    <p class="cf7-dashboard-subtitle">Manage and review artist submissions with powerful tools</p>
+                    <p class="cf7-dashboard-subtitle">Manage and review artist submissions</p>
                 </div>
                 <div class="cf7-header-actions">
                     <button class="cf7-btn cf7-btn-primary" id="cf7-refresh-dashboard">
@@ -310,23 +311,66 @@ class CF7_Artist_Submissions_Dashboard {
                     <div class="cf7-date-filter-bar">
                         <div class="cf7-date-filter-container">
                             <span class="cf7-filter-label">Filter by Date:</span>
-                            <div class="cf7-date-inputs">
-                                <input type="date" id="cf7-date-from" class="cf7-date-input" placeholder="From date">
-                                <span class="cf7-date-separator">to</span>
-                                <input type="date" id="cf7-date-to" class="cf7-date-input" placeholder="To date">
+                            
+                            <!-- Modern Calendar Date Picker -->
+                            <div class="cf7-calendar-date-picker">
+                                <div class="cf7-calendar-trigger" tabindex="0" role="button" aria-label="Select date range">
+                                    <span class="cf7-calendar-icon"></span>
+                                    <span class="cf7-calendar-text">Select date range</span>
+                                    <span class="cf7-calendar-arrow">▼</span>
+                                </div>
+                                
+                                <div class="cf7-calendar-dropdown">
+                                    <div class="cf7-calendar-header">
+                                        <button type="button" class="cf7-calendar-nav" data-action="prev-month">‹</button>
+                                        <div class="cf7-calendar-month-year">
+                                            <span class="cf7-calendar-month">January</span>
+                                            <span class="cf7-calendar-year">2025</span>
+                                        </div>
+                                        <button type="button" class="cf7-calendar-nav" data-action="next-month">›</button>
+                                    </div>
+                                    
+                                    <div class="cf7-calendar-weekdays">
+                                        <div class="cf7-calendar-weekday">Su</div>
+                                        <div class="cf7-calendar-weekday">Mo</div>
+                                        <div class="cf7-calendar-weekday">Tu</div>
+                                        <div class="cf7-calendar-weekday">We</div>
+                                        <div class="cf7-calendar-weekday">Th</div>
+                                        <div class="cf7-calendar-weekday">Fr</div>
+                                        <div class="cf7-calendar-weekday">Sa</div>
+                                    </div>
+                                    
+                                    <div class="cf7-calendar-grid" id="cf7-calendar-grid">
+                                        <!-- Calendar days will be populated by JavaScript -->
+                                    </div>
+                                    
+                                    <div class="cf7-calendar-footer">
+                                        <div class="cf7-calendar-presets">
+                                            <button type="button" class="cf7-calendar-preset" data-range="today">Today</button>
+                                            <button type="button" class="cf7-calendar-preset" data-range="week">Last 7 Days</button>
+                                            <button type="button" class="cf7-calendar-preset" data-range="month">Last 30 Days</button>
+                                        </div>
+                                        <div class="cf7-calendar-actions">
+                                            <button type="button" class="cf7-calendar-clear">Clear</button>
+                                            <button type="button" class="cf7-calendar-apply">Apply</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="cf7-date-presets">
-                                <button type="button" class="cf7-date-preset" data-range="today">Today</button>
-                                <button type="button" class="cf7-date-preset" data-range="week">Last 7 Days</button>
-                                <button type="button" class="cf7-date-preset" data-range="month">Last 30 Days</button>
-                                <button type="button" class="cf7-date-preset" data-range="clear">Clear</button>
-                            </div>
+                            
+                            <!-- Hidden date inputs for compatibility -->
+                            <input type="hidden" id="cf7-date-from" class="cf7-date-input">
+                            <input type="hidden" id="cf7-date-to" class="cf7-date-input">
                         </div>
                     </div>
                     
                     <!-- Bulk Actions Bar -->
                     <div class="cf7-bulk-actions" id="cf7-bulk-actions" style="display: none;">
                         <div class="cf7-bulk-left">
+                            <label class="cf7-select-all-wrapper">
+                                <input type="checkbox" class="cf7-select-all">
+                                <span class="cf7-select-all-label">Select All</span>
+                            </label>
                             <span class="cf7-selected-count">0 items selected</span>
                         </div>
                         <div class="cf7-bulk-right">
@@ -764,8 +808,49 @@ class CF7_Artist_Submissions_Dashboard {
         
         wp_send_json_success(array(
             'message' => 'Export generated successfully',
-            'download_url' => $download_url
+            'download_url' => $download_url,
+            'filename' => $filename
         ));
+    }
+    
+    public function ajax_download_csv() {
+        // Check nonce
+        if (!wp_verify_nonce($_GET['nonce'], 'cf7_dashboard_nonce')) {
+            wp_die('Invalid nonce');
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+        }
+        
+        $filename = sanitize_file_name($_GET['file']);
+        if (empty($filename)) {
+            wp_die('Invalid filename');
+        }
+        
+        $upload_dir = wp_upload_dir();
+        $filepath = $upload_dir['path'] . '/' . $filename;
+        
+        // Verify file exists and is a CSV
+        if (!file_exists($filepath) || pathinfo($filepath, PATHINFO_EXTENSION) !== 'csv') {
+            wp_die('File not found or invalid file type');
+        }
+        
+        // Set headers for download
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($filepath));
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        // Output file content
+        readfile($filepath);
+        
+        // Clean up - delete the temporary file
+        unlink($filepath);
+        
+        exit;
     }
     
     public function ajax_get_outstanding_actions() {

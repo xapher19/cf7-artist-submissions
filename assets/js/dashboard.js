@@ -39,6 +39,7 @@
             this.loadOutstandingActions();
             this.loadSubmissions();
             this.loadRecentMessages();
+            // Start lightweight polling only for unread messages
             this.startPolling();
         }
 
@@ -76,34 +77,8 @@
                 }
             });
 
-            // Date range validation
-            $(document).on('change', '#cf7-date-from', (e) => {
-                const fromDate = e.target.value;
-                const toDate = $('#cf7-date-to').val();
-                
-                if (fromDate && toDate && fromDate > toDate) {
-                    $('#cf7-date-to').val(fromDate);
-                }
-            });
-
-            $(document).on('change', '#cf7-date-to', (e) => {
-                const toDate = e.target.value;
-                const fromDate = $('#cf7-date-from').val();
-                
-                if (fromDate && toDate && toDate < fromDate) {
-                    $('#cf7-date-from').val(toDate);
-                }
-            });
-
-            // Date preset buttons
-            $(document).on('click', '.cf7-date-preset', (e) => {
-                const range = $(e.target).data('range');
-                this.setDateRange(range);
-                
-                // Update active state
-                $('.cf7-date-preset').removeClass('active');
-                $(e.target).addClass('active');
-            });
+            // Modern Calendar Date Picker Events
+            this.initCalendarDatePicker();
 
             // Filter changes - fix status filter selector and add date filters
             $(document).on('change', '#cf7-date-from, #cf7-date-to', () => {
@@ -189,8 +164,13 @@
             });
 
             // Bulk actions
-            $(document).on('click', '.cf7-bulk-action-btn', (e) => {
-                const action = $(e.target).data('action');
+            $(document).on('click', '#cf7-apply-bulk', (e) => {
+                e.preventDefault();
+                const action = $('#cf7-bulk-action-select').val();
+                if (!action) {
+                    this.showToast('Please select an action', 'info');
+                    return;
+                }
                 this.performBulkAction(action);
             });
 
@@ -1043,12 +1023,24 @@
             const count = this.selectedItems.size;
             const $bulkActions = $('.cf7-bulk-actions');
             const $selectedCount = $('.cf7-selected-count');
+            const totalVisible = $('.cf7-submission-checkbox').length;
+            const $selectAll = $('.cf7-select-all');
 
             if (count > 0) {
                 $bulkActions.slideDown(200);
                 $selectedCount.text(`${count} item${count !== 1 ? 's' : ''} selected`);
+                
+                // Update select all checkbox state
+                if (count === totalVisible && totalVisible > 0) {
+                    $selectAll.prop('checked', true).prop('indeterminate', false);
+                } else if (count > 0) {
+                    $selectAll.prop('checked', false).prop('indeterminate', true);
+                } else {
+                    $selectAll.prop('checked', false).prop('indeterminate', false);
+                }
             } else {
                 $bulkActions.slideUp(200);
+                $selectAll.prop('checked', false).prop('indeterminate', false);
             }
         }
 
@@ -1058,9 +1050,11 @@
                 return;
             }
 
-            const confirmActions = ['delete', 'export'];
+            console.log('Performing bulk action:', action, 'on items:', Array.from(this.selectedItems));
+
+            const confirmActions = ['delete'];
             if (confirmActions.includes(action)) {
-                const actionName = action === 'delete' ? 'delete' : 'export';
+                const actionName = action === 'delete' ? 'delete' : action;
                 if (!confirm(`Are you sure you want to ${actionName} ${this.selectedItems.size} item(s)?`)) {
                     return;
                 }
@@ -1073,21 +1067,26 @@
                 ids: Array.from(this.selectedItems)
             };
 
+            console.log('Sending bulk action data:', data);
+
             $.post(ajaxurl, data)
                 .done((response) => {
+                    console.log('Bulk action response:', response);
                     if (response.success) {
                         this.showToast(response.data.message || 'Action completed successfully', 'success');
                         
                         if (action === 'export' && response.data.download_url) {
-                            window.open(response.data.download_url, '_blank');
+                            this.triggerDownload(response.data.download_url, response.data.filename || 'cf7-submissions-export.csv');
                         }
                         
-                        this.refreshAll();
+                        // Only refresh submissions and stats after bulk actions, not messages/actions
+                        this.refreshSubmissions();
                     } else {
                         this.showToast(response.data || 'Action failed', 'error');
                     }
                 })
-                .fail(() => {
+                .fail((xhr, status, error) => {
+                    console.error('Bulk action failed:', xhr, status, error);
                     this.showToast('Failed to perform action', 'error');
                 });
         }
@@ -1121,7 +1120,8 @@
                 .done((response) => {
                     if (response.success) {
                         this.showToast(response.data.message || 'Action completed successfully', 'success');
-                        this.refreshAll();
+                        // Submission actions usually affect submissions and stats, not messages
+                        this.refreshSubmissions();
                     } else {
                         this.showToast(response.data || 'Action failed', 'error');
                     }
@@ -1146,7 +1146,8 @@
                     .done((response) => {
                         if (response.success) {
                             this.showToast('Status updated successfully', 'success');
-                            this.refreshAll();
+                            // Status updates affect submissions and stats
+                            this.refreshSubmissions();
                         } else {
                             this.showToast(response.data || 'Failed to update status', 'error');
                         }
@@ -1170,8 +1171,8 @@
             $.post(ajaxurl, data)
                 .done((response) => {
                     if (response.success && response.data.download_url) {
-                        window.open(response.data.download_url, '_blank');
-                        this.showToast('Export started - download will begin shortly', 'success');
+                        this.triggerDownload(response.data.download_url, response.data.filename || 'cf7-submissions-export.csv');
+                        this.showToast('Export completed - download started', 'success');
                     } else {
                         this.showToast(response.data || 'Export failed', 'error');
                     }
@@ -1188,15 +1189,39 @@
             this.loadRecentMessages();
         }
 
+        // Selective refresh methods for better performance
+        refreshSubmissions() {
+            // Only refresh submissions list and stats
+            this.loadSubmissions();
+            this.loadStats();
+        }
+
+        refreshMessages() {
+            // Only refresh messages
+            this.loadRecentMessages();
+        }
+
+        refreshStats() {
+            // Only refresh stats
+            this.loadStats();
+        }
+
         startPolling() {
-            // Refresh data every 30 seconds
-            setInterval(() => {
+            // Only poll for unread messages every 2 minutes (less frequent)
+            // Don't poll stats or actions automatically - they should refresh on user action
+            this.pollingInterval = setInterval(() => {
                 if (!document.hidden) {
-                    this.loadStats();
-                    this.loadOutstandingActions();
+                    // Only refresh unread messages count to show new messages
                     this.loadRecentMessages();
                 }
-            }, 30000);
+            }, 120000); // 2 minutes instead of 30 seconds
+        }
+
+        stopPolling() {
+            if (this.pollingInterval) {
+                clearInterval(this.pollingInterval);
+                this.pollingInterval = null;
+            }
         }
 
         showStatsLoading() {
@@ -1267,6 +1292,32 @@
                 });
             }, 5000);
         }
+
+        /**
+         * Trigger file download using AJAX endpoint with proper headers
+         */
+        triggerDownload(url, filename) {
+            // Extract filename from URL if not provided
+            if (!filename) {
+                const urlParts = url.split('/');
+                filename = urlParts[urlParts.length - 1];
+            }
+            
+            // Create download URL using our AJAX endpoint
+            const downloadUrl = ajaxurl + '?action=cf7_dashboard_download_csv&nonce=' + 
+                encodeURIComponent(cf7_dashboard.nonce) + '&file=' + encodeURIComponent(filename);
+            
+            // Create a temporary anchor element
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            link.style.display = 'none';
+            
+            // Add to DOM, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     }
 
     // Initialize dashboard when DOM is ready
@@ -1274,6 +1325,26 @@
         // Only initialize if we're on the dashboard page
         if ($('.cf7-modern-dashboard').length) {
             window.dashboardInstance = new CF7Dashboard();
+            
+            // Handle page visibility changes to pause/resume polling
+            document.addEventListener('visibilitychange', function() {
+                if (window.dashboardInstance) {
+                    if (document.hidden) {
+                        // Page is hidden, stop polling to save resources
+                        window.dashboardInstance.stopPolling();
+                    } else {
+                        // Page is visible again, resume polling
+                        window.dashboardInstance.startPolling();
+                    }
+                }
+            });
+            
+            // Clean up polling when page is unloaded
+            window.addEventListener('beforeunload', function() {
+                if (window.dashboardInstance) {
+                    window.dashboardInstance.stopPolling();
+                }
+            });
         }
     });
 
@@ -1364,39 +1435,370 @@
             });
     };
 
-    CF7Dashboard.prototype.setDateRange = function(range) {
+    // Modern Calendar Date Picker Implementation
+    CF7Dashboard.prototype.initCalendarDatePicker = function() {
+        this.calendar = {
+            isOpen: false,
+            currentMonth: new Date().getMonth(),
+            currentYear: new Date().getFullYear(),
+            selectedStartDate: null,
+            selectedEndDate: null,
+            isSelectingRange: false
+        };
+
+        // Calendar trigger click
+        $(document).on('click', '.cf7-calendar-trigger', (e) => {
+            e.stopPropagation();
+            this.toggleCalendar();
+        });
+
+        // Calendar trigger keyboard navigation
+        $(document).on('keydown', '.cf7-calendar-trigger', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.toggleCalendar();
+            }
+        });
+
+        // Escape key to close calendar
+        $(document).on('keydown', (e) => {
+            if (e.key === 'Escape' && this.calendar.isOpen) {
+                this.closeCalendar();
+            }
+        });
+
+        // Calendar navigation
+        $(document).on('click', '.cf7-calendar-nav', (e) => {
+            e.stopPropagation();
+            const action = $(e.target).data('action');
+            this.navigateCalendar(action);
+        });
+
+        // Calendar day click
+        $(document).on('click', '.cf7-calendar-day', (e) => {
+            e.stopPropagation();
+            const $day = $(e.target);
+            if ($day.hasClass('other-month') || $day.hasClass('disabled')) return;
+            
+            const day = parseInt($day.text());
+            const date = new Date(this.calendar.currentYear, this.calendar.currentMonth, day);
+            this.selectCalendarDate(date);
+        });
+
+        // Calendar presets
+        $(document).on('click', '.cf7-calendar-preset', (e) => {
+            e.stopPropagation();
+            const range = $(e.target).data('range');
+            this.setCalendarPreset(range);
+        });
+
+        // Calendar actions
+        $(document).on('click', '.cf7-calendar-clear', (e) => {
+            e.stopPropagation();
+            this.clearCalendarSelection();
+        });
+
+        $(document).on('click', '.cf7-calendar-apply', (e) => {
+            e.stopPropagation();
+            this.applyCalendarSelection();
+        });
+
+        // Close calendar when clicking outside
+        $(document).on('click', (e) => {
+            if (!$(e.target).closest('.cf7-calendar-date-picker').length) {
+                this.closeCalendar();
+            }
+        });
+
+        // Initialize calendar display
+        this.renderCalendar();
+    };
+
+    CF7Dashboard.prototype.toggleCalendar = function() {
+        const $picker = $('.cf7-calendar-date-picker');
+        const $trigger = $('.cf7-calendar-trigger');
+        
+        if (this.calendar.isOpen) {
+            this.closeCalendar();
+        } else {
+            this.openCalendar();
+        }
+    };
+
+    CF7Dashboard.prototype.openCalendar = function() {
+        const $picker = $('.cf7-calendar-date-picker');
+        const $trigger = $('.cf7-calendar-trigger');
+        const $dropdown = $('.cf7-calendar-dropdown');
+        
+        $picker.addClass('open');
+        $trigger.addClass('active');
+        this.calendar.isOpen = true;
+        
+        // Set current dates if any exist
+        const fromDate = $('#cf7-date-from').val();
+        const toDate = $('#cf7-date-to').val();
+        
+        if (fromDate) {
+            this.calendar.selectedStartDate = new Date(fromDate);
+        }
+        if (toDate) {
+            this.calendar.selectedEndDate = new Date(toDate);
+        }
+        
+        // Ensure dropdown is properly positioned
+        setTimeout(() => {
+            const triggerRect = $trigger[0].getBoundingClientRect();
+            const dropdownHeight = $dropdown.outerHeight();
+            const viewportHeight = window.innerHeight;
+            const spaceBelow = viewportHeight - triggerRect.bottom;
+            
+            // If not enough space below, position above (only on desktop)
+            if (spaceBelow < dropdownHeight + 20 && window.innerWidth > 768) {
+                $dropdown.css({
+                    'top': 'auto',
+                    'bottom': '100%',
+                    'margin-top': '0',
+                    'margin-bottom': '0.5rem'
+                });
+            } else {
+                $dropdown.css({
+                    'top': '100%',
+                    'bottom': 'auto',
+                    'margin-top': '0.5rem',
+                    'margin-bottom': '0'
+                });
+            }
+        }, 10);
+        
+        this.renderCalendar();
+    };
+
+    CF7Dashboard.prototype.closeCalendar = function() {
+        const $picker = $('.cf7-calendar-date-picker');
+        const $trigger = $('.cf7-calendar-trigger');
+        
+        $picker.removeClass('open');
+        $trigger.removeClass('active');
+        this.calendar.isOpen = false;
+    };
+
+    CF7Dashboard.prototype.navigateCalendar = function(action) {
+        if (action === 'prev-month') {
+            this.calendar.currentMonth--;
+            if (this.calendar.currentMonth < 0) {
+                this.calendar.currentMonth = 11;
+                this.calendar.currentYear--;
+            }
+        } else if (action === 'next-month') {
+            this.calendar.currentMonth++;
+            if (this.calendar.currentMonth > 11) {
+                this.calendar.currentMonth = 0;
+                this.calendar.currentYear++;
+            }
+        }
+        
+        this.renderCalendar();
+    };
+
+    CF7Dashboard.prototype.selectCalendarDate = function(date) {
+        if (!this.calendar.selectedStartDate || (this.calendar.selectedStartDate && this.calendar.selectedEndDate)) {
+            // Start new selection
+            this.calendar.selectedStartDate = date;
+            this.calendar.selectedEndDate = null;
+            this.calendar.isSelectingRange = true;
+        } else if (this.calendar.selectedStartDate && !this.calendar.selectedEndDate) {
+            // Complete range selection
+            if (date < this.calendar.selectedStartDate) {
+                // User selected earlier date, swap them
+                this.calendar.selectedEndDate = this.calendar.selectedStartDate;
+                this.calendar.selectedStartDate = date;
+            } else {
+                this.calendar.selectedEndDate = date;
+            }
+            this.calendar.isSelectingRange = false;
+        }
+        
+        this.renderCalendar();
+        this.updateCalendarTriggerText();
+    };
+
+    CF7Dashboard.prototype.setCalendarPreset = function(range) {
         const today = new Date();
-        let fromDate = '';
-        let toDate = '';
+        let startDate = null;
+        let endDate = null;
 
         switch(range) {
             case 'today':
-                fromDate = toDate = today.toISOString().split('T')[0];
+                startDate = endDate = new Date(today);
                 break;
             case 'week':
-                // Last 7 days (including today)
-                const sevenDaysAgo = new Date(today);
-                sevenDaysAgo.setDate(today.getDate() - 6);
-                fromDate = sevenDaysAgo.toISOString().split('T')[0];
-                toDate = today.toISOString().split('T')[0];
+                endDate = new Date(today);
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - 6);
                 break;
             case 'month':
-                // Last 30 days (including today)
-                const thirtyDaysAgo = new Date(today);
-                thirtyDaysAgo.setDate(today.getDate() - 29);
-                fromDate = thirtyDaysAgo.toISOString().split('T')[0];
-                toDate = today.toISOString().split('T')[0];
-                break;
-            case 'clear':
-                fromDate = toDate = '';
+                endDate = new Date(today);
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - 29);
                 break;
         }
 
+        this.calendar.selectedStartDate = startDate;
+        this.calendar.selectedEndDate = endDate;
+        
+        // Update active preset
+        $('.cf7-calendar-preset').removeClass('active');
+        $(`.cf7-calendar-preset[data-range="${range}"]`).addClass('active');
+        
+        this.renderCalendar();
+        this.updateCalendarTriggerText();
+    };
+
+    CF7Dashboard.prototype.clearCalendarSelection = function() {
+        this.calendar.selectedStartDate = null;
+        this.calendar.selectedEndDate = null;
+        $('.cf7-calendar-preset').removeClass('active');
+        
+        // Clear the hidden date inputs
+        $('#cf7-date-from').val('');
+        $('#cf7-date-to').val('');
+        
+        this.renderCalendar();
+        this.updateCalendarTriggerText();
+        
+        // Trigger filter update to refresh the submissions list
+        this.currentPage = 1;
+        this.loadSubmissions();
+        
+        // Close the calendar after clearing
+        this.closeCalendar();
+    };
+
+    CF7Dashboard.prototype.applyCalendarSelection = function() {
+        let fromDate = '';
+        let toDate = '';
+        
+        if (this.calendar.selectedStartDate) {
+            fromDate = this.formatDateForInput(this.calendar.selectedStartDate);
+        }
+        if (this.calendar.selectedEndDate) {
+            toDate = this.formatDateForInput(this.calendar.selectedEndDate);
+        }
+        
         $('#cf7-date-from').val(fromDate);
         $('#cf7-date-to').val(toDate);
         
+        this.closeCalendar();
         this.currentPage = 1;
         this.loadSubmissions();
+    };
+
+    CF7Dashboard.prototype.renderCalendar = function() {
+        // Update month/year display
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+        $('.cf7-calendar-month').text(monthNames[this.calendar.currentMonth]);
+        $('.cf7-calendar-year').text(this.calendar.currentYear);
+        
+        // Generate calendar grid
+        const firstDay = new Date(this.calendar.currentYear, this.calendar.currentMonth, 1);
+        const lastDay = new Date(this.calendar.currentYear, this.calendar.currentMonth + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+        
+        const today = new Date();
+        
+        let html = '';
+        let currentDate = new Date(startDate);
+        
+        // Generate 6 weeks of calendar
+        for (let week = 0; week < 6; week++) {
+            for (let day = 0; day < 7; day++) {
+                const dayClasses = ['cf7-calendar-day'];
+                const isCurrentMonth = currentDate.getMonth() === this.calendar.currentMonth;
+                const dateStr = this.formatDateForInput(currentDate);
+                const isToday = this.isSameDate(currentDate, today);
+                const isFuture = currentDate > today;
+                
+                if (!isCurrentMonth) {
+                    dayClasses.push('other-month');
+                }
+                
+                if (isToday) {
+                    dayClasses.push('today');
+                }
+                
+                // Disable future dates (submissions can't be from the future)
+                if (isFuture) {
+                    dayClasses.push('disabled');
+                }
+                
+                // Check if this date is selected or in range (only if not disabled)
+                if (!isFuture && this.calendar.selectedStartDate && this.isSameDate(currentDate, this.calendar.selectedStartDate)) {
+                    dayClasses.push('range-start');
+                    if (!this.calendar.selectedEndDate || this.isSameDate(this.calendar.selectedStartDate, this.calendar.selectedEndDate)) {
+                        dayClasses.push('range-end');
+                    }
+                }
+                
+                if (!isFuture && this.calendar.selectedEndDate && this.isSameDate(currentDate, this.calendar.selectedEndDate)) {
+                    dayClasses.push('range-end');
+                }
+                
+                if (!isFuture && this.calendar.selectedStartDate && this.calendar.selectedEndDate &&
+                    currentDate > this.calendar.selectedStartDate && currentDate < this.calendar.selectedEndDate) {
+                    dayClasses.push('in-range');
+                }
+                
+                html += `<div class="${dayClasses.join(' ')}" data-date="${dateStr}">
+                    ${currentDate.getDate()}
+                </div>`;
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        }
+        
+        $('#cf7-calendar-grid').html(html);
+    };
+
+    CF7Dashboard.prototype.updateCalendarTriggerText = function() {
+        let text = 'Select date range';
+        
+        if (this.calendar.selectedStartDate && this.calendar.selectedEndDate) {
+            if (this.isSameDate(this.calendar.selectedStartDate, this.calendar.selectedEndDate)) {
+                text = this.formatDateDisplay(this.calendar.selectedStartDate);
+            } else {
+                text = `${this.formatDateDisplay(this.calendar.selectedStartDate)} - ${this.formatDateDisplay(this.calendar.selectedEndDate)}`;
+            }
+        } else if (this.calendar.selectedStartDate) {
+            text = `From ${this.formatDateDisplay(this.calendar.selectedStartDate)}`;
+        }
+        
+        $('.cf7-calendar-text').text(text);
+    };
+
+    CF7Dashboard.prototype.formatDateForInput = function(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
+    CF7Dashboard.prototype.formatDateDisplay = function(date) {
+        const options = { month: 'short', day: 'numeric', year: 'numeric' };
+        return date.toLocaleDateString('en-US', options);
+    };
+
+    CF7Dashboard.prototype.isSameDate = function(date1, date2) {
+        return date1.getFullYear() === date2.getFullYear() &&
+               date1.getMonth() === date2.getMonth() &&
+               date1.getDate() === date2.getDate();
+    };
+
+    CF7Dashboard.prototype.setDateRange = function(range) {
+        // Keep the old method for compatibility, but use the new calendar
+        this.setCalendarPreset(range);
+        this.applyCalendarSelection();
     };
 
     CF7Dashboard.prototype.updateFilterIndicators = function() {
@@ -1442,8 +1844,8 @@
         // Clear search input
         $('#cf7-search-input').val('');
         
-        // Clear date inputs
-        $('#cf7-date-from, #cf7-date-to').val('');
+        // Clear calendar selection (this will handle date inputs and calendar state)
+        this.clearCalendarSelection();
         
         // Reset status dropdown to "All Statuses"
         const $dropdown = $('.cf7-status-filter-dropdown');
@@ -1460,12 +1862,7 @@
             .css('color', '#718096');
         $display.find('.cf7-status-text').text('All Statuses');
         
-        // Remove any date preset active states
-        $('.cf7-date-preset').removeClass('active');
-        
-        // Reload submissions
-        this.currentPage = 1;
-        this.loadSubmissions();
+        // Note: clearCalendarSelection already calls loadSubmissions(), so no need to call it again
     };
 
     CF7Dashboard.prototype.escapeHtml = function(text) {
