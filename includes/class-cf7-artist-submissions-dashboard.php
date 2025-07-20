@@ -21,6 +21,8 @@ class CF7_Artist_Submissions_Dashboard {
         add_action('wp_ajax_cf7_dashboard_mark_message_read', array($this, 'ajax_mark_message_read'));
         add_action('wp_ajax_cf7_dashboard_mark_submission_read', array($this, 'ajax_mark_submission_read'));
         add_action('wp_ajax_cf7_dashboard_mark_all_read', array($this, 'ajax_mark_all_read'));
+        add_action('wp_ajax_cf7_dashboard_get_today_activity', array($this, 'ajax_get_today_activity'));
+        add_action('wp_ajax_cf7_dashboard_get_weekly_activity', array($this, 'ajax_get_weekly_activity'));
     }
 
     public function add_dashboard_page() {
@@ -115,7 +117,7 @@ class CF7_Artist_Submissions_Dashboard {
         $shortlisted = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Shortlisted'");
         $selected = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Selected'");
         $rejected = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Rejected'");
-        $unread_messages = $wpdb->get_var("SELECT COUNT(DISTINCT c.submission_id) FROM {$conversations_table} c WHERE c.is_admin_read = 0");
+        $unread_messages = $wpdb->get_var("SELECT COUNT(DISTINCT c.submission_id) FROM {$conversations_table} c WHERE c.direction = 'inbound' AND c.admin_viewed_at IS NULL");
         
         $stats = array(
             'total' => (int) $total,
@@ -148,126 +150,96 @@ class CF7_Artist_Submissions_Dashboard {
                 </div>
             </div>
 
-            <!-- Statistics Cards -->
-                        <!-- Statistics Cards Grid (2 rows x 3 columns) -->
-            <div class="cf7-stats-grid">
-                <!-- Row 1: Overview & Statuses -->
-                                <div class="cf7-stat-card" data-type="total">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon total">
-                                <span class="dashicons dashicons-chart-bar"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>Total Submissions</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['total']; ?></div>
-                            </div>
+            <!-- Key Metrics Dashboard -->
+            <div class="cf7-metrics-overview">
+                <!-- Primary Stats Row -->
+                <div class="cf7-primary-metrics">
+                    <div class="cf7-metric-card metric-total" data-type="overview">
+                        <div class="metric-value"><?php echo $stats['total']; ?></div>
+                        <div class="metric-label">Total Submissions</div>
+                        <div class="metric-trend" data-change="<?php echo $stats['total_change'] ?? 0; ?>">
+                            <?php if (($stats['total_change'] ?? 0) > 0): ?>
+                                <span class="trend-up">+<?php echo number_format($stats['total_change'], 1); ?>%</span>
+                            <?php elseif (($stats['total_change'] ?? 0) < 0): ?>
+                                <span class="trend-down"><?php echo number_format($stats['total_change'], 1); ?>%</span>
+                            <?php else: ?>
+                                <span class="trend-neutral">—</span>
+                            <?php endif; ?>
                         </div>
-                        <div class="cf7-stat-chart total" id="chart-total">
-                            <!-- Chart will be generated here -->
+                    </div>
+
+                    <div class="cf7-metric-card metric-pending" data-type="workflow">
+                        <div class="metric-value"><?php echo $stats['new'] + $stats['awaiting_information']; ?></div>
+                        <div class="metric-label">Needs Review</div>
+                        <div class="metric-breakdown">
+                            <span class="breakdown-item new"><?php echo $stats['new']; ?> new</span>
+                            <span class="breakdown-item waiting"><?php echo $stats['awaiting_information']; ?> waiting</span>
+                        </div>
+                    </div>
+
+                    <div class="cf7-metric-card metric-pipeline" data-type="progress">
+                        <div class="metric-value"><?php echo $stats['shortlisted'] + $stats['reviewed']; ?></div>
+                        <div class="metric-label">In Progress</div>
+                        <div class="metric-breakdown">
+                            <span class="breakdown-item reviewed"><?php echo $stats['reviewed']; ?> reviewed</span>
+                            <span class="breakdown-item shortlisted"><?php echo $stats['shortlisted']; ?> shortlisted</span>
+                        </div>
+                    </div>
+
+                    <div class="cf7-metric-card metric-decisions" data-type="outcomes">
+                        <div class="metric-value"><?php echo $stats['selected'] + $stats['rejected']; ?></div>
+                        <div class="metric-label">Decisions Made</div>
+                        <div class="metric-breakdown">
+                            <span class="breakdown-item selected"><?php echo $stats['selected']; ?> selected</span>
+                            <span class="breakdown-item rejected"><?php echo $stats['rejected']; ?> rejected</span>
                         </div>
                     </div>
                 </div>
-                
-                <div class="cf7-stat-card" data-type="new">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon new">
-                                <span class="dashicons dashicons-star-filled"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>New</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['new']; ?></div>
-                            </div>
+
+                <!-- Activity Indicators Row -->
+                <div class="cf7-activity-metrics">
+                    <div class="cf7-activity-card activity-messages" data-type="conversations">
+                        <div class="activity-icon">
+                            <span class="dashicons dashicons-email-alt"></span>
+                            <?php if ($stats['unread_messages'] > 0): ?>
+                                <span class="activity-badge"><?php echo $stats['unread_messages']; ?></span>
+                            <?php endif; ?>
                         </div>
-                        <div class="cf7-stat-chart new" id="chart-new">
-                            <!-- Chart will be generated here -->
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="cf7-stat-card" data-type="reviewed">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon reviewed">
-                                <span class="dashicons dashicons-visibility"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>Reviewed</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['reviewed']; ?></div>
-                            </div>
-                        </div>
-                        <div class="cf7-stat-chart reviewed" id="chart-reviewed">
-                            <!-- Chart will be generated here -->
+                        <div class="activity-content">
+                            <div class="activity-label">Unread Messages</div>
+                            <div class="activity-detail">Click to review conversations</div>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Row 2: Status Workflow -->
-                <div class="cf7-stat-card" data-type="awaiting-information">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon awaiting-information">
-                                <span class="dashicons dashicons-clock"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>Awaiting Information</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['awaiting_information']; ?></div>
-                            </div>
+
+                    <div class="cf7-activity-card activity-actions" data-type="actions" id="activity-outstanding-actions">
+                        <div class="activity-icon">
+                            <span class="dashicons dashicons-calendar-alt"></span>
+                            <span class="activity-badge activity-actions-count" style="display: none;">0</span>
                         </div>
-                        <div class="cf7-stat-chart awaiting-information" id="chart-awaiting-information">
-                            <!-- Chart will be generated here -->
+                        <div class="activity-content">
+                            <div class="activity-label">Outstanding Actions</div>
+                            <div class="activity-detail">Click to manage tasks</div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="cf7-stat-card" data-type="shortlisted">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon shortlisted">
-                                <span class="dashicons dashicons-paperclip"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>Shortlisted</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['shortlisted']; ?></div>
-                            </div>
+
+                    <div class="cf7-activity-card activity-today" data-type="recent">
+                        <div class="activity-icon">
+                            <span class="dashicons dashicons-clock"></span>
                         </div>
-                        <div class="cf7-stat-chart shortlisted" id="chart-shortlisted">
-                            <!-- Chart will be generated here -->
+                        <div class="activity-content">
+                            <div class="activity-label">Today's Activity</div>
+                            <div class="activity-detail" id="activity-today-detail">Loading...</div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="cf7-stat-card" data-type="selected">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon selected">
-                                <span class="dashicons dashicons-yes-alt"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>Selected</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['selected']; ?></div>
-                            </div>
+
+                    <div class="cf7-activity-card activity-weekly" data-type="weekly">
+                        <div class="activity-icon">
+                            <span class="dashicons dashicons-calendar-alt"></span>
+                            <span class="activity-badge activity-weekly-count" style="display: none;">0</span>
                         </div>
-                        <div class="cf7-stat-chart selected" id="chart-selected">
-                            <!-- Chart will be generated here -->
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="cf7-stat-card" data-type="rejected">
-                    <div class="cf7-stat-header">
-                        <div class="cf7-stat-left">
-                            <div class="cf7-stat-icon rejected">
-                                <span class="dashicons dashicons-dismiss"></span>
-                            </div>
-                            <div class="cf7-stat-content">
-                                <h3>Rejected</h3>
-                                <div class="cf7-stat-number"><?php echo $stats['rejected']; ?></div>
-                            </div>
-                        </div>
-                        <div class="cf7-stat-chart rejected" id="chart-rejected">
-                            <!-- Chart will be generated here -->
+                        <div class="activity-content">
+                            <div class="activity-label">This Week</div>
+                            <div class="activity-detail" id="activity-weekly-detail">Loading...</div>
                         </div>
                     </div>
                 </div>
@@ -278,16 +250,26 @@ class CF7_Artist_Submissions_Dashboard {
                 <!-- Left Panel: Submissions Table -->
                 <div class="cf7-dashboard-panel cf7-submissions-panel">
                     <div class="cf7-panel-header">
-                        <h2>Submissions</h2>
-                        <div class="cf7-panel-controls">
+                        <div class="cf7-header-left">
+                            <h2 id="cf7-panel-title">Submissions</h2>
+                        </div>
+                        <div class="cf7-header-right">
+                            <!-- Search with expandable input -->
                             <div class="cf7-search-wrapper">
-                                <div class="cf7-search-input-container">
-                                    <input type="text" id="cf7-search-input" placeholder="Search submissions..." class="cf7-search-field">
-                                    <div class="cf7-search-icon-wrapper">
+                                <div class="cf7-search-container">
+                                    <button class="cf7-btn cf7-btn-icon cf7-search-toggle" id="cf7-search-toggle" title="Search submissions">
                                         <span class="dashicons dashicons-search"></span>
+                                    </button>
+                                    <div class="cf7-search-input-expandable" id="cf7-search-input-expandable">
+                                        <input type="text" id="cf7-search-input" placeholder="Search submissions..." class="cf7-search-field">
+                                        <button class="cf7-search-close" id="cf7-search-close" title="Close search">
+                                            <span class="dashicons dashicons-no-alt"></span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Status filter dropdown -->
                             <div class="cf7-status-filter-wrapper">
                                 <div class="cf7-status-filter-dropdown" data-current="">
                                     <div class="cf7-status-filter-display">
@@ -324,22 +306,24 @@ class CF7_Artist_Submissions_Dashboard {
                                             <span class="cf7-status-icon dashicons dashicons-dismiss" style="color: #f56565;"></span>
                                             <span class="cf7-status-label">Rejected</span>
                                         </div>
+                                        <div class="cf7-status-filter-separator"></div>
+                                        <div class="cf7-status-filter-option" data-value="unread_messages" data-icon="dashicons-email-alt" data-color="#ef4444">
+                                            <span class="cf7-status-icon dashicons dashicons-email-alt" style="color: #ef4444;"></span>
+                                            <span class="cf7-status-label">Has Unread Messages</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="outstanding_actions" data-icon="dashicons-bell" data-color="#f59e0b">
+                                            <span class="cf7-status-icon dashicons dashicons-bell" style="color: #f59e0b;"></span>
+                                            <span class="cf7-status-label">Has Outstanding Actions</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Date Filters Bar -->
-                    <div class="cf7-date-filter-bar">
-                        <div class="cf7-date-filter-container">
-                            <span class="cf7-filter-label">Filter by Date:</span>
                             
-                            <!-- Modern Calendar Date Picker -->
+                            <!-- Date filter calendar trigger -->
                             <div class="cf7-calendar-date-picker">
-                                <div class="cf7-calendar-trigger" tabindex="0" role="button" aria-label="Select date range">
+                                <div class="cf7-calendar-trigger" tabindex="0" role="button" aria-label="Select date range" title="Filter by date">
                                     <span class="cf7-calendar-icon"></span>
-                                    <span class="cf7-calendar-text">Select date range</span>
+                                    <span class="cf7-calendar-text">Date</span>
                                     <span class="cf7-calendar-arrow">▼</span>
                                 </div>
                                 
@@ -380,12 +364,28 @@ class CF7_Artist_Submissions_Dashboard {
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Hidden date inputs for compatibility -->
-                            <input type="hidden" id="cf7-date-from" class="cf7-date-input">
-                            <input type="hidden" id="cf7-date-to" class="cf7-date-input">
                         </div>
                     </div>
+                    
+                    <!-- Orange Clear Filters Bar -->
+                    <div class="cf7-clear-filters" id="cf7-clear-filters" style="display: none;">
+                        <div class="cf7-clear-filters-content">
+                            <div class="cf7-clear-filters-text">
+                                <strong>Filters Applied:</strong>
+                            </div>
+                            <div class="cf7-active-filters" id="cf7-active-filters">
+                                <!-- Active filters will be populated here -->
+                            </div>
+                        </div>
+                        <button class="cf7-clear-all-btn" id="cf7-clear-all">
+                            <span class="dashicons dashicons-no-alt"></span>
+                            Clear All Filters
+                        </button>
+                    </div>
+                    
+                    <!-- Hidden date inputs for compatibility -->
+                    <input type="hidden" id="cf7-date-from" class="cf7-date-input">
+                    <input type="hidden" id="cf7-date-to" class="cf7-date-input">
                     
                     <!-- Bulk Actions Bar -->
                     <div class="cf7-bulk-actions" id="cf7-bulk-actions" style="display: none;">
@@ -508,13 +508,48 @@ class CF7_Artist_Submissions_Dashboard {
         }
         
         if (!empty($status)) {
-            $args['tax_query'] = array(
-                array(
-                    'taxonomy' => 'submission_status',
-                    'field' => 'slug',
-                    'terms' => $status
-                )
-            );
+            if ($status === 'unread_messages') {
+                // Filter submissions with unread messages
+                global $wpdb;
+                $conversations_table = $wpdb->prefix . 'cf7_conversations';
+                $submission_ids = $wpdb->get_col("
+                    SELECT DISTINCT submission_id 
+                    FROM {$conversations_table} 
+                    WHERE direction = 'inbound' AND admin_viewed_at IS NULL
+                ");
+                
+                if (!empty($submission_ids)) {
+                    $args['post__in'] = $submission_ids;
+                } else {
+                    // No submissions with unread messages, return empty result
+                    $args['post__in'] = array(0); // Non-existent ID
+                }
+            } elseif ($status === 'outstanding_actions') {
+                // Filter submissions with outstanding actions
+                global $wpdb;
+                $actions_table = $wpdb->prefix . 'cf7_actions';
+                $submission_ids = $wpdb->get_col("
+                    SELECT DISTINCT submission_id 
+                    FROM {$actions_table} 
+                    WHERE status = 'pending'
+                ");
+                
+                if (!empty($submission_ids)) {
+                    $args['post__in'] = $submission_ids;
+                } else {
+                    // No submissions with outstanding actions, return empty result
+                    $args['post__in'] = array(0); // Non-existent ID
+                }
+            } else {
+                // Regular status filter
+                $args['tax_query'] = array(
+                    array(
+                        'taxonomy' => 'submission_status',
+                        'field' => 'slug',
+                        'terms' => $status
+                    )
+                );
+            }
         }
         
         // Add date filtering
@@ -565,6 +600,25 @@ class CF7_Artist_Submissions_Dashboard {
         $status = !empty($status_terms) ? $status_terms[0]->name : 'New';
         $status_slug = !empty($status_terms) ? $status_terms[0]->slug : 'new';
         
+        // Get notification counts
+        global $wpdb;
+        
+        // Count unread messages for this submission
+        $conversations_table = $wpdb->prefix . 'cf7_conversations';
+        $unread_messages_count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) 
+            FROM {$conversations_table} 
+            WHERE submission_id = %d AND direction = 'inbound' AND admin_viewed_at IS NULL
+        ", $post->ID));
+        
+        // Count outstanding actions for this submission
+        $actions_table = $wpdb->prefix . 'cf7_actions';
+        $outstanding_actions_count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) 
+            FROM {$actions_table} 
+            WHERE submission_id = %d AND status = 'pending'
+        ", $post->ID));
+        
         return array(
             'id' => $post->ID,
             'title' => $post->post_title ?: 'Untitled Submission',
@@ -576,7 +630,9 @@ class CF7_Artist_Submissions_Dashboard {
             'email' => get_post_meta($post->ID, 'cf7_email', true) ?: get_post_meta($post->ID, 'your-email', true) ?: 'No email',
             'notes' => get_post_meta($post->ID, 'cf7_curator_notes', true),
             'view_url' => get_edit_post_link($post->ID),
-            'edit_url' => get_edit_post_link($post->ID)
+            'edit_url' => get_edit_post_link($post->ID),
+            'unread_messages_count' => (int) $unread_messages_count,
+            'outstanding_actions_count' => (int) $outstanding_actions_count
         );
     }
     
@@ -914,12 +970,14 @@ class CF7_Artist_Submissions_Dashboard {
         
         global $wpdb;
         
-        // Get outstanding actions (pending status) with artist info
+        // Get outstanding actions (pending status) with artist info and assignee info
         $table_name = $wpdb->prefix . 'cf7_actions';
         $results = $wpdb->get_results($wpdb->prepare("
-            SELECT a.*, p.post_title as artist_name, p.ID as submission_id
+            SELECT a.*, p.post_title as artist_name, p.ID as submission_id,
+                   u.display_name as assigned_to_name
             FROM {$table_name} a
             LEFT JOIN {$wpdb->posts} p ON a.submission_id = p.ID
+            LEFT JOIN {$wpdb->users} u ON a.assigned_to = u.ID
             WHERE a.status = %s
             ORDER BY 
                 CASE 
@@ -960,6 +1018,7 @@ class CF7_Artist_Submissions_Dashboard {
                 'description' => wp_trim_words($result->description, 15),
                 'priority' => $result->priority,
                 'artist_name' => $result->artist_name ?: 'Unknown Artist',
+                'assigned_to_name' => $result->assigned_to_name ?: 'Unassigned',
                 'submission_id' => $result->submission_id,
                 'due_date_formatted' => $due_date_formatted,
                 'is_overdue' => $is_overdue,
@@ -1316,6 +1375,84 @@ class CF7_Artist_Submissions_Dashboard {
         }
         
         wp_send_json_success($message);
+    }
+
+    /**
+     * Get today's activity for the activity card
+     */
+    public function ajax_get_today_activity() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
+            wp_send_json_error('Invalid nonce');
+        }
+
+        $today_start = date('Y-m-d 00:00:00');
+        $today_end = date('Y-m-d 23:59:59');
+
+        $count = get_posts(array(
+            'post_type' => 'cf7_submission',
+            'post_status' => 'publish',
+            'date_query' => array(
+                array(
+                    'after' => $today_start,
+                    'before' => $today_end,
+                    'inclusive' => true
+                )
+            ),
+            'posts_per_page' => -1,
+            'fields' => 'ids'
+        ));
+
+        wp_send_json_success(array(
+            'count' => count($count),
+            'date' => date('Y-m-d')
+        ));
+    }
+    
+    /**
+     * Get weekly activity for the activity card
+     */
+    public function ajax_get_weekly_activity() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
+            wp_send_json_error('Invalid nonce');
+        }
+
+        $date_from = sanitize_text_field($_POST['date_from'] ?? '');
+        $date_to = sanitize_text_field($_POST['date_to'] ?? '');
+        
+        if (empty($date_from)) {
+            // Default to start of current week
+            $start_of_week = date('Y-m-d', strtotime('this week'));
+            $date_from = $start_of_week;
+        }
+        
+        if (empty($date_to)) {
+            $date_to = date('Y-m-d');
+        }
+
+        $week_start = $date_from . ' 00:00:00';
+        $week_end = $date_to . ' 23:59:59';
+
+        $count = get_posts(array(
+            'post_type' => 'cf7_submission',
+            'post_status' => 'publish',
+            'date_query' => array(
+                array(
+                    'after' => $week_start,
+                    'before' => $week_end,
+                    'inclusive' => true
+                )
+            ),
+            'posts_per_page' => -1,
+            'fields' => 'ids'
+        ));
+
+        wp_send_json_success(array(
+            'count' => count($count),
+            'date_from' => $date_from,
+            'date_to' => $date_to
+        ));
     }
     
     /**

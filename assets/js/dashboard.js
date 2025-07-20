@@ -40,6 +40,9 @@
             this.loadOutstandingActions();
             this.loadSubmissions();
             this.loadRecentMessages();
+            this.updateTodayActivity();
+            // Check for active filters on page load
+            this.updateActiveFiltersDisplay();
             // Start lightweight polling only for unread messages
             this.startPolling();
         }
@@ -49,113 +52,115 @@
             $(document).on('click', '#cf7-refresh-dashboard', () => {
                 this.refreshAll();
             });
-            
+
             $(document).on('click', '#cf7-export-all', () => {
                 this.exportSubmissions();
             });
-            
-            // Search functionality with new HTML structure - super responsive real-time search
+
+            // Search toggle functionality
+            $(document).on('click', '#cf7-search-toggle', () => {
+                this.toggleSearchBar();
+            });
+
+            // Search close functionality
+            $(document).on('click', '#cf7-search-close', () => {
+                this.toggleSearchBar();
+            });
+
+            // Close search when clicking outside
+            $(document).on('click', (e) => {
+                if (!$(e.target).closest('.cf7-search-wrapper').length) {
+                    const $searchExpandable = $('#cf7-search-input-expandable');
+                    const $searchToggle = $('#cf7-search-toggle');
+                    if ($searchExpandable.hasClass('expanded')) {
+                        $searchExpandable.removeClass('expanded');
+                        $searchToggle.removeClass('active');
+                    }
+                }
+            });
+
+            // New metrics card interactions
+            $(document).on('click', '.cf7-metric-card', (e) => {
+                const $card = $(e.currentTarget);
+                const type = $card.data('type');
+                this.handleMetricCardClick(type, $card);
+            });
+
+            // Activity card interactions
+            $(document).on('click', '.cf7-activity-card', (e) => {
+                const $card = $(e.currentTarget);
+                const type = $card.data('type');
+                this.handleActivityCardClick(type, $card);
+            });
+
+            // Search functionality
             $(document).on('input', '#cf7-search-input', (e) => {
                 clearTimeout(this.searchTimeout);
-                
-                // Add visual feedback while typing
-                const $searchContainer = $('.cf7-search-input-container');
-                $searchContainer.addClass('cf7-searching');
-                
                 this.searchTimeout = setTimeout(() => {
-                    this.currentPage = 1; // Reset to first page when searching
-                    this.loadSubmissions();
-                    $searchContainer.removeClass('cf7-searching');
-                }, 300); // 300ms delay for responsive real-time search
-            });
-
-            // Clear search when field is empty
-            $(document).on('keyup', '#cf7-search-input', (e) => {
-                if (e.target.value === '') {
-                    clearTimeout(this.searchTimeout);
                     this.currentPage = 1;
+                    this.updateActiveFiltersDisplay();
                     this.loadSubmissions();
-                }
+                }, 300);
             });
 
-            // Modern Calendar Date Picker Events
-            this.initCalendarDatePicker();
-
-            // Filter changes - fix status filter selector and add date filters
-            $(document).on('change', '#cf7-date-from, #cf7-date-to', () => {
-                this.currentPage = 1;
-                this.loadSubmissions();
-            });
-
-            // Custom status filter dropdown
-            $(document).on('click', '.cf7-status-filter-display', (e) => {
-                e.stopPropagation();
-                const $dropdown = $(e.target).closest('.cf7-status-filter-dropdown');
-                
-                // Close other dropdowns
-                $('.cf7-status-filter-dropdown').not($dropdown).removeClass('open');
-                
-                // Toggle current dropdown
-                $dropdown.toggleClass('open');
-                
-                // If opening, position the dropdown menu to perfectly cover the display
-                if ($dropdown.hasClass('open')) {
-                    this.positionDropdownMenu($dropdown);
-                }
-            });
-
+            // Status filter
             $(document).on('click', '.cf7-status-filter-option', (e) => {
-                e.preventDefault();
                 e.stopPropagation();
-                
-                const $option = $(e.target).closest('.cf7-status-filter-option');
+                const $option = $(e.currentTarget);
                 const value = $option.data('value');
                 const icon = $option.data('icon');
                 const color = $option.data('color');
                 const label = $option.find('.cf7-status-label').text();
-                
-                // Update dropdown state
-                const $dropdown = $option.closest('.cf7-status-filter-dropdown');
-                $dropdown.attr('data-current', value);
-                $dropdown.removeClass('open');
-                
-                // Update active option
-                $dropdown.find('.cf7-status-filter-option').removeClass('active');
+
+                $('.cf7-status-filter-option').removeClass('active');
                 $option.addClass('active');
-                
-                // Update display
-                const $display = $dropdown.find('.cf7-status-filter-display');
-                $display.find('.cf7-status-icon')
-                    .removeClass()
-                    .addClass('cf7-status-icon dashicons dashicons-' + icon.replace('dashicons-', ''))
+
+                $('.cf7-status-filter-display .cf7-status-icon')
+                    .attr('class', `cf7-status-icon dashicons ${icon}`)
                     .css('color', color);
-                $display.find('.cf7-status-text').text(label);
-                
-                // Trigger filtering
+                $('.cf7-status-filter-display .cf7-status-text').text(label);
+
+                // Store current filter value
+                $('.cf7-status-filter-dropdown').attr('data-current', value);
+
+                $('.cf7-status-filter-dropdown').removeClass('open');
                 this.currentPage = 1;
+                this.updateActiveFiltersDisplay();
                 this.loadSubmissions();
             });
 
+            // Status filter dropdown toggle - only on display, not options
+            $(document).on('click', '.cf7-status-filter-display', (e) => {
+                e.stopPropagation();
+                $('.cf7-status-filter-dropdown').toggleClass('open');
+            });
+
             // Close dropdown when clicking outside
-            $(document).on('click', function(e) {
+            $(document).on('click', (e) => {
                 if (!$(e.target).closest('.cf7-status-filter-dropdown').length) {
                     $('.cf7-status-filter-dropdown').removeClass('open');
                 }
             });
 
-            // Close dropdown on scroll to prevent positioning issues
-            $(window).on('scroll', () => {
-                $('.cf7-status-filter-dropdown').removeClass('open');
+            // Per page selector
+            $(document).on('change', '#cf7-per-page', () => {
+                this.perPage = parseInt($('#cf7-per-page').val());
+                this.currentPage = 1;
+                this.loadSubmissions();
             });
 
-            // Close dropdown on window resize
-            $(window).on('resize', () => {
-                $('.cf7-status-filter-dropdown').removeClass('open');
+            // Pagination
+            $(document).on('click', '.cf7-page-btn', (e) => {
+                const page = parseInt($(e.currentTarget).data('page'));
+                if (page !== this.currentPage) {
+                    this.currentPage = page;
+                    this.loadSubmissions();
+                }
             });
 
             // Bulk selection
-            $(document).on('change', '.cf7-select-all', (e) => {
-                const isChecked = e.target.checked;
+            $(document).on('change', '#cf7-select-all', (e) => {
+                const isChecked = $(e.currentTarget).is(':checked');
                 $('.cf7-submission-checkbox').prop('checked', isChecked);
                 this.updateSelectedItems();
             });
@@ -165,74 +170,379 @@
             });
 
             // Bulk actions
-            $(document).on('click', '#cf7-apply-bulk', (e) => {
-                e.preventDefault();
-                const action = $('#cf7-bulk-action-select').val();
-                if (!action) {
-                    this.showToast('Please select an action', 'info');
-                    return;
-                }
-                this.performBulkAction(action);
-            });
-
-            // Pagination
-            $(document).on('click', '.cf7-page-btn', (e) => {
-                const page = $(e.target).data('page');
-                if (page && page !== this.currentPage) {
-                    this.currentPage = page;
-                    this.loadSubmissions();
-                }
+            $(document).on('click', '#cf7-bulk-action-btn', () => {
+                this.handleBulkAction();
             });
 
             // Individual submission actions
-            $(document).on('click', '.cf7-action-btn', (e) => {
-                const $button = $(e.currentTarget);
-                const action = $button.data('action');
-                const submissionId = $button.closest('.cf7-submission-row').data('id');
-                this.performSubmissionAction(action, submissionId);
+            $(document).on('click', '.cf7-submission-action', (e) => {
+                e.stopPropagation();
+                const $btn = $(e.currentTarget);
+                const submissionId = $btn.data('submission-id');
+                const action = $btn.data('action');
+                this.handleSubmissionAction(submissionId, action);
             });
 
-            // Real-time updates
-            $(document).on('click', '.cf7-refresh-btn', () => {
-                this.refreshAll();
+            // Status update
+            $(document).on('click', '.cf7-status-option', (e) => {
+                const $option = $(e.currentTarget);
+                const submissionId = $option.data('submission-id');
+                const status = $option.data('status');
+                this.updateSubmissionStatus(submissionId, status);
             });
 
-            // Export functionality
-            $(document).on('click', '.cf7-export-btn', () => {
-                this.exportSubmissions();
-            });
-
-            // Message actions
-            $(document).on('click', '.cf7-mark-submission-read-btn', (e) => {
-                e.preventDefault();
-                const submissionId = $(e.target).closest('.cf7-mark-submission-read-btn').data('submission-id');
-                this.markSubmissionRead(submissionId);
-            });
-
-            $(document).on('click', '.cf7-mark-all-read-btn', (e) => {
-                e.preventDefault();
-                this.markAllMessagesRead();
-            });
-            
-            // Ensure all internal links open in same tab
-            $(document).on('click', 'a[href*="post.php"], a[href*="admin.php"]', (e) => {
-                // Remove target="_blank" if present and ensure same tab opening
-                $(e.target).removeAttr('target');
-            });
-
-            // Pagination events
-            $(document).on('click', '.cf7-page-btn:not(.disabled)', (e) => {
-                const page = parseInt($(e.target).data('page'));
-                if (page && page !== this.currentPage) {
-                    this.currentPage = page;
-                    this.loadSubmissions();
+            // Table row clicks (for editing)
+            $(document).on('click', '.cf7-submission-row', (e) => {
+                // Don't trigger if clicking on checkboxes, buttons, or links
+                if ($(e.target).is('input, button, a, .cf7-submission-action, .cf7-status-selector')) {
+                    return;
+                }
+                
+                const submissionId = $(e.currentTarget).data('submission-id');
+                if (submissionId) {
+                    const editUrl = `post.php?post=${submissionId}&action=edit`;
+                    window.location.href = editUrl;
                 }
             });
 
-            // Per page selector
-            $(document).on('change', '#cf7-per-page', (e) => {
-                this.perPage = parseInt($(e.target).val());
-                this.currentPage = 1; // Reset to first page when changing per page
+            // Date filter functionality
+            this.initDateFilter();
+
+            // Activity refresh
+            $(document).on('click', '#cf7-refresh-activity', () => {
+                this.loadRecentMessages();
+                this.loadOutstandingActions();
+            });
+
+            // Mark message as read
+            $(document).on('click', '.cf7-mark-read-btn', (e) => {
+                e.stopPropagation();
+                const messageId = $(e.currentTarget).data('message-id');
+                this.markMessageAsRead(messageId);
+            });
+
+            // Mark submission as read
+            $(document).on('click', '.cf7-mark-submission-read-btn', (e) => {
+                e.stopPropagation();
+                const submissionId = $(e.currentTarget).data('submission-id');
+                this.markSubmissionAsRead(submissionId);
+            });
+
+            // Mark all as read
+            $(document).on('click', '#cf7-mark-all-read', () => {
+                this.markAllAsRead();
+            });
+
+            // Keyboard shortcuts
+            $(document).on('keydown', (e) => {
+                // Ctrl/Cmd + R: Refresh
+                if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                    e.preventDefault();
+                    this.refreshAll();
+                }
+                
+                // Escape: Clear selection
+                if (e.key === 'Escape') {
+                    this.clearSelection();
+                    $('.cf7-status-filter-dropdown').removeClass('open');
+                }
+            });
+
+            // Clear all filters (orange bar)
+            $(document).on('click', '#cf7-clear-all', () => {
+                this.clearAllFilters();
+            });
+
+            $(document).on('click', '.cf7-active-filter-tag .dashicons', (e) => {
+                e.stopPropagation();
+                const filterType = $(e.currentTarget).closest('.cf7-active-filter-tag').data('filter-type');
+                this.clearSpecificFilter(filterType);
+            });
+        }
+
+        handleMetricCardClick(type, $card) {
+            switch(type) {
+                case 'overview':
+                    // Show total submissions view - all statuses
+                    $('.cf7-status-filter-option[data-value=""]').click();
+                    break;
+                case 'workflow':
+                    // Show submissions needing review (new + awaiting info)
+                    this.showWorkflowFilter();
+                    break;
+                case 'progress':
+                    // Show in-progress submissions (reviewed + shortlisted)
+                    this.showProgressFilter();
+                    break;
+                case 'outcomes':
+                    // Show final decisions (selected + rejected)
+                    this.showOutcomesFilter();
+                    break;
+            }
+            
+            // Visual feedback
+            $card.addClass('clicked');
+            setTimeout(() => $card.removeClass('clicked'), 200);
+        }
+
+        handleActivityCardClick(type, $card) {
+            switch(type) {
+                case 'conversations':
+                    // Navigate to submissions with unread messages
+                    if ($card.find('.activity-badge').length) {
+                        this.showUnreadMessagesFilter();
+                    }
+                    break;
+                case 'actions':
+                    // Navigate to submissions with outstanding actions
+                    this.showOutstandingActionsFilter();
+                    break;
+                case 'recent':
+                    // Show today's submissions
+                    this.showTodayFilter();
+                    break;
+                case 'weekly':
+                    // Show this week's submissions
+                    this.showWeeklyFilter();
+                    break;
+            }
+            
+            // Visual feedback
+            $card.addClass('clicked');
+            setTimeout(() => $card.removeClass('clicked'), 200);
+        }
+
+        showWorkflowFilter() {
+            // Custom filter logic for workflow items
+            const searchInput = $('#cf7-search-input');
+            searchInput.val('');
+            
+            // Update display to show "Needs Review"
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .attr('class', 'cf7-status-icon dashicons dashicons-clock')
+                .css('color', '#f59e0b');
+            $('.cf7-status-filter-display .cf7-status-text').text('Needs Review');
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions('workflow');
+        }
+
+        showProgressFilter() {
+            const searchInput = $('#cf7-search-input');
+            searchInput.val('');
+            
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .attr('class', 'cf7-status-icon dashicons dashicons-visibility')
+                .css('color', '#3b82f6');
+            $('.cf7-status-filter-display .cf7-status-text').text('In Progress');
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions('progress');
+        }
+
+        showOutcomesFilter() {
+            const searchInput = $('#cf7-search-input');
+            searchInput.val('');
+            
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .attr('class', 'cf7-status-icon dashicons dashicons-yes-alt')
+                .css('color', '#10b981');
+            $('.cf7-status-filter-display .cf7-status-text').text('Decisions Made');
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions('outcomes');
+        }
+
+        showUnreadMessagesFilter() {
+            // Filter to show only submissions with unread messages
+            const searchInput = $('#cf7-search-input');
+            searchInput.val('');
+            
+            // Clear date filters
+            $('#cf7-date-from').val('');
+            $('#cf7-date-to').val('');
+            $('.cf7-calendar-text').text('Date');
+            
+            // Use the status filter dropdown properly
+            $('.cf7-status-filter-option').removeClass('active');
+            $('.cf7-status-filter-option[data-value="unread_messages"]').addClass('active');
+            
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .attr('class', 'cf7-status-icon dashicons dashicons-email-alt')
+                .css('color', '#ef4444');
+            $('.cf7-status-filter-display .cf7-status-text').text('Has Unread Messages');
+            
+            // Store current filter value
+            $('.cf7-status-filter-dropdown').attr('data-current', 'unread_messages');
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions();
+        }
+
+        showOutstandingActionsFilter() {
+            // Filter to show only submissions with outstanding actions
+            const searchInput = $('#cf7-search-input');
+            searchInput.val('');
+            
+            // Clear date filters
+            $('#cf7-date-from').val('');
+            $('#cf7-date-to').val('');
+            $('.cf7-calendar-text').text('Date');
+            
+            // Use the status filter dropdown properly
+            $('.cf7-status-filter-option').removeClass('active');
+            $('.cf7-status-filter-option[data-value="outstanding_actions"]').addClass('active');
+            
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .attr('class', 'cf7-status-icon dashicons dashicons-bell')
+                .css('color', '#f59e0b');
+            $('.cf7-status-filter-display .cf7-status-text').text('Has Outstanding Actions');
+            
+            // Store current filter value
+            $('.cf7-status-filter-dropdown').attr('data-current', 'outstanding_actions');
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions();
+        }
+
+        showTodayFilter() {
+            // Show submissions from today
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            
+            // Clear other filters first
+            $('#cf7-search-input').val('');
+            $('.cf7-status-filter-dropdown').attr('data-current', '');
+            $('.cf7-status-filter-option').removeClass('active');
+            $('.cf7-status-filter-option[data-value=""]').addClass('active');
+            $('.cf7-status-filter-display .cf7-status-text').text('All Statuses');
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .removeClass()
+                .addClass('cf7-status-icon dashicons dashicons-category')
+                .css('color', '#718096');
+            
+            // Set date inputs for filtering
+            $('#cf7-date-from').val(dateStr);
+            $('#cf7-date-to').val(dateStr);
+            
+            // Update calendar text display
+            $('.cf7-calendar-text').text(`Today (${dateStr})`);
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions();
+        }
+
+        showWeeklyFilter() {
+            // Show submissions from the last 7 days
+            const today = new Date();
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 6); // 6 days ago + today = 7 days total
+            
+            // Clear other filters first
+            $('#cf7-search-input').val('');
+            $('.cf7-status-filter-dropdown').attr('data-current', '');
+            $('.cf7-status-filter-option').removeClass('active');
+            $('.cf7-status-filter-option[data-value=""]').addClass('active');
+            $('.cf7-status-filter-display .cf7-status-text').text('All Statuses');
+            $('.cf7-status-filter-display .cf7-status-icon')
+                .removeClass()
+                .addClass('cf7-status-icon dashicons dashicons-category')
+                .css('color', '#718096');
+            
+            // Set date inputs for filtering
+            $('#cf7-date-from').val(sevenDaysAgo.toISOString().split('T')[0]);
+            $('#cf7-date-to').val(today.toISOString().split('T')[0]);
+            
+            // Update calendar text display
+            $('.cf7-calendar-text').text(`Last 7 Days (${sevenDaysAgo.toLocaleDateString()} - ${today.toLocaleDateString()})`);
+            
+            this.currentPage = 1;
+            this.updateActiveFiltersDisplay();
+            this.loadSubmissions();
+        }
+
+        toggleSearchBar() {
+            const $searchExpandable = $('#cf7-search-input-expandable');
+            const $searchToggle = $('#cf7-search-toggle');
+            const $searchInput = $('#cf7-search-input');
+            
+            if ($searchExpandable.hasClass('expanded')) {
+                // Close search
+                $searchExpandable.removeClass('expanded');
+                $searchToggle.removeClass('active');
+                $searchInput.blur();
+            } else {
+                // Open search
+                $searchExpandable.addClass('expanded');
+                $searchToggle.addClass('active');
+                setTimeout(() => {
+                    $searchInput.focus();
+                }, 300);
+            }
+        }
+
+        updateTodayActivity() {
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+            
+            // Update today's activity (last 24 hours)
+            $.post(ajaxurl, {
+                action: 'cf7_dashboard_get_today_activity',
+                nonce: cf7_dashboard.nonce,
+                date: todayStr
+            }, (response) => {
+                if (response.success) {
+                    const count = response.data.count || 0;
+                    const text = count === 0 ? 'No submissions today' : 
+                                count === 1 ? '1 submission today' : 
+                                `${count} submissions today`;
+                    $('#activity-today-detail').text(text);
+                }
+            });
+
+            // Update weekly activity (last 7 days)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(today.getDate() - 6); // 6 days ago + today = 7 days total
+            const weekStart = sevenDaysAgo.toISOString().split('T')[0];
+            
+            $.post(ajaxurl, {
+                action: 'cf7_dashboard_get_weekly_activity',
+                nonce: cf7_dashboard.nonce,
+                date_from: weekStart,
+                date_to: todayStr
+            }, (response) => {
+                if (response.success) {
+                    const count = response.data.count || 0;
+                    const text = count === 0 ? 'No submissions this week' : 
+                                count === 1 ? '1 submission this week' : 
+                                `${count} submissions this week`;
+                    $('#activity-weekly-detail').text(text);
+                    
+                    // Update the badge
+                    const $weeklyBadge = $('.activity-weekly-count');
+                    if (count > 0) {
+                        $weeklyBadge.text(count).show();
+                    } else {
+                        $weeklyBadge.hide();
+                    }
+                }
+            });
+        }
+
+        initDateFilter() {
+            // Modern Calendar Date Picker Events
+            this.initCalendarDatePicker();
+
+            // Filter changes - fix status filter selector and add date filters
+            $(document).on('change', '#cf7-date-from, #cf7-date-to', () => {
+                this.currentPage = 1;
+                this.updateActiveFiltersDisplay();
                 this.loadSubmissions();
             });
         }
@@ -256,16 +566,6 @@
                 minHeight: displayRect.height + 'px',
                 zIndex: 10000
             });
-            
-            console.log('Positioned dropdown menu:', {
-                displayRect: displayRect,
-                menuPosition: {
-                    top: -2,
-                    left: -4,
-                    width: displayRect.width + 4,
-                    height: displayRect.height
-                }
-            });
         }
 
         loadStats() {
@@ -279,9 +579,6 @@
                 nonce: cf7_dashboard.nonce
             };
 
-            console.log('Loading stats with data:', data);
-            console.log('Using ajaxurl:', ajaxurl);
-
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -289,7 +586,6 @@
                 dataType: 'json'
             })
                 .done((response) => {
-                    console.log('Stats response:', response);
                     if (response && response.success) {
                         this.renderStats(response.data);
                     } else {
@@ -318,9 +614,6 @@
                 nonce: cf7_dashboard.nonce
             };
 
-            console.log('Loading outstanding actions with data:', data);
-            console.log('Using ajaxurl:', ajaxurl);
-
             $.ajax({
                 url: ajaxurl,
                 type: 'POST',
@@ -328,7 +621,6 @@
                 dataType: 'json'
             })
                 .done((response) => {
-                    console.log('Outstanding actions response:', response);
                     if (response && response.success) {
                         this.renderOutstandingActions(response.data);
                     } else {
@@ -348,36 +640,31 @@
         }
 
         loadSubmissions() {
+            // Prevent loading during clear operations
+            if (this.clearingFilters) {
+                return;
+            }
+            
             if (this.loadingStates.submissions) return;
             
             this.loadingStates.submissions = true;
             this.showSubmissionsLoading();
 
+            const statusValue = $('.cf7-status-filter-dropdown').attr('data-current');
             const data = {
                 action: 'cf7_dashboard_load_submissions',
                 nonce: cf7_dashboard.nonce,
                 page: this.currentPage,
                 per_page: this.perPage,
                 search: $('#cf7-search-input').val(),
-                status: $('.cf7-status-filter-dropdown').attr('data-current') || '',
+                status: statusValue || '',
                 date_from: $('#cf7-date-from').val(),
                 date_to: $('#cf7-date-to').val(),
                 orderby: $('.cf7-order-filter').val()
             };
 
-            // Log the data being sent for debugging
-            console.log('Loading submissions with filters:', {
-                search: data.search,
-                status: data.status,
-                date_from: data.date_from,
-                date_to: data.date_to,
-                page: data.page,
-                per_page: data.per_page
-            });
-
             $.post(ajaxurl, data)
                 .done((response) => {
-                    console.log('Submissions response:', response);
                     if (response.success) {
                         this.renderSubmissions(response.data);
                         this.updateFilterIndicators();
@@ -416,7 +703,6 @@
         }
 
         renderStats(stats) {
-            console.log('Rendering stats:', stats); // Debug log
             const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected', 'unread_messages'];
             
             statTypes.forEach(type => {
@@ -496,6 +782,22 @@
             // Update unread messages count in activity panel
             const unreadCount = stats.unread_messages || 0;
             $('#cf7-unread-messages-stat').text(unreadCount);
+            
+            // Update the activity card badges with improved logic
+            const $messagesCard = $('.activity-messages');
+            let $messagesBadge = $messagesCard.find('.activity-badge');
+            
+            if (unreadCount > 0) {
+                // If badge doesn't exist, create it
+                if ($messagesBadge.length === 0) {
+                    $messagesCard.find('.activity-icon').append('<span class="activity-badge">0</span>');
+                    $messagesBadge = $messagesCard.find('.activity-badge');
+                }
+                $messagesBadge.text(unreadCount).show();
+            } else {
+                // Hide the badge when no unread messages
+                $messagesBadge.hide();
+            }
             
             // Generate charts for each stat type
             this.generateStatsCharts(stats);
@@ -602,20 +904,10 @@
         }
 
         createMiniLineChart(container, data, type) {
-            // Get the actual container dimensions and apply responsive sizing
-            const containerRect = container.getBoundingClientRect();
-            
-            // Calculate responsive width with appropriate min/max based on screen size
-            let maxWidth = 120; // Default max width
-            if (window.innerWidth <= 768) {
-                maxWidth = 160; // Mobile: wider charts
-            } else if (window.innerWidth <= 1200) {
-                maxWidth = 140; // Tablet: medium width
-            }
-            
-            const width = Math.max(80, Math.min(maxWidth, containerRect.width));
-            const height = 40;
-            const padding = 4;
+            // Use fixed dimensions optimized for compact stat cards
+            const width = 60; // Fixed width to match CSS
+            const height = 24; // Fixed height to match CSS  
+            const padding = 2; // Reduced padding for smaller charts
             
             // Clear existing content
             container.innerHTML = '';
@@ -640,6 +932,7 @@
                 'new': '#4299e1',
                 'reviewed': '#9f7aea',
                 'awaiting-information': '#ed8936',
+                'shortlisted': '#ec4899',
                 'selected': '#48bb78',
                 'rejected': '#f56565'
             };
@@ -753,6 +1046,14 @@
             const actions = data.actions || [];
             const totalCount = data.total_count || 0;
             
+            // Update the activity card badge counter
+            const $activityBadge = $('.activity-actions-count');
+            if (totalCount > 0) {
+                $activityBadge.text(totalCount).show();
+            } else {
+                $activityBadge.text('0').hide();
+            }
+            
             if (actions.length === 0) {
                 $container.html(`
                     <div class="cf7-outstanding-actions-empty">
@@ -775,25 +1076,39 @@
             
             actions.forEach(action => {
                 const priorityClass = `cf7-priority-${action.priority}`;
-                const overdueClass = action.is_overdue ? 'cf7-action-overdue' : '';
+                const overdueClass = action.is_overdue ? 'cf7-action-overdue cf7-pulse' : '';
                 
                 html += `
-                    <div class="cf7-action-item ${priorityClass} ${overdueClass}">
-                        <div class="cf7-action-content">
-                            <div class="cf7-action-header">
-                                <h5 class="cf7-action-title">${this.escapeHtml(action.title)}</h5>
-                                <span class="cf7-action-priority cf7-priority-${action.priority}">${action.priority}</span>
+                    <div class="cf7-action-card ${priorityClass} ${overdueClass}">
+                        <div class="cf7-action-main">
+                            <div class="cf7-action-title-row">
+                                <h4 class="cf7-action-title">${this.escapeHtml(action.title)}</h4>
+                                <span class="cf7-action-priority cf7-priority-${action.priority}">${action.priority.toUpperCase()}</span>
                             </div>
-                            ${action.description ? `<p class="cf7-action-description">${this.escapeHtml(action.description)}</p>` : ''}
-                            <div class="cf7-action-meta">
-                                <span class="cf7-action-artist">👤 ${this.escapeHtml(action.artist_name)}</span>
-                                ${action.due_date_formatted ? `<span class="cf7-action-due ${action.is_overdue ? 'overdue' : ''}">${action.due_date_formatted}</span>` : ''}
-                                <span class="cf7-action-created">${action.created_at}</span>
+                            
+                            <div class="cf7-action-assignee-prominent">
+                                <span class="cf7-assignee-label">Assigned to:</span>
+                                <strong class="cf7-assignee-name">${this.escapeHtml(action.assigned_to_name)}</strong>
+                            </div>
+                            
+                            <div class="cf7-action-details">
+                                <div class="cf7-action-detail-item">
+                                    <span class="cf7-detail-label">Artist:</span>
+                                    <span class="cf7-detail-value">${this.escapeHtml(action.artist_name)}</span>
+                                </div>
+                                ${action.due_date_formatted ? `
+                                <div class="cf7-action-detail-item cf7-due-date ${action.is_overdue ? 'overdue' : ''}">
+                                    <span class="cf7-detail-label">Due:</span>
+                                    <span class="cf7-detail-value">${action.due_date_formatted}</span>
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
-                        <div class="cf7-action-actions">
-                            <a href="${action.edit_link}" class="cf7-action-btn cf7-btn-primary" title="View Submission">
-                                <span class="dashicons dashicons-visibility"></span>
+                        
+                        <div class="cf7-action-view">
+                            <a href="${action.edit_link}" class="cf7-view-action-btn ${action.is_overdue ? 'urgent' : ''}" title="View Submission">
+                                <span class="dashicons dashicons-arrow-right-alt2"></span>
+                                View
                             </a>
                         </div>
                     </div>
@@ -845,8 +1160,23 @@
                 '' : 
                 date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
+            // Build notification bubbles
+            let notificationBubbles = '';
+            const unreadCount = submission.unread_messages_count || 0;
+            const actionsCount = submission.outstanding_actions_count || 0;
+            const totalNotifications = unreadCount + actionsCount;
+            
+            if (totalNotifications > 0) {
+                notificationBubbles = `
+                    <div class="cf7-submission-notifications">
+                        <div class="cf7-notification-bubble combined">${totalNotifications}</div>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="cf7-submission-row" data-id="${submission.id}">
+                    ${notificationBubbles}
                     <input type="checkbox" class="cf7-submission-checkbox" value="${submission.id}">
                     <div class="cf7-submission-info">
                         <div class="cf7-submission-title">
@@ -998,7 +1328,6 @@
                     
                     html += `
                         <div class="cf7-message-item${unreadClass}" data-submission-id="${submission.submission_id}">
-                            <div class="cf7-message-avatar">${submission.artist_name.charAt(0).toUpperCase()}</div>
                             <div class="cf7-message-content">
                                 <div class="cf7-message-header">
                                     <span class="cf7-message-artist">${submission.artist_name}</span>
@@ -1076,8 +1405,6 @@
                 return;
             }
 
-            console.log('Performing bulk action:', action, 'on items:', Array.from(this.selectedItems));
-
             const confirmActions = ['delete'];
             if (confirmActions.includes(action)) {
                 const actionName = action === 'delete' ? 'delete' : action;
@@ -1093,11 +1420,8 @@
                 ids: Array.from(this.selectedItems)
             };
 
-            console.log('Sending bulk action data:', data);
-
             $.post(ajaxurl, data)
                 .done((response) => {
-                    console.log('Bulk action response:', response);
                     if (response.success) {
                         this.showToast(response.data.message || 'Action completed successfully', 'success');
                         
@@ -1223,8 +1547,9 @@
         }
 
         refreshMessages() {
-            // Only refresh messages
+            // Refresh messages and stats to update badge counts
             this.loadRecentMessages();
+            this.loadStats();
         }
 
         refreshStats() {
@@ -1237,8 +1562,9 @@
             // Don't poll stats or actions automatically - they should refresh on user action
             this.pollingInterval = setInterval(() => {
                 if (!document.hidden) {
-                    // Only refresh unread messages count to show new messages
+                    // Refresh unread messages and stats to update badge counts
                     this.loadRecentMessages();
+                    this.loadStats(); // Add this to update unread message counts in badges
                 }
             }, 120000); // 2 minutes instead of 30 seconds
         }
@@ -1420,8 +1746,15 @@
                             $('.cf7-recent-messages').html('<div class="cf7-loading-state">No unread messages</div>');
                         }
                     });
-                    // Refresh actions to update counts
+                    // Refresh actions and stats to update counts
                     this.loadOutstandingActions();
+                    this.loadStats(); // Update unread message badge counts
+                    
+                    // Force immediate badge update
+                    setTimeout(() => {
+                        this.loadStats();
+                    }, 100);
+                    
                     this.showToast('Messages marked as read', 'success');
                 } else {
                     this.showToast('Failed to mark messages as read', 'error');
@@ -1449,8 +1782,15 @@
                         $(this).remove();
                         $('.cf7-recent-messages').html('<div class="cf7-loading-state">No unread messages</div>');
                     });
-                    // Refresh actions and messages
+                    // Refresh actions, stats, and messages
                     this.loadOutstandingActions();
+                    this.loadStats(); // Update unread message badge counts
+                    
+                    // Force immediate badge update
+                    setTimeout(() => {
+                        this.loadStats();
+                    }, 100);
+                    
                     this.showToast('All messages marked as read', 'success');
                 } else {
                     this.showToast('Failed to mark messages as read', 'error');
@@ -1694,6 +2034,7 @@
         
         // Trigger filter update to refresh the submissions list
         this.currentPage = 1;
+        this.updateActiveFiltersDisplay();
         this.loadSubmissions();
         
         // Close the calendar after clearing
@@ -1716,6 +2057,7 @@
         
         this.closeCalendar();
         this.currentPage = 1;
+        this.updateActiveFiltersDisplay();
         this.loadSubmissions();
     };
 
@@ -1866,29 +2208,176 @@
         }
     };
 
+    /**
+     * Clear all active filters and refresh the dashboard
+     */
     CF7Dashboard.prototype.clearAllFilters = function() {
+        // Set a flag to prevent other loadSubmissions calls during clearing
+        this.clearingFilters = true;
+        
         // Clear search input
         $('#cf7-search-input').val('');
         
-        // Clear calendar selection (this will handle date inputs and calendar state)
-        this.clearCalendarSelection();
+        // Clear calendar selection WITHOUT triggering loadSubmissions
+        $('#cf7-date-from').val('');
+        $('#cf7-date-to').val('');
+        $('.cf7-calendar-text').text('Date');
         
-        // Reset status dropdown to "All Statuses"
+        // Reset status dropdown to "All Statuses" - be very explicit and thorough
         const $dropdown = $('.cf7-status-filter-dropdown');
+        
+        // Step 1: Remove the data-current attribute completely, then set it to empty
+        $dropdown.removeAttr('data-current');
         $dropdown.attr('data-current', '');
         $dropdown.removeClass('open');
-        $dropdown.find('.cf7-status-filter-option').removeClass('active');
-        $dropdown.find('.cf7-status-filter-option[data-value=""]').addClass('active');
         
-        // Update display
-        const $display = $dropdown.find('.cf7-status-filter-display');
+        // Step 2: Clear all active states explicitly  
+        $('.cf7-status-filter-option').each(function() {
+            $(this).removeClass('active');
+        });
+        
+        // Step 3: Set the "All Statuses" option as active
+        const $allStatusOption = $('.cf7-status-filter-option[data-value=""]');
+        $allStatusOption.addClass('active');
+        
+        // Step 4: Update display to match exactly what "All Statuses" should show
+        const $display = $('.cf7-status-filter-display');
         $display.find('.cf7-status-icon')
             .removeClass()
             .addClass('cf7-status-icon dashicons dashicons-category')
             .css('color', '#718096');
         $display.find('.cf7-status-text').text('All Statuses');
         
-        // Note: clearCalendarSelection already calls loadSubmissions(), so no need to call it again
+        // Reset page
+        this.currentPage = 1;
+        
+        // DEFENSIVE: Double-check the data-current is still empty before proceeding
+        // Update active filters display 
+        this.updateActiveFiltersDisplay();
+        
+        // Clear the flag and load submissions
+        this.clearingFilters = false;
+        this.loadSubmissions();
+    };
+
+    /**
+     * Clear a specific filter
+     */
+    CF7Dashboard.prototype.clearSpecificFilter = function(filterType) {
+        switch(filterType) {
+            case 'search':
+                $('#cf7-search-input').val('');
+                break;
+            case 'status':
+                const $dropdown = $('.cf7-status-filter-dropdown');
+                
+                // Remove and reset data-current attribute
+                $dropdown.removeAttr('data-current');
+                $dropdown.attr('data-current', '');
+                $dropdown.removeClass('open');
+                
+                // Clear all active states explicitly
+                $('.cf7-status-filter-option').each(function() {
+                    $(this).removeClass('active');
+                });
+                
+                // Set "All Statuses" as active
+                $('.cf7-status-filter-option[data-value=""]').addClass('active');
+                
+                const $display = $('.cf7-status-filter-display');
+                $display.find('.cf7-status-icon')
+                    .removeClass()
+                    .addClass('cf7-status-icon dashicons dashicons-category')
+                    .css('color', '#718096');
+                $display.find('.cf7-status-text').text('All Statuses');
+                break;
+            case 'date':
+                $('#cf7-date-from').val('');
+                $('#cf7-date-to').val('');
+                $('.cf7-calendar-text').text('Select date range');
+                break;
+        }
+        
+        this.currentPage = 1;
+        this.updateActiveFiltersDisplay();
+        this.loadSubmissions();
+    };
+
+    /**
+     * Update the active filters display
+     */
+    CF7Dashboard.prototype.updateActiveFiltersDisplay = function() {
+        const $clearFilters = $('#cf7-clear-filters');
+        const $activeFilters = $('#cf7-active-filters');
+        const $panelTitle = $('#cf7-panel-title');
+        
+        // Clear existing filter tags
+        $activeFilters.empty();
+        
+        let hasActiveFilters = false;
+        
+        // Check for search filter
+        const searchValue = $('#cf7-search-input').val();
+        if (searchValue) {
+            hasActiveFilters = true;
+            const searchTag = `
+                <span class="cf7-filter-tag" data-filter-type="search">
+                    Search: "${searchValue}"
+                    <span class="cf7-filter-remove" onclick="CF7Dashboard.clearSpecificFilter('search')">×</span>
+                </span>
+            `;
+            $activeFilters.append(searchTag);
+        }
+        
+        // Check for status filter
+        const activeStatus = $('.cf7-status-filter-dropdown').attr('data-current') || '';
+        if (activeStatus && activeStatus !== '') {
+            hasActiveFilters = true;
+            const statusLabel = $('.cf7-status-filter-option.active .cf7-status-label').text();
+            const statusTag = `
+                <span class="cf7-filter-tag" data-filter-type="status">
+                    Status: ${statusLabel}
+                    <span class="cf7-filter-remove" onclick="CF7Dashboard.clearSpecificFilter('status')">×</span>
+                </span>
+            `;
+            $activeFilters.append(statusTag);
+        }
+        
+        // Check for date filter
+        const dateFrom = $('#cf7-date-from').val();
+        const dateTo = $('#cf7-date-to').val();
+        if (dateFrom || dateTo) {
+            hasActiveFilters = true;
+            let dateText = 'Date: ';
+            if (dateFrom && dateTo) {
+                if (dateFrom === dateTo) {
+                    dateText += new Date(dateFrom).toLocaleDateString();
+                } else {
+                    dateText += `${new Date(dateFrom).toLocaleDateString()} - ${new Date(dateTo).toLocaleDateString()}`;
+                }
+            } else if (dateFrom) {
+                dateText += `From ${new Date(dateFrom).toLocaleDateString()}`;
+            } else {
+                dateText += `Until ${new Date(dateTo).toLocaleDateString()}`;
+            }
+            
+            const dateTag = `
+                <span class="cf7-filter-tag" data-filter-type="date">
+                    ${dateText}
+                    <span class="cf7-filter-remove" onclick="CF7Dashboard.clearSpecificFilter('date')">×</span>
+                </span>
+            `;
+            $activeFilters.append(dateTag);
+        }
+        
+        // Show/hide the clear filters bars
+        if (hasActiveFilters) {
+            $clearFilters.slideDown(200);
+            $panelTitle.text('Submissions (filtered)');
+        } else {
+            $clearFilters.slideUp(200);
+            $panelTitle.text('Submissions');
+        }
     };
 
     CF7Dashboard.prototype.escapeHtml = function(text) {
@@ -1902,6 +2391,11 @@
         clearAllFilters: function() {
             if (window.dashboardInstance) {
                 window.dashboardInstance.clearAllFilters();
+            }
+        },
+        clearSpecificFilter: function(filterType) {
+            if (window.dashboardInstance) {
+                window.dashboardInstance.clearSpecificFilter(filterType);
             }
         }
     };
