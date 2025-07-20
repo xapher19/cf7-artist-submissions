@@ -8,6 +8,7 @@
     class CF7Dashboard {
         constructor() {
             this.currentPage = 1;
+            this.perPage = 10; // Default to 10 entries per page
             this.selectedItems = new Set();
             this.searchTimeout = null;
             this.loadingStates = {
@@ -218,6 +219,22 @@
                 // Remove target="_blank" if present and ensure same tab opening
                 $(e.target).removeAttr('target');
             });
+
+            // Pagination events
+            $(document).on('click', '.cf7-page-btn:not(.disabled)', (e) => {
+                const page = parseInt($(e.target).data('page'));
+                if (page && page !== this.currentPage) {
+                    this.currentPage = page;
+                    this.loadSubmissions();
+                }
+            });
+
+            // Per page selector
+            $(document).on('change', '#cf7-per-page', (e) => {
+                this.perPage = parseInt($(e.target).val());
+                this.currentPage = 1; // Reset to first page when changing per page
+                this.loadSubmissions();
+            });
         }
 
         positionDropdownMenu($dropdown) {
@@ -340,6 +357,7 @@
                 action: 'cf7_dashboard_load_submissions',
                 nonce: cf7_dashboard.nonce,
                 page: this.currentPage,
+                per_page: this.perPage,
                 search: $('#cf7-search-input').val(),
                 status: $('.cf7-status-filter-dropdown').attr('data-current') || '',
                 date_from: $('#cf7-date-from').val(),
@@ -353,7 +371,8 @@
                 status: data.status,
                 date_from: data.date_from,
                 date_to: data.date_to,
-                page: data.page
+                page: data.page,
+                per_page: data.per_page
             });
 
             $.post(ajaxurl, data)
@@ -955,6 +974,10 @@
             }
 
             $buttons.html(buttonsHtml);
+            
+            // Sync the per-page selector
+            $('#cf7-per-page').val(pagination.per_page);
+            
             $pagination.show();
         }
 

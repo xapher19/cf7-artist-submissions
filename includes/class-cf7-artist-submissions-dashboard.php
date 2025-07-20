@@ -397,7 +397,22 @@ class CF7_Artist_Submissions_Dashboard {
                         </div>
                         
                         <!-- Pagination -->
-                        <div class="cf7-pagination" id="cf7-pagination"></div>
+                        <div class="cf7-pagination" id="cf7-pagination">
+                            <div class="cf7-pagination-info"></div>
+                            <div class="cf7-pagination-controls">
+                                <div class="cf7-per-page-selector">
+                                    <label for="cf7-per-page">Show:</label>
+                                    <select id="cf7-per-page" class="cf7-per-page-select">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                    <span>per page</span>
+                                </div>
+                                <div class="cf7-pagination-buttons"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -450,7 +465,7 @@ class CF7_Artist_Submissions_Dashboard {
         }
         
         $page = intval($_POST['page'] ?? 1);
-        $per_page = intval($_POST['per_page'] ?? 20);
+        $per_page = intval($_POST['per_page'] ?? 10);
         $search = sanitize_text_field($_POST['search'] ?? '');
         $status = sanitize_text_field($_POST['status'] ?? '');
         $date_from = sanitize_text_field($_POST['date_from'] ?? '');
@@ -508,6 +523,13 @@ class CF7_Artist_Submissions_Dashboard {
         
         wp_send_json_success(array(
             'submissions' => $submissions,
+            'pagination' => array(
+                'current_page' => $page,
+                'per_page' => $per_page,
+                'total_items' => $query->found_posts,
+                'total_pages' => $query->max_num_pages
+            ),
+            // Legacy fields for backward compatibility
             'total' => $query->found_posts,
             'pages' => $query->max_num_pages,
             'current_page' => $page
