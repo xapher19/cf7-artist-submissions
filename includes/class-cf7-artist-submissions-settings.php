@@ -14,6 +14,10 @@ class CF7_Artist_Submissions_Settings {
         add_action('wp_ajax_setup_daily_cron', array($this, 'ajax_setup_daily_cron'));
         add_action('wp_ajax_clear_daily_cron', array($this, 'ajax_clear_daily_cron'));
         add_action('wp_ajax_update_actions_schema', array($this, 'ajax_update_actions_schema'));
+        
+        // AJAX handlers for email debugging
+        add_action('wp_ajax_validate_email_config', array($this, 'ajax_validate_email_config'));
+        add_action('wp_ajax_test_smtp_config', array($this, 'ajax_test_smtp_config'));
     }
     
     public function add_settings_page() {
@@ -604,6 +608,33 @@ class CF7_Artist_Submissions_Settings {
                     }
                     ?>
                     
+                    <h4><?php _e('Email Configuration Debug', 'cf7-artist-submissions'); ?></h4>
+                    <p><?php _e('Check email configuration and test SMTP settings:', 'cf7-artist-submissions'); ?></p>
+                    
+                    <?php
+                    // Show current email configuration
+                    $email_options = get_option('cf7_artist_submissions_email_options', array());
+                    $from_email = isset($email_options['from_email']) ? $email_options['from_email'] : get_option('admin_email');
+                    $from_name = isset($email_options['from_name']) && !empty($email_options['from_name']) ? $email_options['from_name'] : get_bloginfo('name');
+                    
+                    echo '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin: 10px 0;">';
+                    echo '<strong>Current Email Configuration:</strong><br>';
+                    echo 'From Email: ' . esc_html($from_email) . '<br>';
+                    echo 'From Name: ' . esc_html($from_name) . '<br>';
+                    echo 'WooCommerce Templates: ' . (isset($email_options['use_wc_template']) && $email_options['use_wc_template'] && class_exists('WooCommerce') ? 'Enabled' : 'Disabled') . '<br>';
+                    echo 'WordPress Admin Email: ' . esc_html(get_option('admin_email')) . '<br>';
+                    echo 'Site Name: ' . esc_html(get_bloginfo('name'));
+                    echo '</div>';
+                    ?>
+                    
+                    <button type="button" id="validate-email-config" class="button button-secondary">
+                        <?php _e('Validate Email Configuration', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <button type="button" id="test-smtp-config" class="button button-secondary">
+                        <?php _e('Test SMTP Configuration', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <div id="email-config-result" style="margin-top: 10px;"></div>
+                    
                     <h4><?php _e('Test Daily Summary', 'cf7-artist-submissions'); ?></h4>
                     <p><?php _e('Send test summary emails to all users with pending actions:', 'cf7-artist-submissions'); ?></p>
                     <button type="button" id="test-daily-summary" class="button button-secondary">
@@ -1135,6 +1166,72 @@ class CF7_Artist_Submissions_Settings {
                     error: function() {
                         $button.prop('disabled', false).text('<?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>');
                         $result.html('<div class="notice notice-error"><p><?php _e('Error sending summary emails', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Validate email configuration
+            $('#validate-email-config').on('click', function() {
+                var $button = $(this);
+                var $result = $('#email-config-result');
+                
+                $button.prop('disabled', true).text('<?php _e('Validating...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Validating email configuration...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'validate_email_config'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Validate Email Configuration', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Validate Email Configuration', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error validating email configuration', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Test SMTP configuration
+            $('#test-smtp-config').on('click', function() {
+                var $button = $(this);
+                var $result = $('#email-config-result');
+                var testEmail = '<?php echo esc_js(get_option('admin_email')); ?>';
+                
+                // Prompt for test email address
+                var userEmail = prompt('<?php _e('Enter email address to send test email to:', 'cf7-artist-submissions'); ?>', testEmail);
+                if (!userEmail) {
+                    return; // User cancelled
+                }
+                
+                $button.prop('disabled', true).text('<?php _e('Sending Test...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Sending SMTP test email...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'test_smtp_config',
+                        test_email: userEmail
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Test SMTP Configuration', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Test SMTP Configuration', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error testing SMTP configuration', 'cf7-artist-submissions'); ?></p></div>');
                     }
                 });
             });
@@ -1676,6 +1773,105 @@ class CF7_Artist_Submissions_Settings {
             
         } catch (Exception $e) {
             wp_send_json_error(array('message' => 'Error updating schema: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to validate email configuration
+     */
+    public function ajax_validate_email_config() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if actions class is available
+        if (!class_exists('CF7_Artist_Submissions_Actions')) {
+            wp_send_json_error(array('message' => 'Actions class not available'));
+            return;
+        }
+        
+        try {
+            $validation = CF7_Artist_Submissions_Actions::validate_email_config();
+            $smtp_info = CF7_Artist_Submissions_Actions::get_smtp_config_info();
+            
+            $response = array(
+                'validation' => $validation,
+                'smtp_info' => $smtp_info
+            );
+            
+            if ($validation['valid']) {
+                $message = '✓ Email configuration is valid';
+                $message .= '<br>From: ' . esc_html($validation['from_name']) . ' &lt;' . esc_html($validation['from_email']) . '&gt;';
+                $message .= '<br>Site: ' . esc_html($validation['site_host']);
+                $message .= '<br><br><strong>SMTP Configuration:</strong>';
+                $message .= '<br>SMTP Configured: ' . ($smtp_info['smtp_configured'] ? 'Yes' : 'No');
+                $message .= '<br>Mailer Type: ' . esc_html($smtp_info['mailer_type']);
+                if (!empty($smtp_info['plugins_detected'])) {
+                    $message .= '<br>Plugins Detected: ' . esc_html(implode(', ', $smtp_info['plugins_detected']));
+                }
+                wp_send_json_success(array('message' => $message, 'details' => $response));
+            } else {
+                $message = '✗ Email configuration has issues:';
+                foreach ($validation['issues'] as $issue) {
+                    $message .= '<br>• ' . esc_html($issue);
+                }
+                wp_send_json_error(array('message' => $message, 'details' => $response));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error validating email config: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to test SMTP configuration
+     */
+    public function ajax_test_smtp_config() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if actions class is available
+        if (!class_exists('CF7_Artist_Submissions_Actions')) {
+            wp_send_json_error(array('message' => 'Actions class not available'));
+            return;
+        }
+        
+        try {
+            // Get test email from request or use admin email
+            $test_email = isset($_POST['test_email']) ? sanitize_email($_POST['test_email']) : get_option('admin_email');
+            
+            if (empty($test_email) || !is_email($test_email)) {
+                wp_send_json_error(array('message' => 'Invalid test email address'));
+                return;
+            }
+            
+            $result = CF7_Artist_Submissions_Actions::test_smtp_configuration($test_email);
+            
+            if ($result['success']) {
+                $message = '✓ SMTP test email sent successfully to ' . esc_html($test_email);
+                $message .= '<br><br><strong>Configuration Details:</strong>';
+                $message .= '<br>SMTP Configured: ' . ($result['smtp_info']['smtp_configured'] ? 'Yes' : 'No');
+                $message .= '<br>Mailer Type: ' . esc_html($result['smtp_info']['mailer_type']);
+                if (!empty($result['smtp_info']['plugins_detected'])) {
+                    $message .= '<br>Plugins Detected: ' . esc_html(implode(', ', $result['smtp_info']['plugins_detected']));
+                }
+                $message .= '<br><br>Check your email inbox to confirm receipt.';
+                wp_send_json_success(array('message' => $message, 'details' => $result));
+            } else {
+                $message = '✗ SMTP test failed';
+                if (isset($result['error'])) {
+                    $message .= '<br>Error: ' . esc_html($result['error']);
+                }
+                wp_send_json_error(array('message' => $message, 'details' => $result));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error testing SMTP: ' . $e->getMessage()));
         }
     }
 }

@@ -909,11 +909,124 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
+     * Get SMTP configuration info for debugging
+     */
+    public static function get_smtp_config_info() {
+        $config_info = array(
+            'wp_mail_smtp_active' => false,
+            'smtp_configured' => false,
+            'mailer_type' => 'php_mail',
+            'plugins_detected' => array()
+        );
+        
+        // Check for WP Mail SMTP
+        if (function_exists('wp_mail_smtp') || class_exists('WPMailSMTP\Core')) {
+            $config_info['wp_mail_smtp_active'] = true;
+            $config_info['plugins_detected'][] = 'WP Mail SMTP';
+        }
+        
+        // Check for other SMTP plugins
+        if (function_exists('easy_wp_smtp_send_mail') || class_exists('Easy_WP_SMTP')) {
+            $config_info['plugins_detected'][] = 'Easy WP SMTP';
+        }
+        
+        if (function_exists('postman_wp_mail') || class_exists('PostmanWpMail')) {
+            $config_info['plugins_detected'][] = 'Postman SMTP';
+        }
+        
+        if (class_exists('WP_Mail_Bank')) {
+            $config_info['plugins_detected'][] = 'WP Mail Bank';
+        }
+        
+        // Check if SMTP is configured via WordPress options
+        if (defined('SMTP_HOST') || get_option('smtp_host')) {
+            $config_info['smtp_configured'] = true;
+            $config_info['mailer_type'] = 'smtp';
+        }
+        
+        return $config_info;
+    }
+
+    /**
+     * Validate email configuration to prevent SMTP errors
+     */
+    public static function validate_email_config() {
+        $email_options = get_option('cf7_artist_submissions_email_options', array());
+        $from_email = isset($email_options['from_email']) ? trim($email_options['from_email']) : trim(get_option('admin_email'));
+        $from_name = isset($email_options['from_name']) && !empty($email_options['from_name']) ? trim($email_options['from_name']) : trim(get_bloginfo('name'));
+        
+        $issues = array();
+        
+        // Validate from email - must be non-empty and valid
+        if (empty($from_email) || strlen($from_email) === 0 || !is_email($from_email)) {
+            $issues[] = 'Invalid or empty from email address';
+        }
+        
+        // Validate from name - must be non-empty after trimming
+        if (empty($from_name) || strlen($from_name) === 0) {
+            $issues[] = 'Empty from name';
+        }
+        
+        // Check if from name is too long (some SMTP providers have limits)
+        if (strlen($from_name) > 200) {
+            $issues[] = 'From name is too long (over 200 characters)';
+        }
+        
+        // Check site configuration
+        $site_host = parse_url(home_url(), PHP_URL_HOST);
+        if (empty($site_host) || strlen($site_host) === 0) {
+            $issues[] = 'Cannot determine site hostname for Message-ID header';
+            $site_host = 'localhost'; // Fallback
+        }
+        
+        return array(
+            'valid' => empty($issues),
+            'issues' => $issues,
+            'from_email' => $from_email,
+            'from_name' => $from_name,
+            'site_host' => $site_host
+        );
+    }
+
+    /**
+     * Check if WP Mail SMTP is active and configured
+     */
+    public static function is_wp_mail_smtp_configured() {
+        // Check for WP Mail SMTP plugin
+        if (function_exists('wp_mail_smtp')) {
+            return true;
+        }
+        
+        // Check for WP Mail SMTP Pro
+        if (class_exists('WPMailSMTP\Core')) {
+            return true;
+        }
+        
+        // Check for other popular SMTP plugins
+        if (function_exists('easy_wp_smtp_send_mail') || 
+            class_exists('Easy_WP_SMTP') ||
+            function_exists('postman_wp_mail') ||
+            class_exists('PHPMailer')) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
      * Send daily summary email to a user
      */
     public static function send_daily_summary_email($user_id) {
         $user = get_user_by('id', $user_id);
         if (!$user) {
+            error_log('CF7 Actions: Invalid user ID for daily summary: ' . $user_id);
+            return false;
+        }
+        
+        // Validate email configuration first
+        $email_validation = self::validate_email_config();
+        if (!$email_validation['valid']) {
+            error_log('CF7 Actions: Email configuration issues: ' . implode(', ', $email_validation['issues']));
             return false;
         }
         
@@ -930,13 +1043,207 @@ class CF7_Artist_Submissions_Actions {
         $subject = sprintf(__('Daily Action Summary for %s - %d items require attention', 'cf7-artist-submissions'), 
                           date(get_option('date_format')), $total_actions);
         
-        $message = self::generate_summary_email_content($summaries, $user);
+        // Use validated email configuration
+        $from_email = $email_validation['from_email'];
+        $from_name = $email_validation['from_name'];
+        $site_host = $email_validation['site_host'];
         
-        $headers = array('Content-Type: text/html; charset=UTF-8');
+        // Get email options for WooCommerce template setting
+        $email_options = get_option('cf7_artist_submissions_email_options', array());
+        $use_wc_template = isset($email_options['use_wc_template']) && $email_options['use_wc_template'] && class_exists('WooCommerce');
         
-        return wp_mail($user->user_email, $subject, $message, $headers);
+        // Generate email content
+        $message = self::generate_summary_email_content($summaries, $user, $use_wc_template);
+        
+        // Simple headers - just the essentials to avoid SMTP2GO errors
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8'
+        );
+        
+        // Only add From header if we have both email and name
+        if (!empty($from_name) && !empty($from_email)) {
+            $headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
+        }
+        
+        // Check SMTP configuration for logging
+        $smtp_info = self::get_smtp_config_info();
+        error_log('CF7 Actions: Sending daily summary with simplified headers');
+        error_log('CF7 Actions: Headers: ' . print_r($headers, true));
+        
+        // Apply email configuration filters
+        add_filter('wp_mail_from', function($from) use ($from_email) {
+            return $from_email;
+        });
+        
+        add_filter('wp_mail_from_name', function($from_name_filter) use ($from_name) {
+            return $from_name;
+        });
+        
+        add_filter('wp_mail_content_type', function() {
+            return 'text/html';
+        });
+        
+        // Send the email
+        $mail_sent = wp_mail($user->user_email, $subject, $message, $headers);
+        
+        // Clean up filters to avoid affecting other emails
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
+        remove_all_filters('wp_mail_content_type');
+        
+        // Log success/failure for debugging
+        if ($mail_sent) {
+            $mailer_type = $smtp_info['smtp_configured'] ? 'SMTP' : 'PHP mail';
+            $plugins = !empty($smtp_info['plugins_detected']) ? implode(', ', $smtp_info['plugins_detected']) : 'None';
+            error_log('CF7 Actions: Daily summary email sent successfully to ' . $user->user_email . ' via ' . $mailer_type . ' (Plugins: ' . $plugins . ')');
+        } else {
+            error_log('CF7 Actions: Failed to send daily summary email to ' . $user->user_email);
+            
+            // Get additional error details if available
+            global $phpmailer;
+            if (isset($phpmailer) && !empty($phpmailer->ErrorInfo)) {
+                error_log('CF7 Actions: PHPMailer Error: ' . $phpmailer->ErrorInfo);
+            }
+        }
+        
+        return $mail_sent;
     }
     
+    /**
+     * Test SMTP configuration by sending a test email
+     */
+    public static function test_smtp_configuration($test_email = null) {
+        if (!$test_email) {
+            $test_email = get_option('admin_email');
+        }
+        
+        // Validate email configuration first
+        $email_validation = self::validate_email_config();
+        if (!$email_validation['valid']) {
+            return array(
+                'success' => false,
+                'error' => 'Email configuration issues: ' . implode(', ', $email_validation['issues']),
+                'smtp_info' => self::get_smtp_config_info(),
+                'test_email' => $test_email
+            );
+        }
+        
+        $smtp_info = self::get_smtp_config_info();
+        $from_email = $email_validation['from_email'];
+        $from_name = $email_validation['from_name'];
+        
+        $subject = 'CF7 Artist Submissions - SMTP Test Email';
+        $message = '<h2>SMTP Configuration Test</h2>';
+        $message .= '<p>This is a test email to verify SMTP configuration for CF7 Artist Submissions daily summary emails.</p>';
+        $message .= '<h3>Configuration Details:</h3>';
+        $message .= '<ul>';
+        $message .= '<li><strong>SMTP Configured:</strong> ' . ($smtp_info['smtp_configured'] ? 'Yes' : 'No') . '</li>';
+        $message .= '<li><strong>Mailer Type:</strong> ' . $smtp_info['mailer_type'] . '</li>';
+        $message .= '<li><strong>Plugins Detected:</strong> ' . (!empty($smtp_info['plugins_detected']) ? implode(', ', $smtp_info['plugins_detected']) : 'None') . '</li>';
+        $message .= '<li><strong>From Email:</strong> ' . $from_email . '</li>';
+        $message .= '<li><strong>From Name:</strong> ' . $from_name . '</li>';
+        $message .= '</ul>';
+        $message .= '<p>If you received this email, your SMTP configuration is working correctly for daily summary emails.</p>';
+        
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8',
+            'X-Mailer: CF7 Artist Submissions Plugin - SMTP Test'
+        );
+        
+        // Only add From header if we have valid values
+        if (!empty($from_name) && !empty($from_email)) {
+            $headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
+        } elseif (!empty($from_email)) {
+            $headers[] = 'From: ' . $from_email;
+        }
+        
+        // Apply the same filters as the daily summary emails
+        add_filter('wp_mail_from', function($from) use ($from_email) {
+            return $from_email;
+        });
+        
+        add_filter('wp_mail_from_name', function($from_name_filter) use ($from_name) {
+            return $from_name;
+        });
+        
+        add_filter('wp_mail_content_type', function() {
+            return 'text/html';
+        });
+        
+        $result = wp_mail($test_email, $subject, $message, $headers);
+        
+        // Clean up filters
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
+        remove_all_filters('wp_mail_content_type');
+        
+        return array(
+            'success' => $result,
+            'smtp_info' => $smtp_info,
+            'test_email' => $test_email
+        );
+    }
+
+    /**
+     * Manual test method for debugging daily summary emails
+     */
+    public static function debug_daily_summary_email($user_id = null, $test_email = null) {
+        // Use admin user if no user specified
+        if (!$user_id) {
+            $admin_users = get_users(array('role' => 'administrator', 'number' => 1));
+            if (empty($admin_users)) {
+                return array('error' => 'No admin users found');
+            }
+            $user_id = $admin_users[0]->ID;
+        }
+        
+        // Use admin email if no test email specified
+        if (!$test_email) {
+            $test_email = get_option('admin_email');
+        }
+        
+        error_log('CF7 Actions: Debug daily summary email starting for user ' . $user_id . ' to ' . $test_email);
+        
+        // Validate configuration
+        $email_validation = self::validate_email_config();
+        error_log('CF7 Actions: Email validation result: ' . print_r($email_validation, true));
+        
+        if (!$email_validation['valid']) {
+            return array('error' => 'Email validation failed: ' . implode(', ', $email_validation['issues']));
+        }
+        
+        // Get user
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            return array('error' => 'User not found: ' . $user_id);
+        }
+        
+        // Temporarily override user email for testing
+        $original_email = $user->user_email;
+        $user->user_email = $test_email;
+        
+        // Send the email
+        $result = self::send_daily_summary_email($user_id);
+        
+        // Restore original email
+        $user->user_email = $original_email;
+        
+        return array(
+            'success' => $result,
+            'user_id' => $user_id,
+            'test_email' => $test_email,
+            'validation' => $email_validation,
+            'smtp_info' => self::get_smtp_config_info()
+        );
+    }
+
+    /**
+     * Log email errors for debugging
+     */
+    public static function log_mail_error($wp_error) {
+        error_log('CF7 Actions: wp_mail failed - ' . $wp_error->get_error_message());
+    }
+
     /**
      * Send daily summary email to all users with pending actions
      */
@@ -974,119 +1281,144 @@ class CF7_Artist_Submissions_Actions {
     /**
      * Generate HTML content for summary email
      */
-    private static function generate_summary_email_content($summaries, $user) {
+    private static function generate_summary_email_content($summaries, $user, $use_wc_template = false) {
         $site_name = get_bloginfo('name');
-        $dashboard_url = admin_url('admin.php?page=cf7-submissions-dashboard');
+        $dashboard_url = admin_url('edit.php?post_type=cf7_submission&page=cf7-dashboard');
+        
+        // Generate the core email content first
+        $email_heading = sprintf(__('Daily Action Summary for %s', 'cf7-artist-submissions'), date(get_option('date_format')));
         
         ob_start();
         ?>
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <title><?php echo esc_html($site_name); ?> - Daily Action Summary</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #0073aa; color: white; padding: 20px; text-align: center; }
-                .section { margin: 20px 0; padding: 15px; border-left: 4px solid #ddd; }
-                .overdue { border-left-color: #dc3232; background: #fef7f7; }
-                .today { border-left-color: #ffb900; background: #fffbf0; }
-                .upcoming { border-left-color: #00a32a; background: #f7fff7; }
-                .high-priority { border-left-color: #8c8f94; background: #f9f9f9; }
-                .action-item { margin: 10px 0; padding: 10px; background: white; border-radius: 4px; }
-                .action-title { font-weight: bold; margin-bottom: 5px; }
-                .action-meta { font-size: 0.9em; color: #666; }
-                .cta { text-align: center; margin: 30px 0; }
-                .btn { background: #0073aa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1><?php echo esc_html($site_name); ?></h1>
-                    <p>Daily Action Summary for <?php echo esc_html($user->display_name); ?></p>
-                    <p><?php echo date(get_option('date_format')); ?></p>
-                </div>
-                
-                <?php if (!empty($summaries['overdue'])): ?>
-                <div class="section overdue">
-                    <h2>🚨 Overdue Actions (<?php echo count($summaries['overdue']); ?>)</h2>
-                    <?php foreach ($summaries['overdue'] as $action): ?>
-                        <div class="action-item">
-                            <div class="action-title"><?php echo esc_html($action->title); ?></div>
-                            <div class="action-meta">
-                                Submission: <?php echo esc_html($action->submission_title); ?><br>
-                                Due: <?php echo date(get_option('date_format'), strtotime($action->due_date)); ?><br>
-                                Priority: <?php echo ucfirst($action->priority); ?>
-                            </div>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #0073aa; margin-bottom: 20px;">
+                <?php echo esc_html($email_heading); ?>
+            </h2>
+            
+            <p style="margin-bottom: 20px;">
+                Hello <?php echo esc_html($user->display_name); ?>,<br>
+                Here's your daily summary of pending actions that require attention.
+            </p>
+            
+            <?php if (!empty($summaries['overdue'])): ?>
+            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #dc3232; background: #fef7f7;">
+                <h3 style="margin-top: 0; color: #dc3232;">🚨 Overdue Actions (<?php echo count($summaries['overdue']); ?>)</h3>
+                <?php foreach ($summaries['overdue'] as $action): ?>
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px;"><?php echo esc_html($action->title); ?></div>
+                        <div style="font-size: 0.9em; color: #666;">
+                            Submission: <?php echo esc_html($action->submission_title); ?><br>
+                            Due: <?php echo date(get_option('date_format'), strtotime($action->due_date)); ?><br>
+                            Priority: <?php echo ucfirst($action->priority); ?>
                         </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($summaries['today'])): ?>
-                <div class="section today">
-                    <h2>📅 Due Today (<?php echo count($summaries['today']); ?>)</h2>
-                    <?php foreach ($summaries['today'] as $action): ?>
-                        <div class="action-item">
-                            <div class="action-title"><?php echo esc_html($action->title); ?></div>
-                            <div class="action-meta">
-                                Submission: <?php echo esc_html($action->submission_title); ?><br>
-                                Priority: <?php echo ucfirst($action->priority); ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($summaries['upcoming'])): ?>
-                <div class="section upcoming">
-                    <h2>📋 Due This Week (<?php echo count($summaries['upcoming']); ?>)</h2>
-                    <?php foreach ($summaries['upcoming'] as $action): ?>
-                        <div class="action-item">
-                            <div class="action-title"><?php echo esc_html($action->title); ?></div>
-                            <div class="action-meta">
-                                Submission: <?php echo esc_html($action->submission_title); ?><br>
-                                Due: <?php echo date(get_option('date_format'), strtotime($action->due_date)); ?><br>
-                                Priority: <?php echo ucfirst($action->priority); ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (!empty($summaries['high_priority'])): ?>
-                <div class="section high-priority">
-                    <h2>⚡ High Priority Actions (<?php echo count($summaries['high_priority']); ?>)</h2>
-                    <?php foreach ($summaries['high_priority'] as $action): ?>
-                        <div class="action-item">
-                            <div class="action-title"><?php echo esc_html($action->title); ?></div>
-                            <div class="action-meta">
-                                Submission: <?php echo esc_html($action->submission_title); ?><br>
-                                Created: <?php echo date(get_option('date_format'), strtotime($action->created_at)); ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <?php endif; ?>
-                
-                <div class="cta">
-                    <a href="<?php echo esc_url($dashboard_url); ?>" class="btn">
-                        View Dashboard
-                    </a>
-                </div>
-                
-                <div style="text-align: center; margin-top: 30px; font-size: 0.9em; color: #666;">
-                    <p>This is an automated email from <?php echo esc_html($site_name); ?>.</p>
-                </div>
+                    </div>
+                <?php endforeach; ?>
             </div>
-        </body>
-        </html>
+            <?php endif; ?>
+            
+            <?php if (!empty($summaries['today'])): ?>
+            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #ffb900; background: #fffbf0;">
+                <h3 style="margin-top: 0; color: #ffb900;">📅 Due Today (<?php echo count($summaries['today']); ?>)</h3>
+                <?php foreach ($summaries['today'] as $action): ?>
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px;"><?php echo esc_html($action->title); ?></div>
+                        <div style="font-size: 0.9em; color: #666;">
+                            Submission: <?php echo esc_html($action->submission_title); ?><br>
+                            Priority: <?php echo ucfirst($action->priority); ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($summaries['upcoming'])): ?>
+            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #00a32a; background: #f7fff7;">
+                <h3 style="margin-top: 0; color: #00a32a;">📋 Due This Week (<?php echo count($summaries['upcoming']); ?>)</h3>
+                <?php foreach ($summaries['upcoming'] as $action): ?>
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px;"><?php echo esc_html($action->title); ?></div>
+                        <div style="font-size: 0.9em; color: #666;">
+                            Submission: <?php echo esc_html($action->submission_title); ?><br>
+                            Due: <?php echo date(get_option('date_format'), strtotime($action->due_date)); ?><br>
+                            Priority: <?php echo ucfirst($action->priority); ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($summaries['high_priority'])): ?>
+            <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #8c8f94; background: #f9f9f9;">
+                <h3 style="margin-top: 0; color: #8c8f94;">⚡ High Priority Actions (<?php echo count($summaries['high_priority']); ?>)</h3>
+                <?php foreach ($summaries['high_priority'] as $action): ?>
+                    <div style="margin: 10px 0; padding: 10px; background: white; border-radius: 4px;">
+                        <div style="font-weight: bold; margin-bottom: 5px;"><?php echo esc_html($action->title); ?></div>
+                        <div style="font-size: 0.9em; color: #666;">
+                            Submission: <?php echo esc_html($action->submission_title); ?><br>
+                            Created: <?php echo date(get_option('date_format'), strtotime($action->created_at)); ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="<?php echo esc_url($dashboard_url); ?>" 
+                   style="background: #0073aa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
+                    View Dashboard
+                </a>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; font-size: 0.9em; color: #666;">
+                <p>This is an automated email from <?php echo esc_html($site_name); ?>.</p>
+                <p>You're receiving this because you have pending actions assigned to you.</p>
+            </div>
+        </div>
         <?php
-        return ob_get_clean();
+        $email_content = ob_get_clean();
+        
+        // Apply WooCommerce template if enabled and available
+        if ($use_wc_template && class_exists('WooCommerce')) {
+            try {
+                $email_content = self::format_woocommerce_daily_summary_email($email_content, $email_heading);
+            } catch (Exception $e) {
+                error_log('CF7 Actions: WooCommerce template error for daily summary: ' . $e->getMessage());
+                // Fall back to the regular content if WooCommerce templating fails
+            }
+        } else {
+            // Wrap in a simple HTML structure for non-WooCommerce emails
+            $email_content = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>' . esc_html($site_name) . ' - Daily Action Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 20px; background-color: #f8f9fa;">
+    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        ' . $email_content . '
+    </div>
+</body>
+</html>';
+        }
+        
+        return $email_content;
     }
     
+    /**
+     * Format daily summary email content using WooCommerce email template
+     */
+    private static function format_woocommerce_daily_summary_email($content, $heading) {
+        // Use the existing, working WooCommerce template method from the conversations system
+        if (class_exists('CF7_Artist_Submissions_Conversations') && 
+            method_exists('CF7_Artist_Submissions_Conversations', 'format_woocommerce_conversation_email')) {
+            return CF7_Artist_Submissions_Conversations::format_woocommerce_conversation_email($content, $heading);
+        }
+        
+        // If the conversations class is not available, return the content as-is
+        return $content;
+    }
+
     /**
      * Setup WordPress cron for daily summary emails
      */
