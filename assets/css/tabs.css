@@ -325,6 +325,98 @@
     border: 1px solid #f5c6cb;
 }
 
+/* Save Feedback Messages */
+.cf7-save-feedback {
+    position: relative;
+    padding: 12px 16px;
+    margin: 15px 0;
+    border-radius: 6px;
+    font-weight: 500;
+    animation: cf7-slide-in 0.3s ease-out;
+}
+
+.cf7-save-feedback.cf7-feedback-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.cf7-save-feedback.cf7-feedback-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Edit field success message */
+.edit-success {
+    position: absolute;
+    top: -25px;
+    right: 0;
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 1000;
+}
+
+/* Editable field styles */
+.editable-field {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.editable-field:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+}
+
+.editable-field.editing {
+    background-color: #e3f2fd;
+    border-radius: 4px;
+    padding: 4px;
+    margin: -4px;
+}
+
+.edit-active {
+    width: 100%;
+    padding: 6px 8px;
+    border: 2px solid #2271b1;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.edit-active:focus {
+    outline: none;
+    border-color: #0073aa;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);
+}
+
+.edit-controls {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+}
+
+.edit-controls .button {
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Spinning animation for loading states */
+.cf7-spinning {
+    animation: cf7-spin 1s linear infinite;
+}
+
+@keyframes cf7-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
 @keyframes cf7-slide-in {
     from {
         opacity: 0;

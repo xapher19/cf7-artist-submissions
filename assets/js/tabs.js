@@ -211,6 +211,71 @@ function loadTabContent(tabId, callback) {
 
 // Status Dropdown Functionality
 jQuery(document).ready(function($) {
+    // Handle Save Changes button click
+    $(document).on('click', '.cf7-save-button', function(e) {
+        e.preventDefault();
+        
+        const $button = $(this);
+        const postId = $('#post_ID').val() || $('input[name="post_ID"]').val();
+        
+        if (!postId) {
+            alert('Error: Post ID not found');
+            return;
+        }
+        
+        // Show loading state
+        const originalText = $button.text();
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update cf7-spinning"></span> Saving...');
+        
+        // Gather all editable field data
+        const fieldData = {};
+        $('.editable-field').each(function() {
+            const $field = $(this);
+            const key = $field.data('field') || $field.data('key');
+            const $hiddenInput = $field.find('input[name^="cf7_editable_fields"]');
+            
+            if (key && $hiddenInput.length) {
+                fieldData[key] = $hiddenInput.val();
+            }
+        });
+        
+        // Gather curator notes
+        const curatorNotes = $('textarea[name="cf7_curator_notes"]').val() || '';
+        
+        // Make AJAX request to save
+        $.ajax({
+            url: cf7TabsAjax.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7_save_submission_data',
+                post_id: postId,
+                field_data: fieldData,
+                curator_notes: curatorNotes,
+                nonce: cf7TabsAjax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSaveFeedback('Changes saved successfully!', 'success');
+                    
+                    // Update the page title if artist name changed
+                    if (fieldData['cf7_artist-name']) {
+                        $('h1.cf7-artist-title').text(fieldData['cf7_artist-name']);
+                        document.title = fieldData['cf7_artist-name'] + ' - Artist Submissions';
+                    }
+                } else {
+                    showSaveFeedback('Error saving changes: ' + (response.data.message || 'Unknown error'), 'error');
+                }
+            },
+            error: function() {
+                showSaveFeedback('Error saving changes. Please try again.', 'error');
+            },
+            complete: function() {
+                // Restore button state
+                $button.prop('disabled', false).html('<span class="dashicons dashicons-saved"></span> ' + originalText);
+            }
+        });
+    });
+    
     // Handle status option clicks
     $(document).on('click', '.cf7-status-option', function(e) {
         e.preventDefault();
@@ -304,4 +369,23 @@ function showStatusUpdateFeedback(message, type) {
             jQuery(this).remove();
         });
     }, 3000);
+}
+
+// Show save feedback
+function showSaveFeedback(message, type) {
+    // Remove existing feedback
+    jQuery('.cf7-save-feedback').remove();
+    
+    // Create feedback element
+    const $feedback = jQuery('<div class="cf7-save-feedback cf7-feedback-' + type + '">' + message + '</div>');
+    
+    // Add to page
+    jQuery('.cf7-custom-header').after($feedback);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(function() {
+        $feedback.fadeOut(function() {
+            jQuery(this).remove();
+        });
+    }, 4000);
 }

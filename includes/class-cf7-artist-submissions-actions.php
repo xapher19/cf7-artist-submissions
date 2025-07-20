@@ -1040,8 +1040,8 @@ class CF7_Artist_Submissions_Actions {
             return true; // No actions to report, but don't consider it an error
         }
         
-        $subject = sprintf(__('Daily Action Summary for %s - %d items require attention', 'cf7-artist-submissions'), 
-                          date(get_option('date_format')), $total_actions);
+        $subject = sprintf(__('Task Summary: %d items need your attention (%s)', 'cf7-artist-submissions'), 
+                          $total_actions, date('M j, Y'));
         
         // Use validated email configuration
         $from_email = $email_validation['from_email'];
@@ -1064,6 +1064,11 @@ class CF7_Artist_Submissions_Actions {
         if (!empty($from_name) && !empty($from_email)) {
             $headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
         }
+        
+        // Add essential headers to improve deliverability and reduce spam flags
+        $headers[] = 'Reply-To: ' . $from_email;
+        $headers[] = 'X-Mailer: WordPress';
+        $headers[] = 'MIME-Version: 1.0';
         
         // Check SMTP configuration for logging
         $smtp_info = self::get_smtp_config_info();
@@ -1290,15 +1295,27 @@ class CF7_Artist_Submissions_Actions {
         
         ob_start();
         ?>
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-            <h2 style="color: #0073aa; margin-bottom: 20px;">
-                <?php echo esc_html($email_heading); ?>
-            </h2>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 600px;">
+            <!-- Header Section -->
+            <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #0073aa;">
+                <h1 style="color: #0073aa; margin: 0; font-size: 24px;">
+                    <?php echo esc_html($site_name); ?>
+                </h1>
+                <h2 style="color: #666; margin: 10px 0 0 0; font-size: 18px; font-weight: normal;">
+                    <?php echo esc_html($email_heading); ?>
+                </h2>
+            </div>
             
-            <p style="margin-bottom: 20px;">
-                Hello <?php echo esc_html($user->display_name); ?>,<br>
-                Here's your daily summary of pending actions that require attention.
-            </p>
+            <!-- Personal Greeting -->
+            <div style="margin: 30px 0;">
+                <p style="margin: 0; font-size: 16px;">
+                    Dear <?php echo esc_html($user->display_name); ?>,
+                </p>
+                <p style="margin: 15px 0 0 0; color: #666;">
+                    This is your scheduled daily summary of tasks and actions that need your attention. 
+                    We've organized them by priority to help you plan your day effectively.
+                </p>
+            </div>
             
             <?php if (!empty($summaries['overdue'])): ?>
             <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #dc3232; background: #fef7f7;">
@@ -1362,16 +1379,32 @@ class CF7_Artist_Submissions_Actions {
             </div>
             <?php endif; ?>
             
-            <div style="text-align: center; margin: 30px 0;">
+            <!-- Call to Action -->
+            <div style="text-align: center; margin: 40px 0; padding: 30px; background: #f8f9fa; border-radius: 8px;">
+                <h3 style="margin: 0 0 15px 0; color: #333; font-size: 18px;">Ready to get started?</h3>
+                <p style="margin: 0 0 20px 0; color: #666;">
+                    Access your dashboard to view, update, and manage all your assigned tasks.
+                </p>
                 <a href="<?php echo esc_url($dashboard_url); ?>" 
-                   style="background: #0073aa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-                    View Dashboard
+                   style="background: #0073aa; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 16px;">
+                    Open Dashboard
                 </a>
             </div>
             
-            <div style="text-align: center; margin-top: 30px; font-size: 0.9em; color: #666;">
-                <p>This is an automated email from <?php echo esc_html($site_name); ?>.</p>
-                <p>You're receiving this because you have pending actions assigned to you.</p>
+            <!-- Professional Footer -->
+            <div style="border-top: 1px solid #e0e0e0; padding-top: 30px; margin-top: 40px;">
+                <div style="text-align: center; color: #666; font-size: 14px; line-height: 1.5;">
+                    <p style="margin: 0 0 10px 0;">
+                        <strong><?php echo esc_html($site_name); ?></strong> - Artist Submissions Management System
+                    </p>
+                    <p style="margin: 0 0 10px 0;">
+                        This automated summary helps you stay on top of your assigned tasks and deadlines.
+                    </p>
+                    <p style="margin: 0; font-size: 12px; color: #999;">
+                        You're receiving this email because you have active task assignments. 
+                        This notification is sent daily at 9:00 AM to keep your workflow organized.
+                    </p>
+                </div>
             </div>
         </div>
         <?php
@@ -1386,17 +1419,36 @@ class CF7_Artist_Submissions_Actions {
                 // Fall back to the regular content if WooCommerce templating fails
             }
         } else {
-            // Wrap in a simple HTML structure for non-WooCommerce emails
+            // Wrap in a professional HTML structure for non-WooCommerce emails
+            $site_url = home_url();
             $email_content = '<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>' . esc_html($site_name) . ' - Daily Action Summary</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="format-detection" content="date=no">
+    <meta name="format-detection" content="address=no">
+    <meta name="format-detection" content="email=no">
+    <title>' . esc_attr($site_name) . ' - Daily Task Summary</title>
+    <style type="text/css">
+        @media only screen and (max-width: 600px) {
+            .email-container { width: 100% !important; padding: 10px !important; }
+            .content-section { padding: 15px !important; }
+        }
+        /* Prevent blue links on iOS */
+        a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+    </style>
 </head>
-<body style="margin: 0; padding: 20px; background-color: #f8f9fa;">
-    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        ' . $email_content . '
+<body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif;">
+    <div class="email-container" style="max-width: 600px; margin: 0 auto; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div class="content-section" style="padding: 30px;">
+            ' . $email_content . '
+        </div>
+    </div>
+    <!-- Email tracking pixel for deliverability -->
+    <div style="display: none; max-height: 0; overflow: hidden;">
+        Daily task summary from ' . esc_attr($site_name) . ' - Manage your assigned actions and deadlines effectively
     </div>
 </body>
 </html>';

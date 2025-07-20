@@ -20,7 +20,7 @@
             const $field = $(this);
             const fieldType = $field.data('type');
             const originalValue = $field.data('original');
-            const fieldKey = $field.data('key');
+            const fieldKey = $field.data('key') || $field.data('field');
             
             // Hide the display value
             $field.find('.field-value').hide();
@@ -87,10 +87,16 @@
     
     function saveField($field, $input, fieldKey) {
         const newValue = $input.val();
-        const hiddenInput = $field.find('input[name^="cf7_editable_fields"]');
+        let $hiddenInput = $field.find('input[name^="cf7_editable_fields"]');
+        
+        // Create hidden input if it doesn't exist
+        if (!$hiddenInput.length) {
+            $hiddenInput = $('<input type="hidden" name="cf7_editable_fields[' + fieldKey + ']">');
+            $field.append($hiddenInput);
+        }
         
         // Update the hidden input value
-        hiddenInput.val(newValue);
+        $hiddenInput.val(newValue);
         
         // Update the display value
         const $displayValue = $field.find('.field-value');

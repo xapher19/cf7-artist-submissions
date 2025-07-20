@@ -9,6 +9,7 @@ class CF7_Artist_Submissions_Tabs {
         add_action('add_meta_boxes', array(__CLASS__, 'replace_meta_boxes_with_tabs'), 20);
         add_action('wp_ajax_cf7_load_tab_content', array(__CLASS__, 'ajax_load_tab_content'));
         add_action('wp_ajax_cf7_update_status', array(__CLASS__, 'ajax_update_status'));
+        add_action('wp_ajax_cf7_save_submission_data', array(__CLASS__, 'ajax_save_submission_data'));
         
         // Override the post edit page layout
         add_action('edit_form_after_title', array(__CLASS__, 'render_custom_page_layout'));
@@ -255,12 +256,51 @@ class CF7_Artist_Submissions_Tabs {
             // Format label from meta key
             $label = ucwords(str_replace(array('cf7_', '_', '-'), ' ', $key));
             
+            // Determine field type based on key name or content
+            $field_type = 'text';
+            if (strpos($key, 'email') !== false) {
+                $field_type = 'email';
+            } 
+            elseif (strpos($key, 'website') !== false || 
+                   strpos($key, 'portfolio') !== false || 
+                   strpos($key, 'url') !== false || 
+                   strpos($key, 'link') !== false) {
+                $field_type = 'url';
+            }
+            elseif (strpos($key, 'statement') !== false || strlen($value) > 100) {
+                $field_type = 'textarea';
+            }
+            
             echo '<tr>';
             echo '<th scope="row"><strong>' . esc_html($label) . '</strong></th>';
-            echo '<td>';
-            echo '<span class="editable-field" data-field="' . esc_attr($key) . '" data-post-id="' . esc_attr($post->ID) . '">';
-            echo esc_html($value);
-            echo '</span>';
+            echo '<td class="editable-field" 
+                      data-field="' . esc_attr($key) . '" 
+                      data-key="' . esc_attr($key) . '" 
+                      data-post-id="' . esc_attr($post->ID) . '"
+                      data-type="' . esc_attr($field_type) . '" 
+                      data-original="' . esc_attr($value) . '">';
+            
+            // Make URLs clickable - check if value looks like a URL
+            if (filter_var($value, FILTER_VALIDATE_URL)) {
+                echo '<a href="' . esc_url($value) . '" target="_blank" class="field-value">' . esc_html($value) . '</a>';
+            }
+            // Check for fields that typically contain URLs
+            elseif (strpos($key, 'website') !== false || 
+                   strpos($key, 'portfolio') !== false || 
+                   strpos($key, 'url') !== false || 
+                   strpos($key, 'link') !== false) {
+                
+                // If it doesn't have http://, add it
+                $url = (strpos($value, 'http') === 0) ? $value : 'http://' . $value;
+                echo '<a href="' . esc_url($url) . '" target="_blank" class="field-value">' . esc_html($value) . '</a>';
+            } 
+            else {
+                echo '<span class="field-value">' . esc_html($value) . '</span>';
+            }
+            
+            // Add hidden input that will be used when editing
+            echo '<input type="hidden" name="cf7_editable_fields[' . esc_attr($key) . ']" value="' . esc_attr($value) . '" class="field-input" />';
+            
             echo '</td>';
             echo '</tr>';
         }
@@ -732,6 +772,106 @@ class CF7_Artist_Submissions_Tabs {
         wp_send_json_success(array(
             'status' => $new_status,
             'data' => $statuses[$new_status]
+        ));
+    }
+    
+    /**
+     * AJAX handler to save submission data
+     */
+    public static function ajax_save_submission_data() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_tabs_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        $field_data = isset($_POST['field_data']) ? $_POST['field_data'] : array();
+        $curator_notes = isset($_POST['curator_notes']) ? sanitize_textarea_field($_POST['curator_notes']) : '';
+        
+        // Validate post
+        if (!$post_id || get_post_type($post_id) !== 'cf7_submission') {
+            wp_send_json_error(array('message' => 'Invalid post'));
+            return;
+        }
+        
+        // Check edit permissions for this specific post
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error(array('message' => 'Permission denied for this post'));
+            return;
+        }
+        
+        $updated_fields = 0;
+        
+        // Save field data
+        if (is_array($field_data)) {
+            foreach ($field_data as $meta_key => $value) {
+                // Skip empty values or non-cf7 meta keys for safety
+                if (empty($value) || strpos($meta_key, 'cf7_') !== 0) {
+                    continue;
+                }
+                
+                // Get the old value
+                $old_value = get_post_meta($post_id, $meta_key, true);
+                
+                // Only proceed if the value has changed
+                if ($old_value !== $value) {
+                    // Sanitize based on field type
+                    if (strpos($meta_key, 'email') !== false) {
+                        $value = sanitize_email($value);
+                    } 
+                    elseif (strpos($meta_key, 'website') !== false || 
+                           strpos($meta_key, 'portfolio') !== false || 
+                           strpos($meta_key, 'url') !== false || 
+                           strpos($meta_key, 'link') !== false) {
+                        $value = esc_url_raw($value);
+                    }
+                    elseif (strpos($meta_key, 'statement') !== false) {
+                        $value = sanitize_textarea_field($value);
+                    }
+                    else {
+                        $value = sanitize_text_field($value);
+                    }
+                    
+                    // Update the post meta
+                    update_post_meta($post_id, $meta_key, $value);
+                    $updated_fields++;
+                    
+                    // If the field is artist-name, also update the post title
+                    if ($meta_key === 'cf7_artist-name') {
+                        wp_update_post(array(
+                            'ID' => $post_id,
+                            'post_title' => $value
+                        ));
+                    }
+                    
+                    // Log the field update
+                    do_action('cf7_artist_submission_field_updated', $post_id, $meta_key, $old_value, $value);
+                }
+            }
+        }
+        
+        // Save curator notes
+        if (!empty($curator_notes)) {
+            $old_notes = get_post_meta($post_id, 'cf7_curator_notes', true);
+            if ($old_notes !== $curator_notes) {
+                update_post_meta($post_id, 'cf7_curator_notes', $curator_notes);
+                $updated_fields++;
+                
+                // Log the notes update
+                do_action('cf7_artist_submission_field_updated', $post_id, 'cf7_curator_notes', $old_notes, $curator_notes);
+            }
+        }
+        
+        wp_send_json_success(array(
+            'message' => "Successfully updated {$updated_fields} field(s)",
+            'updated_fields' => $updated_fields
         ));
     }
 }
