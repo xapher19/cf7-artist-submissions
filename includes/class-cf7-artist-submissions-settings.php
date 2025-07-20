@@ -8,6 +8,12 @@ class CF7_Artist_Submissions_Settings {
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
         add_action('admin_notices', array($this, 'settings_notice'));
+        
+        // AJAX handlers for daily summary testing
+        add_action('wp_ajax_test_daily_summary', array($this, 'ajax_test_daily_summary'));
+        add_action('wp_ajax_setup_daily_cron', array($this, 'ajax_setup_daily_cron'));
+        add_action('wp_ajax_clear_daily_cron', array($this, 'ajax_clear_daily_cron'));
+        add_action('wp_ajax_update_actions_schema', array($this, 'ajax_update_actions_schema'));
     }
     
     public function add_settings_page() {
@@ -126,6 +132,14 @@ class CF7_Artist_Submissions_Settings {
             'imap_encryption',
             __('IMAP Encryption', 'cf7-artist-submissions'),
             array($this, 'render_imap_encryption_field'),
+            'cf7-artist-submissions',
+            'cf7_artist_submissions_imap'
+        );
+        
+        add_settings_field(
+            'imap_delete_processed',
+            __('Delete Processed Emails', 'cf7-artist-submissions'),
+            array($this, 'render_imap_delete_processed_field'),
             'cf7-artist-submissions',
             'cf7_artist_submissions_imap'
         );
@@ -289,6 +303,30 @@ class CF7_Artist_Submissions_Settings {
                     
                     <?php submit_button(__('Save Email Settings', 'cf7-artist-submissions')); ?>
                 </form>
+                
+                <!-- Daily Summary Email Testing -->
+                <div class="card" style="margin-top: 30px;">
+                    <h3><?php _e('Daily Summary Email Testing', 'cf7-artist-submissions'); ?></h3>
+                    <p><?php _e('Test the daily summary email functionality and WooCommerce template integration.', 'cf7-artist-submissions'); ?></p>
+                    
+                    <div style="margin: 20px 0;">
+                        <button type="button" id="send-test-summary-email" class="button button-secondary">
+                            <?php _e('Send Test Summary Email to Current User', 'cf7-artist-submissions'); ?>
+                        </button>
+                        <div id="test-summary-result" style="margin-top: 10px;"></div>
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <button type="button" id="send-summary-to-all" class="button button-primary">
+                            <?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>
+                        </button>
+                        <div id="summary-all-result" style="margin-top: 10px;"></div>
+                    </div>
+                    
+                    <p class="description">
+                        <?php _e('The test email will use your current email settings and will include any pending actions assigned to you. The summary will respect the WooCommerce template setting if enabled.', 'cf7-artist-submissions'); ?>
+                    </p>
+                </div>
                 <?php else: ?>
                     <div class="notice notice-error">
                         <p><?php _e('Settings functions not available. Please ensure WordPress is properly loaded.', 'cf7-artist-submissions'); ?></p>
@@ -393,6 +431,12 @@ class CF7_Artist_Submissions_Settings {
                                 <?php $this->render_imap_encryption_field(); ?>
                             </td>
                         </tr>
+                        <tr>
+                            <th scope="row"><?php _e('Delete Processed Emails', 'cf7-artist-submissions'); ?></th>
+                            <td>
+                                <?php $this->render_imap_delete_processed_field(); ?>
+                            </td>
+                        </tr>
                     </table>
                     
                     <?php submit_button(__('Save IMAP Settings', 'cf7-artist-submissions')); ?>
@@ -452,6 +496,14 @@ class CF7_Artist_Submissions_Settings {
                         <?php _e('Debug Inbox', 'cf7-artist-submissions'); ?>
                     </button>
                     <div id="debug-inbox-result" style="margin-top: 10px;"></div>
+                    
+                    <h4><?php _e('Clean Up IMAP Inbox', 'cf7-artist-submissions'); ?></h4>
+                    <p><?php _e('This will scan all emails on the IMAP server and delete any that have already been processed and stored in the database. It will also delete orphaned emails from deleted submissions. Use this to clean up your inbox manually.', 'cf7-artist-submissions'); ?></p>
+                    <p class="description" style="color: #d63384;"><?php _e('⚠️ Warning: This will permanently delete processed emails and orphaned emails from your IMAP server. Make sure you have backups if needed.', 'cf7-artist-submissions'); ?></p>
+                    <button type="button" id="cleanup-imap-inbox" class="button button-secondary">
+                        <?php _e('Clean Up Inbox', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <div id="cleanup-imap-result" style="margin-top: 10px;"></div>
                 </div>
                 
                 <div class="card" style="margin-top: 20px;">
@@ -510,6 +562,71 @@ class CF7_Artist_Submissions_Settings {
                         <?php _e('Migrate to Consistent Tokens', 'cf7-artist-submissions'); ?>
                     </button>
                     <div id="migrate-tokens-result" style="margin-top: 10px;"></div>
+                </div>
+                
+                <div class="card" style="margin-top: 20px;">
+                    <h3><?php _e('Daily Summary Emails', 'cf7-artist-submissions'); ?></h3>
+                    <p><?php _e('Test the daily summary email system by manually triggering emails for users with pending actions.', 'cf7-artist-submissions'); ?></p>
+                    
+                    <?php
+                    // Show current daily summary status
+                    $next_scheduled = wp_next_scheduled('cf7_daily_summary_cron');
+                    if ($next_scheduled) {
+                        echo '<p><strong>Next scheduled email:</strong> ' . date(get_option('date_format') . ' ' . get_option('time_format'), $next_scheduled) . '</p>';
+                    } else {
+                        echo '<p style="color: #d63384;"><strong>⚠️ Daily emails are not scheduled!</strong> They should be set up automatically.</p>';
+                    }
+                    
+                    // Show users with pending actions
+                    if (class_exists('CF7_Artist_Submissions_Actions')) {
+                        global $wpdb;
+                        $table_name = $wpdb->prefix . 'cf7_actions';
+                        $users_with_actions = $wpdb->get_results(
+                            "SELECT DISTINCT a.assigned_to, u.display_name, u.user_email, COUNT(*) as pending_count
+                             FROM $table_name a 
+                             LEFT JOIN {$wpdb->users} u ON a.assigned_to = u.ID
+                             WHERE a.status = 'pending' 
+                             AND a.assigned_to IS NOT NULL 
+                             GROUP BY a.assigned_to 
+                             ORDER BY u.display_name"
+                        );
+                        
+                        if (!empty($users_with_actions)) {
+                            echo '<h4>Users with Pending Actions:</h4>';
+                            echo '<ul style="margin-left: 20px;">';
+                            foreach ($users_with_actions as $user) {
+                                echo '<li>' . esc_html($user->display_name) . ' (' . esc_html($user->user_email) . ') - ' . esc_html($user->pending_count) . ' pending action(s)</li>';
+                            }
+                            echo '</ul>';
+                        } else {
+                            echo '<p>No users currently have pending actions assigned to them.</p>';
+                        }
+                    }
+                    ?>
+                    
+                    <h4><?php _e('Test Daily Summary', 'cf7-artist-submissions'); ?></h4>
+                    <p><?php _e('Send test summary emails to all users with pending actions:', 'cf7-artist-submissions'); ?></p>
+                    <button type="button" id="test-daily-summary" class="button button-secondary">
+                        <?php _e('Send Test Summary Emails', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <div id="test-daily-summary-result" style="margin-top: 10px;"></div>
+                    
+                    <h4><?php _e('Cron Management', 'cf7-artist-submissions'); ?></h4>
+                    <p><?php _e('Manage the automated daily email schedule:', 'cf7-artist-submissions'); ?></p>
+                    <button type="button" id="setup-daily-cron" class="button button-secondary">
+                        <?php _e('Setup Daily Cron', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <button type="button" id="clear-daily-cron" class="button button-secondary">
+                        <?php _e('Clear Daily Cron', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <div id="daily-cron-result" style="margin-top: 10px;"></div>
+                    
+                    <h4><?php _e('Database Schema', 'cf7-artist-submissions'); ?></h4>
+                    <p><?php _e('Update the actions database table to include the latest schema changes:', 'cf7-artist-submissions'); ?></p>
+                    <button type="button" id="update-actions-schema" class="button button-secondary">
+                        <?php _e('Update Actions Schema', 'cf7-artist-submissions'); ?>
+                    </button>
+                    <div id="update-schema-result" style="margin-top: 10px;"></div>
                 </div>
                 
                 <div class="card" style="margin-top: 20px;">
@@ -707,6 +824,63 @@ class CF7_Artist_Submissions_Settings {
                 });
             });
             
+            // Clean up IMAP inbox
+            $('#cleanup-imap-inbox').on('click', function() {
+                var $button = $(this);
+                var $result = $('#cleanup-imap-result');
+                
+                if (!confirm('<?php _e('This will permanently delete all processed emails from your IMAP server. Are you sure you want to continue?', 'cf7-artist-submissions'); ?>')) {
+                    return;
+                }
+                
+                $button.prop('disabled', true).text('<?php _e('Cleaning...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Scanning IMAP server and cleaning up processed emails...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    timeout: 120000, // 2 minute timeout for cleanup operations
+                    data: {
+                        action: 'cf7_cleanup_imap_inbox',
+                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Clean Up Inbox', 'cf7-artist-submissions'); ?>');
+                        
+                        if (response.success) {
+                            var message = '<?php _e('IMAP cleanup completed!', 'cf7-artist-submissions'); ?>';
+                            if (response.data.deleted_count !== undefined) {
+                                message += '<br><?php _e('Emails deleted:', 'cf7-artist-submissions'); ?> ' + response.data.deleted_count;
+                            }
+                            if (response.data.orphaned_count !== undefined && response.data.orphaned_count > 0) {
+                                message += '<br><?php _e('Orphaned emails deleted:', 'cf7-artist-submissions'); ?> ' + response.data.orphaned_count;
+                            }
+                            if (response.data.scanned_count !== undefined) {
+                                message += '<br><?php _e('Emails scanned:', 'cf7-artist-submissions'); ?> ' + response.data.scanned_count;
+                            }
+                            if (response.data.folders_deleted !== undefined && response.data.folders_deleted > 0) {
+                                message += '<br><?php _e('Empty folders deleted:', 'cf7-artist-submissions'); ?> ' + response.data.folders_deleted;
+                            }
+                            if (response.data.duration !== undefined) {
+                                message += '<br><?php _e('Duration:', 'cf7-artist-submissions'); ?> ' + response.data.duration;
+                            }
+                            $result.html('<div class="notice notice-success"><p>' + message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $button.prop('disabled', false).text('<?php _e('Clean Up Inbox', 'cf7-artist-submissions'); ?>');
+                        
+                        var errorMessage = '<?php _e('AJAX error. Please try again.', 'cf7-artist-submissions'); ?>';
+                        if (status === 'timeout') {
+                            errorMessage = '<?php _e('Operation timed out. The cleanup may still be running on the server.', 'cf7-artist-submissions'); ?>';
+                        }
+                        $result.html('<div class="notice notice-error"><p>' + errorMessage + '</p></div>');
+                    }
+                });
+            });
+            
             // Migrate tokens
             $('#migrate-tokens').on('click', function() {
                 var $button = $(this);
@@ -773,6 +947,194 @@ class CF7_Artist_Submissions_Settings {
                     error: function() {
                         $button.prop('disabled', false).text('<?php _e('Clear Debug Messages', 'cf7-artist-submissions'); ?>');
                         alert('<?php _e('Error clearing debug messages', 'cf7-artist-submissions'); ?>');
+                    }
+                });
+            });
+            
+            // Test daily summary emails
+            $('#test-daily-summary').on('click', function() {
+                var $button = $(this);
+                var $result = $('#test-daily-summary-result');
+                
+                $button.prop('disabled', true).text('<?php _e('Sending...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Sending daily summary emails...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'test_daily_summary',
+                        nonce: '<?php echo wp_create_nonce('cf7_daily_summary_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Emails', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Emails', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error sending summary emails', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Setup daily cron
+            $('#setup-daily-cron').on('click', function() {
+                var $button = $(this);
+                var $result = $('#daily-cron-result');
+                
+                $button.prop('disabled', true).text('<?php _e('Setting up...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Setting up daily cron...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'setup_daily_cron',
+                        nonce: '<?php echo wp_create_nonce('cf7_daily_summary_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Setup Daily Cron', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                            // Reload page to show updated cron status
+                            setTimeout(function() { location.reload(); }, 2000);
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Setup Daily Cron', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error setting up cron', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Clear daily cron
+            $('#clear-daily-cron').on('click', function() {
+                var $button = $(this);
+                var $result = $('#daily-cron-result');
+                
+                $button.prop('disabled', true).text('<?php _e('Clearing...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Clearing daily cron...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'clear_daily_cron',
+                        nonce: '<?php echo wp_create_nonce('cf7_daily_summary_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Clear Daily Cron', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                            // Reload page to show updated cron status
+                            setTimeout(function() { location.reload(); }, 2000);
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Clear Daily Cron', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error clearing cron', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Update actions schema
+            $('#update-actions-schema').on('click', function() {
+                var $button = $(this);
+                var $result = $('#update-schema-result');
+                
+                $button.prop('disabled', true).text('<?php _e('Updating...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Updating database schema...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'update_actions_schema',
+                        nonce: '<?php echo wp_create_nonce('cf7_admin_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Update Actions Schema', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Update Actions Schema', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error updating schema', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Send test summary email to current user
+            $('#send-test-summary-email').on('click', function() {
+                var $button = $(this);
+                var $result = $('#test-summary-result');
+                
+                $button.prop('disabled', true).text('<?php _e('Sending...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Sending test summary email...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'cf7_test_summary_email',
+                        nonce: '<?php echo wp_create_nonce('cf7_email_test_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Email to Current User', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Email to Current User', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error sending test email', 'cf7-artist-submissions'); ?></p></div>');
+                    }
+                });
+            });
+            
+            // Send summary to all users
+            $('#send-summary-to-all').on('click', function() {
+                var $button = $(this);
+                var $result = $('#summary-all-result');
+                
+                if (!confirm('<?php _e('This will send daily summary emails to all users with pending actions. Continue?', 'cf7-artist-submissions'); ?>')) {
+                    return;
+                }
+                
+                $button.prop('disabled', true).text('<?php _e('Sending...', 'cf7-artist-submissions'); ?>');
+                $result.html('<div class="notice notice-info"><p><?php _e('Sending daily summary emails to all users...', 'cf7-artist-submissions'); ?></p></div>');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'cf7_send_summary_to_all',
+                        nonce: '<?php echo wp_create_nonce('cf7_email_test_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        $button.prop('disabled', false).text('<?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>');
+                        if (response.success) {
+                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
+                        } else {
+                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
+                        }
+                    },
+                    error: function() {
+                        $button.prop('disabled', false).text('<?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>');
+                        $result.html('<div class="notice notice-error"><p><?php _e('Error sending summary emails', 'cf7-artist-submissions'); ?></p></div>');
                     }
                 });
             });
@@ -893,6 +1255,15 @@ class CF7_Artist_Submissions_Settings {
         echo '<option value="none"' . selected('none', $encryption, false) . '>None (not recommended)</option>';
         echo '</select>';
         echo '<p class="description">' . __('Encryption method for IMAP connection', 'cf7-artist-submissions') . '</p>';
+    }
+    
+    public function render_imap_delete_processed_field() {
+        $options = get_option('cf7_artist_submissions_imap_options', array());
+        $delete_processed = isset($options['delete_processed']) ? $options['delete_processed'] : '1'; // Default to enabled
+        
+        echo '<label><input type="checkbox" name="cf7_artist_submissions_imap_options[delete_processed]" value="1"' . checked('1', $delete_processed, false) . '> ';
+        echo __('Delete emails from server after processing', 'cf7-artist-submissions') . '</label>';
+        echo '<p class="description">' . __('When enabled, emails are permanently deleted from the IMAP server after being imported into the database. This prevents duplicate processing when messages are cleared. Recommended for privacy and to avoid reprocessing emails.', 'cf7-artist-submissions') . '</p>';
     }
     
     /**
@@ -1166,5 +1537,145 @@ class CF7_Artist_Submissions_Settings {
         }
         
         return $valid;
+    }
+    
+    /**
+     * AJAX handler to test daily summary emails
+     */
+    public function ajax_test_daily_summary() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_daily_summary_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if actions class is available
+        if (!class_exists('CF7_Artist_Submissions_Actions')) {
+            wp_send_json_error(array('message' => 'Actions class not available'));
+            return;
+        }
+        
+        try {
+            error_log('CF7 Settings: Test daily summary called');
+            $result = CF7_Artist_Submissions_Actions::send_daily_summary_to_all();
+            error_log('CF7 Settings: Result = ' . print_r($result, true));
+            
+            $message = sprintf(
+                'Daily summary emails sent! Successfully sent to %d users, %d failed.',
+                $result['sent'],
+                $result['failed']
+            );
+            
+            if ($result['total_users'] === 0) {
+                $message = 'No users have pending actions assigned to them.';
+            }
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'details' => $result
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to setup daily cron
+     */
+    public function ajax_setup_daily_cron() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if actions class is available
+        if (!class_exists('CF7_Artist_Submissions_Actions')) {
+            wp_send_json_error(array('message' => 'Actions class not available'));
+            return;
+        }
+        
+        try {
+            CF7_Artist_Submissions_Actions::setup_daily_summary_cron();
+            
+            $next_scheduled = wp_next_scheduled('cf7_daily_summary_cron');
+            if ($next_scheduled) {
+                $next_time = date(get_option('date_format') . ' ' . get_option('time_format'), $next_scheduled);
+                $message = 'Daily summary cron scheduled successfully. Next run: ' . $next_time;
+            } else {
+                $message = 'Daily summary cron setup attempted, but schedule not found.';
+            }
+            
+            wp_send_json_success(array('message' => $message));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to clear daily cron
+     */
+    public function ajax_clear_daily_cron() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if actions class is available
+        if (!class_exists('CF7_Artist_Submissions_Actions')) {
+            wp_send_json_error(array('message' => 'Actions class not available'));
+            return;
+        }
+        
+        try {
+            CF7_Artist_Submissions_Actions::clear_daily_summary_cron();
+            wp_send_json_success(array('message' => 'Daily summary cron cleared successfully.'));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to update actions schema
+     */
+    public function ajax_update_actions_schema() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if actions class is available
+        if (!class_exists('CF7_Artist_Submissions_Actions')) {
+            wp_send_json_error(array('message' => 'Actions class not available'));
+            return;
+        }
+        
+        try {
+            // Force schema update
+            delete_transient('cf7_actions_schema_checked');
+            CF7_Artist_Submissions_Actions::check_and_update_schema();
+            
+            wp_send_json_success(array('message' => 'Database schema updated successfully. The assigned_to column has been added to the actions table.'));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error updating schema: ' . $e->getMessage()));
+        }
     }
 }

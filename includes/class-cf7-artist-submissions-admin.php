@@ -23,22 +23,10 @@ class CF7_Artist_Submissions_Admin {
             return;
         }
         
-        wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
-        
-        // For single submission view
-        if ($hook === 'post.php' || $hook === 'post-new.php') {
-            wp_enqueue_style('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/lightbox.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
-            wp_enqueue_script('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/lightbox.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
-            wp_enqueue_script('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
-            
-            // Add new script for field editing
-            wp_enqueue_script('cf7-artist-submissions-fields', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/fields.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
-            
-            // Add nonce for AJAX
-            wp_localize_script('cf7-artist-submissions-admin', 'cf7ArtistSubmissions', array(
-                'nonce' => wp_create_nonce('cf7_artist_submissions_nonce')
-            ));
-        }
+        // For single submission edit page, let the Tabs system handle all assets
+        // For submission list pages, the Post Type class handles admin.css
+        // Dashboard assets are handled by the Dashboard class
+        // This prevents conflicts and ensures consistent loading
     }
     
     public function ajax_update_status() {

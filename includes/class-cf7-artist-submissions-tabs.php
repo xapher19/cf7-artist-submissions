@@ -31,16 +31,43 @@ class CF7_Artist_Submissions_Tabs {
             wp_enqueue_style('cf7-artist-submissions-tabs', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/tabs.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
             wp_enqueue_style('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/lightbox.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
             wp_enqueue_style('cf7-artist-submissions-conversations', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/conversations.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_style('cf7-artist-submissions-actions', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/actions.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
             
             wp_enqueue_script('cf7-artist-submissions-tabs', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/tabs.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
             wp_enqueue_script('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/lightbox.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
             wp_enqueue_script('cf7-artist-submissions-fields', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/fields.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
-            wp_enqueue_script('cf7-artist-submissions-conversation', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/conversation.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
+            wp_enqueue_script('cf7-artist-submissions-actions', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/actions.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
+            wp_enqueue_script('cf7-artist-submissions-conversation', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/conversation.js', array('jquery', 'cf7-artist-submissions-actions'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
+            wp_enqueue_script('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
             
-            // Add AJAX configuration
+            // Add AJAX configuration for tabs
             wp_localize_script('cf7-artist-submissions-tabs', 'cf7TabsAjax', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('cf7_tabs_nonce')
+            ));
+            
+            // Add Actions AJAX data globally (for cross-tab functionality)
+            wp_localize_script('cf7-artist-submissions-tabs', 'cf7_actions_ajax', array(
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('cf7_actions_nonce')
+            ));
+            
+            // Add Admin AJAX data (for admin.js compatibility)
+            wp_localize_script('cf7-artist-submissions-admin', 'cf7ArtistSubmissions', array(
+                'nonce' => wp_create_nonce('cf7_artist_submissions_nonce')
+            ));
+            
+            // Add Conversations AJAX data (for conversation.js)
+            wp_localize_script('cf7-artist-submissions-conversation', 'cf7Conversations', array(
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('cf7_conversation_nonce'),
+                'strings' => array(
+                    'sending' => __('Sending...', 'cf7-artist-submissions'),
+                    'sent' => __('Message sent!', 'cf7-artist-submissions'),
+                    'error' => __('Error sending message', 'cf7-artist-submissions'),
+                    'required' => __('Please fill in all fields', 'cf7-artist-submissions')
+                )
             ));
         }
     }
@@ -86,6 +113,12 @@ class CF7_Artist_Submissions_Tabs {
                     </button>
                 </div>
                 <div class="cf7-tab-nav-item">
+                    <button type="button" class="cf7-tab-link" data-tab="cf7-tab-actions">
+                        <span class="dashicons dashicons-list-view"></span>
+                        <?php _e('Actions', 'cf7-artist-submissions'); ?>
+                    </button>
+                </div>
+                <div class="cf7-tab-nav-item">
                     <button type="button" class="cf7-tab-link" data-tab="cf7-tab-notes">
                         <span class="dashicons dashicons-edit-large"></span>
                         <?php _e('Curator Notes', 'cf7-artist-submissions'); ?>
@@ -104,6 +137,10 @@ class CF7_Artist_Submissions_Tabs {
                 
                 <div id="cf7-tab-conversations" class="cf7-tab-content">
                     <?php self::render_conversations_tab($post); ?>
+                </div>
+                
+                <div id="cf7-tab-actions" class="cf7-tab-content">
+                    <?php self::render_actions_tab($post); ?>
                 </div>
                 
                 <div id="cf7-tab-notes" class="cf7-tab-content">
@@ -154,6 +191,21 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
     
+    public static function render_actions_tab($post) {
+        ?>
+        <div class="cf7-tab-section">
+            <?php 
+            // Render the actions content
+            if (class_exists('CF7_Artist_Submissions_Actions')) {
+                CF7_Artist_Submissions_Actions::render_actions_tab($post);
+            } else {
+                echo '<p>' . __('Actions system not available.', 'cf7-artist-submissions') . '</p>';
+            }
+            ?>
+        </div>
+        <?php
+    }
+
     public static function render_notes_tab($post) {
         ?>
         <div class="cf7-tab-section">
@@ -353,6 +405,9 @@ class CF7_Artist_Submissions_Tabs {
                 break;
             case 'cf7-tab-conversations':
                 self::render_conversations_tab($post);
+                break;
+            case 'cf7-tab-actions':
+                self::render_actions_tab($post);
                 break;
             case 'cf7-tab-notes':
                 self::render_notes_tab($post);

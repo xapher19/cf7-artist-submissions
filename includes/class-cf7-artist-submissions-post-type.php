@@ -23,6 +23,10 @@ class CF7_Artist_Submissions_Post_Type {
         
         // Enqueue admin scripts and styles
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
+        
+        // Add modern dashboard in the right position
+        add_action('all_admin_notices', array($this, 'add_submissions_dashboard_notice'));
+        add_action('admin_footer', array($this, 'move_dashboard_script'));
     }
     
     /**
@@ -35,7 +39,13 @@ class CF7_Artist_Submissions_Post_Type {
             return;
         }
         
-        wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+        // Only load admin styles on submission list page
+        if ($screen->id === 'edit-cf7_submission') {
+            wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_script('jquery');
+        }
+        
+        // For single submission edit pages, the Tabs system handles all assets
     }
     
     public function register_post_type() {
@@ -218,9 +228,19 @@ class CF7_Artist_Submissions_Post_Type {
             case 'submission_date':
                 $date = get_post_meta($post_id, 'cf7_submission_date', true);
                 if (!empty($date)) {
-                    echo esc_html(date_i18n('F j, Y g:i a', strtotime($date)));
+                    $formatted_date = date_i18n('F j, Y', strtotime($date));
+                    $formatted_time = date_i18n('g:i a', strtotime($date));
+                    echo '<div class="submission-date-wrapper">';
+                    echo '<div class="submission-date">' . esc_html($formatted_date) . '</div>';
+                    echo '<div class="submission-time">' . esc_html($formatted_time) . '</div>';
+                    echo '</div>';
                 } else {
-                    echo get_the_date('F j, Y g:i a', $post_id);
+                    $formatted_date = get_the_date('F j, Y', $post_id);
+                    $formatted_time = get_the_date('g:i a', $post_id);
+                    echo '<div class="submission-date-wrapper">';
+                    echo '<div class="submission-date">' . esc_html($formatted_date) . '</div>';
+                    echo '<div class="submission-time">' . esc_html($formatted_time) . '</div>';
+                    echo '</div>';
                 }
                 break;
                 
@@ -228,7 +248,8 @@ class CF7_Artist_Submissions_Post_Type {
                 $terms = get_the_terms($post_id, 'submission_status');
                 if (!empty($terms)) {
                     $status = $terms[0]->name;
-                    echo '<span class="submission-status status-' . sanitize_html_class(strtolower($status)) . '">' . esc_html($status) . '</span>';
+                    $status_slug = sanitize_html_class(strtolower(str_replace(' ', '-', $status)));
+                    echo '<span class="submission-status status-' . $status_slug . '">' . esc_html($status) . '</span>';
                 } else {
                     echo '<span class="submission-status status-new">New</span>';
                 }
@@ -237,11 +258,13 @@ class CF7_Artist_Submissions_Post_Type {
             case 'notes':
                 $notes = get_post_meta($post_id, 'cf7_curator_notes', true);
                 if (!empty($notes)) {
-                    // Truncate notes to 100 characters with ellipsis
-                    if (strlen($notes) > 100) {
-                        $notes = substr($notes, 0, 100) . '...';
+                    // Truncate notes to 80 characters with ellipsis
+                    if (strlen($notes) > 80) {
+                        $truncated = substr($notes, 0, 80) . '...';
+                        echo '<div class="notes-content" title="' . esc_attr($notes) . '">' . esc_html($truncated) . '</div>';
+                    } else {
+                        echo '<div class="notes-content">' . esc_html($notes) . '</div>';
                     }
-                    echo esc_html($notes);
                 } else {
                     echo '<span class="no-notes">—</span>';
                 }
@@ -463,5 +486,188 @@ class CF7_Artist_Submissions_Post_Type {
         }
         
         return $ordered;
+    }
+    
+    /**
+     * Add dashboard via admin notice (better positioning)
+     */
+    public function add_submissions_dashboard_notice() {
+        $screen = get_current_screen();
+        
+        if (!$screen || $screen->id !== 'edit-cf7_submission') {
+            return;
+        }
+        
+        // Get submission statistics
+        $stats = $this->get_submission_statistics();
+        
+        echo '<div id="cf7-dashboard-placeholder" style="display: none;">';
+        echo '<div class="cf7-submissions-dashboard">';
+        echo '<div class="cf7-dashboard-cards">';
+        
+        // Total submissions card
+        echo '<div class="cf7-dashboard-card cf7-card-total">';
+        echo '<div class="cf7-card-icon"><span class="dashicons dashicons-portfolio"></span></div>';
+        echo '<div class="cf7-card-content">';
+        echo '<div class="cf7-card-number">' . esc_html($stats['total']) . '</div>';
+        echo '<div class="cf7-card-label">Total Submissions</div>';
+        echo '</div>';
+        echo '</div>';
+        
+        // New submissions card
+        echo '<div class="cf7-dashboard-card cf7-card-new">';
+        echo '<div class="cf7-card-icon"><span class="dashicons dashicons-star-filled"></span></div>';
+        echo '<div class="cf7-card-content">';
+        echo '<div class="cf7-card-number">' . esc_html($stats['new']) . '</div>';
+        echo '<div class="cf7-card-label">New</div>';
+        echo '</div>';
+        echo '</div>';
+        
+        // Reviewed submissions card
+        echo '<div class="cf7-dashboard-card cf7-card-reviewed">';
+        echo '<div class="cf7-card-icon"><span class="dashicons dashicons-visibility"></span></div>';
+        echo '<div class="cf7-card-content">';
+        echo '<div class="cf7-card-number">' . esc_html($stats['reviewed']) . '</div>';
+        echo '<div class="cf7-card-label">Reviewed</div>';
+        echo '</div>';
+        echo '</div>';
+        
+        // Selected submissions card
+        echo '<div class="cf7-dashboard-card cf7-card-selected">';
+        echo '<div class="cf7-card-icon"><span class="dashicons dashicons-yes-alt"></span></div>';
+        echo '<div class="cf7-card-content">';
+        echo '<div class="cf7-card-number">' . esc_html($stats['selected']) . '</div>';
+        echo '<div class="cf7-card-label">Selected</div>';
+        echo '</div>';
+        echo '</div>';
+        
+        // Recent activity indicator
+        $recent_count = $this->get_recent_submissions_count();
+        if ($recent_count > 0) {
+            echo '<div class="cf7-dashboard-recent">';
+            echo '<span class="dashicons dashicons-clock"></span>';
+            echo '<span>' . sprintf(_n('%d new submission in the last 24 hours', '%d new submissions in the last 24 hours', $recent_count, 'cf7-artist-submissions'), $recent_count) . '</span>';
+            echo '</div>';
+        }
+        
+        echo '</div>';
+        echo '</div>';
+        echo '</div>';
+    }
+    
+    /**
+     * JavaScript to move dashboard to the correct position
+     */
+    public function move_dashboard_script() {
+        $screen = get_current_screen();
+        
+        if (!$screen || $screen->id !== 'edit-cf7_submission') {
+            return;
+        }
+        
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Wait a bit for the page to fully load
+            setTimeout(function() {
+                var dashboardPlaceholder = $('#cf7-dashboard-placeholder');
+                var dashboard = dashboardPlaceholder.find('.cf7-submissions-dashboard');
+                
+                if (dashboard.length) {
+                    if ($('.subsubsub').length) {
+                        // Insert dashboard AFTER the subsubsub (filter links)
+                        $('.subsubsub').after(dashboard);
+                    } else {
+                        // Fallback: insert after page title
+                        $('.wrap .wp-heading-inline').after(dashboard);
+                    }
+                    
+                    // Show the dashboard and remove placeholder
+                    dashboard.show();
+                    dashboardPlaceholder.remove();
+                }
+            }, 100);
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * Old dashboard method - now unused but keeping for compatibility
+     */
+    public function add_submissions_dashboard($which) {
+        // This method is no longer used but kept to avoid breaking existing code
+        return;
+    }
+    
+    /**
+     * Get submission statistics
+     */
+    private function get_submission_statistics() {
+        $total = wp_count_posts('cf7_submission');
+        
+        // Get status counts from actual posts
+        $status_counts = array(
+            'new' => 0,
+            'awaiting-information' => 0,
+            'reviewed' => 0,
+            'selected' => 0,
+            'rejected' => 0
+        );
+        
+        // Get all submissions and their status
+        $all_submissions = get_posts(array(
+            'post_type' => 'cf7_submission',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids'
+        ));
+        
+        foreach ($all_submissions as $post_id) {
+            $terms = wp_get_object_terms($post_id, 'submission_status');
+            if (empty($terms) || is_wp_error($terms)) {
+                // No status assigned = new
+                $status_counts['new']++;
+            } else {
+                $status_slug = $terms[0]->slug;
+                if (isset($status_counts[$status_slug])) {
+                    $status_counts[$status_slug]++;
+                } elseif ($status_slug === 'awaiting-information') {
+                    $status_counts['awaiting-information']++;
+                } else {
+                    // Handle any other statuses
+                    $status_counts['new']++;
+                }
+            }
+        }
+        
+        return array(
+            'total' => $total->publish,
+            'new' => $status_counts['new'] + $status_counts['awaiting-information'], // Combine new and awaiting info
+            'reviewed' => $status_counts['reviewed'],
+            'selected' => $status_counts['selected'],
+            'rejected' => $status_counts['rejected']
+        );
+    }
+    
+    /**
+     * Get count of submissions in the last 24 hours
+     */
+    private function get_recent_submissions_count() {
+        $yesterday = date('Y-m-d H:i:s', strtotime('-24 hours'));
+        
+        $recent_posts = get_posts(array(
+            'post_type' => 'cf7_submission',
+            'date_query' => array(
+                array(
+                    'after' => $yesterday,
+                    'inclusive' => true
+                )
+            ),
+            'numberposts' => -1,
+            'fields' => 'ids'
+        ));
+        
+        return count($recent_posts);
     }
 }

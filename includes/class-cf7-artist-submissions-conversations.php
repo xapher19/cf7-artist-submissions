@@ -12,12 +12,19 @@ class CF7_Artist_Submissions_Conversations {
         add_action('add_meta_boxes', array(__CLASS__, 'add_conversation_meta_box'));
         add_action('wp_ajax_cf7_send_message', array(__CLASS__, 'ajax_send_message'));
         add_action('wp_ajax_cf7_fetch_messages', array(__CLASS__, 'ajax_fetch_messages'));
+        add_action('wp_ajax_cf7_mark_messages_viewed', array(__CLASS__, 'ajax_mark_messages_viewed'));
+        add_action('wp_ajax_cf7_get_unviewed_count', array(__CLASS__, 'ajax_get_unviewed_count'));
+        add_action('wp_ajax_cf7_check_new_messages', array(__CLASS__, 'ajax_check_new_messages'));
         add_action('wp_ajax_cf7_test_imap', array(__CLASS__, 'ajax_test_imap'));
         add_action('wp_ajax_cf7_check_replies_manual', array(__CLASS__, 'ajax_check_replies_manual'));
         add_action('wp_ajax_cf7_debug_inbox', array(__CLASS__, 'ajax_debug_inbox'));
         add_action('wp_ajax_cf7_clear_debug_messages', array(__CLASS__, 'ajax_clear_debug_messages'));
         add_action('wp_ajax_cf7_migrate_tokens', array(__CLASS__, 'ajax_migrate_tokens'));
+        add_action('wp_ajax_cf7_toggle_message_read', array(__CLASS__, 'ajax_toggle_message_read'));
+        add_action('wp_ajax_cf7_clear_messages', array(__CLASS__, 'ajax_clear_messages'));
+        add_action('wp_ajax_cf7_cleanup_imap_inbox', array(__CLASS__, 'ajax_cleanup_imap_inbox'));
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_scripts'));
+        add_action('admin_footer', array(__CLASS__, 'add_context_menu_script'));
         
         // Ensure table is up to date
         add_action('admin_init', array(__CLASS__, 'maybe_update_table'));
@@ -38,7 +45,7 @@ class CF7_Artist_Submissions_Conversations {
     public static function maybe_update_table() {
         $version_option = 'cf7_conversations_table_version';
         $current_version = get_option($version_option, '1.0');
-        $target_version = '1.1'; // Version with template support
+        $target_version = '1.2'; // Version with notification support
         
         if (version_compare($current_version, $target_version, '<')) {
             self::update_conversations_table();
@@ -93,6 +100,7 @@ class CF7_Artist_Submissions_Conversations {
             email_status enum('pending','sent','delivered','failed') DEFAULT 'pending',
             is_template tinyint(1) DEFAULT 0,
             template_id varchar(100) DEFAULT NULL,
+            admin_viewed_at datetime DEFAULT NULL,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY submission_id (submission_id),
@@ -108,7 +116,7 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Update conversations table to add template columns
+     * Update conversations table to add template columns and notification tracking
      */
     public static function update_conversations_table() {
         global $wpdb;
@@ -127,10 +135,22 @@ class CF7_Artist_Submissions_Conversations {
             $wpdb->query("ALTER TABLE $table_name ADD COLUMN template_id varchar(100) DEFAULT NULL");
         }
         
+        // Check if admin_viewed_at column exists (for notification system)
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'admin_viewed_at'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table_name ADD COLUMN admin_viewed_at datetime DEFAULT NULL");
+        }
+        
         // Add index for is_template if it doesn't exist
         $index_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'is_template'");
         if (empty($index_exists)) {
             $wpdb->query("ALTER TABLE $table_name ADD INDEX is_template (is_template)");
+        }
+        
+        // Add index for admin_viewed_at if it doesn't exist
+        $index_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'admin_viewed_at'");
+        if (empty($index_exists)) {
+            $wpdb->query("ALTER TABLE $table_name ADD INDEX admin_viewed_at (admin_viewed_at)");
         }
     }
     
@@ -258,6 +278,12 @@ class CF7_Artist_Submissions_Conversations {
         $submission_id = $post->ID;
         $messages = self::get_conversation_messages($submission_id);
         $artist_email = self::get_artist_email($submission_id);
+        $unviewed_count = self::get_unviewed_message_count($submission_id);
+        
+        // Mark messages as viewed when the meta box is rendered (user is actively viewing)
+        if ($unviewed_count > 0) {
+            self::mark_messages_as_viewed($submission_id);
+        }
         
         // Store debug info for admin interface instead of error_log
         $debug_info = get_option('cf7_debug_messages', array());
@@ -266,6 +292,7 @@ class CF7_Artist_Submissions_Conversations {
             'action' => 'render_conversation_meta_box',
             'submission_id' => $submission_id,
             'message_count' => count($messages),
+            'unviewed_count' => $unviewed_count,
             'artist_email' => $artist_email
         );
         update_option('cf7_debug_messages', array_slice($debug_info, -50));
@@ -290,17 +317,77 @@ class CF7_Artist_Submissions_Conversations {
                 </button>
             </div>
             
+            <?php if (!empty($messages)): ?>
+                <div class="conversation-status-summary">
+                    <?php 
+                    $total_messages = count($messages);
+                    $inbound_messages = array_filter($messages, function($msg) { return $msg->direction === 'inbound'; });
+                    $inbound_count = count($inbound_messages);
+                    $read_count = count(array_filter($inbound_messages, function($msg) { return !empty($msg->admin_viewed_at); }));
+                    $unread_count = $inbound_count - $read_count;
+                    ?>
+                    <div class="message-summary">
+                        <div class="summary-stats">
+                            <span class="summary-item">
+                                <span class="dashicons dashicons-email"></span>
+                                <?php printf(_n('%d message', '%d messages', $total_messages, 'cf7-artist-submissions'), $total_messages); ?>
+                            </span>
+                            <?php if ($inbound_count > 0): ?>
+                                <span class="summary-item">
+                                    <span class="dashicons dashicons-arrow-down-alt"></span>
+                                    <?php printf(_n('%d received', '%d received', $inbound_count, 'cf7-artist-submissions'), $inbound_count); ?>
+                                </span>
+                                <?php if ($unread_count > 0): ?>
+                                    <span class="summary-item unread-summary">
+                                        <span class="dashicons dashicons-marker"></span>
+                                        <?php printf(_n('%d unread', '%d unread', $unread_count, 'cf7-artist-submissions'), $unread_count); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="summary-item read-summary">
+                                        <span class="dashicons dashicons-yes-alt"></span>
+                                        <?php _e('All read', 'cf7-artist-submissions'); ?>
+                                    </span>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($total_messages > 0): ?>
+                            <div class="conversation-actions">
+                                <button type="button" id="cf7-clear-messages-btn" class="button cf7-danger-button" data-submission-id="<?php echo esc_attr($submission_id); ?>">
+                                    <span class="dashicons dashicons-trash"></span>
+                                    <?php _e('Clear Messages', 'cf7-artist-submissions'); ?>
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
             <div class="conversation-messages">
                 <?php if (empty($messages)): ?>
                     <p class="no-messages"><?php _e('No messages yet. Start a conversation with the artist below.', 'cf7-artist-submissions'); ?></p>
                 <?php else: ?>
                     <?php foreach ($messages as $message): ?>
-                        <div class="conversation-message <?php echo esc_attr($message->direction === 'outbound' ? 'outgoing' : 'incoming'); ?> <?php echo $message->is_template ? 'template-message' : ''; ?>">
+                        <div class="conversation-message <?php echo esc_attr($message->direction === 'outbound' ? 'outgoing' : 'incoming'); ?> <?php echo $message->is_template ? 'template-message' : ''; ?> <?php echo ($message->direction === 'inbound' && empty($message->admin_viewed_at)) ? 'unviewed' : ''; ?>" data-message-id="<?php echo esc_attr($message->id); ?>">
                             <div class="message-meta">
                                 <span class="message-type"><?php echo $message->direction === 'outbound' ? 'Sent' : 'Received'; ?></span>
                                 <?php if ($message->is_template): ?>
                                     <span class="template-badge"><?php _e('Template', 'cf7-artist-submissions'); ?></span>
                                 <?php endif; ?>
+                                
+                                <?php if ($message->direction === 'inbound'): ?>
+                                    <?php if (empty($message->admin_viewed_at)): ?>
+                                        <span class="message-status-badge unread">
+                                            <span class="dashicons dashicons-marker"></span>
+                                            <?php _e('Unread', 'cf7-artist-submissions'); ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="message-status-badge read">
+                                            <span class="dashicons dashicons-yes-alt"></span>
+                                            <?php _e('Read', 'cf7-artist-submissions'); ?>
+                                        </span>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                
                                 <span class="message-date"><?php echo esc_html(human_time_diff(strtotime($message->sent_at), current_time('timestamp')) . ' ago'); ?></span>
                             </div>
                             <div class="message-bubble">
@@ -380,6 +467,37 @@ class CF7_Artist_Submissions_Conversations {
                         <span id="send-status" class="send-status"></span>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Clear Messages Confirmation Modal -->
+        <div id="cf7-clear-messages-modal" class="cf7-modal" style="display: none;">
+            <div class="cf7-modal-content">
+                <div class="cf7-modal-header">
+                    <h3><?php _e('Clear All Messages', 'cf7-artist-submissions'); ?></h3>
+                    <button type="button" class="cf7-modal-close">&times;</button>
+                </div>
+                <div class="cf7-modal-body">
+                    <div class="cf7-warning-content">
+                        <div class="cf7-warning-icon">
+                            <span class="dashicons dashicons-warning"></span>
+                        </div>
+                        <div class="cf7-warning-text">
+                            <p><strong><?php _e('WARNING: This action is permanent and irreversible!', 'cf7-artist-submissions'); ?></strong></p>
+                            <p><?php _e('This will permanently delete all conversation messages from the database for this artist. All sent and received messages will be completely removed for privacy compliance.', 'cf7-artist-submissions'); ?></p>
+                            <p><em><?php _e('This action cannot be undone and messages cannot be recovered.', 'cf7-artist-submissions'); ?></em></p>
+                            <p><?php _e('To confirm permanent deletion, please type "CLEAR" in the field below:', 'cf7-artist-submissions'); ?></p>
+                            
+                            <div class="cf7-form-group">
+                                <input type="text" id="cf7-clear-confirmation" placeholder="<?php _e('Type CLEAR to confirm', 'cf7-artist-submissions'); ?>" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cf7-modal-footer">
+                    <button type="button" id="cf7-clear-cancel" class="button"><?php _e('Cancel', 'cf7-artist-submissions'); ?></button>
+                    <button type="button" id="cf7-clear-confirm" class="button cf7-danger-button" disabled><?php _e('Permanently Delete All Messages', 'cf7-artist-submissions'); ?></button>
+                </div>
             </div>
         </div>
         
@@ -483,37 +601,13 @@ class CF7_Artist_Submissions_Conversations {
     
     /**
      * Enqueue scripts for conversation interface
+     * Note: Assets are now centrally managed by the Tabs system to prevent conflicts.
+     * The Tabs system loads conversation.js, conversations.css, and provides
+     * cf7Conversations localization data for all single submission edit pages.
      */
     public static function enqueue_scripts($hook) {
-        global $post;
-        
-        if ($hook === 'post.php' && $post && $post->post_type === 'cf7_submission') {
-            wp_enqueue_script(
-                'cf7-conversations',
-                CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/conversation.js',
-                array('jquery'),
-                CF7_ARTIST_SUBMISSIONS_VERSION,
-                true
-            );
-            
-            wp_localize_script('cf7-conversations', 'cf7Conversations', array(
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('cf7_conversation_nonce'),
-                'strings' => array(
-                    'sending' => __('Sending...', 'cf7-artist-submissions'),
-                    'sent' => __('Message sent!', 'cf7-artist-submissions'),
-                    'error' => __('Error sending message', 'cf7-artist-submissions'),
-                    'required' => __('Please fill in all fields', 'cf7-artist-submissions')
-                )
-            ));
-            
-            wp_enqueue_style(
-                'cf7-conversations',
-                CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/conversations.css',
-                array(),
-                CF7_ARTIST_SUBMISSIONS_VERSION
-            );
-        }
+        // Assets are handled by the Tabs system for single submission pages
+        // This prevents script/style conflicts and ensures consistent loading
     }
     
     /**
@@ -907,6 +1001,17 @@ class CF7_Artist_Submissions_Conversations {
             
             error_log('CF7 Artist Submissions: Processed ' . $total_processed . ' emails total');
             
+            // Expunge deleted emails to permanently remove them from the server (only if deletion is enabled)
+            $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
+            $delete_processed = isset($imap_settings['delete_processed']) ? $imap_settings['delete_processed'] : '1'; // Default to enabled
+            
+            if ($delete_processed === '1') {
+                imap_expunge($connection);
+                error_log('CF7 Artist Submissions: Expunged deleted emails from server');
+            } else {
+                error_log('CF7 Artist Submissions: Expunge skipped (delete_processed disabled)');
+            }
+            
             imap_close($connection);
             
             // Update last check time
@@ -1049,8 +1154,21 @@ class CF7_Artist_Submissions_Conversations {
                 $stored = self::store_incoming_message($submission_id, $header, $body, $reply_token);
                 
                 if ($stored) {
-                    // Only mark email as seen if it was successfully stored
+                    // Mark email as seen first
                     imap_setflag_full($connection, $email_number, "\\Seen");
+                    
+                    // Check if we should delete processed emails from server
+                    $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
+                    $delete_processed = isset($imap_settings['delete_processed']) ? $imap_settings['delete_processed'] : '1'; // Default to enabled
+                    
+                    if ($delete_processed === '1') {
+                        // Delete email from server to prevent reprocessing after database clearing
+                        imap_delete($connection, $email_number);
+                        error_log('CF7 Artist Submissions: Email deleted from server to prevent reprocessing');
+                    } else {
+                        error_log('CF7 Artist Submissions: Email kept on server (delete_processed disabled)');
+                    }
+                    
                     error_log('CF7 Artist Submissions: Successfully processed and stored message for submission: ' . $submission_id);
                     return true;
                 } else {
@@ -1835,12 +1953,18 @@ class CF7_Artist_Submissions_Conversations {
         foreach ($messages as $message) {
             $formatted[] = array(
                 'id' => $message->id,
+                'direction' => $message->direction,
                 'type' => $message->direction === 'outbound' ? 'outgoing' : 'incoming',
                 'message' => $message->message_body,
+                'message_body' => $message->message_body,
                 'sent_at' => $message->sent_at,
+                'human_time_diff' => human_time_diff(strtotime($message->sent_at), current_time('timestamp')) . ' ago',
                 'from_name' => $message->from_name,
                 'from_email' => $message->from_email,
-                'subject' => $message->subject
+                'subject' => $message->subject,
+                'is_template' => (bool) $message->is_template,
+                'admin_viewed_at' => $message->admin_viewed_at,
+                'template_id' => $message->template_id
             );
         }
         
@@ -1906,5 +2030,849 @@ class CF7_Artist_Submissions_Conversations {
             error_log('CF7 Conversations: WooCommerce template error: ' . $e->getMessage());
             return $content;
         }
+    }
+    
+    /**
+     * Mark messages as viewed by admin
+     */
+    public static function mark_messages_as_viewed($submission_id, $user_id = null) {
+        global $wpdb;
+        
+        if (!$user_id) {
+            $user_id = get_current_user_id();
+        }
+        
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        // Mark all unviewed inbound messages for this submission as viewed
+        $result = $wpdb->update(
+            $table_name,
+            array('admin_viewed_at' => current_time('mysql')),
+            array(
+                'submission_id' => $submission_id,
+                'direction' => 'inbound',
+                'admin_viewed_at' => null
+            ),
+            array('%s'),
+            array('%d', '%s', '%s')
+        );
+        
+        return $result;
+    }
+    
+    /**
+     * Get count of unviewed messages for a submission
+     */
+    public static function get_unviewed_message_count($submission_id) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        $count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM $table_name 
+             WHERE submission_id = %d 
+             AND direction = 'inbound' 
+             AND admin_viewed_at IS NULL",
+            $submission_id
+        ));
+        
+        return intval($count);
+    }
+    
+    /**
+     * Get total unviewed messages across all submissions
+     */
+    public static function get_total_unviewed_count() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        $count = $wpdb->get_var(
+            "SELECT COUNT(*) FROM $table_name 
+             WHERE direction = 'inbound' 
+             AND admin_viewed_at IS NULL"
+        );
+        
+        return intval($count);
+    }
+    
+    /**
+     * Get submissions with unviewed messages
+     */
+    public static function get_submissions_with_unviewed_messages() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        $results = $wpdb->get_results(
+            "SELECT submission_id, COUNT(*) as unviewed_count,
+                    MAX(COALESCE(received_at, sent_at)) as latest_message_date
+             FROM $table_name 
+             WHERE direction = 'inbound' 
+             AND admin_viewed_at IS NULL
+             GROUP BY submission_id
+             ORDER BY latest_message_date DESC"
+        );
+        
+        return $results;
+    }
+    
+    /**
+     * AJAX handler for marking messages as viewed
+     */
+    public static function ajax_mark_messages_viewed() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $submission_id = intval($_POST['submission_id']);
+        
+        if (empty($submission_id)) {
+            wp_send_json_error(array('message' => 'Missing submission ID'));
+            return;
+        }
+        
+        $result = self::mark_messages_as_viewed($submission_id);
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'message' => 'Messages marked as viewed',
+                'marked_count' => $result
+            ));
+        } else {
+            wp_send_json_error(array('message' => 'Failed to mark messages as viewed'));
+        }
+    }
+    
+    /**
+     * AJAX handler for getting unviewed message count
+     */
+    public static function ajax_get_unviewed_count() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check user permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $submission_id = intval($_POST['submission_id']);
+        
+        if ($submission_id) {
+            $count = self::get_unviewed_message_count($submission_id);
+        } else {
+            $count = self::get_total_unviewed_count();
+        }
+        
+        wp_send_json_success(array(
+            'unviewed_count' => $count
+        ));
+    }
+    
+    /**
+     * AJAX handler to check for new messages
+     */
+    public static function ajax_check_new_messages() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $submission_id = intval($_POST['submission_id']);
+        if (!$submission_id) {
+            wp_send_json_error(array('message' => 'Invalid submission ID'));
+            return;
+        }
+        
+        // For now, just return that there are no new messages
+        // This can be enhanced later to actually check for new messages
+        // by comparing last check time with message timestamps
+        wp_send_json_success(array(
+            'hasNewMessages' => false,
+            'message' => 'No new messages'
+        ));
+    }
+    
+    /**
+     * AJAX handler to toggle message read/unread status
+     */
+    public static function ajax_toggle_message_read() {
+        check_ajax_referer('cf7_conversation_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+        }
+        
+        $message_id = intval($_POST['message_id']);
+        $current_status = sanitize_text_field($_POST['current_status']);
+        
+        if (!$message_id) {
+            wp_send_json_error('Invalid message ID');
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        // Toggle the viewed status
+        $new_status = ($current_status === 'read') ? 0 : 1;
+        
+        $result = $wpdb->update(
+            $table_name,
+            array('viewed' => $new_status),
+            array('id' => $message_id),
+            array('%d'),
+            array('%d')
+        );
+        
+        if ($result !== false) {
+            wp_send_json_success(array(
+                'new_status' => $new_status ? 'read' : 'unread',
+                'message' => $new_status ? __('Message marked as read', 'cf7-artist-submissions') : __('Message marked as unread', 'cf7-artist-submissions')
+            ));
+        } else {
+            wp_send_json_error('Failed to update message status');
+        }
+    }
+    
+    /**
+     * AJAX handler to clear all messages for a submission
+     */
+    public static function ajax_clear_messages() {
+        check_ajax_referer('cf7_conversation_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        }
+        
+        $submission_id = intval($_POST['submission_id']);
+        
+        if (!$submission_id) {
+            wp_send_json_error(array('message' => 'Invalid submission ID'));
+        }
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cf7_conversations';
+        
+        // Check if table exists
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+            wp_send_json_error(array('message' => 'Conversations table does not exist'));
+        }
+        
+        // Begin transaction for data integrity
+        $wpdb->query('START TRANSACTION');
+        
+        try {
+            // First, get the count of messages that will be deleted for logging
+            $message_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM $table_name WHERE submission_id = %d",
+                $submission_id
+            ));
+            
+            if ($message_count == 0) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_success(array(
+                    'message' => 'No messages found to delete',
+                    'deleted_count' => 0
+                ));
+                return;
+            }
+            
+            // Delete all messages for this submission - PERMANENT DELETION
+            $result = $wpdb->delete(
+                $table_name,
+                array('submission_id' => $submission_id),
+                array('%d')
+            );
+            
+            if ($result === false) {
+                $wpdb->query('ROLLBACK');
+                wp_send_json_error(array('message' => 'Database error: Failed to delete messages'));
+                return;
+            }
+            
+            // Also clear any cached conversation data
+            wp_cache_delete("cf7_conversation_messages_{$submission_id}", 'cf7_artist_submissions');
+            wp_cache_delete("cf7_conversation_count_{$submission_id}", 'cf7_artist_submissions');
+            
+            // Commit the transaction
+            $wpdb->query('COMMIT');
+            
+            // Log the action for audit purposes with more detail
+            error_log("CF7 Artist Submissions: PRIVACY DELETION - {$message_count} messages permanently deleted for submission ID {$submission_id} by user " . get_current_user_id() . " at " . current_time('mysql'));
+            
+            wp_send_json_success(array(
+                'message' => sprintf(__('%d messages permanently deleted from database', 'cf7-artist-submissions'), $message_count),
+                'deleted_count' => $message_count,
+                'action' => 'permanent_deletion'
+            ));
+            
+        } catch (Exception $e) {
+            $wpdb->query('ROLLBACK');
+            error_log("CF7 Artist Submissions: Error during message deletion for submission {$submission_id}: " . $e->getMessage());
+            wp_send_json_error(array('message' => 'Failed to clear messages: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for cleaning up IMAP inbox - removes processed emails from server
+     */
+    public static function ajax_cleanup_imap_inbox() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check user permissions - only admins can do cleanup
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $start_time = microtime(true);
+        
+        try {
+            $result = self::cleanup_processed_emails_from_imap();
+            
+            $end_time = microtime(true);
+            $duration = round($end_time - $start_time, 2) . ' seconds';
+            
+            if ($result !== false) {
+                $response_data = array(
+                    'deleted_count' => $result['deleted_count'],
+                    'scanned_count' => $result['scanned_count'],
+                    'orphaned_count' => isset($result['orphaned_count']) ? $result['orphaned_count'] : 0,
+                    'folders_deleted' => isset($result['folders_deleted']) ? $result['folders_deleted'] : 0,
+                    'duration' => $duration
+                );
+                
+                if (isset($result['skipped']) && $result['skipped']) {
+                    $response_data['message'] = $result['message'];
+                } else {
+                    $response_data['message'] = 'IMAP cleanup completed successfully';
+                }
+                
+                wp_send_json_success($response_data);
+            } else {
+                wp_send_json_error(array(
+                    'message' => 'IMAP cleanup failed - check server configuration',
+                    'duration' => $duration
+                ));
+            }
+            
+        } catch (Exception $e) {
+            error_log('CF7 Artist Submissions: IMAP cleanup error - ' . $e->getMessage());
+            wp_send_json_error(array(
+                'message' => 'IMAP cleanup failed: ' . $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Clean up processed emails from IMAP server
+     * Scans all emails and deletes those that have been successfully processed and stored in database
+     */
+    public static function cleanup_processed_emails_from_imap() {
+        $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
+        
+        if (empty($imap_settings['server']) || empty($imap_settings['username']) || empty($imap_settings['password'])) {
+            error_log('CF7 Artist Submissions: IMAP cleanup failed - IMAP not configured');
+            return false;
+        }
+        
+        // Check if deletion is enabled
+        $delete_processed = isset($imap_settings['delete_processed']) ? $imap_settings['delete_processed'] : '1';
+        if ($delete_processed !== '1') {
+            error_log('CF7 Artist Submissions: IMAP cleanup skipped - delete_processed is disabled');
+            return array(
+                'scanned_count' => 0, 
+                'deleted_count' => 0, 
+                'folders_deleted' => 0,
+                'skipped' => true,
+                'message' => 'Cleanup skipped - email deletion is disabled in settings'
+            );
+        }
+        
+        try {
+            // Build connection string
+            $encryption = !empty($imap_settings['encryption']) ? '/' . $imap_settings['encryption'] : '/ssl';
+            $port = !empty($imap_settings['port']) ? $imap_settings['port'] : 993;
+            $connection_string = '{' . $imap_settings['server'] . ':' . $port . '/imap' . $encryption . '}';
+            
+            error_log('CF7 Artist Submissions: Starting IMAP cleanup - connecting to: ' . $connection_string);
+            
+            // Connect to IMAP server
+            $connection = imap_open(
+                $connection_string,
+                $imap_settings['username'],
+                $imap_settings['password']
+            );
+            
+            if (!$connection) {
+                $error = imap_last_error();
+                error_log('CF7 Artist Submissions: IMAP cleanup connection failed: ' . $error);
+                return false;
+            }
+            
+            error_log('CF7 Artist Submissions: IMAP cleanup connection successful');
+            
+            // Get list of ALL folders to check (not just INBOX and submission folders)
+            $folders = @imap_list($connection, $connection_string, '*');
+            $folders_to_check = array();
+            
+            if ($folders) {
+                foreach ($folders as $folder) {
+                    $folder_name = str_replace($connection_string, '', $folder);
+                    $folders_to_check[] = $folder_name;
+                }
+                error_log('CF7 Artist Submissions: Found ' . count($folders_to_check) . ' folders to check: ' . implode(', ', $folders_to_check));
+            } else {
+                // Fallback to just INBOX if folder listing fails
+                $folders_to_check = array('INBOX');
+                error_log('CF7 Artist Submissions: Could not list folders, checking INBOX only');
+            }
+            
+            $total_scanned = 0;
+            $total_deleted = 0;
+            $total_orphaned = 0;
+            $folders_deleted = 0;
+            $empty_folders = array();
+            
+            // Check each folder
+            foreach ($folders_to_check as $folder_name) {
+                error_log('CF7 Artist Submissions: Cleanup checking folder: ' . $folder_name);
+                
+                // Switch to the folder
+                if ($folder_name !== 'INBOX') {
+                    $reopen_result = imap_reopen($connection, $connection_string . $folder_name);
+                    if (!$reopen_result) {
+                        error_log('CF7 Artist Submissions: Cleanup failed to switch to folder: ' . $folder_name);
+                        continue;
+                    }
+                } else {
+                    // Make sure we're in INBOX
+                    $reopen_result = imap_reopen($connection, $connection_string . 'INBOX');
+                    if (!$reopen_result) {
+                        error_log('CF7 Artist Submissions: Cleanup failed to switch to INBOX');
+                        continue;
+                    }
+                }
+                
+                $folder_result = self::cleanup_folder_emails($connection, $folder_name);
+                $total_scanned += $folder_result['scanned'];
+                $total_deleted += $folder_result['deleted'];
+                $total_orphaned += isset($folder_result['orphaned']) ? $folder_result['orphaned'] : 0;
+                
+                // Check if folder is now empty (and not INBOX)
+                if ($folder_name !== 'INBOX') {
+                    $remaining_messages = imap_num_msg($connection);
+                    if ($remaining_messages == 0) {
+                        $empty_folders[] = $folder_name;
+                        error_log('CF7 Artist Submissions: Folder ' . $folder_name . ' is now empty and will be deleted');
+                    }
+                }
+                
+                error_log('CF7 Artist Submissions: Cleanup folder ' . $folder_name . ' - scanned: ' . $folder_result['scanned'] . ', deleted: ' . $folder_result['deleted'] . ', orphaned: ' . (isset($folder_result['orphaned']) ? $folder_result['orphaned'] : 0));
+            }
+            
+            // Expunge deleted emails
+            if ($total_deleted > 0) {
+                imap_expunge($connection);
+                error_log('CF7 Artist Submissions: Cleanup expunged ' . $total_deleted . ' emails from server');
+            }
+            
+            // Delete empty folders (except INBOX and system folders)
+            foreach ($empty_folders as $empty_folder) {
+                // Skip system folders
+                $system_folders = array('INBOX', 'Sent', 'Drafts', 'Trash', 'Junk', 'Spam', 'Outbox', 'Archive', 'Deleted Items', 'Sent Items');
+                $is_system_folder = false;
+                
+                foreach ($system_folders as $system_folder) {
+                    if (stripos($empty_folder, $system_folder) !== false) {
+                        $is_system_folder = true;
+                        break;
+                    }
+                }
+                
+                if ($is_system_folder) {
+                    error_log('CF7 Artist Submissions: Skipping system folder: ' . $empty_folder);
+                    continue;
+                }
+                
+                try {
+                    // Switch back to a safe folder first (INBOX)
+                    imap_reopen($connection, $connection_string . 'INBOX');
+                    
+                    // Delete the empty folder
+                    $delete_result = imap_deletemailbox($connection, $connection_string . $empty_folder);
+                    if ($delete_result) {
+                        $folders_deleted++;
+                        error_log('CF7 Artist Submissions: Successfully deleted empty folder: ' . $empty_folder);
+                    } else {
+                        $last_error = imap_last_error();
+                        error_log('CF7 Artist Submissions: Failed to delete empty folder: ' . $empty_folder . ' - ' . $last_error);
+                    }
+                } catch (Exception $e) {
+                    error_log('CF7 Artist Submissions: Error deleting empty folder ' . $empty_folder . ': ' . $e->getMessage());
+                }
+            }
+            
+            imap_close($connection);
+            
+            error_log('CF7 Artist Submissions: IMAP cleanup completed - scanned: ' . $total_scanned . ', deleted: ' . $total_deleted . ', orphaned: ' . $total_orphaned . ', folders deleted: ' . $folders_deleted);
+            
+            return array(
+                'scanned_count' => $total_scanned,
+                'deleted_count' => $total_deleted,
+                'orphaned_count' => $total_orphaned,
+                'folders_deleted' => $folders_deleted
+            );
+            
+        } catch (Exception $e) {
+            error_log('CF7 Artist Submissions: IMAP cleanup error - ' . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Clean up emails in a specific IMAP folder
+     */
+    public static function cleanup_folder_emails($connection, $folder_name) {
+        global $wpdb;
+        
+        $scanned_count = 0;
+        $deleted_count = 0;
+        $orphaned_count = 0;
+        
+        // Get total message count
+        $total_messages = imap_num_msg($connection);
+        
+        error_log('CF7 Artist Submissions: Cleanup folder ' . $folder_name . ' reports ' . $total_messages . ' total messages');
+        
+        if ($total_messages == 0) {
+            error_log('CF7 Artist Submissions: Cleanup folder ' . $folder_name . ' is empty, skipping');
+            return array('scanned' => $scanned_count, 'deleted' => $deleted_count, 'orphaned' => $orphaned_count);
+        }
+        
+        // Try to get a list of message UIDs to see what's actually available
+        $message_list = imap_search($connection, 'ALL');
+        
+        if ($message_list === false || empty($message_list)) {
+            error_log('CF7 Artist Submissions: Cleanup folder ' . $folder_name . ' - no messages found via search, despite count of ' . $total_messages);
+            return array('scanned' => $scanned_count, 'deleted' => $deleted_count, 'orphaned' => $orphaned_count);
+        }
+        
+        $actual_message_count = count($message_list);
+        error_log('CF7 Artist Submissions: Cleanup scanning ' . $actual_message_count . ' actual emails in folder: ' . $folder_name);
+        
+        // Process each message found by search
+        foreach ($message_list as $email_number) {
+            $scanned_count++;
+            
+            try {
+                $header = imap_headerinfo($connection, $email_number);
+                
+                if (!$header) {
+                    error_log('CF7 Artist Submissions: Cleanup could not get header for message #' . $email_number);
+                    continue;
+                }
+                
+                // Check if this email matches our pattern and has been processed
+                $to_address = '';
+                if (isset($header->to) && is_array($header->to) && count($header->to) > 0) {
+                    $to_address = $header->to[0]->mailbox . '@' . $header->to[0]->host;
+                }
+                
+                $from_email = isset($header->from[0]) ? $header->from[0]->mailbox . '@' . $header->from[0]->host : '';
+                $subject = isset($header->subject) ? $header->subject : '';
+                $message_id = isset($header->message_id) ? $header->message_id : '';
+                
+                $should_delete = false;
+                
+                // Check if it matches our plus addressing pattern
+                if (preg_match('/\+SUB(\d+)_([a-f0-9]{32})@/', $to_address, $matches)) {
+                    $submission_id = intval($matches[1]);
+                    $reply_token = $matches[2];
+                    
+                    // First check if the submission still exists in the database
+                    $submission_exists = get_post($submission_id) && get_post_type($submission_id) === 'cf7_submission';
+                    
+                    if (!$submission_exists) {
+                        // Submission has been deleted - mark email for deletion regardless of processing status
+                        $should_delete = true;
+                        $orphaned_count++;
+                        error_log('CF7 Artist Submissions: Cleanup found orphaned email for deleted submission #' . $submission_id . ' - marking for deletion');
+                    } else {
+                        // Submission exists - check if this email has been processed (stored in database)
+                        $is_processed = false;
+                        
+                        // First check by message_id if available
+                        if (!empty($message_id)) {
+                            $table_name = $wpdb->prefix . 'cf7_conversations';
+                            $existing = $wpdb->get_var($wpdb->prepare(
+                                "SELECT id FROM $table_name WHERE message_id = %s",
+                                $message_id
+                            ));
+                            $is_processed = !empty($existing);
+                        }
+                        
+                        // Fallback check by content characteristics
+                        if (!$is_processed && !empty($from_email) && !empty($subject)) {
+                            $table_name = $wpdb->prefix . 'cf7_conversations';
+                            $existing = $wpdb->get_var($wpdb->prepare(
+                                "SELECT id FROM $table_name 
+                                 WHERE submission_id = %d 
+                                 AND from_email = %s 
+                                 AND subject = %s 
+                                 AND direction = 'inbound'
+                                 ORDER BY sent_at DESC 
+                                 LIMIT 1",
+                                $submission_id,
+                                $from_email,
+                                $subject
+                            ));
+                            $is_processed = !empty($existing);
+                        }
+                        
+                        // If email has been processed, mark for deletion
+                        if ($is_processed) {
+                            $should_delete = true;
+                        }
+                    }
+                } else {
+                    // Also check emails that might not match the pattern but are in the database
+                    // This catches emails that were processed before the pattern was enforced
+                    if (!empty($message_id)) {
+                        $table_name = $wpdb->prefix . 'cf7_conversations';
+                        $existing = $wpdb->get_var($wpdb->prepare(
+                            "SELECT id FROM $table_name WHERE message_id = %s AND direction = 'inbound'",
+                            $message_id
+                        ));
+                        if (!empty($existing)) {
+                            $should_delete = true;
+                        }
+                    }
+                    
+                    // Additional check for emails from known submission email addresses
+                    if (!$should_delete && !empty($from_email)) {
+                        $table_name = $wpdb->prefix . 'cf7_conversations';
+                        $existing = $wpdb->get_var($wpdb->prepare(
+                            "SELECT id FROM $table_name 
+                             WHERE from_email = %s 
+                             AND direction = 'inbound'
+                             AND subject = %s
+                             ORDER BY sent_at DESC 
+                             LIMIT 1",
+                            $from_email,
+                            $subject
+                        ));
+                        if (!empty($existing)) {
+                            $should_delete = true;
+                        }
+                    }
+                }
+                
+                // Delete the email if it should be deleted
+                if ($should_delete) {
+                    imap_delete($connection, $email_number);
+                    $deleted_count++;
+                    
+                    // Log the deletion with reason
+                    if (isset($submission_id) && !get_post($submission_id)) {
+                        error_log('CF7 Artist Submissions: Cleanup deleted orphaned email for non-existent submission #' . $submission_id . ' (Message-ID: ' . $message_id . ', From: ' . $from_email . ', To: ' . $to_address . ')');
+                    } else {
+                        error_log('CF7 Artist Submissions: Cleanup deleted processed email (Message-ID: ' . $message_id . ', From: ' . $from_email . ', To: ' . $to_address . ')');
+                    }
+                }
+                
+            } catch (Exception $e) {
+                error_log('CF7 Artist Submissions: Cleanup error processing email #' . $email_number . ': ' . $e->getMessage());
+                continue;
+            }
+        }
+        
+        return array('scanned' => $scanned_count, 'deleted' => $deleted_count, 'orphaned' => $orphaned_count);
+    }
+    
+    /**
+     * Add context menu script for conversation messages
+     */
+    public static function add_context_menu_script() {
+        $screen = get_current_screen();
+        
+        if (!$screen || $screen->post_type !== 'cf7_submission') {
+            return;
+        }
+        ?>
+        <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            // Add context menu to conversation messages
+            $(document).on('contextmenu', '.conversation-message', function(e) {
+                e.preventDefault();
+                
+                var $message = $(this);
+                var messageId = $message.data('message-id');
+                
+                if (!messageId) {
+                    return;
+                }
+                
+                // Determine message type and read status
+                var isIncoming = $message.hasClass('incoming');
+                var isUnread = $message.hasClass('unviewed');
+                var readStatus = isUnread ? 'unread' : 'read';
+                
+                // Remove any existing context menus
+                $('.cf7-context-menu').remove();
+                
+                // Build menu items
+                var menuItems = '';
+                
+                // Add to Actions (for all messages)
+                menuItems += '<div class="cf7-context-item" data-action="add-to-actions" data-message-id="' + messageId + '">' +
+                    '<span class="dashicons dashicons-list-view"></span>' +
+                    '<?php _e("Add to Actions", "cf7-artist-submissions"); ?>' +
+                '</div>';
+                
+                // Mark as read/unread (only for incoming messages)
+                if (isIncoming) {
+                    if (isUnread) {
+                        menuItems += '<div class="cf7-context-item" data-action="mark-read" data-message-id="' + messageId + '" data-current-status="unread">' +
+                            '<span class="dashicons dashicons-yes"></span>' +
+                            '<?php _e("Mark as Read", "cf7-artist-submissions"); ?>' +
+                        '</div>';
+                    } else {
+                        menuItems += '<div class="cf7-context-item" data-action="mark-unread" data-message-id="' + messageId + '" data-current-status="read">' +
+                            '<span class="dashicons dashicons-hidden"></span>' +
+                            '<?php _e("Mark as Unread", "cf7-artist-submissions"); ?>' +
+                        '</div>';
+                    }
+                }
+                
+                // Create context menu
+                var $menu = $('<div class="cf7-context-menu">' + menuItems + '</div>');
+                
+                // Position menu (account for scroll position)
+                $menu.css({
+                    position: 'fixed',
+                    top: (e.clientY) + 'px',
+                    left: (e.clientX) + 'px',
+                    zIndex: 999999
+                });
+                
+                // Ensure menu stays within viewport
+                setTimeout(function() {
+                    var menuRect = $menu[0].getBoundingClientRect();
+                    var viewportWidth = $(window).width();
+                    var viewportHeight = $(window).height();
+                    
+                    if (menuRect.right > viewportWidth) {
+                        $menu.css('left', (e.clientX - menuRect.width) + 'px');
+                    }
+                    if (menuRect.bottom > viewportHeight) {
+                        $menu.css('top', (e.clientY - menuRect.height) + 'px');
+                    }
+                }, 10);
+                
+                // Add to page
+                $('body').append($menu);
+                
+                // Handle menu clicks
+                $menu.on('click', '.cf7-context-item', function(e) {
+                    e.stopPropagation();
+                    var action = $(this).data('action');
+                    var contextMessageId = $(this).data('message-id');
+                    var currentStatus = $(this).data('current-status');
+                    
+                    if (action === 'add-to-actions') {
+                        // Use the global CF7_Actions interface
+                        if (window.CF7_Actions && typeof window.CF7_Actions.openModal === 'function') {
+                            var messageText = $message.find('.message-content').first().text().trim();
+                            var truncatedText = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
+                            
+                            window.CF7_Actions.openModal({
+                                messageId: contextMessageId,
+                                title: '<?php _e("Follow up on message", "cf7-artist-submissions"); ?>',
+                                description: '<?php _e("Regarding: ", "cf7-artist-submissions"); ?>' + truncatedText
+                            });
+                        } else {
+                            console.error('CF7_Actions.openModal not available');
+                            alert('Actions system not available. Please make sure you are on a submission page.');
+                        }
+                    } else if (action === 'mark-read' || action === 'mark-unread') {
+                        // Toggle read status
+                        $.ajax({
+                            url: cf7Conversations.ajaxUrl,
+                            type: 'POST',
+                            data: {
+                                action: 'cf7_toggle_message_read',
+                                message_id: contextMessageId,
+                                current_status: currentStatus,
+                                nonce: cf7Conversations.nonce
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    // Update the message UI
+                                    if (response.data.new_status === 'read') {
+                                        $message.removeClass('unviewed');
+                                    } else {
+                                        $message.addClass('unviewed');
+                                    }
+                                    
+                                    // Show success message
+                                    if (typeof showNotification === 'function') {
+                                        showNotification(response.data.message, 'success');
+                                    }
+                                } else {
+                                    if (typeof showNotification === 'function') {
+                                        showNotification('Failed to update message status', 'error');
+                                    }
+                                }
+                            },
+                            error: function() {
+                                if (typeof showNotification === 'function') {
+                                    showNotification('Error updating message status', 'error');
+                                }
+                            }
+                        });
+                    }
+                    
+                    $menu.remove();
+                });
+                
+                // Close menu on outside click
+                $(document).one('click', function() {
+                    $menu.remove();
+                });
+                
+                // Close menu on escape key
+                $(document).one('keydown', function(e) {
+                    if (e.keyCode === 27) {
+                        $menu.remove();
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
     }
 }

@@ -21,6 +21,39 @@ jQuery(document).ready(function($) {
             setTimeout(initLightbox, 100);
         }
         
+        if (tabId === 'cf7-tab-actions') {
+            // Initialize actions manager for the actions tab
+            setTimeout(function() {
+                console.log('Tabs.js: Initializing actions for tab:', tabId);
+                console.log('Actions container exists:', jQuery('.cf7-actions-container').length);
+                console.log('CF7_Actions available:', typeof window.CF7_Actions !== 'undefined');
+                console.log('ActionsManager available:', typeof ActionsManager !== 'undefined');
+                
+                // Try CF7_Actions.init first
+                if (typeof window.CF7_Actions !== 'undefined' && typeof window.CF7_Actions.init === 'function') {
+                    console.log('Calling CF7_Actions.init()');
+                    window.CF7_Actions.init();
+                } else if (jQuery('.cf7-actions-container').length > 0 && typeof ActionsManager !== 'undefined') {
+                    // Fallback to direct initialization
+                    if (!window.actionsManager) {
+                        console.log('Tabs.js: Creating ActionsManager instance directly');
+                        try {
+                            window.actionsManager = new ActionsManager();
+                            console.log('ActionsManager created successfully');
+                        } catch (error) {
+                            console.error('Failed to create ActionsManager:', error);
+                        }
+                    } else {
+                        console.log('ActionsManager already exists');
+                    }
+                } else {
+                    console.log('Cannot initialize ActionsManager - missing requirements');
+                    console.log('- Container:', jQuery('.cf7-actions-container').length);
+                    console.log('- ActionsManager class:', typeof ActionsManager !== 'undefined');
+                }
+            }, 200);
+        }
+        
         if (tabId === 'cf7-tab-conversations') {
             // Re-initialize conversation interface and scroll to bottom
             setTimeout(function() {
@@ -177,7 +210,7 @@ function loadTabContent(tabId, callback) {
 }
 
 // Status Dropdown Functionality
-$(document).ready(function($) {
+jQuery(document).ready(function($) {
     // Handle status option clicks
     $(document).on('click', '.cf7-status-option', function(e) {
         e.preventDefault();
@@ -257,18 +290,18 @@ $(document).ready(function($) {
 // Show status update feedback
 function showStatusUpdateFeedback(message, type) {
     // Remove existing feedback
-    $('.cf7-status-feedback').remove();
+    jQuery('.cf7-status-feedback').remove();
     
     // Create feedback element
-    const $feedback = $('<div class="cf7-status-feedback cf7-feedback-' + type + '">' + message + '</div>');
+    const $feedback = jQuery('<div class="cf7-status-feedback cf7-feedback-' + type + '">' + message + '</div>');
     
     // Add to page
-    $('.cf7-custom-header').after($feedback);
+    jQuery('.cf7-custom-header').after($feedback);
     
     // Auto-remove after 3 seconds
     setTimeout(function() {
         $feedback.fadeOut(function() {
-            $(this).remove();
+            jQuery(this).remove();
         });
     }, 3000);
 }
