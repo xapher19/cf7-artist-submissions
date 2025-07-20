@@ -32,6 +32,7 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-tabs.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-dashboard.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-actions.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-pdf-export.php';
 
 // Initialize the plugin
 function cf7_artist_submissions_init() {
@@ -74,6 +75,12 @@ function cf7_artist_submissions_init() {
     // Initialize Dashboard
     $dashboard = new CF7_Artist_Submissions_Dashboard();
     $dashboard->init();
+    
+    // Initialize PDF Export
+    if (is_admin()) {
+        $pdf_export = new CF7_Artist_Submissions_PDF_Export();
+        $pdf_export->init();
+    }
 }
 
 add_action('plugins_loaded', 'cf7_artist_submissions_init');

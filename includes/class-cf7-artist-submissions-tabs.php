@@ -217,6 +217,12 @@ class CF7_Artist_Submissions_Tabs {
                         <?php _e('Curator Notes', 'cf7-artist-submissions'); ?>
                     </button>
                 </div>
+                <div class="cf7-tab-nav-item">
+                    <button type="button" class="cf7-tab-link" data-tab="cf7-tab-export">
+                        <span class="dashicons dashicons-pdf"></span>
+                        <?php _e('Export PDF', 'cf7-artist-submissions'); ?>
+                    </button>
+                </div>
             </nav>
             
             <div class="cf7-tabs-content">
@@ -238,6 +244,10 @@ class CF7_Artist_Submissions_Tabs {
                 
                 <div id="cf7-tab-notes" class="cf7-tab-content">
                     <?php self::render_notes_tab($post); ?>
+                </div>
+                
+                <div id="cf7-tab-export" class="cf7-tab-content">
+                    <?php self::render_export_tab($post); ?>
                 </div>
             </div>
         </div>
@@ -306,6 +316,103 @@ class CF7_Artist_Submissions_Tabs {
             self::render_curator_notes($post);
             ?>
         </div>
+        <?php
+    }
+    
+    public static function render_export_tab($post) {
+        ?>
+        <div class="cf7-tab-section">
+            <h3 class="cf7-tab-section-title"><?php _e('Export Options', 'cf7-artist-submissions'); ?></h3>
+            <div class="cf7-export-options">
+                <div class="cf7-export-section">
+                    <p class="description"><?php _e('Generate a beautifully formatted PDF with artist information and submitted works.', 'cf7-artist-submissions'); ?></p>
+                    
+                    <div class="cf7-export-options-list">
+                        <label>
+                            <input type="checkbox" name="include_personal_info" checked> 
+                            <?php _e('Include Personal Information', 'cf7-artist-submissions'); ?>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="include_works" checked> 
+                            <?php _e('Include Submitted Works', 'cf7-artist-submissions'); ?>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="include_notes"> 
+                            <?php _e('Include Curator Notes', 'cf7-artist-submissions'); ?>
+                        </label>
+                        <label>
+                            <input type="checkbox" name="confidential_watermark" checked> 
+                            <?php _e('Add "Private & Confidential" Watermark', 'cf7-artist-submissions'); ?>
+                        </label>
+                    </div>
+                    
+                    <div class="cf7-export-actions">
+                        <button type="button" class="button button-primary cf7-export-pdf-btn" data-post-id="<?php echo esc_attr($post->ID); ?>">
+                            <span class="dashicons dashicons-pdf"></span>
+                            <?php _e('Export to PDF', 'cf7-artist-submissions'); ?>
+                        </button>
+                        <div class="cf7-export-status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        .cf7-export-options {
+            padding: 0;
+        }
+        
+        .cf7-export-options-list {
+            margin: 12px 0;
+        }
+        
+        .cf7-export-options-list label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .cf7-export-options-list input[type="checkbox"] {
+            margin-right: 6px;
+        }
+        
+        .cf7-export-actions {
+            margin-top: 15px;
+            padding-top: 12px;
+            border-top: 1px solid #dcdcde;
+        }
+        
+        .cf7-export-pdf-btn {
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .cf7-export-pdf-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .cf7-export-status {
+            margin-top: 8px;
+            padding: 6px 0;
+            font-size: 12px;
+        }
+        
+        .cf7-export-status.success {
+            color: #00a32a;
+        }
+        
+        .cf7-export-status.error {
+            color: #d63638;
+        }
+        
+        .cf7-export-status.loading {
+            color: #2271b1;
+        }
+        </style>
         <?php
     }
     
@@ -642,6 +749,9 @@ class CF7_Artist_Submissions_Tabs {
                 break;
             case 'cf7-tab-notes':
                 self::render_notes_tab($post);
+                break;
+            case 'cf7-tab-export':
+                self::render_export_tab($post);
                 break;
             default:
                 echo '<p>Invalid tab</p>';
