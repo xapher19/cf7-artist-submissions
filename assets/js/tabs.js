@@ -153,8 +153,28 @@ function initializeTabs() {
         }
     }
     
-    // Check for saved tab (but default to profile for new sessions)
-    if (savedTab && $('#' + savedTab).length) {
+    // Check for URL parameters that indicate widget navigation
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromWidget = urlParams.get('from');
+    
+    if (fromWidget === 'unread-messages') {
+        // Navigate to conversations tab for unread messages
+        const conversationsTab = $('.cf7-tab-link[data-tab="cf7-tab-conversations"]');
+        if (conversationsTab.length) {
+            conversationsTab.trigger('click');
+            return;
+        }
+    } else if (fromWidget === 'outstanding-actions') {
+        // Navigate to actions tab for outstanding actions
+        const actionsTab = $('.cf7-tab-link[data-tab="cf7-tab-actions"]');
+        if (actionsTab.length) {
+            actionsTab.trigger('click');
+            return;
+        }
+    }
+    
+    // Check for saved tab (but default to profile for new sessions from dashboard)
+    if (savedTab && $('#' + savedTab).length && !fromWidget) {
         $('.cf7-tab-link[data-tab="' + savedTab + '"]').trigger('click');
     } else {
         // Default to profile tab

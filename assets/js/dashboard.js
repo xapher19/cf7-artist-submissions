@@ -860,8 +860,9 @@
                         ${formattedTime ? `<div class="cf7-submission-date-time">${formattedTime}</div>` : ''}
                     </div>
                     <div class="cf7-status-badge ${submission.status}">
-                        <span class="cf7-status-dot"></span>
-                        ${this.getStatusLabel(submission.status)}
+                        <span class="cf7-status-circle">
+                            <span class="dashicons ${this.getStatusIcon(submission.status)}"></span>
+                        </span>
                     </div>
                 </div>
             `;
@@ -876,6 +877,17 @@
                 'rejected': 'Rejected'
             };
             return statusLabels[status] || status;
+        }
+
+        getStatusIcon(status) {
+            const statusIcons = {
+                'new': 'dashicons-star-filled',
+                'reviewed': 'dashicons-visibility',
+                'awaiting-information': 'dashicons-clock',
+                'selected': 'dashicons-yes-alt',
+                'rejected': 'dashicons-dismiss'
+            };
+            return statusIcons[status] || 'dashicons-marker';
         }
 
         buildEmptyState() {

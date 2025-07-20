@@ -627,7 +627,7 @@ class CF7_Artist_Submissions_Dashboard {
                 'unviewed_count' => $submission->unviewed_count,
                 'time_ago' => $time_diff . ' ago',
                 'unread' => true,
-                'view_url' => admin_url('post.php?post=' . $submission->submission_id . '&action=edit#cf7-conversation')
+                'view_url' => admin_url('post.php?post=' . $submission->submission_id . '&action=edit&from=unread-messages#cf7-tab-conversations')
             );
         }
         
@@ -831,7 +831,7 @@ class CF7_Artist_Submissions_Dashboard {
                 'due_date_formatted' => $due_date_formatted,
                 'is_overdue' => $is_overdue,
                 'created_at' => human_time_diff(strtotime($result->created_at), current_time('timestamp')) . ' ago',
-                'edit_link' => admin_url('post.php?post=' . $result->submission_id . '&action=edit#cf7-tab-actions')
+                'edit_link' => admin_url('post.php?post=' . $result->submission_id . '&action=edit&from=outstanding-actions#cf7-tab-actions')
             );
         }
         

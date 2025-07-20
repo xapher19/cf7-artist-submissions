@@ -10,6 +10,7 @@ class CF7_Artist_Submissions_Tabs {
         add_action('wp_ajax_cf7_load_tab_content', array(__CLASS__, 'ajax_load_tab_content'));
         add_action('wp_ajax_cf7_update_status', array(__CLASS__, 'ajax_update_status'));
         add_action('wp_ajax_cf7_save_submission_data', array(__CLASS__, 'ajax_save_submission_data'));
+        add_action('wp_ajax_cf7_save_curator_notes', array(__CLASS__, 'ajax_save_curator_notes'));
         
         // Override the post edit page layout
         add_action('edit_form_after_title', array(__CLASS__, 'render_custom_page_layout'));
@@ -45,7 +46,8 @@ class CF7_Artist_Submissions_Tabs {
             // Add AJAX configuration for tabs
             wp_localize_script('cf7-artist-submissions-tabs', 'cf7TabsAjax', array(
                 'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('cf7_tabs_nonce')
+                'nonce' => wp_create_nonce('cf7_tabs_nonce'),
+                'post_id' => get_the_ID()
             ));
             
             // Add Actions AJAX data globally (for cross-tab functionality)
@@ -70,6 +72,18 @@ class CF7_Artist_Submissions_Tabs {
                     'required' => __('Please fill in all fields', 'cf7-artist-submissions')
                 )
             ));
+            
+            // Add Fields AJAX data (for fields.js)
+            wp_localize_script('cf7-artist-submissions-fields', 'cf7FieldsAjax', array(
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('cf7_tabs_nonce'),
+                'post_id' => get_the_ID(),
+                'strings' => array(
+                    'saving' => __('Saving...', 'cf7-artist-submissions'),
+                    'saved' => __('Changes saved!', 'cf7-artist-submissions'),
+                    'error' => __('Error saving changes', 'cf7-artist-submissions')
+                )
+            ));
         }
     }
     
@@ -92,7 +106,85 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     public static function render_tabbed_interface($post) {
+        // Get artist information for the header
+        $artist_name = get_post_meta($post->ID, 'cf7_artist-name', true);
+        if (empty($artist_name)) {
+            $artist_name = get_post_meta($post->ID, 'cf7_your-name', true);
+        }
+        if (empty($artist_name)) {
+            $artist_name = $post->post_title;
+        }
+        
+        // Get pronouns
+        $pronouns = get_post_meta($post->ID, 'cf7_pronouns', true);
+        if (empty($pronouns)) {
+            $pronouns = get_post_meta($post->ID, 'cf7_your-pronouns', true);
+        }
+        
+        // Get email
+        $email = get_post_meta($post->ID, 'cf7_email', true);
+        if (empty($email)) {
+            $email = get_post_meta($post->ID, 'cf7_your-email', true);
+        }
+        
+        // Get current status
+        $status_terms = wp_get_object_terms($post->ID, 'submission_status');
+        $current_status = !empty($status_terms) ? $status_terms[0]->slug : 'new';
+        
+        // Generate initials for avatar
+        $initials = '';
+        if ($artist_name) {
+            $names = explode(' ', $artist_name);
+            $initials = strtoupper(substr($names[0], 0, 1));
+            if (count($names) > 1) {
+                $initials .= strtoupper(substr(end($names), 0, 1));
+            }
+        } else {
+            $initials = 'A';
+        }
         ?>
+        
+        <!-- Artist Profile Header -->
+        <div class="cf7-artist-header">
+            <div class="cf7-artist-header-content">
+                <div class="cf7-status-selector cf7-artist-status">
+                    <?php echo self::render_status_circle($current_status, $post->ID); ?>
+                </div>
+                <div class="cf7-artist-info">
+                    <h1 class="cf7-artist-name">
+                        <span class="cf7-header-field" data-field="artist-name" data-original="<?php echo esc_attr($artist_name ?: __('Unknown Artist', 'cf7-artist-submissions')); ?>">
+                            <span class="field-value"><?php echo esc_html($artist_name ?: __('Unknown Artist', 'cf7-artist-submissions')); ?></span>
+                        </span>
+                        <?php if (!empty($pronouns)): ?>
+                            <span class="cf7-artist-pronouns">
+                                (<span class="cf7-header-field" data-field="pronouns" data-original="<?php echo esc_attr($pronouns); ?>">
+                                    <span class="field-value"><?php echo esc_html($pronouns); ?></span>
+                                </span>)
+                            </span>
+                        <?php else: ?>
+                            <span class="cf7-artist-pronouns" style="display: none;">
+                                (<span class="cf7-header-field" data-field="pronouns" data-original="">
+                                    <span class="field-value"></span>
+                                </span>)
+                            </span>
+                        <?php endif; ?>
+                    </h1>
+                    <p class="cf7-artist-subtitle">
+                        <span class="cf7-header-field" data-field="email" data-original="<?php echo esc_attr($email); ?>">
+                            <span class="field-value"><?php echo esc_html($email ?: __('No email provided', 'cf7-artist-submissions')); ?></span>
+                        </span>
+                    </p>
+                </div>
+            </div>
+            <div class="cf7-artist-actions">
+                <button type="button" class="cf7-edit-save-button cf7-btn cf7-btn-primary" data-edit-text="<?php esc_attr_e('Edit Profile', 'cf7-artist-submissions'); ?>" data-save-text="<?php esc_attr_e('Save Changes', 'cf7-artist-submissions'); ?>">
+                    <span class="dashicons dashicons-edit"></span>
+                    <?php _e('Edit Profile', 'cf7-artist-submissions'); ?>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Tabbed Interface -->
         <div class="cf7-tabs-container">
             <nav class="cf7-tabs-nav">
                 <div class="cf7-tab-nav-item">
@@ -154,12 +246,10 @@ class CF7_Artist_Submissions_Tabs {
     
     public static function render_profile_tab($post) {
         ?>
-        <div class="cf7-tab-section">
-            <h3 class="cf7-tab-section-title"><?php _e('Submission Details', 'cf7-artist-submissions'); ?></h3>
-            <?php 
-            // Render the details content (copied from original meta box)
-            self::render_submission_details($post);
-            ?>
+        <div class="cf7-profile-tab-container">
+            <div class="cf7-profile-content">
+                <?php self::render_submission_details($post); ?>
+            </div>
         </div>
         <?php
     }
@@ -228,21 +318,32 @@ class CF7_Artist_Submissions_Tabs {
         
         $meta_keys = get_post_custom_keys($post->ID);
         if (empty($meta_keys)) {
-            echo '<p>' . __('No submission data found.', 'cf7-artist-submissions') . '</p>';
+            echo '<div class="cf7-profile-empty">';
+            echo '<div class="cf7-empty-icon"><span class="dashicons dashicons-admin-users"></span></div>';
+            echo '<h3>' . __('No profile data found', 'cf7-artist-submissions') . '</h3>';
+            echo '<p>' . __('This submission does not contain any profile information.', 'cf7-artist-submissions') . '</p>';
+            echo '</div>';
             return;
         }
         
-        echo '<p class="field-edit-hint">' . __('Click on any value to edit it. Press Enter to save, or Escape to cancel.', 'cf7-artist-submissions') . '</p>';
-        
-        echo '<table class="form-table submission-details">';
+        // Group fields by category for better organization
+        $contact_fields = array();
+        $profile_fields = array();
+        $other_fields = array();
         
         foreach ($meta_keys as $key) {
-            // Skip internal meta, file fields, and any fields related to 'works' or 'files'
+            // Skip internal meta, file fields, header fields, and any fields related to 'works' or 'files'
             if (substr($key, 0, 1) === '_' || 
                 substr($key, 0, 8) === 'cf7_file_' || 
                 $key === 'cf7_submission_date' || 
                 $key === 'cf7_curator_notes' ||
                 $key === 'cf7_your-work-raw' ||
+                $key === 'cf7_artist-name' || 
+                $key === 'cf7_your-name' ||
+                $key === 'cf7_pronouns' ||
+                $key === 'cf7_your-pronouns' ||
+                $key === 'cf7_email' ||
+                $key === 'cf7_your-email' ||
                 strpos($key, 'work') !== false ||
                 strpos($key, 'files') !== false) {
                 continue;
@@ -253,59 +354,141 @@ class CF7_Artist_Submissions_Tabs {
                 continue;
             }
             
-            // Format label from meta key
-            $label = ucwords(str_replace(array('cf7_', '_', '-'), ' ', $key));
-            
-            // Determine field type based on key name or content
-            $field_type = 'text';
-            if (strpos($key, 'email') !== false) {
-                $field_type = 'email';
-            } 
-            elseif (strpos($key, 'website') !== false || 
-                   strpos($key, 'portfolio') !== false || 
-                   strpos($key, 'url') !== false || 
-                   strpos($key, 'link') !== false) {
-                $field_type = 'url';
+            // Categorize fields
+            if (strpos($key, 'phone') !== false) {
+                $contact_fields[$key] = $value;
+            } elseif (strpos($key, 'statement') !== false || strpos($key, 'bio') !== false) {
+                $profile_fields[$key] = $value;
+            } else {
+                $other_fields[$key] = $value;
             }
-            elseif (strpos($key, 'statement') !== false || strlen($value) > 100) {
-                $field_type = 'textarea';
-            }
-            
-            echo '<tr>';
-            echo '<th scope="row"><strong>' . esc_html($label) . '</strong></th>';
-            echo '<td class="editable-field" 
-                      data-field="' . esc_attr($key) . '" 
-                      data-key="' . esc_attr($key) . '" 
-                      data-post-id="' . esc_attr($post->ID) . '"
-                      data-type="' . esc_attr($field_type) . '" 
-                      data-original="' . esc_attr($value) . '">';
-            
-            // Make URLs clickable - check if value looks like a URL
-            if (filter_var($value, FILTER_VALIDATE_URL)) {
-                echo '<a href="' . esc_url($value) . '" target="_blank" class="field-value">' . esc_html($value) . '</a>';
-            }
-            // Check for fields that typically contain URLs
-            elseif (strpos($key, 'website') !== false || 
-                   strpos($key, 'portfolio') !== false || 
-                   strpos($key, 'url') !== false || 
-                   strpos($key, 'link') !== false) {
-                
-                // If it doesn't have http://, add it
-                $url = (strpos($value, 'http') === 0) ? $value : 'http://' . $value;
-                echo '<a href="' . esc_url($url) . '" target="_blank" class="field-value">' . esc_html($value) . '</a>';
-            } 
-            else {
-                echo '<span class="field-value">' . esc_html($value) . '</span>';
-            }
-            
-            // Add hidden input that will be used when editing
-            echo '<input type="hidden" name="cf7_editable_fields[' . esc_attr($key) . ']" value="' . esc_attr($value) . '" class="field-input" />';
-            
-            echo '</td>';
-            echo '</tr>';
         }
         
-        echo '</table>';
+        echo '<div class="cf7-profile-grid">';
+        
+        // Profile Information Section
+        if (!empty($profile_fields)) {
+            echo '<div class="cf7-profile-section">';
+            echo '<h3 class="cf7-section-title">';
+            echo '<span class="dashicons dashicons-admin-users"></span>';
+            echo __('Profile Information', 'cf7-artist-submissions');
+            echo '</h3>';
+            echo '<div class="cf7-profile-fields">';
+            
+            foreach ($profile_fields as $key => $value) {
+                self::render_modern_field($post->ID, $key, $value);
+            }
+            
+            echo '</div>';
+            echo '</div>';
+        }
+        
+        // Contact Information Section
+        if (!empty($contact_fields)) {
+            echo '<div class="cf7-profile-section">';
+            echo '<h3 class="cf7-section-title">';
+            echo '<span class="dashicons dashicons-email"></span>';
+            echo __('Contact Information', 'cf7-artist-submissions');
+            echo '</h3>';
+            echo '<div class="cf7-profile-fields">';
+            
+            foreach ($contact_fields as $key => $value) {
+                self::render_modern_field($post->ID, $key, $value);
+            }
+            
+            echo '</div>';
+            echo '</div>';
+        }
+        
+        // Additional Information Section
+        if (!empty($other_fields)) {
+            echo '<div class="cf7-profile-section">';
+            echo '<h3 class="cf7-section-title">';
+            echo '<span class="dashicons dashicons-info"></span>';
+            echo __('Additional Information', 'cf7-artist-submissions');
+            echo '</h3>';
+            echo '<div class="cf7-profile-fields">';
+            
+            foreach ($other_fields as $key => $value) {
+                self::render_modern_field($post->ID, $key, $value);
+            }
+            
+            echo '</div>';
+            echo '</div>';
+        }
+        
+        echo '</div>'; // .cf7-profile-grid
+    }
+    
+    /**
+     * Render a modern field layout
+     */
+    private static function render_modern_field($post_id, $key, $value) {
+        // Format label from meta key
+        $label = ucwords(str_replace(array('cf7_', '_', '-'), ' ', $key));
+        
+        // Determine field type based on key name or content
+        $field_type = 'text';
+        $field_icon = 'dashicons-text';
+        
+        if (strpos($key, 'email') !== false) {
+            $field_type = 'email';
+            $field_icon = 'dashicons-email';
+        } 
+        elseif (strpos($key, 'website') !== false || 
+               strpos($key, 'portfolio') !== false || 
+               strpos($key, 'url') !== false || 
+               strpos($key, 'link') !== false) {
+            $field_type = 'url';
+            $field_icon = 'dashicons-admin-links';
+        }
+        elseif (strpos($key, 'phone') !== false) {
+            $field_icon = 'dashicons-phone';
+        }
+        elseif (strpos($key, 'statement') !== false || strlen($value) > 100) {
+            $field_type = 'textarea';
+            $field_icon = 'dashicons-editor-paragraph';
+        }
+        elseif (strpos($key, 'name') !== false) {
+            $field_icon = 'dashicons-admin-users';
+        }
+        
+        echo '<div class="cf7-profile-field" data-field="' . esc_attr($key) . '" data-key="' . esc_attr($key) . '" data-post-id="' . esc_attr($post_id) . '" data-type="' . esc_attr($field_type) . '" data-original="' . esc_attr($value) . '">';
+        
+        echo '<div class="cf7-field-header">';
+        echo '<span class="cf7-field-icon dashicons ' . esc_attr($field_icon) . '"></span>';
+        echo '<label class="cf7-field-label">' . esc_html($label) . '</label>';
+        echo '</div>';
+        
+        echo '<div class="cf7-field-content">';
+        
+        // Make URLs clickable - check if value looks like a URL
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            echo '<a href="' . esc_url($value) . '" target="_blank" class="cf7-field-value cf7-field-link">' . esc_html($value) . '</a>';
+        }
+        // Check for fields that typically contain URLs
+        elseif (strpos($key, 'website') !== false || 
+               strpos($key, 'portfolio') !== false || 
+               strpos($key, 'url') !== false || 
+               strpos($key, 'link') !== false) {
+            
+            // If it doesn't have http://, add it
+            $url = (strpos($value, 'http') === 0) ? $value : 'http://' . $value;
+            echo '<a href="' . esc_url($url) . '" target="_blank" class="cf7-field-value cf7-field-link">' . esc_html($value) . '</a>';
+        } 
+        else {
+            if ($field_type === 'textarea') {
+                echo '<div class="cf7-field-value cf7-field-textarea">' . nl2br(esc_html($value)) . '</div>';
+            } else {
+                echo '<span class="cf7-field-value">' . esc_html($value) . '</span>';
+            }
+        }
+        
+        // Add hidden input that will be used when editing
+        echo '<input type="hidden" name="cf7_editable_fields[' . esc_attr($key) . ']" value="' . esc_attr($value) . '" class="field-input" />';
+        
+        echo '</div>'; // .cf7-field-content
+        echo '</div>'; // .cf7-profile-field
     }
     
     /**
@@ -403,8 +586,16 @@ class CF7_Artist_Submissions_Tabs {
         wp_nonce_field('cf7_artist_submissions_notes_nonce', 'cf7_artist_submissions_notes_nonce');
         $notes = get_post_meta($post->ID, 'cf7_curator_notes', true);
         
-        echo '<textarea name="cf7_curator_notes" id="cf7_curator_notes" rows="8" style="width: 100%;" placeholder="' . __('Add your notes about this submission...', 'cf7-artist-submissions') . '">' . esc_textarea($notes) . '</textarea>';
-        echo '<p class="description">' . __('Private notes visible only to curators and administrators.', 'cf7-artist-submissions') . '</p>';
+        echo '<div class="cf7-curator-notes-container">';
+        echo '<textarea name="cf7_curator_notes" id="cf7_curator_notes" rows="8" style="width: 100%; margin-bottom: 15px;" placeholder="' . __('Add your notes about this submission...', 'cf7-artist-submissions') . '">' . esc_textarea($notes) . '</textarea>';
+        echo '<div class="cf7-curator-notes-controls">';
+        echo '<button type="button" id="cf7-save-curator-notes" class="button button-primary" data-post-id="' . $post->ID . '">';
+        echo '<span class="dashicons dashicons-saved"></span> ' . __('Save Notes', 'cf7-artist-submissions');
+        echo '</button>';
+        echo '<span class="cf7-save-status" style="margin-left: 10px; font-style: italic; color: #666;"></span>';
+        echo '</div>';
+        echo '<p class="description" style="margin-top: 10px;">' . __('Private notes visible only to curators and administrators.', 'cf7-artist-submissions') . '</p>';
+        echo '</div>';
     }
     
     /**
@@ -585,6 +776,15 @@ class CF7_Artist_Submissions_Tabs {
         }
         ?>
         <style>
+            /* Hide WordPress admin header elements */
+            .wp-heading-inline,
+            .page-title-action,
+            #screen-options-link-wrap,
+            #screen-meta,
+            .screen-meta-toggle {
+                display: none !important;
+            }
+            
             /* Hide the title input field */
             #titlediv {
                 display: none;
@@ -600,9 +800,20 @@ class CF7_Artist_Submissions_Tabs {
                 display: none;
             }
             
-            /* Make content area full width */
+            /* Move content up and add proper margins */
+            #wpbody-content {
+                padding-top: 10px !important;
+            }
+            
+            .wrap {
+                margin-top: 0 !important;
+                margin-right: 20px !important;
+            }
+            
+            /* Make content area full width with proper spacing */
             #poststuff {
                 margin-right: 0 !important;
+                margin-top: 0 !important;
             }
             
             #post-body.columns-2 #postbox-container-1 {
@@ -614,11 +825,20 @@ class CF7_Artist_Submissions_Tabs {
                 width: 100%;
             }
             
+            /* Artist header contained within post area */
+            .cf7-artist-header {
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            
             /* Remove postbox styling from our container */
             #cf7_submission_tabs.postbox {
                 border: none;
                 box-shadow: none;
                 background: transparent;
+                margin-top: 0;
             }
             
             #cf7_submission_tabs .postbox-header {
@@ -637,39 +857,8 @@ class CF7_Artist_Submissions_Tabs {
      * Render custom page layout after title
      */
     public static function render_custom_page_layout($post) {
-        if (!$post || $post->post_type !== 'cf7_submission') {
-            return;
-        }
-        
-        // Get artist name from submission data
-        $artist_name = get_post_meta($post->ID, 'cf7_artist-name', true);
-        if (empty($artist_name)) {
-            $artist_name = get_post_meta($post->ID, 'cf7_your-name', true);
-        }
-        if (empty($artist_name)) {
-            $artist_name = $post->post_title;
-        }
-        
-        // Get current status
-        $status_terms = wp_get_object_terms($post->ID, 'submission_status');
-        $current_status = !empty($status_terms) ? $status_terms[0]->slug : 'new';
-        
-        ?>
-        <div class="cf7-custom-header">
-            <div class="cf7-header-left">
-                <h1 class="cf7-artist-title"><?php echo esc_html($artist_name); ?></h1>
-                <div class="cf7-status-selector">
-                    <?php echo self::render_status_circle($current_status, $post->ID); ?>
-                </div>
-            </div>
-            <div class="cf7-header-right">
-                <button type="submit" class="cf7-save-button" form="post">
-                    <span class="dashicons dashicons-saved"></span>
-                    <?php _e('Save Changes', 'cf7-artist-submissions'); ?>
-                </button>
-            </div>
-        </div>
-        <?php
+        // This method is now replaced by the integrated header in render_tabbed_interface
+        // Left empty to avoid conflicts but maintain backward compatibility
     }
     
     /**
@@ -872,6 +1061,38 @@ class CF7_Artist_Submissions_Tabs {
         wp_send_json_success(array(
             'message' => "Successfully updated {$updated_fields} field(s)",
             'updated_fields' => $updated_fields
+        ));
+    }
+    
+    /**
+     * AJAX handler for saving curator notes independently
+     */
+    public static function ajax_save_curator_notes() {
+        // Check nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_tabs_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        $notes = sanitize_textarea_field($_POST['notes']);
+        
+        // Check permissions
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+        }
+        
+        // Get old notes for logging
+        $old_notes = get_post_meta($post_id, 'cf7_curator_notes', true);
+        
+        // Update the notes
+        update_post_meta($post_id, 'cf7_curator_notes', $notes);
+        
+        // Log the update
+        do_action('cf7_artist_submission_field_updated', $post_id, 'cf7_curator_notes', $old_notes, $notes);
+        
+        wp_send_json_success(array(
+            'message' => 'Curator notes saved successfully',
+            'notes' => $notes
         ));
     }
 }

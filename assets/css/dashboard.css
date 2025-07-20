@@ -760,60 +760,63 @@
 .cf7-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    white-space: nowrap;
-    min-width: fit-content;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
     justify-self: end;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.cf7-status-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+.cf7-status-circle .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
 }
 
 .cf7-status-badge.new {
-    background: #ebf8ff;
-    color: #2b6cb0;
-    border: 1px solid #bee3f8;
+    background: #4299e1;
+    color: white;
 }
 
 .cf7-status-badge.reviewed {
-    background: #faf5ff;
-    color: #805ad5;
-    border: 1px solid #d6bcfa;
+    background: #9f7aea;
+    color: white;
 }
 
 .cf7-status-badge.awaiting-information {
-    background: #fef5e7;
-    color: #dd6b20;
-    border: 1px solid #fbd38d;
+    background: #dd6b20;
+    color: white;
 }
 
 .cf7-status-badge.selected {
-    background: #f0fff4;
-    color: #38a169;
-    border: 1px solid #9ae6b4;
+    background: #48bb78;
+    color: white;
 }
 
 .cf7-status-badge.rejected {
-    background: #fed7d7;
-    color: #c53030;
-    border: 1px solid #feb2b2;
+    background: #f56565;
+    color: white;
 }
 
-.cf7-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
+.cf7-status-badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.cf7-status-badge.new .cf7-status-dot { background: #4299e1; }
-.cf7-status-badge.reviewed .cf7-status-dot { background: #9f7aea; }
-.cf7-status-badge.awaiting-information .cf7-status-dot { background: #dd6b20; }
-.cf7-status-badge.selected .cf7-status-dot { background: #48bb78; }
-.cf7-status-badge.rejected .cf7-status-dot { background: #f56565; }
+/* Remove old dot styles as they're no longer needed */
 
 .cf7-submission-actions {
     display: flex;
