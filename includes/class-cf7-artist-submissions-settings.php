@@ -1530,6 +1530,11 @@ class CF7_Artist_Submissions_Settings {
                 'description' => __('Sent when a submission is marked as reviewed', 'cf7-artist-submissions'),
                 'auto' => false,
             ),
+            'status_changed_to_shortlisted' => array(
+                'name' => __('Status Changed to Shortlisted', 'cf7-artist-submissions'),
+                'description' => __('Sent when a submission is shortlisted for consideration', 'cf7-artist-submissions'),
+                'auto' => false,
+            ),
             'custom_notification' => array(
                 'name' => __('Custom Notification', 'cf7-artist-submissions'),
                 'description' => __('A custom email that can be sent manually at any time', 'cf7-artist-submissions'),

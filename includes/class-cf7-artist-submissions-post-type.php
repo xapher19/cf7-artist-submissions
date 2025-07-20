@@ -123,6 +123,7 @@ class CF7_Artist_Submissions_Post_Type {
         wp_insert_term('New', 'submission_status', array('slug' => 'new'));
         wp_insert_term('Reviewed', 'submission_status', array('slug' => 'reviewed'));
         wp_insert_term('Awaiting Information', 'submission_status', array('slug' => 'awaiting-information'));
+        wp_insert_term('Shortlisted', 'submission_status', array('slug' => 'shortlisted'));
         wp_insert_term('Selected', 'submission_status', array('slug' => 'selected'));
         wp_insert_term('Rejected', 'submission_status', array('slug' => 'rejected'));
     }
@@ -532,6 +533,15 @@ class CF7_Artist_Submissions_Post_Type {
         echo '</div>';
         echo '</div>';
         
+        // Shortlisted submissions card
+        echo '<div class="cf7-dashboard-card cf7-card-shortlisted">';
+        echo '<div class="cf7-card-icon"><span class="dashicons dashicons-paperclip"></span></div>';
+        echo '<div class="cf7-card-content">';
+        echo '<div class="cf7-card-number">' . esc_html($stats['shortlisted']) . '</div>';
+        echo '<div class="cf7-card-label">Shortlisted</div>';
+        echo '</div>';
+        echo '</div>';
+        
         // Selected submissions card
         echo '<div class="cf7-dashboard-card cf7-card-selected">';
         echo '<div class="cf7-card-icon"><span class="dashicons dashicons-yes-alt"></span></div>';
@@ -611,6 +621,7 @@ class CF7_Artist_Submissions_Post_Type {
             'new' => 0,
             'awaiting-information' => 0,
             'reviewed' => 0,
+            'shortlisted' => 0,
             'selected' => 0,
             'rejected' => 0
         );
@@ -645,6 +656,7 @@ class CF7_Artist_Submissions_Post_Type {
             'total' => $total->publish,
             'new' => $status_counts['new'] + $status_counts['awaiting-information'], // Combine new and awaiting info
             'reviewed' => $status_counts['reviewed'],
+            'shortlisted' => $status_counts['shortlisted'],
             'selected' => $status_counts['selected'],
             'rejected' => $status_counts['rejected']
         );

@@ -236,6 +236,7 @@
 .cf7-stat-icon.new { background: linear-gradient(135deg, #4299e1, #3182ce); }
 .cf7-stat-icon.reviewed { background: linear-gradient(135deg, #9f7aea, #805ad5); }
 .cf7-stat-icon.awaiting-information { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+.cf7-stat-icon.shortlisted { background: linear-gradient(135deg, #ec4899, #db2777); }
 .cf7-stat-icon.selected { background: linear-gradient(135deg, #48bb78, #38a169); }
 .cf7-stat-icon.rejected { background: linear-gradient(135deg, #f56565, #e53e3e); }
 .cf7-stat-icon.unread { background: linear-gradient(135deg, #f56565, #e53e3e); }
@@ -1274,6 +1275,11 @@
 
 .cf7-status-badge.awaiting-information {
     background: #dd6b20;
+    color: white;
+}
+
+.cf7-status-badge.shortlisted {
+    background: #ec4899;
     color: white;
 }
 

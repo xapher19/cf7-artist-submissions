@@ -881,6 +881,11 @@ class CF7_Artist_Submissions_Tabs {
                 'color' => '#f59e0b',
                 'icon' => 'clock'
             ),
+            'shortlisted' => array(
+                'label' => __('Shortlisted', 'cf7-artist-submissions'),
+                'color' => '#ec4899',
+                'icon' => 'paperclip'
+            ),
             'selected' => array(
                 'label' => __('Selected', 'cf7-artist-submissions'),
                 'color' => '#10b981',
@@ -940,7 +945,7 @@ class CF7_Artist_Submissions_Tabs {
         $new_status = sanitize_text_field($_POST['status']);
         
         // Validate status
-        $valid_statuses = array('new', 'reviewed', 'awaiting-information', 'selected', 'rejected');
+        $valid_statuses = array('new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected');
         if (!in_array($new_status, $valid_statuses)) {
             wp_send_json_error(array('message' => 'Invalid status'));
             return;
@@ -954,6 +959,7 @@ class CF7_Artist_Submissions_Tabs {
             'new' => array('label' => __('New', 'cf7-artist-submissions'), 'color' => '#007cba', 'icon' => 'star-filled'),
             'reviewed' => array('label' => __('Reviewed', 'cf7-artist-submissions'), 'color' => '#7c3aed', 'icon' => 'visibility'),
             'awaiting-information' => array('label' => __('Awaiting Information', 'cf7-artist-submissions'), 'color' => '#f59e0b', 'icon' => 'clock'),
+            'shortlisted' => array('label' => __('Shortlisted', 'cf7-artist-submissions'), 'color' => '#ec4899', 'icon' => 'paperclip'),
             'selected' => array('label' => __('Selected', 'cf7-artist-submissions'), 'color' => '#10b981', 'icon' => 'yes-alt'),
             'rejected' => array('label' => __('Rejected', 'cf7-artist-submissions'), 'color' => '#ef4444', 'icon' => 'dismiss')
         );

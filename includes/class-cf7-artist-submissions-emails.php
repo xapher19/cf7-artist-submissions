@@ -51,6 +51,11 @@ class CF7_Artist_Submissions_Emails {
                 'description' => __('Sent when a submission is marked as reviewed', 'cf7-artist-submissions'),
                 'auto' => false,
             ),
+            'status_changed_to_shortlisted' => array(
+                'name' => __('Status Changed to Shortlisted', 'cf7-artist-submissions'),
+                'description' => __('Sent when a submission is shortlisted for consideration', 'cf7-artist-submissions'),
+                'auto' => false,
+            ),
             'custom_notification' => array(
                 'name' => __('Custom Notification', 'cf7-artist-submissions'),
                 'description' => __('A custom email that can be sent manually at any time', 'cf7-artist-submissions'),
@@ -299,6 +304,9 @@ class CF7_Artist_Submissions_Emails {
                     break;
                 case 'status_changed_to_reviewed':
                     $content = "Dear {artist_name},\n\nThank you for your submission. We have completed our review process.\n\nRegards,\n{site_name} Team";
+                    break;
+                case 'status_changed_to_shortlisted':
+                    $content = "Dear {artist_name},\n\nGreat news! Your submission has been shortlisted for further consideration. We will be in touch soon with next steps.\n\nRegards,\n{site_name} Team";
                     break;
                 case 'custom_notification':
                     $content = "Dear {artist_name},\n\nThis is a custom notification regarding your submission.\n\nRegards,\n{site_name} Team";

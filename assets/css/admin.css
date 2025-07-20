@@ -446,6 +446,16 @@ span.status-awaiting-information::before {
     background-color: #dd6b20;
 }
 
+span.status-shortlisted {
+    background-color: #fce7f3;
+    color: #db2777;
+    border: 1px solid #f3b2cb;
+}
+
+span.status-shortlisted::before {
+    background-color: #ec4899;
+}
+
 span.status-selected {
     background-color: #f0fff4;
     color: #38a169;

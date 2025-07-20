@@ -112,6 +112,7 @@ class CF7_Artist_Submissions_Dashboard {
         $new = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p LEFT JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id LEFT JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND (t.name = 'New' OR t.name IS NULL)");
         $reviewed = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Reviewed'");
         $awaiting_information = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Awaiting Information'");
+        $shortlisted = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Shortlisted'");
         $selected = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Selected'");
         $rejected = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Rejected'");
         $unread_messages = $wpdb->get_var("SELECT COUNT(DISTINCT c.submission_id) FROM {$conversations_table} c WHERE c.is_admin_read = 0");
@@ -121,6 +122,7 @@ class CF7_Artist_Submissions_Dashboard {
             'new' => (int) $new,
             'reviewed' => (int) $reviewed,
             'awaiting_information' => (int) $awaiting_information,
+            'shortlisted' => (int) $shortlisted,
             'selected' => (int) $selected,
             'rejected' => (int) $rejected,
             'unread_messages' => (int) $unread_messages
@@ -219,6 +221,23 @@ class CF7_Artist_Submissions_Dashboard {
                     </div>
                 </div>
                 
+                <div class="cf7-stat-card" data-type="shortlisted">
+                    <div class="cf7-stat-header">
+                        <div class="cf7-stat-left">
+                            <div class="cf7-stat-icon shortlisted">
+                                <span class="dashicons dashicons-paperclip"></span>
+                            </div>
+                            <div class="cf7-stat-content">
+                                <h3>Shortlisted</h3>
+                                <div class="cf7-stat-number"><?php echo $stats['shortlisted']; ?></div>
+                            </div>
+                        </div>
+                        <div class="cf7-stat-chart shortlisted" id="chart-shortlisted">
+                            <!-- Chart will be generated here -->
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="cf7-stat-card" data-type="selected">
                     <div class="cf7-stat-header">
                         <div class="cf7-stat-left">
@@ -292,6 +311,10 @@ class CF7_Artist_Submissions_Dashboard {
                                         <div class="cf7-status-filter-option" data-value="awaiting-information" data-icon="dashicons-clock" data-color="#dd6b20">
                                             <span class="cf7-status-icon dashicons dashicons-clock" style="color: #dd6b20;"></span>
                                             <span class="cf7-status-label">Awaiting Information</span>
+                                        </div>
+                                        <div class="cf7-status-filter-option" data-value="shortlisted" data-icon="dashicons-paperclip" data-color="#ec4899">
+                                            <span class="cf7-status-icon dashicons dashicons-paperclip" style="color: #ec4899;"></span>
+                                            <span class="cf7-status-label">Shortlisted</span>
                                         </div>
                                         <div class="cf7-status-filter-option" data-value="selected" data-icon="dashicons-yes-alt" data-color="#48bb78">
                                             <span class="cf7-status-icon dashicons dashicons-yes-alt" style="color: #48bb78;"></span>
@@ -379,6 +402,7 @@ class CF7_Artist_Submissions_Dashboard {
                                 <option value="export">Export Selected</option>
                                 <option value="status-reviewed">Mark as Reviewed</option>
                                 <option value="status-awaiting-information">Mark as Awaiting Information</option>
+                                <option value="status-shortlisted">Mark as Shortlisted</option>
                                 <option value="status-selected">Mark as Selected</option>
                                 <option value="status-rejected">Mark as Rejected</option>
                                 <option value="delete">Delete Selected</option>
@@ -737,6 +761,7 @@ class CF7_Artist_Submissions_Dashboard {
                 'new' => $this->get_submissions_count_by_status('new'),
                 'reviewed' => $this->get_submissions_count_by_status('reviewed'),
                 'awaiting-information' => $this->get_submissions_count_by_status('awaiting-information'),
+                'shortlisted' => $this->get_submissions_count_by_status('shortlisted'),
                 'selected' => $this->get_submissions_count_by_status('selected'),
                 'rejected' => $this->get_submissions_count_by_status('rejected'),
                 'unread_messages' => $this->get_unread_messages_count(),
@@ -755,6 +780,7 @@ class CF7_Artist_Submissions_Dashboard {
                     'new' => term_exists('new', 'submission_status') ? 'yes' : 'no',
                     'reviewed' => term_exists('reviewed', 'submission_status') ? 'yes' : 'no',
                     'awaiting-information' => term_exists('awaiting-information', 'submission_status') ? 'yes' : 'no',
+                    'shortlisted' => term_exists('shortlisted', 'submission_status') ? 'yes' : 'no',
                     'selected' => term_exists('selected', 'submission_status') ? 'yes' : 'no',
                     'rejected' => term_exists('rejected', 'submission_status') ? 'yes' : 'no',
                 )
@@ -1011,7 +1037,7 @@ class CF7_Artist_Submissions_Dashboard {
         
         $changes = array();
         
-        foreach (['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected'] as $stat_type) {
+        foreach (['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected'] as $stat_type) {
             // Convert underscore to hyphen for consistency with JavaScript
             $current_key = str_replace('-', '_', $stat_type);
             $current = $current_stats[$current_key];

@@ -417,7 +417,7 @@
 
         renderStats(stats) {
             console.log('Rendering stats:', stats); // Debug log
-            const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected', 'unread_messages'];
+            const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected', 'unread_messages'];
             
             statTypes.forEach(type => {
                 const $card = $(`.cf7-stat-card[data-type="${type}"]`);
@@ -430,6 +430,7 @@
                         'new': 'dashicons-star-filled',
                         'reviewed': 'dashicons-visibility',
                         'awaiting-information': 'dashicons-clock',
+                        'shortlisted': 'dashicons-paperclip',
                         'selected': 'dashicons-yes-alt',
                         'rejected': 'dashicons-dismiss',
                         'unread_messages': 'dashicons-email'
@@ -440,6 +441,7 @@
                         'new': 'New',
                         'reviewed': 'Reviewed', 
                         'awaiting-information': 'Awaiting Information',
+                        'shortlisted': 'Shortlisted',
                         'selected': 'Selected',
                         'rejected': 'Rejected',
                         'unread_messages': 'Unread Messages'
@@ -500,7 +502,7 @@
         }
 
         generateStatsCharts(stats) {
-            const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'selected', 'rejected'];
+            const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected'];
             
             statTypes.forEach(type => {
                 const chartContainer = document.getElementById(`chart-${type}`);
@@ -883,6 +885,7 @@
                 'new': 'dashicons-star-filled',
                 'reviewed': 'dashicons-visibility',
                 'awaiting-information': 'dashicons-clock',
+                'shortlisted': 'dashicons-paperclip',
                 'selected': 'dashicons-yes-alt',
                 'rejected': 'dashicons-dismiss'
             };
@@ -1156,8 +1159,8 @@
 
         openStatusModal(submissionId) {
             // Simple prompt for now - you can implement a proper modal later
-            const newStatus = prompt('Enter new status (new, reviewed, selected, rejected):');
-            if (newStatus && ['new', 'reviewed', 'selected', 'rejected'].includes(newStatus)) {
+            const newStatus = prompt('Enter new status (new, reviewed, awaiting-information, shortlisted, selected, rejected):');
+            if (newStatus && ['new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected'].includes(newStatus)) {
                 const data = {
                     action: 'cf7_dashboard_update_status',
                     nonce: cf7_dashboard.nonce,

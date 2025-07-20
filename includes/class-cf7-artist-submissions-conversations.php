@@ -430,6 +430,10 @@ class CF7_Artist_Submissions_Conversations {
                                     'name' => __('Status Changed to Reviewed', 'cf7-artist-submissions'),
                                     'auto' => false,
                                 ),
+                                'status_changed_to_shortlisted' => array(
+                                    'name' => __('Status Changed to Shortlisted', 'cf7-artist-submissions'),
+                                    'auto' => false,
+                                ),
                                 'custom_notification' => array(
                                     'name' => __('Custom Notification', 'cf7-artist-submissions'),
                                     'auto' => false,

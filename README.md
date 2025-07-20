@@ -303,8 +303,9 @@ Configure the conversation system in **Artist Submissions > Settings**:
 1. **New Submissions**: Automatically set to "New" status (blue)
 2. **Review Process**: Change to "Reviewed" after initial assessment (green)
 3. **Information Requests**: Set to "Awaiting Information" for follow-ups (orange)
-4. **Selection Process**: Mark as "Selected" or "Rejected" (purple/red)
-5. **Status History**: Track all status changes with timestamps
+4. **Shortlisting**: Mark promising submissions as "Shortlisted" for consideration (amber)
+5. **Selection Process**: Mark as "Selected" or "Rejected" (purple/red)
+6. **Status History**: Track all status changes with timestamps
 
 ### Export & Reporting
 
