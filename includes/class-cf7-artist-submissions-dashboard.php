@@ -1184,7 +1184,7 @@ class CF7_Artist_Submissions_Dashboard {
         
         $changes = array();
         
-        foreach (['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected'] as $stat_type) {
+        foreach (['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected', 'unread_messages'] as $stat_type) {
             // Convert underscore to hyphen for consistency with JavaScript
             $current_key = str_replace('-', '_', $stat_type);
             $current = $current_stats[$current_key];
@@ -1302,7 +1302,11 @@ class CF7_Artist_Submissions_Dashboard {
             'total' => $historical_total,
             'new' => $this->get_submissions_count_by_status_before_date('new', $date_threshold),
             'reviewed' => $this->get_submissions_count_by_status_before_date('reviewed', $date_threshold),
+            'awaiting_information' => $this->get_submissions_count_by_status_before_date('awaiting-information', $date_threshold),
+            'shortlisted' => $this->get_submissions_count_by_status_before_date('shortlisted', $date_threshold),
             'selected' => $this->get_submissions_count_by_status_before_date('selected', $date_threshold),
+            'rejected' => $this->get_submissions_count_by_status_before_date('rejected', $date_threshold),
+            'unread_messages' => 0, // Historical unread messages tracking not implemented yet
         );
         
         return $historical_stats;
@@ -1348,24 +1352,6 @@ class CF7_Artist_Submissions_Dashboard {
      */
     private function get_unread_messages_count() {
         return CF7_Artist_Submissions_Conversations::get_total_unviewed_count();
-    }
-    
-    /**
-     * Get unread messages count from 7 days ago for percentage calculation
-     */
-    private function get_unread_messages_count_before_date($date) {
-        global $wpdb;
-        $conversations_table = $wpdb->prefix . 'cf7_conversations';
-        
-        $count = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*) 
-            FROM {$conversations_table} 
-            WHERE read_status = 0 
-            AND direction = 'inbound'
-            AND (received_at < %s OR (received_at IS NULL AND sent_at < %s))
-        ", $date, $date));
-        
-        return intval($count);
     }
     
     /**

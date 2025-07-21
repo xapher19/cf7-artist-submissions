@@ -388,25 +388,83 @@
     color: #1a202c;
 }
 
-.cf7-modal-close {
+/**
+ * Modal Close Button (Header X Button)
+ * 
+ * Clean, accessible close button with hover states.
+ * Positioned in the top-right corner of modal headers.
+ * Only affects the header close button, not footer buttons.
+ */
+.cf7-modal-header .cf7-modal-close {
     background: none;
     border: none;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     cursor: pointer;
     color: #718096;
     padding: 0.5rem;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    border-radius: 6px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 }
 
-.cf7-modal-close:hover {
+.cf7-modal-header .cf7-modal-close:hover {
     background: #e2e8f0;
     color: #4a5568;
+    transform: scale(1.05);
+}
+
+.cf7-modal-header .cf7-modal-close:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+.cf7-modal-header .cf7-modal-close .dashicons {
+    font-size: 1.2rem;
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+/**
+ * Modal Footer Close Button
+ * 
+ * Standard button styling for the footer "Close Preview" button.
+ * Ensures proper contrast and spacing.
+ */
+.cf7-modal-footer .cf7-btn.cf7-modal-close {
+    background: #6b7280;
+    color: white;
+    border: 1px solid #6b7280;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.cf7-modal-footer .cf7-btn.cf7-modal-close:hover {
+    background: #4b5563;
+    border-color: #4b5563;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    color: white;
+}
+
+.cf7-modal-footer .cf7-btn.cf7-modal-close:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
 }
 
 .cf7-modal-body {
@@ -569,9 +627,82 @@
     animation: cf7-spin 1s linear infinite;
 }
 
+/**
+ * Modal Loading Content
+ * 
+ * Centered loading message with proper icon spinning animation.
+ * Used inside modal content areas for loading states.
+ */
+.cf7-modal-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+    color: #718096;
+}
+
+.cf7-modal-loading .dashicons {
+    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 1rem;
+    animation: cf7-spin 1s linear infinite;
+}
+
+.cf7-modal-loading-text {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/**
+ * Modal Error Messages
+ * 
+ * Error styling for modal content areas.
+ */
+.cf7-modal .cf7-error {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    color: #dc2626;
+    margin: 1rem 0;
+}
+
+.cf7-modal .cf7-error .dashicons {
+    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+}
+
+/**
+ * Spinning Animation
+ * 
+ * Applied to icons for loading states. Only spins the element it's applied to.
+ */
+.cf7-spin {
+    animation: cf7-spin 1s linear infinite;
+}
+
 @keyframes cf7-spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+@keyframes cf7-slide-in {
+    0% { 
+        opacity: 0; 
+        transform: translateY(-10px); 
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
 }
 
 .cf7-fade-in {

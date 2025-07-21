@@ -123,9 +123,15 @@ $total_pages = ceil($total_items / $per_page);
                             <input type="date" name="date_to" id="date_to" value="<?php echo esc_attr($date_to); ?>">
                         </div>
                         
-                        <div class="filter-group">
-                            <button type="submit" class="cf7-btn cf7-btn-primary"><?php _e('Filter', 'cf7-artist-submissions'); ?></button>
-                            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" class="cf7-btn cf7-btn-secondary"><?php _e('Clear', 'cf7-artist-submissions'); ?></a>
+                        <div class="filter-buttons">
+                            <button type="submit" class="filter-btn filter-btn-primary">
+                                <span class="dashicons dashicons-filter"></span>
+                                <?php _e('Filter', 'cf7-artist-submissions'); ?>
+                            </button>
+                            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" class="filter-btn filter-btn-secondary">
+                                <span class="dashicons dashicons-dismiss"></span>
+                                <?php _e('Clear', 'cf7-artist-submissions'); ?>
+                            </a>
                         </div>
                     </div>
                 </form>

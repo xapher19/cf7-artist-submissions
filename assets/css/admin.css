@@ -1019,12 +1019,14 @@ span.status-rejected::before {
 .cf7-field-input,
 .cf7-field-textarea,
 .cf7-field-select {
+    width: 100%;
     padding: 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 0.5rem;
     font-size: 0.875rem;
     transition: all 0.2s ease;
     background: white;
+    box-sizing: border-box;
 }
 
 /* Input Focus States

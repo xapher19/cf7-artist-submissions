@@ -18,6 +18,7 @@
  * @package CF7_Artist_Submissions
  * @since 2.0.0 Complete dashboard redesign with modern UI patterns
  * @since 2.1.0 Refactored to use common.css for shared components
+ * @since 2.2.0 Removed legacy code patterns and unused styles
  */
 
 /* ===== RESET & BASE ===== */
@@ -318,10 +319,7 @@
     }
 }
 
-/* Legacy stat grid - hide to prevent conflicts */
-.cf7-stats-grid {
-    display: none;
-}
+
 
 /* Click animations and interactions */
 .cf7-metric-card.clicked {
@@ -773,10 +771,7 @@
 
 /* Note: Icon button styles moved to common.css */
 
-/* Expandable Search Bar (Remove old styles) */
-.cf7-search-expandable {
-    display: none !important;
-}
+
 
 /* ===== SEARCH & FILTERS ===== */
 .cf7-search-wrapper {
@@ -1311,14 +1306,7 @@
     border-color: #2563eb;
 }
 
-/* Hide old date inputs */
-.cf7-date-inputs {
-    display: none;
-}
 
-.cf7-date-presets {
-    display: none;
-}
 
 .cf7-filter-summary {
     margin-top: 0.5rem;
@@ -1990,8 +1978,6 @@
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Remove old dot styles as they're no longer needed */
-
 .cf7-submission-actions {
     display: flex;
     gap: 0.5rem;
@@ -2477,10 +2463,6 @@
         grid-template-columns: 1fr;
     }
     
-    .cf7-stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
     /* Larger charts on medium screens */
     .cf7-stat-chart {
         max-width: 140px;
@@ -2503,10 +2485,6 @@
     
     .cf7-dashboard-title {
         font-size: 2rem;
-    }
-    
-    .cf7-stats-grid {
-        grid-template-columns: 1fr;
     }
     
     /* Maximum width charts on mobile for single column layout */
@@ -2542,28 +2520,9 @@
         align-items: stretch;
     }
     
-    .cf7-date-inputs {
-        flex-direction: column;
-        gap: 0.75rem;
-        width: 100%;
-    }
-    
     .cf7-date-input {
         min-width: auto;
         width: 100%;
-    }
-    
-    .cf7-date-presets {
-        justify-content: center;
-        margin-left: 0;
-        width: 100%;
-        flex-wrap: wrap;
-    }
-    
-    .cf7-date-preset {
-        flex: 1;
-        text-align: center;
-        min-width: 70px;
     }
     
     .cf7-bulk-actions {

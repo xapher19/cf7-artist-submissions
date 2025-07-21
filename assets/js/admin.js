@@ -101,23 +101,23 @@
             // Modal close handlers
             $(document).on('click', '#cf7-template-preview-modal', function(e) {
                 if (e.target === this) {
-                    $(this).hide();
+                    $(this).removeClass('show');
                 }
             });
             
             $(document).on('click', '.cf7-modal-close', function() {
-                $('#cf7-template-preview-modal').hide();
+                $('#cf7-template-preview-modal').removeClass('show');
             });
             
             // WooCommerce modal close handlers
             $(document).on('click', '#wc-template-preview-modal', function(e) {
                 if (e.target === this) {
-                    $(this).hide().trigger('hide.wcPreview');
+                    $(this).removeClass('show').trigger('hide.wcPreview');
                 }
             });
             
             $(document).on('click', '#close-wc-preview, #close-wc-preview-footer', function() {
-                $('#wc-template-preview-modal').hide().trigger('hide.wcPreview');
+                $('#wc-template-preview-modal').removeClass('show').trigger('hide.wcPreview');
             });
         },
         
@@ -198,20 +198,20 @@
         initModals: function() {
             // Modal close handlers
             $('.cf7-modal-close').on('click', function() {
-                $(this).closest('.cf7-modal').hide();
+                $(this).closest('.cf7-modal').removeClass('show');
             });
             
             // Click outside to close
             $('.cf7-modal').on('click', function(e) {
                 if (e.target === this) {
-                    $(this).hide();
+                    $(this).removeClass('show');
                 }
             });
             
             // ESC key to close
             $(document).on('keydown', function(e) {
                 if (e.key === 'Escape') {
-                    $('.cf7-modal:visible').hide();
+                    $('.cf7-modal.show').removeClass('show');
                 }
             });
         },
@@ -701,8 +701,8 @@
             const $modal = $('#cf7-template-preview-modal');
             const $content = $('#cf7-template-preview-content');
             
-            $content.html('<div class="cf7-loading"><span class="dashicons dashicons-update cf7-spin"></span> Generating preview...</div>');
-            $modal.show().css('display', 'flex');
+            $content.html('<div class="cf7-modal-loading"><span class="dashicons dashicons-update"></span><div class="cf7-modal-loading-text">Generating preview...</div></div>');
+            $modal.addClass('show').css('display', 'flex');
             
             // Function to reset button state
             const resetButton = function() {
@@ -718,9 +718,9 @@
             const resetOnHide = function() {
                 const observer = new MutationObserver(function(mutations) {
                     mutations.forEach(function(mutation) {
-                        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                             const modal = mutation.target;
-                            if (modal.style.display === 'none' || !modal.style.display) {
+                            if (!modal.classList.contains('show')) {
                                 resetButton();
                                 observer.disconnect();
                             }
@@ -730,7 +730,7 @@
                 
                 observer.observe($modal[0], {
                     attributes: true,
-                    attributeFilter: ['style']
+                    attributeFilter: ['class']
                 });
             };
             
@@ -838,8 +838,8 @@
             const $modal = $('#wc-template-preview-modal');
             const $content = $('#wc-template-preview-content');
             
-            $content.html('<div class="cf7-loading"><span class="dashicons dashicons-update cf7-spin"></span> Generating WooCommerce template preview...</div>');
-            $modal.show().css('display', 'flex');
+            $content.html('<div class="cf7-modal-loading"><span class="dashicons dashicons-update"></span><div class="cf7-modal-loading-text">Generating WooCommerce template preview...</div></div>');
+            $modal.addClass('show').css('display', 'flex');
             
             // Function to reset button state
             const resetButton = function() {
