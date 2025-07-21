@@ -1,5 +1,15 @@
 /**
- * PDF Export functionality for CF7 Artist Submissions
+ * PDF Export JavaScript for CF7 Artist Submissions
+ * 
+ * Handles the client-side PDF export functionality including:
+ * - Export option configuration
+ * - AJAX communication with the server
+ * - User interface feedback and status updates
+ * - Error handling and success notifications
+ * - Auto-opening of generated PDF documents
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0
  */
 jQuery(document).ready(function($) {
     

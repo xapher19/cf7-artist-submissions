@@ -1,7 +1,32 @@
 <?php
 /**
  * CF7 Artist Submissions - Conversation System
- * Handles two-way email conversations with artists
+ * 
+ * This class provides a complete two-way email conversation system for
+ * communicating with artists. Features include IMAP integration, plus
+ * addressing for unique tracking, template system, message threading,
+ * and real-time updates with comprehensive admin interface.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.5.0
+ * @since 2.0.0 Enhanced with real-time updates and admin interface
+ */
+
+/**
+ * CF7 Artist Submissions Conversations Class
+ * 
+ * Manages the complete conversation system including:
+ * - Two-way email communication with artists
+ * - IMAP integration for automatic reply detection
+ * - Plus addressing for unique conversation tracking
+ * - Email template system for common responses
+ * - Message threading and organization
+ * - Real-time message updates and notifications
+ * - Admin interface for conversation management
+ * - Database management for message storage
+ * - Security and validation for all communications
+ * 
+ * @since 1.5.0
  */
 class CF7_Artist_Submissions_Conversations {
     
@@ -2319,6 +2344,15 @@ class CF7_Artist_Submissions_Conversations {
             
             // Commit the transaction
             $wpdb->query('COMMIT');
+            
+            // Log conversation clearing to audit trail
+            if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+                CF7_Artist_Submissions_Action_Log::log_conversation_cleared(
+                    $submission_id,
+                    $message_count,
+                    'Privacy compliance - permanent deletion'
+                );
+            }
             
             // Log the action for audit purposes with more detail
             error_log("CF7 Artist Submissions: PRIVACY DELETION - {$message_count} messages permanently deleted for submission ID {$submission_id} by user " . get_current_user_id() . " at " . current_time('mysql'));

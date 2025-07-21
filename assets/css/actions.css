@@ -1,3 +1,19 @@
+/**
+ * Actions Tab Styles for CF7 Artist Submissions
+ * 
+ * Provides comprehensive styling for the actions/tasks management system:
+ * - Action container layouts and responsive design
+ * - Priority indicators and status badges
+ * - Modal styling for action creation/editing
+ * - Button states and hover effects
+ * - Loading states and animations
+ * - Filter controls and interface elements
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with modern UI components and improved accessibility
+ */
+
 /* Actions Tab Styles - Updated to match PHP output */
 .cf7-actions-container {
     background: #fff !important;

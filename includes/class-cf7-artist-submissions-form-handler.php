@@ -1,13 +1,56 @@
 <?php
 /**
- * Handles Contact Form 7 Submissions
+ * Contact Form 7 Submission Handler
+ * 
+ * This class intercepts Contact Form 7 submissions for the configured
+ * form and stores them as custom post type entries with file uploads,
+ * metadata, and initial status assignment.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ */
+
+/**
+ * CF7 Artist Submissions Form Handler Class
+ * 
+ * Handles the capture and processing of Contact Form 7 submissions:
+ * - Intercepts submissions for the configured form ID
+ * - Creates custom post type entries
+ * - Processes and securely stores file uploads
+ * - Saves form data as post metadata
+ * - Sets initial submission status
+ * - Triggers submission created actions
+ * 
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Form_Handler {
     
+    /**
+     * Initialize the form handler hooks.
+     * 
+     * Sets up the Contact Form 7 submission hook to capture
+     * submissions for processing.
+     * 
+     * @since 1.0.0
+     * 
+     * @return void
+     */
     public function init() {
         add_action('wpcf7_before_send_mail', array($this, 'capture_submission'));
     }
     
+    /**
+     * Capture and process Contact Form 7 submissions.
+     * 
+     * Processes submissions from the configured form ID, creates
+     * custom post type entries, handles file uploads with security
+     * validation, and saves all form data as metadata.
+     * 
+     * @since 1.0.0
+     * 
+     * @param WPCF7_ContactForm $contact_form The Contact Form 7 instance
+     * @return void
+     */
     public function capture_submission($contact_form) {
         $options = get_option('cf7_artist_submissions_options', array());
         $form_id = !empty($options['form_id']) ? $options['form_id'] : '';

@@ -1,6 +1,33 @@
 <?php
 /**
- * CF7 Artist Submissions - Tabbed Admin Interface
+ * CF7 Artist Submissions - Professional Tabbed Admin Interface
+ * 
+ * This class completely transforms the standard WordPress edit page into
+ * a modern, professional tabbed interface with 5 specialized tabs:
+ * Profile, Works, Conversations, Actions, and Curator Notes. Features
+ * include AJAX tab loading, smart navigation, field editing, and
+ * comprehensive asset management.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0
+ */
+
+/**
+ * CF7 Artist Submissions Tabs Class
+ * 
+ * Creates and manages the professional tabbed interface including:
+ * - 5-tab layout (Profile, Works, Conversations, Actions, Notes)
+ * - Editable header with artist information
+ * - AJAX tab content loading
+ * - Smart navigation with URL hash support
+ * - Field editing system integration
+ * - Lightbox image viewing
+ * - Conversation management interface
+ * - Action/task management interface
+ * - Independent notes saving system
+ * - Complete WordPress admin integration
+ * 
+ * @since 2.0.0
  */
 class CF7_Artist_Submissions_Tabs {
     

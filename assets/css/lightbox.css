@@ -1,3 +1,20 @@
+/**
+ * CF7 Artist Submissions - Lightbox Styles
+ * 
+ * Styling for the image/media lightbox functionality:
+ * - Full-screen overlay with smooth transitions
+ * - Image zooming and navigation controls
+ * - Touch and keyboard navigation support
+ * - Loading states and error handling
+ * - Mobile-responsive design
+ * - Close button and escape handling
+ * - Integration with submission media display
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with touch support and improved accessibility
+ */
+
 /* CF7 Artist Submissions - Lightbox Styles */
 
 .cf7-lightbox-overlay {

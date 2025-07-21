@@ -1,6 +1,31 @@
 <?php
 /**
  * Email Management for CF7 Artist Submissions
+ * 
+ * This class manages the comprehensive email system including template
+ * management, trigger-based notifications, email configuration, and
+ * integration with the conversation system. Features automated
+ * notifications, custom templates, and email validation.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with conversation system integration
+ */
+
+/**
+ * CF7 Artist Submissions Emails Class
+ * 
+ * Manages the complete email system including:
+ * - Email template management and customization
+ * - Trigger-based automated notifications
+ * - Status change notifications to artists
+ * - Email configuration and validation
+ * - Integration with conversation system
+ * - SMTP configuration support
+ * - Email delivery tracking and logging
+ * - Template variable substitution
+ * 
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Emails {
     
@@ -1062,12 +1087,15 @@ class CF7_Artist_Submissions_Emails {
                     'subject' => $subject
                 );
                 
-                // Log the email action
-                $log_result = CF7_Artist_Submissions_Action_Log::log_action(
-                    $submission_id,
-                    'email_sent',
-                    json_encode($log_data)
-                );
+                // Log the email sent using the enhanced method
+                if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+                    CF7_Artist_Submissions_Action_Log::log_email_sent(
+                        $submission_id,
+                        $template_name,
+                        $to_email,
+                        $subject
+                    );
+                }
                 
                 // Store in conversations system
                 if (class_exists('CF7_Artist_Submissions_Conversations')) {

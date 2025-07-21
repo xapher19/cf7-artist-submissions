@@ -1,5 +1,16 @@
 /**
- * CF7 Artist Submissions - Filter Controls
+ * CF7 Artist Submissions - Filter Controls JavaScript
+ * 
+ * Provides filtering functionality for the submission dashboard including:
+ * - Date range filtering with jQuery UI datepickers
+ * - Status-based filtering (pending, completed, overdue)
+ * - Priority-based filtering (high, medium, low)
+ * - Real-time filter application
+ * - Advanced search capabilities
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with improved date picker positioning
  */
 (function($) {
     'use strict';

@@ -1,6 +1,31 @@
 <?php
 /**
  * Settings Page for CF7 Artist Submissions
+ * 
+ * This class manages the comprehensive settings interface for the plugin
+ * including Contact Form 7 integration, email configuration, conversation
+ * system setup, action management, and system diagnostics. Features
+ * validation, testing tools, and real-time configuration updates.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with action system and email diagnostics
+ */
+
+/**
+ * CF7 Artist Submissions Settings Class
+ * 
+ * Manages the complete settings system including:
+ * - Contact Form 7 form selection and configuration
+ * - Email system setup (SMTP, IMAP, plus addressing)
+ * - Conversation system configuration and testing
+ * - Action system settings and cron management
+ * - File storage and security settings
+ * - System diagnostics and validation tools
+ * - Real-time configuration testing
+ * - Admin interface and user experience
+ * 
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Settings {
     
@@ -191,6 +216,10 @@ class CF7_Artist_Submissions_Settings {
                 <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=debug" 
                    class="nav-tab <?php echo $current_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
                     <?php _e('Debug', 'cf7-artist-submissions'); ?>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" 
+                   class="nav-tab <?php echo $current_tab === 'audit' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Audit Log', 'cf7-artist-submissions'); ?>
                 </a>
             </nav>
             
@@ -733,6 +762,14 @@ class CF7_Artist_Submissions_Settings {
                         echo '<p>Conversations table does not exist. Please activate the plugin to create it.</p>';
                     }
                     ?>
+                </div>
+                
+            <?php elseif ($current_tab === 'audit'): ?>
+                <div class="cf7-audit-tab">
+                    <h2><?php _e('Audit Log', 'cf7-artist-submissions'); ?></h2>
+                    <p><?php _e('View system activity and action logs for submissions.', 'cf7-artist-submissions'); ?></p>
+                    
+                    <?php $this->render_audit_log_interface(); ?>
                 </div>
                 
             <?php endif; ?>
@@ -1296,10 +1333,14 @@ class CF7_Artist_Submissions_Settings {
     
     public function validate_options($input) {
         $valid = array();
+        $old_options = get_option('cf7_artist_submissions_options', array());
         
         $valid['form_id'] = isset($input['form_id']) ? sanitize_text_field($input['form_id']) : '';
         $valid['menu_label'] = isset($input['menu_label']) ? sanitize_text_field($input['menu_label']) : 'Submissions';
         $valid['store_files'] = isset($input['store_files']) ? 'yes' : 'no';
+        
+        // Log setting changes
+        $this->log_settings_changes($old_options, $valid, 'general');
         
         return $valid;
     }
@@ -1368,6 +1409,7 @@ class CF7_Artist_Submissions_Settings {
      */
     public function validate_email_options($input) {
         $valid = array();
+        $old_options = get_option('cf7_artist_submissions_email_options', array());
         
         // Validate from email
         if (isset($input['from_email'])) {
@@ -1388,17 +1430,22 @@ class CF7_Artist_Submissions_Settings {
         // Validate WooCommerce template option
         $valid['use_wc_template'] = isset($input['use_wc_template']) ? true : false;
         
+        // Log setting changes
+        $this->log_settings_changes($old_options, $valid, 'email');
+        
         return $valid;
     }
 
     public function validate_imap_options($input) {
         $valid = array();
+        $old_options = get_option('cf7_artist_submissions_imap_options', array());
         
         $valid['server'] = isset($input['server']) ? sanitize_text_field($input['server']) : '';
         $valid['port'] = isset($input['port']) ? intval($input['port']) : 993;
         $valid['username'] = isset($input['username']) ? sanitize_text_field($input['username']) : '';
         $valid['password'] = isset($input['password']) ? $input['password'] : ''; // Don't sanitize password
         $valid['encryption'] = isset($input['encryption']) ? sanitize_text_field($input['encryption']) : 'ssl';
+        $valid['delete_processed'] = isset($input['delete_processed']) ? true : false;
         
         // Validate port range
         if ($valid['port'] < 1 || $valid['port'] > 65535) {
@@ -1409,6 +1456,17 @@ class CF7_Artist_Submissions_Settings {
         if (!in_array($valid['encryption'], array('ssl', 'tls', 'none'))) {
             $valid['encryption'] = 'ssl';
         }
+        
+        // Log setting changes (but sanitize password for audit log)
+        $audit_old = $old_options;
+        $audit_new = $valid;
+        if (!empty($audit_old['password'])) {
+            $audit_old['password'] = '[REDACTED]';
+        }
+        if (!empty($audit_new['password'])) {
+            $audit_new['password'] = '[REDACTED]';
+        }
+        $this->log_settings_changes($audit_old, $audit_new, 'imap');
         
         return $valid;
     }
@@ -1626,6 +1684,7 @@ class CF7_Artist_Submissions_Settings {
      */
     public function validate_email_templates($input) {
         $valid = array();
+        $old_options = get_option('cf7_artist_submissions_email_templates', array());
         
         if (is_array($input)) {
             foreach ($input as $template_id => $template_data) {
@@ -1637,6 +1696,9 @@ class CF7_Artist_Submissions_Settings {
                 );
             }
         }
+        
+        // Log setting changes
+        $this->log_settings_changes($old_options, $valid, 'templates');
         
         return $valid;
     }
@@ -1664,9 +1726,7 @@ class CF7_Artist_Submissions_Settings {
         }
         
         try {
-            error_log('CF7 Settings: Test daily summary called');
             $result = CF7_Artist_Submissions_Actions::send_daily_summary_to_all();
-            error_log('CF7 Settings: Result = ' . print_r($result, true));
             
             $message = sprintf(
                 'Daily summary emails sent! Successfully sent to %d users, %d failed.',
@@ -1877,6 +1937,409 @@ class CF7_Artist_Submissions_Settings {
             
         } catch (Exception $e) {
             wp_send_json_error(array('message' => 'Error testing SMTP: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * Render the audit log interface
+     * 
+     * Displays a comprehensive audit log with filtering and search capabilities.
+     * Shows all logged actions including email sends, status changes, and system events.
+     * 
+     * @since 2.0.0
+     * 
+     * @return void
+     */
+    private function render_audit_log_interface() {
+        global $wpdb;
+        
+        // Get filter parameters
+        $action_type = isset($_GET['action_type']) ? sanitize_text_field($_GET['action_type']) : '';
+        $submission_id = isset($_GET['submission_id']) ? intval($_GET['submission_id']) : 0;
+        $date_from = isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : '';
+        $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : '';
+        $page_num = isset($_GET['log_page']) ? max(1, intval($_GET['log_page'])) : 1;
+        $per_page = 20;
+        $offset = ($page_num - 1) * $per_page;
+        
+        // Build query
+        $table_name = $wpdb->prefix . 'cf7_action_log';
+        $where_conditions = array('1=1');
+        $where_values = array();
+        
+        if (!empty($action_type)) {
+            $where_conditions[] = 'action_type = %s';
+            $where_values[] = $action_type;
+        }
+        
+        if ($submission_id > 0) {
+            $where_conditions[] = 'submission_id = %d';
+            $where_values[] = $submission_id;
+        }
+        
+        if (!empty($date_from)) {
+            $where_conditions[] = 'DATE(date_created) >= %s';
+            $where_values[] = $date_from;
+        }
+        
+        if (!empty($date_to)) {
+            $where_conditions[] = 'DATE(date_created) <= %s';
+            $where_values[] = $date_to;
+        }
+        
+        $where_clause = implode(' AND ', $where_conditions);
+        
+        // Get total count for pagination
+        $count_query = "SELECT COUNT(*) FROM {$table_name} WHERE {$where_clause}";
+        if (!empty($where_values)) {
+            $count_query = $wpdb->prepare($count_query, $where_values);
+        }
+        $total_items = $wpdb->get_var($count_query);
+        
+        // Get logs with pagination
+        $query = "SELECT al.*, p.post_title, u.display_name 
+                  FROM {$table_name} al 
+                  LEFT JOIN {$wpdb->posts} p ON al.submission_id = p.ID 
+                  LEFT JOIN {$wpdb->users} u ON al.user_id = u.ID 
+                  WHERE {$where_clause} 
+                  ORDER BY al.date_created DESC 
+                  LIMIT %d OFFSET %d";
+        
+        $query_values = array_merge($where_values, array($per_page, $offset));
+        $logs = $wpdb->get_results($wpdb->prepare($query, $query_values));
+        
+        // Calculate pagination
+        $total_pages = ceil($total_items / $per_page);
+        
+        ?>
+        <div class="cf7-audit-log-container">
+            <!-- Filters -->
+            <div class="cf7-audit-filters">
+                <form method="get" class="cf7-filters-form">
+                    <input type="hidden" name="post_type" value="cf7_submission">
+                    <input type="hidden" name="page" value="cf7-artist-submissions-settings">
+                    <input type="hidden" name="tab" value="audit">
+                    
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label for="action_type"><?php _e('Action Type:', 'cf7-artist-submissions'); ?></label>
+                            <select name="action_type" id="action_type">
+                                <option value=""><?php _e('All Actions', 'cf7-artist-submissions'); ?></option>
+                                <option value="email_sent" <?php selected($action_type, 'email_sent'); ?>><?php _e('Email Sent', 'cf7-artist-submissions'); ?></option>
+                                <option value="status_change" <?php selected($action_type, 'status_change'); ?>><?php _e('Status Change', 'cf7-artist-submissions'); ?></option>
+                                <option value="form_submission" <?php selected($action_type, 'form_submission'); ?>><?php _e('Form Submission', 'cf7-artist-submissions'); ?></option>
+                                <option value="file_upload" <?php selected($action_type, 'file_upload'); ?>><?php _e('File Upload', 'cf7-artist-submissions'); ?></option>
+                                <option value="action_created" <?php selected($action_type, 'action_created'); ?>><?php _e('Action Created', 'cf7-artist-submissions'); ?></option>
+                                <option value="action_completed" <?php selected($action_type, 'action_completed'); ?>><?php _e('Action Completed', 'cf7-artist-submissions'); ?></option>
+                                <option value="conversation_cleared" <?php selected($action_type, 'conversation_cleared'); ?>><?php _e('Conversation Cleared', 'cf7-artist-submissions'); ?></option>
+                                <option value="setting_changed" <?php selected($action_type, 'setting_changed'); ?>><?php _e('Setting Changed', 'cf7-artist-submissions'); ?></option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="submission_id"><?php _e('Submission ID:', 'cf7-artist-submissions'); ?></label>
+                            <input type="number" name="submission_id" id="submission_id" value="<?php echo esc_attr($submission_id); ?>" min="0">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="date_from"><?php _e('From Date:', 'cf7-artist-submissions'); ?></label>
+                            <input type="date" name="date_from" id="date_from" value="<?php echo esc_attr($date_from); ?>">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label for="date_to"><?php _e('To Date:', 'cf7-artist-submissions'); ?></label>
+                            <input type="date" name="date_to" id="date_to" value="<?php echo esc_attr($date_to); ?>">
+                        </div>
+                        
+                        <div class="filter-group">
+                            <button type="submit" class="button button-primary"><?php _e('Filter', 'cf7-artist-submissions'); ?></button>
+                            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" class="button"><?php _e('Clear', 'cf7-artist-submissions'); ?></a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Results Summary -->
+            <div class="cf7-audit-summary">
+                <p><?php printf(__('Showing %d of %d audit log entries', 'cf7-artist-submissions'), count($logs), $total_items); ?></p>
+            </div>
+            
+            <!-- Audit Log Table -->
+            <div class="cf7-audit-table-container">
+                <?php if (empty($logs)): ?>
+                    <div class="notice notice-info">
+                        <p><?php _e('No audit log entries found matching your criteria.', 'cf7-artist-submissions'); ?></p>
+                    </div>
+                <?php else: ?>
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th style="width: 140px;"><?php _e('Date & Time', 'cf7-artist-submissions'); ?></th>
+                                <th style="width: 100px;"><?php _e('Action Type', 'cf7-artist-submissions'); ?></th>
+                                <th style="width: 80px;"><?php _e('Submission', 'cf7-artist-submissions'); ?></th>
+                                <th style="width: 150px;"><?php _e('Artist', 'cf7-artist-submissions'); ?></th>
+                                <th style="width: 120px;"><?php _e('User', 'cf7-artist-submissions'); ?></th>
+                                <th><?php _e('Details', 'cf7-artist-submissions'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($logs as $log): ?>
+                                <tr>
+                                    <td>
+                                        <strong><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($log->date_created))); ?></strong><br>
+                                        <small><?php echo esc_html(date_i18n(get_option('time_format'), strtotime($log->date_created))); ?></small>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $type_labels = array(
+                                            'email_sent' => __('Email Sent', 'cf7-artist-submissions'),
+                                            'status_change' => __('Status Change', 'cf7-artist-submissions'),
+                                            'form_submission' => __('Form Submission', 'cf7-artist-submissions'),
+                                            'file_upload' => __('File Upload', 'cf7-artist-submissions'),
+                                            'action_created' => __('Action Created', 'cf7-artist-submissions'),
+                                            'action_completed' => __('Action Completed', 'cf7-artist-submissions'),
+                                            'conversation_cleared' => __('Conversation Cleared', 'cf7-artist-submissions'),
+                                            'setting_changed' => __('Setting Changed', 'cf7-artist-submissions')
+                                        );
+                                        $type_class = sanitize_html_class($log->action_type);
+                                        echo '<span class="audit-type audit-type-' . $type_class . '">';
+                                        echo esc_html($type_labels[$log->action_type] ?? ucwords(str_replace('_', ' ', $log->action_type)));
+                                        echo '</span>';
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($log->submission_id > 0): ?>
+                                            <?php if ($log->post_title): ?>
+                                                <a href="<?php echo esc_url(admin_url('post.php?post=' . $log->submission_id . '&action=edit')); ?>">
+                                                    #<?php echo esc_html($log->submission_id); ?>
+                                                </a>
+                                                <br><small><?php echo esc_html(wp_trim_words($log->post_title, 3)); ?></small>
+                                            <?php else: ?>
+                                                #<?php echo esc_html($log->submission_id); ?>
+                                                <br><small><?php _e('(Deleted)', 'cf7-artist-submissions'); ?></small>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="system-action"><?php _e('System', 'cf7-artist-submissions'); ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if (!empty($log->artist_name) || !empty($log->artist_email)): ?>
+                                            <?php if (!empty($log->artist_name)): ?>
+                                                <strong><?php echo esc_html($log->artist_name); ?></strong><br>
+                                            <?php endif; ?>
+                                            <?php if (!empty($log->artist_email)): ?>
+                                                <small><?php echo esc_html($log->artist_email); ?></small>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="no-artist"><?php _e('N/A', 'cf7-artist-submissions'); ?></span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($log->display_name): ?>
+                                            <?php echo esc_html($log->display_name); ?>
+                                        <?php else: ?>
+                                            <?php _e('System', 'cf7-artist-submissions'); ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $data = json_decode($log->data, true);
+                                        if (is_array($data)) {
+                                            echo '<div class="audit-details">';
+                                            foreach ($data as $key => $value) {
+                                                if (is_string($value) || is_numeric($value)) {
+                                                    echo '<div><strong>' . esc_html(ucwords(str_replace('_', ' ', $key))) . ':</strong> ';
+                                                    echo esc_html(wp_trim_words($value, 10));
+                                                    echo '</div>';
+                                                }
+                                            }
+                                            echo '</div>';
+                                        } else {
+                                            echo esc_html($log->data);
+                                        }
+                                        ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+            
+            <!-- Pagination -->
+            <?php if ($total_pages > 1): ?>
+                <div class="cf7-audit-pagination">
+                    <div class="tablenav">
+                        <div class="tablenav-pages">
+                            <span class="displaying-num"><?php printf(__('%d items', 'cf7-artist-submissions'), $total_items); ?></span>
+                            
+                            <?php if ($page_num > 1): ?>
+                                <a class="button" href="<?php echo esc_url(add_query_arg('log_page', $page_num - 1)); ?>"><?php _e('Previous', 'cf7-artist-submissions'); ?></a>
+                            <?php endif; ?>
+                            
+                            <span class="current-page"><?php printf(__('Page %d of %d', 'cf7-artist-submissions'), $page_num, $total_pages); ?></span>
+                            
+                            <?php if ($page_num < $total_pages): ?>
+                                <a class="button" href="<?php echo esc_url(add_query_arg('log_page', $page_num + 1)); ?>"><?php _e('Next', 'cf7-artist-submissions'); ?></a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+        
+        <style>
+        .cf7-audit-log-container {
+            margin-top: 20px;
+        }
+        
+        .cf7-audit-filters {
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 120px;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            padding: 4px 8px;
+        }
+        
+        .cf7-audit-summary {
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        
+        .audit-type {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .audit-type-email_sent {
+            background: #e7f3ff;
+            color: #0073aa;
+        }
+        
+        .audit-type-status_change {
+            background: #fff2e7;
+            color: #d63638;
+        }
+        
+        .audit-type-form_submission {
+            background: #e7ffe7;
+            color: #00a32a;
+        }
+        
+        .audit-type-file_upload {
+            background: #f0e7ff;
+            color: #6c2eb9;
+        }
+        
+        .audit-type-action_created {
+            background: #e0f7fa;
+            color: #006064;
+        }
+        
+        .audit-type-action_completed {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .audit-type-conversation_cleared {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .audit-type-setting_changed {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .audit-details div {
+            margin-bottom: 3px;
+            font-size: 12px;
+        }
+        
+        .system-action,
+        .no-artist {
+            color: #666;
+            font-style: italic;
+        }
+        
+        .cf7-audit-pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .cf7-audit-table-container {
+            overflow-x: auto;
+        }
+        </style>
+        <?php
+    }
+    
+    /**
+     * Log settings changes to audit trail.
+     * 
+     * Compares old and new settings and logs any changes.
+     * 
+     * @since 2.1.0
+     * 
+     * @param array  $old_values Old setting values
+     * @param array  $new_values New setting values
+     * @param string $tab        Settings tab name
+     */
+    private function log_settings_changes($old_values, $new_values, $tab = '') {
+        if (!class_exists('CF7_Artist_Submissions_Action_Log')) {
+            return;
+        }
+        
+        // Compare old and new values
+        foreach ($new_values as $key => $new_value) {
+            $old_value = isset($old_values[$key]) ? $old_values[$key] : '';
+            
+            // Only log if the value actually changed
+            if ($old_value != $new_value) {
+                CF7_Artist_Submissions_Action_Log::log_setting_changed(
+                    $key,
+                    $old_value,
+                    $new_value,
+                    $tab
+                );
+            }
+        }
+        
+        // Check for removed settings
+        foreach ($old_values as $key => $old_value) {
+            if (!isset($new_values[$key])) {
+                CF7_Artist_Submissions_Action_Log::log_setting_changed(
+                    $key,
+                    $old_value,
+                    '',
+                    $tab
+                );
+            }
         }
     }
 }

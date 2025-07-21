@@ -1,9 +1,41 @@
 <?php
 /**
  * Admin Interface for CF7 Artist Submissions
+ * 
+ * This class handles the admin interface components including meta boxes,
+ * AJAX status updates, field saving, and asset management coordination
+ * with other system components.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with tabbed interface coordination
+ */
+
+/**
+ * CF7 Artist Submissions Admin Class
+ * 
+ * Manages the WordPress admin interface for artist submissions:
+ * - Meta boxes for submission details, files, and notes
+ * - AJAX handlers for status updates
+ * - Field saving and validation
+ * - Asset management coordination with tabs system
+ * - Status change logging and notifications
+ * 
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Admin {
     
+    /**
+     * Initialize the admin interface.
+     * 
+     * Sets up hooks for asset management, meta boxes, AJAX handlers,
+     * and post saving functionality.
+     * 
+     * @since 1.0.0
+     * @since 2.0.0 Enhanced asset coordination with tabs system
+     * 
+     * @return void
+     */
     public function init() {
         add_action('admin_enqueue_scripts', array($this, 'enqueue_assets'));
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));

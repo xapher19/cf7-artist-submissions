@@ -1,5 +1,19 @@
 /**
  * CF7 Artist Submissions - Modern Artist Page Styles
+ * 
+ * Comprehensive styling for the tabbed interface system:
+ * - Modern tab navigation with smooth animations
+ * - Full-width layout optimization for artist profiles
+ * - Tab content containers and responsive layouts
+ * - Active state indicators and hover effects
+ * - Content organization and visual hierarchy
+ * - Integration with WordPress admin styling
+ * - Mobile-responsive tab behavior
+ * - Accessibility-compliant keyboard navigation
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Complete redesign with modern tab system and improved UX
  */
 
 /* Full Width Layout Override */
@@ -1236,4 +1250,145 @@ body.cf7-edit-mode .cf7-header-field:hover {
     .cf7-tab-content {
         padding: 20px;
     }
+}
+
+/* ===== EXPORT TAB STYLES ===== */
+.cf7-export-options {
+    padding: 20px;
+}
+
+.cf7-export-options h3 {
+    margin: 0 0 20px 0;
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.export-options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.export-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 0;
+    font-size: 14px;
+    color: #495057;
+    position: relative;
+}
+
+.export-option input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.1);
+}
+
+.export-option:hover {
+    color: #2c3e50;
+}
+
+.export-actions {
+    margin-bottom: 20px;
+}
+
+#export-pdf-btn {
+    background: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#export-pdf-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+#export-pdf-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+#export-pdf-btn .dashicons {
+    font-size: 16px;
+}
+
+.export-status {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: none;
+}
+
+.export-status.loading {
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+    display: block;
+}
+
+.export-status.success {
+    background: #e8f5e8;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+    display: block;
+}
+
+.export-status.error {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    display: block;
+}
+
+.export-status a {
+    color: inherit;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.export-status a:hover {
+    text-decoration: underline;
+}
+
+.export-info {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #667eea;
+}
+
+.export-info .description {
+    margin: 0;
+    color: #6c757d;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.export-warning {
+    padding: 10px;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    font-size: 12px;
+    margin: 10px 0;
 }

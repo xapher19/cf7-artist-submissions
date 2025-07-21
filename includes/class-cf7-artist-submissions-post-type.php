@@ -1,9 +1,41 @@
 <?php
 /**
- * Custom Post Type for CF7 Submissions
+ * Custom Post Type for CF7 Artist Submissions
+ * 
+ * This class handles the registration and management of the custom post type
+ * for artist submissions, including the status taxonomy, admin columns,
+ * bulk actions, and integration with the modern dashboard system.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Added dashboard integration and enhanced admin interface
+ */
+
+/**
+ * CF7 Artist Submissions Post Type Class
+ * 
+ * Manages the custom post type for artist submissions including:
+ * - Post type and taxonomy registration
+ * - Custom admin columns with status badges
+ * - Bulk export functionality
+ * - Sortable columns
+ * - Dashboard integration
+ * 
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Post_Type {
     
+    /**
+     * Initialize the post type and related functionality.
+     * 
+     * Sets up hooks for post type registration, custom columns,
+     * bulk actions, sorting, and dashboard integration.
+     * 
+     * @since 1.0.0
+     * @since 2.0.0 Added dashboard integration hooks
+     * 
+     * @return void
+     */
     public function init() {
         add_action('init', array($this, 'register_post_type'));
         add_action('init', array($this, 'register_taxonomy'));
@@ -30,7 +62,15 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Enqueue admin scripts and styles
+     * Enqueue admin scripts and styles for submission pages.
+     * 
+     * Loads admin CSS for submission list page and lets the Tabs system
+     * handle assets for individual submission edit pages.
+     * 
+     * @since 2.0.0
+     * 
+     * @param string $hook Current admin page hook
+     * @return void
      */
     public function enqueue_admin_scripts($hook) {
         $screen = get_current_screen();
@@ -48,6 +88,16 @@ class CF7_Artist_Submissions_Post_Type {
         // For single submission edit pages, the Tabs system handles all assets
     }
     
+    /**
+     * Register the artist submission custom post type.
+     * 
+     * Creates a custom post type for storing artist submissions with
+     * configurable menu label and appropriate capabilities.
+     * 
+     * @since 1.0.0
+     * 
+     * @return void
+     */
     public function register_post_type() {
         $options = get_option('cf7_artist_submissions_options', array());
         $menu_label = !empty($options['menu_label']) ? $options['menu_label'] : 'Submissions';
@@ -88,6 +138,18 @@ class CF7_Artist_Submissions_Post_Type {
         register_post_type('cf7_submission', $args);
     }
     
+    /**
+     * Register the submission status taxonomy.
+     * 
+     * Creates a hierarchical taxonomy for submission statuses with
+     * predefined terms (New, Reviewed, Awaiting Information, etc.)
+     * and custom meta box for radio button selection.
+     * 
+     * @since 1.0.0
+     * @since 2.0.0 Enhanced with custom meta box and predefined terms
+     * 
+     * @return void
+     */
     public function register_taxonomy() {
         $labels = array(
             'name'                       => 'Statuses',

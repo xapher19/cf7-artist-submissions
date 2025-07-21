@@ -187,9 +187,6 @@ jQuery(document).ready(function($) {
     $('#send-message-btn').on('click', function(e) {
         e.preventDefault();
         
-        console.log('Send message button clicked');
-        console.log('cf7Conversations object:', typeof cf7Conversations !== 'undefined' ? cf7Conversations : 'undefined');
-        
         var $btn = $(this);
         var $status = $('#send-status');
         
@@ -197,13 +194,6 @@ jQuery(document).ready(function($) {
         var toEmail = $('#message-to').val();
         var messageType = $('#message-type').val();
         var messageBody = messageType === 'custom' ? $('#message-body').val() : '';
-        
-        console.log('Form values:', {
-            submissionId: submissionId,
-            toEmail: toEmail,
-            messageType: messageType,
-            messageBody: messageBody
-        });
         
         // Validation
         if (messageType === 'custom' && !messageBody.trim()) {
@@ -307,7 +297,6 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 clearTimeout(timeoutWarning);
-                console.log('Manual check response:', response);
                 
                 if (response.success) {
                     // Update last checked time
@@ -481,7 +470,6 @@ jQuery(document).ready(function($) {
         var submissionId = jQuery('input[name="submission_id"]').val();
         
         if (!submissionId) {
-            console.log('No submission ID found, skipping auto-refresh');
             return;
         }
         
@@ -495,11 +483,9 @@ jQuery(document).ready(function($) {
             }
         }).done(function(response) {
             if (response.success && response.data.hasNewMessages) {
-                console.log('New messages found, refreshing...');
                 refreshMessages();
             }
         }).fail(function(xhr, status, error) {
-            console.log('Auto-refresh check failed:', error);
         });
     }
     
@@ -516,7 +502,6 @@ jQuery(document).ready(function($) {
     // Initial check after 5 seconds - also disabled
     // setTimeout(checkForNewMessages, 5000);
     
-    console.log('Auto-refresh disabled - manual refresh required for new messages');
     
     // Context Menu Manager for Conversation Messages
     function initializeContextMenu() {
@@ -645,16 +630,12 @@ jQuery(document).ready(function($) {
         
         if (action === 'add-to-actions') {
             // Debug logging for actions integration
-            console.log('Add to actions clicked');
-            console.log('window.CF7_Actions exists:', typeof window.CF7_Actions !== 'undefined');
-            console.log('CF7_Actions.openModal exists:', typeof window.CF7_Actions !== 'undefined' && typeof window.CF7_Actions.openModal === 'function');
             
             // Use the global CF7_Actions interface for cross-tab functionality
             if (typeof window.CF7_Actions !== 'undefined' && typeof window.CF7_Actions.openModal === 'function') {
                 var messageText = $message.find('.message-content').first().text().trim();
                 var truncatedText = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
                 
-                console.log('Calling CF7_Actions.openModal with text:', truncatedText);
                 window.CF7_Actions.openModal({
                     messageId: messageId,
                     title: 'Follow up on message',
@@ -749,7 +730,6 @@ jQuery(document).ready(function($) {
         clearAllMessages();
     });
     
-    console.log('Conversation management initialized');
 });
 
 /**
@@ -816,7 +796,6 @@ function clearAllMessages() {
     }
     
     // Debug logging
-    console.log('Clear messages starting:', {
         submissionId: submissionId,
         ajaxUrl: cf7Conversations.ajaxUrl,
         nonce: cf7Conversations.nonce
@@ -834,7 +813,6 @@ function clearAllMessages() {
             nonce: cf7Conversations.nonce
         },
         success: function(response) {
-            console.log('Clear messages response:', response);
             
             if (response.success) {
                 // Hide modal

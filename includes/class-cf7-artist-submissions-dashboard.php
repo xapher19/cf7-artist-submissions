@@ -1,9 +1,44 @@
 <?php
 /**
  * Modern Interactive Dashboard for CF7 Artist Submissions
+ * 
+ * This class provides a comprehensive, modern dashboard interface featuring
+ * real-time statistics, interactive widgets, advanced filtering, bulk actions,
+ * and seamless AJAX integration. It serves as the central hub for managing
+ * artist submissions with professional UX and performance optimization.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0
+ */
+
+/**
+ * CF7 Artist Submissions Dashboard Class
+ * 
+ * Creates and manages the modern interactive dashboard including:
+ * - Real-time statistics and activity metrics
+ * - Interactive widgets (unread messages, outstanding actions)
+ * - Advanced submission filtering and search
+ * - Bulk actions and status management
+ * - CSV export with filtering options
+ * - Smart pagination with AJAX loading
+ * - Responsive design with mobile optimization
+ * - Professional admin menu integration
+ * 
+ * @since 2.0.0
  */
 class CF7_Artist_Submissions_Dashboard {
     
+    /**
+     * Initialize the dashboard system.
+     * 
+     * Sets up admin menu integration, asset loading, and comprehensive
+     * AJAX handlers for all dashboard functionality including submissions
+     * loading, bulk actions, status updates, messaging, and statistics.
+     * 
+     * @since 2.0.0
+     * 
+     * @return void
+     */
     public function init() {
         add_action('admin_menu', array($this, 'add_dashboard_page'), 999); // Run late to modify menu
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -728,7 +763,21 @@ class CF7_Artist_Submissions_Dashboard {
         }
         
         foreach ($post_ids as $post_id) {
+            // Get old status for audit log
+            $old_terms = wp_get_post_terms($post_id, 'submission_status');
+            $old_status = !empty($old_terms) ? $old_terms[0]->name : 'None';
+            
             wp_set_post_terms($post_id, array($term->term_id), 'submission_status');
+            
+            // Log status change to audit trail
+            if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+                CF7_Artist_Submissions_Action_Log::log_status_change(
+                    $post_id,
+                    $old_status,
+                    $term->name
+                );
+            }
+            
             $updated++;
         }
         
@@ -796,7 +845,20 @@ class CF7_Artist_Submissions_Dashboard {
             return;
         }
         
+        // Get old status for audit log
+        $old_terms = wp_get_post_terms($post_id, 'submission_status');
+        $old_status = !empty($old_terms) ? $old_terms[0]->name : 'None';
+        
         wp_set_post_terms($post_id, array($term->term_id), 'submission_status');
+        
+        // Log status change to audit trail
+        if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+            CF7_Artist_Submissions_Action_Log::log_status_change(
+                $post_id,
+                $old_status,
+                $term->name
+            );
+        }
         
         wp_send_json_success(array(
             'message' => 'Status updated successfully'

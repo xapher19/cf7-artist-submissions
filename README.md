@@ -18,7 +18,7 @@ A sophisticated WordPress plugin that transforms Contact Form 7 submissions into
 - **Interactive Widgets**: Unread messages, outstanding actions, and task management
 - **Smart Filtering**: Filter submissions by status, date range, and custom criteria
 - **Circular Status Badges**: Professional uniform status indicators with hover effects
-- **Export Functionality**: Advanced CSV export with filtering and date ranges
+- **Export Functionality**: Advanced CSV export with filtering and Professional PDF export with two-column artwork layouts
 
 ### 📋 **Professional Tabbed Interface**
 - **5-Tab Layout**: Profile, Works, Conversations, Actions, and Curator Notes
@@ -57,12 +57,23 @@ A sophisticated WordPress plugin that transforms Contact Form 7 submissions into
 - **Selected**: Chosen for exhibition (purple circle)
 - **Rejected**: Not selected (red circle)
 
-### 📁 **File Management**
+### 📁 **File Management & Export**
 - **Secure Storage**: All uploads stored securely with organized directory structure
 - **Lightbox Preview**: Built-in image viewer with zoom and navigation
 - **Download Options**: Direct download links for all file types
 - **Type Recognition**: Automatic file type detection and appropriate display
 - **Gallery View**: Professional artwork gallery presentation
+- **PDF Export**: Professional PDF generation with two-column artwork layouts and configurable content sections
+
+### 📊 **Audit & Compliance**
+- **Comprehensive Audit Log**: Complete activity trail for all submission actions
+- **Email Tracking**: Track all emails sent with templates, recipients, and timestamps
+- **Status Change History**: Full audit trail of status changes with user attribution
+- **File Upload Logging**: Track all file uploads with metadata and user details
+- **Advanced Filtering**: Filter audit logs by action type, date range, and submission
+- **Compliance Ready**: Professional audit trail for administrative oversight
+
+### 🎨 **Professional Interface**
 - **Organized Layout**: Clean tabbed interface reduces clutter
 - **Profile Tab**: Submission details with inline editing capabilities
 - **Works Tab**: File gallery with thumbnail previews and lightbox
@@ -309,7 +320,42 @@ Configure the conversation system in **Artist Submissions > Settings**:
 
 ### Export & Reporting
 
-#### Advanced Export Features
+#### Professional PDF Export System
+1. Navigate to any **Artist Submission** page
+2. Find the **"Export to PDF"** button in the interface
+3. **Configurable Options**:
+   - Include/exclude personal information
+   - Include/exclude submitted artworks
+   - Include/exclude curator notes
+   - Add confidential watermarks
+4. **Professional Features**:
+   - Two-column artwork layout for gallery-style presentation
+   - Responsive design optimized for print
+   - Site branding and professional styling
+   - Browser-based PDF generation (no server dependencies)
+5. **Output**: Downloads beautifully formatted HTML document ready for browser Print-to-PDF
+
+#### Comprehensive Audit Log System
+1. Navigate to **Artist Submissions > Settings**
+2. Click the **"Audit Log"** tab
+3. **Audit Capabilities**:
+   - Complete trail of all submission activities
+   - Email sending history with templates and recipients
+   - Status changes with before/after values
+   - File upload tracking and user attribution
+   - Administrative actions and system events
+4. **Advanced Filtering**:
+   - Filter by action type (email sent, status change, file upload)
+   - Date range filtering with calendar pickers
+   - Submission-specific log viewing
+   - User-based activity filtering
+5. **Professional Interface**:
+   - Paginated results with navigation
+   - Color-coded action types for quick identification
+   - Detailed action data with JSON expansion
+   - Export capabilities for compliance reporting
+
+#### Advanced CSV Export Features
 1. Go to **Artist Submissions > Dashboard**
 2. Click **"Export Submissions"**
 3. **Filter Options**:

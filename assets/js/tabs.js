@@ -24,32 +24,18 @@ jQuery(document).ready(function($) {
         if (tabId === 'cf7-tab-actions') {
             // Initialize actions manager for the actions tab
             setTimeout(function() {
-                console.log('Tabs.js: Initializing actions for tab:', tabId);
-                console.log('Actions container exists:', jQuery('.cf7-actions-container').length);
-                console.log('CF7_Actions available:', typeof window.CF7_Actions !== 'undefined');
-                console.log('ActionsManager available:', typeof ActionsManager !== 'undefined');
-                
                 // Try CF7_Actions.init first
                 if (typeof window.CF7_Actions !== 'undefined' && typeof window.CF7_Actions.init === 'function') {
-                    console.log('Calling CF7_Actions.init()');
                     window.CF7_Actions.init();
                 } else if (jQuery('.cf7-actions-container').length > 0 && typeof ActionsManager !== 'undefined') {
                     // Fallback to direct initialization
                     if (!window.actionsManager) {
-                        console.log('Tabs.js: Creating ActionsManager instance directly');
                         try {
                             window.actionsManager = new ActionsManager();
-                            console.log('ActionsManager created successfully');
                         } catch (error) {
                             console.error('Failed to create ActionsManager:', error);
                         }
-                    } else {
-                        console.log('ActionsManager already exists');
                     }
-                } else {
-                    console.log('Cannot initialize ActionsManager - missing requirements');
-                    console.log('- Container:', jQuery('.cf7-actions-container').length);
-                    console.log('- ActionsManager class:', typeof ActionsManager !== 'undefined');
                 }
             }, 200);
         }
@@ -58,7 +44,6 @@ jQuery(document).ready(function($) {
             // Re-initialize conversation interface and scroll to bottom
             setTimeout(function() {
                 // Debug: Log what we're looking for
-                console.log('CF7 Tabs: Attempting to scroll conversations tab');
                 
                 // Multiple attempts to find the conversation container
                 const conversationSelectors = [
@@ -72,7 +57,6 @@ jQuery(document).ready(function($) {
                 for (let selector of conversationSelectors) {
                     conversationDiv = $(selector);
                     if (conversationDiv.length) {
-                        console.log('CF7 Tabs: Found conversation container with selector:', selector);
                         break;
                     }
                 }
@@ -80,7 +64,6 @@ jQuery(document).ready(function($) {
                 if (conversationDiv && conversationDiv.length) {
                     const scrollHeight = conversationDiv[0].scrollHeight;
                     const clientHeight = conversationDiv.height();
-                    console.log('CF7 Tabs: Scroll info - scrollHeight:', scrollHeight, 'clientHeight:', clientHeight);
                     
                     // Immediate scroll
                     conversationDiv.scrollTop(scrollHeight);
@@ -95,10 +78,7 @@ jQuery(document).ready(function($) {
                     // Final scroll attempt after longer delay for any dynamic content
                     setTimeout(function() {
                         conversationDiv.scrollTop(conversationDiv[0].scrollHeight);
-                        console.log('CF7 Tabs: Final scroll attempt completed');
                     }, 500);
-                } else {
-                    console.log('CF7 Tabs: No conversation container found');
                 }
                 
                 // Re-initialize conversation scripts if available

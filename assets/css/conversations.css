@@ -1,5 +1,18 @@
 /**
  * CF7 Artist Submissions - Conversation Styles
+ * 
+ * Styling for the conversation/messaging system including:
+ * - Message threading and conversation layout
+ * - Email integration display and formatting
+ * - Interactive message controls and context menus
+ * - Real-time messaging interface elements
+ * - File attachment display and media integration
+ * - IMAP synchronization status indicators
+ * - Responsive design for conversation management
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with real-time messaging and improved UX
  */
 
 #cf7-conversation-container {

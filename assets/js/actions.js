@@ -5,26 +5,19 @@
 
 class ActionsManager {
     constructor() {
-        console.log('ActionsManager constructor called');
         this.currentFilter = 'all';
         this.actions = [];
         this.init();
     }
 
     init() {
-        console.log('ActionsManager init called');
         this.bindEvents();
         this.loadActions();
     }
 
     bindEvents() {
-        console.log('ActionsManager bindEvents called');
-        console.log('cf7_actions_ajax available:', typeof cf7_actions_ajax !== 'undefined');
-        console.log('this context:', this);
-        
         // Add action button
         jQuery(document).on('click', '#cf7-add-action-btn', (e) => {
-            console.log('Add action button clicked');
             e.preventDefault();
             this.showActionModal();
         });
@@ -38,16 +31,11 @@ class ActionsManager {
 
         // Action buttons - handle both button and icon clicks
         jQuery(document).on('click', '.cf7-action-complete, .cf7-action-complete *', (e) => {
-            console.log('Complete button clicked, target:', e.target);
-            console.log('Target classes:', e.target.className);
-            console.log('Closest action item:', jQuery(e.target).closest('.cf7-action-item'));
             e.preventDefault();
             e.stopPropagation();
             const actionId = jQuery(e.target).closest('.cf7-action-item').data('action-id');
-            console.log('Found action ID:', actionId);
-            console.log('ActionsManager context this:', this);
             if (actionId) {
-                console.log('Calling completeAction with ID:', actionId);
+                this.completeAction(actionId);
                 if (typeof this.completeAction === 'function') {
                     this.completeAction(actionId);
                 } else {
@@ -59,13 +47,11 @@ class ActionsManager {
         });
 
         jQuery(document).on('click', '.cf7-action-edit, .cf7-action-edit *', (e) => {
-            console.log('Edit button clicked, target:', e.target);
             e.preventDefault();
             e.stopPropagation();
             const actionId = jQuery(e.target).closest('.cf7-action-item').data('action-id');
-            console.log('Found action ID:', actionId);
             if (actionId) {
-                console.log('Calling editAction with ID:', actionId);
+                this.editAction(actionId);
                 if (typeof this.editAction === 'function') {
                     this.editAction(actionId);
                 } else {
@@ -77,13 +63,11 @@ class ActionsManager {
         });
 
         jQuery(document).on('click', '.cf7-action-delete, .cf7-action-delete *', (e) => {
-            console.log('Delete button clicked, target:', e.target);
             e.preventDefault();
             e.stopPropagation();
             const actionId = jQuery(e.target).closest('.cf7-action-item').data('action-id');
-            console.log('Found action ID:', actionId);
             if (actionId) {
-                console.log('Calling deleteAction with ID:', actionId);
+                this.deleteAction(actionId);
                 if (typeof this.deleteAction === 'function') {
                     this.deleteAction(actionId);
                 } else {
@@ -120,7 +104,6 @@ class ActionsManager {
 
     loadActions() {
         const submissionId = jQuery('#post_ID').val();
-        console.log('Loading actions for submission:', submissionId);
         if (!submissionId) return;
 
         jQuery('#cf7-actions-list').html('<div class="cf7-loading-state"><div class="cf7-loading-spinner"></div>Loading actions...</div>');
@@ -328,14 +311,11 @@ class ActionsManager {
     }
 
     showActionModal(messageId = null) {
-        console.log('showActionModal called with messageId:', messageId);
-        
         const modal = jQuery('#cf7-action-modal');
         const form = jQuery('#cf7-action-form');
         
         // If modal doesn't exist, inject it immediately
         if (modal.length === 0 || form.length === 0) {
-            console.log('Modal not found, injecting HTML...');
             this.injectModalHTML();
             
             // Use the newly injected elements
@@ -357,8 +337,6 @@ class ActionsManager {
     }
 
     displayModal(modal, form, messageId = null) {
-        console.log('Displaying modal...');
-        
         // Reset form safely
         try {
             form[0].reset();
@@ -400,8 +378,6 @@ class ActionsManager {
     }
 
     injectModalHTML() {
-        console.log('Injecting action modal HTML...');
-        
         const submissionId = jQuery('#post_ID').val() || '';
         
         const modalHTML = `
@@ -470,8 +446,6 @@ class ActionsManager {
         } else {
             jQuery('body').append(modalHTML);
         }
-        
-        console.log('Modal HTML injected successfully');
     }
 
     showContextMenu(x, y, messageId) {
@@ -551,8 +525,6 @@ class ActionsManager {
             return;
         }
 
-        console.log('Editing action:', action);
-
         // Show the modal first
         this.showActionModal();
         
@@ -585,8 +557,6 @@ class ActionsManager {
                     jQuery('#cf7-action-due-date').val(formattedDate);
                 }
             }
-            
-            console.log('Form populated with action data');
         }, 100);
     }
 
@@ -700,8 +670,6 @@ class ActionsManager {
 
 // Initialize when the actions tab is loaded
 jQuery(document).ready(function() {
-    console.log('Actions.js document ready');
-    
     // Ensure cf7_actions_ajax is available (from tabs.js enqueuing)
     if (typeof cf7_actions_ajax === 'undefined') {
         console.warn('cf7_actions_ajax not available, using fallback');
@@ -715,42 +683,32 @@ jQuery(document).ready(function() {
     
     // Function to initialize ActionsManager
     function initializeActionsManager() {
-        console.log('Trying to initialize ActionsManager...');
         if (jQuery('.cf7-actions-container').length > 0) {
             if (!window.actionsManager) {
-                console.log('Creating new ActionsManager instance');
                 try {
                     window.actionsManager = new ActionsManager();
-                    console.log('ActionsManager created successfully');
                     return true;
                 } catch (error) {
                     console.error('Failed to initialize ActionsManager:', error);
                     return false;
                 }
             } else {
-                console.log('ActionsManager already exists');
                 return true;
             }
         }
         return false;
     }
     
-    // Listen for the tab change event from tabs.js (primary initialization)
+        // Listen for the tab change event from tabs.js (primary initialization)
     jQuery(document).on('cf7_tab_changed', function(e, tabId) {
-        console.log('cf7_tab_changed event fired for:', tabId);
-        if (tabId === 'cf7-tab-actions') {
-            console.log('Actions tab activated, initializing...');
-            setTimeout(function() {
-                initializeActionsManager();
-            }, 100);
+        if (tabId === 'cf7-actions-tab') {
+            initializeActionsManager();
         }
     });
     
     // Also try to initialize immediately if we're already on the actions tab
     setTimeout(function() {
-        console.log('Checking if actions container exists on page load...');
         if (jQuery('.cf7-actions-container').length > 0) {
-            console.log('Actions container found, initializing ActionsManager immediately');
             initializeActionsManager();
         }
     }, 500);
@@ -762,14 +720,11 @@ window.CF7_Actions = window.CF7_Actions || {};
 // Global interface for cross-tab context menu integration - SIMPLIFIED ROBUST VERSION
 Object.assign(window.CF7_Actions, {
     init: function() {
-        console.log('CF7_Actions.init called');
         
         // Simple initialization - just try to create ActionsManager if actions container exists
         if (jQuery('.cf7-actions-container').length > 0 && !window.actionsManager) {
-            console.log('Creating ActionsManager from CF7_Actions.init');
             try {
                 window.actionsManager = new ActionsManager();
-                console.log('ActionsManager initialized successfully');
                 return true;
             } catch (error) {
                 console.error('Failed to initialize ActionsManager:', error);
@@ -780,13 +735,11 @@ Object.assign(window.CF7_Actions, {
     },
     
     openModal: function(options) {
-        console.log('CF7_Actions.openModal called with:', options);
         
         // Remove any existing modal to start fresh
         jQuery('#cf7-action-modal').remove();
         
         // Always inject a fresh modal to avoid any state issues
-        console.log('Creating fresh modal for cross-tab functionality...');
         this.createCompleteModal();
         
         // Short delay to ensure DOM is ready, then show
@@ -799,10 +752,8 @@ Object.assign(window.CF7_Actions, {
     
     // Create complete modal with form included - no complex detection needed
     createCompleteModal: function() {
-        console.log('Creating complete modal with form...');
         
         const submissionId = jQuery('#post_ID').val() || '';
-        console.log('Using submission ID:', submissionId);
         
         const completeModalHTML = `
             <div id="cf7-action-modal" class="cf7-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999;">
@@ -861,7 +812,6 @@ Object.assign(window.CF7_Actions, {
         
         // Append to body
         jQuery('body').append(completeModalHTML);
-        console.log('Complete modal created and appended to body');
         
         // Bind handlers immediately
         this.bindModalHandlers();
@@ -871,7 +821,6 @@ Object.assign(window.CF7_Actions, {
     
     // Show the fresh modal with options
     showFreshModal: function(options) {
-        console.log('Showing fresh modal with options:', options);
         
         const modal = jQuery('#cf7-action-modal');
         const form = jQuery('#cf7-action-form');
@@ -898,7 +847,6 @@ Object.assign(window.CF7_Actions, {
                 form.append('<input type="hidden" id="cf7-message-id" name="message_id">');
             }
             jQuery('#cf7-message-id').val(options.messageId);
-            console.log('Set message ID to:', options.messageId);
         }
         
         // Pre-fill form data if provided
@@ -917,7 +865,6 @@ Object.assign(window.CF7_Actions, {
         this.loadAssignableUsersForModal();
         
         // Show the modal
-        console.log('Showing modal...');
         modal.fadeIn(200);
     },
     
@@ -959,7 +906,6 @@ Object.assign(window.CF7_Actions, {
                         assigneeSelect.append('<option value="' + user.id + '">' + user.name + '</option>');
                     });
                     
-                    console.log('Loaded', response.data.users.length, 'assignable users for modal');
                 } else {
                     console.error('Failed to load users:', response);
                     assigneeSelect.append('<option value="">Error loading users</option>');
@@ -1008,16 +954,13 @@ Object.assign(window.CF7_Actions, {
             window.CF7_Actions.saveAction();
         });
         
-        console.log('Modal handlers bound');
     },
     
     // Save action - simplified version
     saveAction: function() {
-        console.log('Saving action...');
         
         // Prevent double submission
         if (this._saving) {
-            console.log('Save already in progress, ignoring duplicate request');
             return;
         }
         this._saving = true;

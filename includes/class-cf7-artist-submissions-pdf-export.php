@@ -1,10 +1,43 @@
 <?php
 /**
  * PDF Export functionality for CF7 Artist Submissions
+ * 
+ * This class provides professional PDF export capabilities for artist
+ * submissions, generating beautifully formatted HTML documents optimized
+ * for browser printing to PDF. Features include two-column artwork layouts,
+ * configurable content sections, and professional styling.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0
+ */
+
+/**
+ * CF7 Artist Submissions PDF Export Class
+ * 
+ * Handles the generation of professional PDF-ready documents for artist
+ * submissions including:
+ * - Configurable content sections (personal info, works, notes)
+ * - Two-column artwork grid layout for professional presentation
+ * - Confidential watermarks for sensitive documents
+ * - Responsive design optimized for print
+ * - Browser-based PDF generation for cost-effective solution
+ * - Professional styling with site branding
+ * 
+ * @since 2.0.0
  */
 
 class CF7_Artist_Submissions_PDF_Export {
     
+    /**
+     * Initialize the PDF export system.
+     * 
+     * Sets up AJAX handlers for PDF generation and enqueues
+     * necessary scripts for the export interface.
+     * 
+     * @since 2.0.0
+     * 
+     * @return void
+     */
     public function init() {
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'handle_pdf_export'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -13,7 +46,15 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Enqueue scripts for PDF export
+     * Enqueue scripts and styles for PDF export functionality.
+     * 
+     * Loads the PDF export JavaScript and localizes necessary data
+     * for AJAX communication and user interface feedback.
+     * 
+     * @since 2.0.0
+     * 
+     * @param string $hook Current admin page hook
+     * @return void
      */
     public function enqueue_scripts($hook) {
         global $post;
@@ -158,7 +199,15 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Handle AJAX PDF export request
+     * Handle AJAX PDF export request.
+     * 
+     * Processes the PDF export request with security validation,
+     * capability checks, and option parsing. Returns JSON response
+     * with download URL or error message.
+     * 
+     * @since 2.0.0
+     * 
+     * @return void Outputs JSON response
      */
     public function handle_pdf_export() {
         // Verify nonce
@@ -189,7 +238,16 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Generate PDF for submission
+     * Generate PDF-ready HTML document for submission.
+     * 
+     * Creates a complete HTML document optimized for browser printing
+     * to PDF, including validation, content generation, and file handling.
+     * 
+     * @since 2.0.0
+     * 
+     * @param int   $post_id ID of the submission post
+     * @param array $options Export configuration options
+     * @return array Success status, message, and download URL
      */
     private function generate_pdf($post_id, $options = array()) {
         // Check if post exists

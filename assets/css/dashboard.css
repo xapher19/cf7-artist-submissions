@@ -1,5 +1,18 @@
 /**
  * CF7 Artist Submissions - Modern Interactive Dashboard
+ * 
+ * Complete styling system for the modern tabbed dashboard interface:
+ * - Responsive grid layout with flexible column system
+ * - Interactive tab navigation with smooth transitions
+ * - Modern card-based design with subtle shadows
+ * - Advanced typography system and visual hierarchy
+ * - Loading states and micro-animations
+ * - Dark mode support and accessibility features
+ * - Mobile-first responsive breakpoints
+ * - Integration with WordPress admin design patterns
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0 Complete dashboard redesign with modern UI patterns
  */
 
 /* ===== RESET & BASE ===== */

@@ -1,9 +1,43 @@
 <?php
 /**
- * CF7 Artist Submissions - Actions/To-Do System
+ * CF7 Artist Submissions - Actions/Task Management System
+ * 
+ * This class provides a comprehensive task management system for artist
+ * submissions including action creation, assignment, tracking, completion,
+ * and automated email summaries. Features database management, user
+ * assignment, due dates, and audit trails.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0
+ */
+
+/**
+ * CF7 Artist Submissions Actions Class
+ * 
+ * Manages the complete actions/task system including:
+ * - Action creation and assignment to users
+ * - Task tracking with due dates and priorities
+ * - Action completion and status management
+ * - Daily email summaries for outstanding actions
+ * - Database schema management and updates
+ * - AJAX handlers for frontend interaction
+ * - User management and assignment capabilities
+ * - Audit trail and action logging
+ * 
+ * @since 2.0.0
  */
 class CF7_Artist_Submissions_Actions {
     
+    /**
+     * Initialize the actions system.
+     * 
+     * Sets up AJAX handlers, cron jobs for daily summaries,
+     * database schema management, and activation hooks.
+     * 
+     * @since 2.0.0
+     * 
+     * @return void
+     */
     public static function init() {
         // AJAX handlers - matching JavaScript expectations
         add_action('wp_ajax_cf7_get_actions', array(__CLASS__, 'ajax_get_actions'));
@@ -231,7 +265,19 @@ class CF7_Artist_Submissions_Actions {
             return false;
         }
         
-        return $wpdb->insert_id;
+        $action_id = $wpdb->insert_id;
+        
+        // Log action creation to audit trail
+        if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+            CF7_Artist_Submissions_Action_Log::log_action_created(
+                $action_id,
+                $submission_id,
+                $title,
+                $options['assigned_to']
+            );
+        }
+        
+        return $action_id;
     }
     
     /**
@@ -322,6 +368,9 @@ class CF7_Artist_Submissions_Actions {
         
         $table_name = $wpdb->prefix . 'cf7_actions';
         
+        // Get action details before updating for audit log
+        $action = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $action_id));
+        
         $result = $wpdb->update(
             $table_name,
             array(
@@ -334,6 +383,16 @@ class CF7_Artist_Submissions_Actions {
             array('%s', '%d', '%s', '%s'),
             array('%d')
         );
+        
+        // Log action completion to audit trail
+        if ($result !== false && $action && class_exists('CF7_Artist_Submissions_Action_Log')) {
+            CF7_Artist_Submissions_Action_Log::log_action_completed(
+                $action_id,
+                $action->submission_id,
+                $action->title,
+                get_current_user_id()
+            );
+        }
         
         return $result !== false;
     }
@@ -564,13 +623,6 @@ class CF7_Artist_Submissions_Actions {
         $title = sanitize_text_field($_POST['title']);
         $description = sanitize_textarea_field($_POST['description'] ?? '');
         
-        // Debug logging
-        error_log('CF7 Actions: Save action called');
-        error_log('CF7 Actions: submission_id=' . $submission_id);
-        error_log('CF7 Actions: action_id=' . $action_id);
-        error_log('CF7 Actions: title=' . $title);
-        error_log('CF7 Actions: POST data=' . print_r($_POST, true));
-
         if ($action_id > 0) {
             // Update existing action
             $data = array(
@@ -1207,11 +1259,8 @@ class CF7_Artist_Submissions_Actions {
             $test_email = get_option('admin_email');
         }
         
-        error_log('CF7 Actions: Debug daily summary email starting for user ' . $user_id . ' to ' . $test_email);
-        
         // Validate configuration
         $email_validation = self::validate_email_config();
-        error_log('CF7 Actions: Email validation result: ' . print_r($email_validation, true));
         
         if (!$email_validation['valid']) {
             return array('error' => 'Email validation failed: ' . implode(', ', $email_validation['issues']));

@@ -1,4 +1,20 @@
 <?php
+/**
+ * Admin Settings Template for CF7 Artist Submissions
+ * 
+ * This template renders the main plugin settings page in the WordPress admin.
+ * It provides configuration options for:
+ * - Email settings and SMTP configuration
+ * - IMAP settings for conversation management
+ * - Default assignees and workflow settings
+ * - Notification preferences
+ * - Export and import options
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 1.0.0
+ * @since 2.0.0 Enhanced with comprehensive settings sections
+ */
+
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
