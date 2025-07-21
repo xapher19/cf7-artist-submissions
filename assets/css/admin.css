@@ -17,19 +17,18 @@
  * - Tab system → tabs.css (1455 lines)
  * - Action management → actions.css (598 lines)
  * - Lightbox media → lightbox.css (125 lines)
- * - Admin interface → admin.css (1887 lines) - submissions list, modals, forms
+ * - Admin interface → admin.css (1350+ lines) - submissions list, email management, modals
  * 
  * NOTE: Email interface components have been moved to common.css for reusability
  * 
  * TABLE OF CONTENTS:
  * 1. Submissions List Page (WordPress admin list tables, filters, search)  
- * 2. Legacy Compatibility (Backward compatibility for older WordPress versions)
- * 3. Email Management & Templates (Template preview modals, email composition)
- * 4. Modal & Overlay System (Preview modals, dialogs, test results)
- * 5. Form Components & Input Fields (Admin-specific form styling)
- * 6. Template Preview Modal Styles (Loading states, error handling)
- * 7. Animations & Loading States (Spinner animations, loading indicators)
- * 8. Responsive Design (Mobile and tablet optimizations)
+ * 2. Email Management & Templates (Template preview modals, email composition)
+ * 3. Modal & Overlay System (Preview modals, dialogs, test results)
+ * 4. Form Components & Input Fields (Admin-specific form styling)
+ * 5. Template Preview Modal Styles (Loading states, error handling)
+ * 6. Animations & Loading States (Spinner animations, loading indicators)
+ * 7. Responsive Design (Mobile and tablet optimizations)
  * 
  * @package CF7_Artist_Submissions
  * @since 1.0.0
@@ -503,172 +502,7 @@ span.status-rejected::before {
 }
 
 /* =================================================================
-   2. LEGACY COMPATIBILITY STYLES
-   ================================================================= */
-
-/**
- * Legacy Status & Detail Styles
- * 
- * These styles are maintained for backward compatibility with older
- * submission detail pages and admin interfaces that haven't been
- * migrated to the modern design system.
- * 
- * @deprecated These styles are kept for compatibility but should
- *             not be used in new development. Use modern equivalents instead.
- */
-
-/* Legacy Submission Details Table */
-.submission-details th {
-    width: 25%;
-    text-align: left;
-    vertical-align: top;
-    padding: 15px 10px 15px 0;
-}
-
-.submission-details td {
-    padding: 15px 0;
-    vertical-align: top;
-}
-
-/**
- * Legacy Editable Field System
- * 
- * Inline editing system for submission fields. Still actively used
- * in the submission detail view for backward compatibility.
- */
-.field-edit-hint {
-    color: #666;
-    font-style: italic;
-    margin-bottom: 15px;
-}
-
-.editable-field {
-    position: relative;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
-}
-
-.editable-field:hover {
-    background-color: #f8f8f8;
-}
-
-.editable-field:hover::after {
-    content: '✎';
-    position: absolute;
-    right: 5px;
-    top: 5px;
-    color: #999;
-    font-size: 16px;
-}
-
-.editable-field.editing {
-    background-color: #f8f8f8;
-    padding: 10px;
-}
-
-.read-only {
-    cursor: default;
-}
-
-.read-only:hover {
-    background-color: transparent;
-}
-
-.read-only:hover::after {
-    content: none;
-}
-
-/* Editing UI */
-.edit-active {
-    width: 100%;
-    padding: 6px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    line-height: 1.4;
-    margin-bottom: 10px;
-}
-
-.edit-active:focus {
-    border-color: #007cba;
-    box-shadow: 0 0 0 1px #007cba;
-    outline: none;
-}
-
-textarea.edit-active {
-    min-height: 100px;
-}
-
-.edit-controls {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.edit-success {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background-color: #46b450;
-    color: white;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 3px;
-}
-
-/* File Previews */
-.submission-files {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-top: 15px;
-}
-
-.file-item {
-    width: calc(33.33% - 20px);
-    min-width: 200px;
-    margin-bottom: 20px;
-}
-
-.file-item h4 {
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.file-preview img {
-    max-width: 100%;
-    height: auto;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    box-shadow: 0 1px 3px rgb(0,0,0,0.1);
-    transition: transform 0.2s ease;
-}
-
-.file-preview img:hover {
-    transform: scale(1.03);
-    box-shadow: 0 3px 6px rgb(0,0,0,0.15);
-}
-
-.file-download {
-    padding: 10px;
-    background: #f8f8f8;
-    border-radius: 3px;
-}
-
-.file-download a {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-}
-
-.file-download .dashicons {
-    margin-right: 5px;
-}
-
-/* =================================================================
-   3. EMAIL MANAGEMENT & TEMPLATES
+   2. EMAIL MANAGEMENT & TEMPLATES
    ================================================================= */
 
 /**
@@ -923,76 +757,19 @@ textarea.edit-active {
 }
 
 @media screen and (width <= 782px) {
-    .file-item {
-        width: 100%;
+    /* Mobile responsive adjustments for form components */
+    .cf7-field-grid.two-cols,
+    .cf7-field-grid.three-cols {
+        grid-template-columns: 1fr;
     }
     
-    .edit-active {
-        max-width: 100%;
+    .cf7-modal {
+        padding: 1rem;
     }
 }
 
 /* ========================================================================
-   EMAIL MANAGEMENT & TEMPLATES  
-   ======================================================================== */
-
-/**
- * Email management interface for CF7 Artist Submissions.
- * 
- * Features:
- * - Email composition and sending interface
- * - Template preview modals for email customization
- * - Email status feedback and loading states
- * - IMAP integration controls and monitoring
- * 
- * Components:
- * - Email preview modals with template rendering
- * - Form interface for sending emails directly from the admin
- * - Template preview functionality for WooCommerce integration
- * - Action buttons and email operation controls
- * 
- * Design Integration:
- * - Consistent with WordPress admin styling
- * - Modal-based preview system for templates
- * - Responsive design for email composition
- * - Loading states and user feedback
- * 
- * Note: Conversation-related styles moved to conversations.css
- */
-
-/* Message Summary and Clear Messages */
-.message-summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-/* ========================================================================
-   MODAL & OVERLAY SYSTEM
-   ======================================================================== */
-
-/**
- * Comprehensive modal system for email previews, template editing, and dialogs.
- * 
- * Note: Modern settings interface styles moved to settings.css
- */
-
-/**
- * Settings Header with Gradient Background
- * 
- * Full-width header with gradient background, title, and action buttons.
- * Features responsive layout that stacks on mobile devices.
- */
-
-/* ========================================================================
-   MODAL & OVERLAY SYSTEM
+   3. MODAL & OVERLAY SYSTEM
    ======================================================================== */
 
 /**
@@ -1172,7 +949,7 @@ textarea.edit-active {
 }
 
 /* ========================================================================
-   FORM COMPONENTS & INPUT FIELDS
+   4. FORM COMPONENTS & INPUT FIELDS
    ======================================================================== */
 
 /**
@@ -1676,7 +1453,7 @@ textarea.edit-active {
 }
 
 /* ========================================================================
-   ANIMATIONS & LOADING STATES
+   5. ANIMATIONS & LOADING STATES
    ======================================================================== */
 
 /**
@@ -1710,7 +1487,7 @@ textarea.edit-active {
 }
 
 /* ========================================================================
-   RESPONSIVE DESIGN & MOBILE OPTIMIZATION
+   6. RESPONSIVE DESIGN & MOBILE OPTIMIZATION
    ======================================================================== */
 
 /**
@@ -1819,15 +1596,12 @@ textarea.edit-active {
  * Total Lines: 3600+ lines of comprehensive CSS
  * 
  * Architecture Overview:
- * 1. Dashboard - Modern gradient interface with glass-morphism cards
- * 2. Submissions List - Optimized table layouts with advanced filtering
- * 3. Legacy Compatibility - Backward compatibility for older WordPress versions
- * 4. Email Management - Template previews and email composition interface
- * 5. Modern Settings - Tabbed interface with form components and validation
- * 6. Form Components - Comprehensive input styling with responsive grids
- * 7. Modal System - Overlay dialogs for previews and confirmations
- * 8. Animations - Loading states and interactive feedback
- * 9. Responsive Design - Mobile-first approach with progressive enhancement
+ * 1. Submissions List - Optimized table layouts with advanced filtering
+ * 2. Email Management - Template previews and email composition interface
+ * 3. Modal System - Overlay dialogs for previews and confirmations
+ * 4. Form Components - Comprehensive input styling with responsive grids
+ * 5. Animations - Loading states and interactive feedback
+ * 6. Responsive Design - Mobile-first approach with progressive enhancement
  * 
  * Design System Features:
  * - WordPress admin color scheme integration
@@ -1838,7 +1612,7 @@ textarea.edit-active {
  * - Mobile-optimized responsive breakpoints
  * 
  * Maintenance Notes:
- * - All legacy duplicate code removed (100+ lines cleaned)
+ * - Legacy compatibility code removed for cleaner architecture
  * - Animation classes standardized (.cf7-spin)
  * - Cross-file consistency verified with JavaScript files
  * - Documentation added for all major sections

@@ -227,9 +227,9 @@ jQuery(document).ready(function($) {
         const originalText = $button.text();
         $button.prop('disabled', true).html('<span class="dashicons dashicons-update cf7-spin"></span> Saving...');
         
-        // Gather all editable field data
+        // Gather all profile field data
         const fieldData = {};
-        $('.editable-field').each(function() {
+        $('.cf7-profile-field').each(function() {
             const $field = $(this);
             const key = $field.data('field') || $field.data('key');
             const $hiddenInput = $field.find('input[name^="cf7_editable_fields"]');

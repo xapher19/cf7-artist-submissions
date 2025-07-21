@@ -129,16 +129,6 @@
             startHeaderFieldEdit($(this));
         });
         
-        // Legacy support for old editable fields (for backwards compatibility)
-        $(document).on('click', '.editable-field', function(e) {
-            if ($(e.target).is('a') || $(this).hasClass('editing')) {
-                return;
-            }
-            
-            const $field = $(this);
-            editLegacyField($field);
-        });
-        
         // Curator Notes Save Button
         $(document).on('click', '#cf7-save-curator-notes', function() {
             saveCuratorNotes();
@@ -294,7 +284,7 @@
             // Enter key (13) saves unless it's a textarea
             if (e.keyCode === 13 && fieldType !== 'textarea') {
                 e.preventDefault();
-                saveField($field, $input, fieldKey);
+                saveProfileField($field, $input, fieldKey);
             }
             
             // Escape key (27) cancels
@@ -309,7 +299,7 @@
                 // Small delay to allow clicking buttons
                 setTimeout(function() {
                     if ($field.hasClass('editing')) {
-                        saveField($field, $input, fieldKey);
+                        saveProfileField($field, $input, fieldKey);
                     }
                 }, 150);
             });
@@ -325,7 +315,7 @@
             $field.find('.cf7-field-content').append($controls);
             
             $saveBtn.on('click', function() {
-                saveField($field, $input, fieldKey);
+                saveProfileField($field, $input, fieldKey);
             });
             
             $cancelBtn.on('click', function() {
@@ -334,74 +324,16 @@
         }
     }
     
-    function editLegacyField($field) {
-        const fieldType = $field.data('type');
-        const originalValue = $field.data('original');
-        const fieldKey = $field.data('key') || $field.data('field');
+    function cancelFieldEdit($field) {
+        // Remove the editing UI
+        $field.removeClass('editing');
+        $field.find('.edit-active, .edit-controls').remove();
         
-        // Hide the display value
-        $field.find('.field-value').hide();
-        
-        // Create an editable input or textarea
-        let $input;
-        
-        if (fieldType === 'textarea') {
-            $input = $('<textarea></textarea>')
-                .val(originalValue)
-                .addClass('edit-active');
-        } else {
-            $input = $('<input>')
-                .attr('type', fieldType)
-                .val(originalValue)
-                .addClass('edit-active');
-        }
-        
-        // Add editing class and insert the input
-        $field.addClass('editing');
-        $field.append($input);
-        
-        // Focus on the new input and select all text
-        $input.focus().select();
-        
-        // Save value on Enter key (except in textarea)
-        $input.on('keydown', function(e) {
-            // Enter key (13) saves unless it's a textarea
-            if (e.keyCode === 13 && fieldType !== 'textarea') {
-                e.preventDefault();
-                saveLegacyField($field, $input, fieldKey);
-            }
-            
-            // Escape key (27) cancels
-            if (e.keyCode === 27) {
-                cancelLegacyEdit($field);
-            }
-        });
-        
-        // Save value on blur
-        $input.on('blur', function() {
-            saveLegacyField($field, $input, fieldKey);
-        });
-        
-        // Add save and cancel buttons for textarea
-        if (fieldType === 'textarea') {
-            const $controls = $('<div class="edit-controls"></div>');
-            const $saveBtn = $('<button type="button" class="button button-primary save-btn">Save</button>');
-            const $cancelBtn = $('<button type="button" class="button cancel-btn">Cancel</button>');
-            
-            $controls.append($saveBtn).append($cancelBtn);
-            $field.append($controls);
-            
-            $saveBtn.on('click', function() {
-                saveLegacyField($field, $input, fieldKey);
-            });
-            
-            $cancelBtn.on('click', function() {
-                cancelLegacyEdit($field);
-            });
-        }
+        // Show the display value again
+        $field.find('.cf7-field-value').show();
     }
     
-    function saveField($field, $input, fieldKey) {
+    function saveProfileField($field, $input, fieldKey) {
         const newValue = $input.val();
         let $hiddenInput = $field.find('input[name^="cf7_editable_fields"]');
         
@@ -420,7 +352,7 @@
         
         if ($displayValue.hasClass('cf7-field-link')) {
             let url = newValue;
-            if (url.indexOf('http') !== 0) {
+            if (url.indexOf('http') !== 0 && newValue) {
                 url = 'http://' + url;
             }
             $displayValue.attr('href', url).text(newValue);
@@ -447,69 +379,6 @@
                 $(this).remove();
             });
         }, 1500);
-    }
-    
-    function saveLegacyField($field, $input, fieldKey) {
-        const newValue = $input.val();
-        let $hiddenInput = $field.find('input[name^="cf7_editable_fields"]');
-        
-        // Create hidden input if it doesn't exist
-        if (!$hiddenInput.length) {
-            $hiddenInput = $('<input type="hidden" name="cf7_editable_fields[' + fieldKey + ']">');
-            $field.append($hiddenInput);
-        }
-        
-        // Update the hidden input value
-        $hiddenInput.val(newValue);
-        
-        // Update the display value
-        const $displayValue = $field.find('.field-value');
-        $displayValue.text(newValue);
-        
-        // If it's a link, update the href
-        if ($displayValue.is('a')) {
-            let url = newValue;
-            if (url.indexOf('http') !== 0) {
-                url = 'http://' + url;
-            }
-            $displayValue.attr('href', url);
-        }
-        
-        // Remove the editing UI
-        $field.removeClass('editing');
-        $field.find('.edit-active, .edit-controls').remove();
-        $displayValue.show();
-        
-        // Update the original data attribute
-        $field.data('original', newValue);
-        
-        // Show a success message that fades out
-        const $message = $('<div class="edit-success">Updated</div>');
-        $field.append($message);
-        
-        setTimeout(function() {
-            $message.fadeOut(500, function() {
-                $(this).remove();
-            });
-        }, 1500);
-    }
-    
-    function cancelFieldEdit($field) {
-        // Remove the editing UI
-        $field.removeClass('editing');
-        $field.find('.edit-active, .edit-controls').remove();
-        
-        // Show the display value again
-        $field.find('.cf7-field-value').show();
-    }
-    
-    function cancelLegacyEdit($field) {
-        // Remove the editing UI
-        $field.removeClass('editing');
-        $field.find('.edit-active, .edit-controls').remove();
-        
-        // Show the display value again
-        $field.find('.field-value').show();
     }
     
     // Profile field editing functions
@@ -923,26 +792,18 @@
                     $container.removeClass('edit-mode');
                     $('body').removeClass('cf7-edit-mode');
                     
-                    // Cancel any active edits - be more thorough
+                    // Cancel any active edits
                     $('.cf7-profile-field.editing').each(function() {
                         cancelFieldEdit($(this));
                     });
-                    
-                    // Also remove editing class from any fields that might not have been caught
-                    $('.cf7-profile-field').removeClass('editing');
-                    
-                    // Clean up any leftover input fields
-                    $('.cf7-field-edit-input').remove();
-                    
-                    // Show all field values that might be hidden
-                    $('.cf7-field-value').show();
-                    $('.cf7-field-textarea').show();
-                    $('.cf7-field-link').show();
-                    
-                    // Cancel any active header field edits
                     $('.cf7-header-field.editing').each(function() {
                         cancelHeaderFieldEdit($(this));
                     });
+                    
+                    // Clean up any leftover editing elements
+                    $('.cf7-profile-field').removeClass('editing');
+                    $('.cf7-field-edit-input').remove();
+                    $('.cf7-field-value, .cf7-field-textarea, .cf7-field-link').show();
                     
                     // Reset header button
                     $headerBtn.removeClass('save-mode').prop('disabled', false);
@@ -956,16 +817,6 @@
                         const iconHtml = $headerBtn.find('.dashicons')[0].outerHTML;
                         $headerBtn.html(iconHtml + ' ' + $headerBtn.data('edit-text'));
                     }
-                    
-                    // Cancel any active edits
-                    $('.cf7-profile-field.editing').each(function() {
-                        cancelFieldEdit($(this));
-                    });
-                    
-                    // Cancel any active header field edits
-                    $('.cf7-header-field.editing').each(function() {
-                        cancelHeaderFieldEdit($(this));
-                    });
                     
                     // Show success message
                     const $message = $('<div class="cf7-save-success">All changes saved successfully!</div>');

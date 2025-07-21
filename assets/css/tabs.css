@@ -618,26 +618,6 @@ body.cf7-edit-mode .cf7-header-field:hover {
     z-index: 1000;
 }
 
-/* Editable field styles */
-.editable-field {
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.editable-field:hover {
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    padding: 2px 4px;
-    margin: -2px -4px;
-}
-
-.editable-field.editing {
-    background-color: #e3f2fd;
-    border-radius: 4px;
-    padding: 4px;
-    margin: -4px;
-}
-
 /* Spinning animation for loading states */
 .cf7-spinning {
     animation: cf7-spin 1s linear infinite;
