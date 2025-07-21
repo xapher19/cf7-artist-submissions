@@ -558,10 +558,28 @@ span.status-rejected::before {
     font-size: 18px;
 }
 
+/* Artistic Mediums Column */
+.post-type-cf7_submission .column-artistic_mediums {
+    line-height: 1.4;
+}
+
+.mediums-content {
+    color: #1d2327;
+    line-height: 1.4;
+    cursor: help;
+}
+
+.post-type-cf7_submission .column-artistic_mediums .no-mediums {
+    color: #c3c4c7;
+    font-size: 18px;
+}
+
 /* Responsive Design */
 @media (width <= 1200px) {
     .post-type-cf7_submission .widefat th.column-notes,
-    .post-type-cf7_submission .widefat td.column-notes {
+    .post-type-cf7_submission .widefat td.column-notes,
+    .post-type-cf7_submission .widefat th.column-artistic_mediums,
+    .post-type-cf7_submission .widefat td.column-artistic_mediums {
         display: none;
     }
     
@@ -1277,6 +1295,26 @@ textarea.edit-active {
     border-color: #d63638 !important;
     color: white !important;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Specific fix for clear messages button alignment */
+#cf7-clear-messages-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    vertical-align: middle;
+}
+
+.cf7-danger-button .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .cf7-danger-button:hover {

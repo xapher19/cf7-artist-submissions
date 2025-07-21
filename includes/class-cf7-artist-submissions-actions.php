@@ -785,7 +785,7 @@ class CF7_Artist_Submissions_Actions {
         ?>
         <div class="cf7-actions-container">
             <div class="cf7-actions-header">
-                <h3><?php _e('Actions & To-Do Items', 'cf7-artist-submissions'); ?></h3>
+                <h3><?php _e('Actions', 'cf7-artist-submissions'); ?></h3>
                 <button type="button" id="cf7-add-action-btn">
                     <span class="dashicons dashicons-plus-alt"></span>
                     <?php _e('Add Action', 'cf7-artist-submissions'); ?>

@@ -102,7 +102,16 @@
             if ($(e.target).is('a')) {
                 e.preventDefault();
             }
-            startFieldEdit($(this));
+            
+            const $field = $(this);
+            
+            // Handle mediums field specially
+            if ($field.hasClass('cf7-artistic-mediums-field')) {
+                // Don't make mediums clickable - they use checkboxes
+                return;
+            }
+            
+            startFieldEdit($field);
         });
         
         // Header field click in edit mode
@@ -776,6 +785,16 @@
             }
         });
         
+        // Handle artistic mediums separately
+        const $mediumsField = $('.cf7-artistic-mediums-field');
+        if ($mediumsField.length) {
+            const selectedMediums = [];
+            $mediumsField.find('.cf7-mediums-edit input[type="checkbox"]:checked').each(function() {
+                selectedMediums.push($(this).val());
+            });
+            fieldData['artistic_mediums'] = selectedMediums;
+        }
+        
         // Get curator notes
         const curatorNotes = $('#cf7-curator-notes').val();
         
@@ -834,6 +853,72 @@
             data: ajaxData,
             success: function(response) {
                 if (response.success) {
+                    // Update field values in the UI with the saved data
+                    if (response.data && response.data.field_data) {
+                        const fieldData = response.data.field_data;
+                        
+                        // Update each field with the saved value
+                        for (const fieldKey in fieldData) {
+                            if (fieldKey === 'artistic_mediums') {
+                                // Update artistic mediums display
+                                const $mediumsDisplay = $('.cf7-mediums-display');
+                                if ($mediumsDisplay.length && fieldData[fieldKey]) {
+                                    $mediumsDisplay.html(fieldData[fieldKey]);
+                                }
+                            } else {
+                                // Update regular fields
+                                const $field = $('[data-field="' + fieldKey + '"]');
+                                if ($field.length && fieldData[fieldKey]) {
+                                    const value = fieldData[fieldKey];
+                                    
+                                    // Update header fields (remove cf7_ prefix for matching)
+                                    const headerFieldName = fieldKey.replace('cf7_', '');
+                                    const $headerField = $('[data-field="' + headerFieldName + '"]');
+                                    if ($headerField.length) {
+                                        $headerField.find('.field-value').text(value);
+                                        $headerField.data('original', value);
+                                        
+                                        // Special handling for pronouns visibility
+                                        if (headerFieldName === 'pronouns') {
+                                            const $pronounsSpan = $('.cf7-artist-pronouns');
+                                            if (value && value.trim()) {
+                                                $pronounsSpan.show();
+                                            } else {
+                                                $pronounsSpan.hide();
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Update profile fields
+                                    if ($field.hasClass('cf7-profile-field')) {
+                                        const $fieldValue = $field.find('.cf7-field-value');
+                                        if ($fieldValue.length) {
+                                            // Check if it's a URL field
+                                            if ($fieldValue.hasClass('cf7-field-link')) {
+                                                $fieldValue.attr('href', value.startsWith('http') ? value : 'http://' + value);
+                                                $fieldValue.text(value);
+                                            } else if ($fieldValue.hasClass('cf7-field-textarea')) {
+                                                // Handle textarea fields with line breaks
+                                                $fieldValue.html(value.replace(/\n/g, '<br>'));
+                                            } else {
+                                                $fieldValue.text(value);
+                                            }
+                                        }
+                                        
+                                        // Update the hidden input
+                                        const $hiddenInput = $field.find('.field-input');
+                                        if ($hiddenInput.length) {
+                                            $hiddenInput.val(value);
+                                        }
+                                        
+                                        // Update data attribute
+                                        $field.data('original', value);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // Exit edit mode
                     $container.removeClass('edit-mode');
                     $('body').removeClass('cf7-edit-mode');
@@ -1100,6 +1185,8 @@
     }
     
     // Export for tabs.js compatibility
-    window.initEditableFields = initModernProfileEditing;
+    window.initEditableFields = function() {
+        initModernProfileEditing();
+    };
     
 })(jQuery);

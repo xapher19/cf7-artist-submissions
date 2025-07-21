@@ -39,6 +39,7 @@ class CF7_Artist_Submissions_Post_Type {
     public function init() {
         add_action('init', array($this, 'register_post_type'));
         add_action('init', array($this, 'register_taxonomy'));
+        add_action('init', array($this, 'register_mediums_taxonomy'));
         add_filter('manage_cf7_submission_posts_columns', array($this, 'set_custom_columns'));
         add_action('manage_cf7_submission_posts_custom_column', array($this, 'custom_column_content'), 10, 2);
         
@@ -191,6 +192,97 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
+     * Register the artistic mediums taxonomy.
+     * 
+     * Creates a non-hierarchical taxonomy for tagging submissions with
+     * artistic mediums and techniques used by the artist.
+     * 
+     * @since 2.1.0
+     * 
+     * @return void
+     */
+    public function register_mediums_taxonomy() {
+        $labels = array(
+            'name'                       => __('Artistic Mediums', 'cf7-artist-submissions'),
+            'singular_name'              => __('Medium', 'cf7-artist-submissions'),
+            'search_items'               => __('Search Mediums', 'cf7-artist-submissions'),
+            'popular_items'              => __('Popular Mediums', 'cf7-artist-submissions'),
+            'all_items'                  => __('All Mediums', 'cf7-artist-submissions'),
+            'parent_item'                => null,
+            'parent_item_colon'          => null,
+            'edit_item'                  => __('Edit Medium', 'cf7-artist-submissions'),
+            'update_item'                => __('Update Medium', 'cf7-artist-submissions'),
+            'add_new_item'               => __('Add New Medium', 'cf7-artist-submissions'),
+            'new_item_name'              => __('New Medium Name', 'cf7-artist-submissions'),
+            'separate_items_with_commas' => __('Separate mediums with commas', 'cf7-artist-submissions'),
+            'add_or_remove_items'        => __('Add or remove mediums', 'cf7-artist-submissions'),
+            'choose_from_most_used'      => __('Choose from most used mediums', 'cf7-artist-submissions'),
+            'not_found'                  => __('No mediums found.', 'cf7-artist-submissions'),
+            'menu_name'                  => __('Mediums', 'cf7-artist-submissions'),
+        );
+        
+        $args = array(
+            'hierarchical'          => false, // Tag-like behavior
+            'labels'                => $labels,
+            'show_ui'               => true,
+            'show_admin_column'     => true,
+            'show_in_menu'          => 'edit.php?post_type=cf7_submission',
+            'query_var'             => true,
+            'rewrite'               => array('slug' => 'artistic-medium'),
+            'show_tagcloud'         => true,
+            'meta_box_cb'           => 'post_tags_meta_box', // Use default tag-style meta box
+        );
+        
+        register_taxonomy('artistic_medium', 'cf7_submission', $args);
+        
+        // Add comprehensive artistic mediums as default terms with unique colors
+        $default_mediums = array(
+            'Art writing' => array('bg' => '#FF6B6B', 'text' => '#8B0000'),           // Coral red with very dark red text
+            'Artists\' books' => array('bg' => '#4ECDC4', 'text' => '#1A5C57'),      // Turquoise with very dark teal text
+            'Ceramics' => array('bg' => '#45B7D1', 'text' => '#1A4F73'),            // Sky blue with very dark blue text
+            'Collage' => array('bg' => '#96CEB4', 'text' => '#2F5233'),             // Mint green with very dark green text
+            'Digital' => array('bg' => '#FFEAA7', 'text' => '#8B6F00'),             // Warm yellow with very dark yellow text
+            'Drawing' => array('bg' => '#DDA0DD', 'text' => '#6B2C6B'),             // Plum with very dark purple text
+            'Film / Video' => array('bg' => '#FFB6C1', 'text' => '#8B3A4F'),        // Light pink with very dark pink text
+            'Glass' => array('bg' => '#87CEEB', 'text' => '#2F4F8F'),               // Sky blue light with very dark blue text
+            'Graffiti' => array('bg' => '#FF8C69', 'text' => '#8B2500'),            // Salmon with very dark red text
+            'Illustration' => array('bg' => '#98D8C8', 'text' => '#2F4F4F'),        // Mint with very dark teal text
+            'Installation' => array('bg' => '#F7DC6F', 'text' => '#8B7355'),        // Light yellow with very dark brown text
+            'Internet' => array('bg' => '#BB8FCE', 'text' => '#4B0082'),            // Light purple with very dark purple text
+            'Jewellery' => array('bg' => '#F8C471', 'text' => '#8B4513'),           // Peach with very dark brown text
+            'Live art' => array('bg' => '#85C1E9', 'text' => '#191970'),            // Light blue with very dark blue text
+            'Painting' => array('bg' => '#F1948A', 'text' => '#8B0000'),            // Light red with very dark red text
+            'Photography' => array('bg' => '#82E0AA', 'text' => '#006400'),         // Light green with very dark green text
+            'Printmaking' => array('bg' => '#D7BDE2', 'text' => '#483D8B'),         // Lavender with very dark purple text
+            'Projection' => array('bg' => '#A9DFBF', 'text' => '#228B22'),          // Pale green with very dark green text
+            'Sculpture' => array('bg' => '#F9E79F', 'text' => '#8B7500'),           // Pale yellow with very dark yellow text
+            'Socially Engaged Practice' => array('bg' => '#AED6F1', 'text' => '#000080'), // Pale blue with very dark blue text
+            'Sound' => array('bg' => '#FADBD8', 'text' => '#8B1538'),               // Pale pink with very dark pink text
+            'Text' => array('bg' => '#D5DBDB', 'text' => '#2F4F4F'),                // Light gray with very dark gray text
+            'Textile' => array('bg' => '#ABEBC6', 'text' => '#2E8B57')              // Pale mint with very dark green text
+        );
+        
+        foreach ($default_mediums as $medium => $colors) {
+            if (!term_exists($medium, 'artistic_medium')) {
+                $term = wp_insert_term($medium, 'artistic_medium');
+                if (!is_wp_error($term)) {
+                    // Add color meta to the term
+                    add_term_meta($term['term_id'], 'medium_color', $colors['bg'], true);
+                    add_term_meta($term['term_id'], 'medium_text_color', $colors['text'], true);
+                }
+            } else {
+                // Update existing term with colors - always update to ensure we have the latest colors
+                $existing_term = get_term_by('name', $medium, 'artistic_medium');
+                if ($existing_term) {
+                    // Update both background and text colors (in case we've changed them)
+                    update_term_meta($existing_term->term_id, 'medium_color', $colors['bg']);
+                    update_term_meta($existing_term->term_id, 'medium_text_color', $colors['text']);
+                }
+            }
+        }
+    }
+    
+    /**
      * Custom meta box for status as radio buttons
      */
     public function status_meta_box($post, $box) {
@@ -235,6 +327,7 @@ class CF7_Artist_Submissions_Post_Type {
             'title' => __('Name', 'cf7-artist-submissions'),
             'submission_date' => __('Submission Date', 'cf7-artist-submissions'),
             'status' => __('Status', 'cf7-artist-submissions'),
+            'artistic_mediums' => __('Artistic Mediums', 'cf7-artist-submissions'),
             'notes' => __('Curator Notes', 'cf7-artist-submissions'),
         );
         return $columns;
@@ -315,6 +408,36 @@ class CF7_Artist_Submissions_Post_Type {
                     echo '<span class="submission-status status-' . $status_slug . '">' . esc_html($status) . '</span>';
                 } else {
                     echo '<span class="submission-status status-new">New</span>';
+                }
+                break;
+                
+            case 'artistic_mediums':
+                $terms = get_the_terms($post_id, 'artistic_medium');
+                if (!empty($terms) && !is_wp_error($terms)) {
+                    $medium_tags = array();
+                    foreach ($terms as $term) {
+                        $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+                        $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+                        
+                        if ($bg_color && $text_color) {
+                            $style = ' style="background-color: ' . esc_attr($bg_color) . '; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: 2px 6px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-weight: 500;"';
+                        } else {
+                            $style = ' style="background-color: #4299e1; color: #fff; border: 1px solid #2c5aa0; padding: 2px 6px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-weight: 500;"';
+                        }
+                        $medium_tags[] = '<span class="medium-tag" data-color="' . esc_attr($bg_color) . '"' . $style . '>' . esc_html($term->name) . '</span>';
+                    }
+                    $all_mediums = implode(' ', $medium_tags);
+                    
+                    // Truncate if too many tags
+                    if (count($medium_tags) > 3) {
+                        $visible_tags = array_slice($medium_tags, 0, 3);
+                        $remaining_count = count($medium_tags) - 3;
+                        $all_mediums = implode(' ', $visible_tags) . ' <span style="color: #666; font-size: 11px;">+' . $remaining_count . ' more</span>';
+                    }
+                    
+                    echo '<div class="mediums-content">' . $all_mediums . '</div>';
+                } else {
+                    echo '<span class="no-mediums">—</span>';
                 }
                 break;
                 

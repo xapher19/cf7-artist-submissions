@@ -248,7 +248,7 @@ class CF7_Artist_Submissions_Dashboard {
 
                     <div class="cf7-activity-card activity-actions" data-type="actions" id="activity-outstanding-actions">
                         <div class="activity-icon">
-                            <span class="dashicons dashicons-calendar-alt"></span>
+                            <span class="dashicons dashicons-bell"></span>
                             <span class="activity-badge activity-actions-count" style="display: none;">0</span>
                         </div>
                         <div class="activity-content">
@@ -667,6 +667,7 @@ class CF7_Artist_Submissions_Dashboard {
             'status_label' => $status, // Human readable label
             'artist_name' => get_post_meta($post->ID, 'cf7_artist-name', true) ?: 'Unknown Artist',
             'email' => get_post_meta($post->ID, 'cf7_email', true) ?: get_post_meta($post->ID, 'your-email', true) ?: 'No email',
+            'mediums' => $this->get_submission_mediums($post->ID),
             'notes' => get_post_meta($post->ID, 'cf7_curator_notes', true),
             'view_url' => get_edit_post_link($post->ID),
             'edit_url' => get_edit_post_link($post->ID),
@@ -1581,5 +1582,36 @@ class CF7_Artist_Submissions_Dashboard {
         }
         
         return 'Artist #' . $submission_id;
+    }
+    
+    /**
+     * Get artistic mediums for a submission.
+     * 
+     * @since 2.1.0
+     * 
+     * @param int $post_id The submission post ID
+     * @return array Array of medium names
+     */
+    private function get_submission_mediums($post_id) {
+        $terms = get_the_terms($post_id, 'artistic_medium');
+        
+        if (empty($terms) || is_wp_error($terms)) {
+            return array();
+        }
+        
+        $mediums = array();
+        foreach ($terms as $term) {
+            $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+            $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+            
+            $mediums[] = array(
+                'name' => $term->name,
+                'slug' => $term->slug,
+                'bg_color' => $bg_color ?: '#6b7280',
+                'text_color' => $text_color ?: '#ffffff'
+            );
+        }
+        
+        return $mediums;
     }
 }

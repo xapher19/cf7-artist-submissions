@@ -248,8 +248,15 @@ class ActionsManager {
 
     setActiveFilter(filter) {
         this.currentFilter = filter;
-        jQuery('.actions-filter').removeClass('active');
-        jQuery(`.actions-filter[data-filter="${filter}"]`).addClass('active');
+        jQuery('.cf7-filter-btn').removeClass('active');
+        
+        // Handle the 'all' filter which has empty data-status
+        if (filter === 'all') {
+            jQuery('.cf7-filter-btn[data-status=""]').addClass('active');
+        } else {
+            jQuery(`.cf7-filter-btn[data-status="${filter}"]`).addClass('active');
+        }
+        
         this.renderActions();
     }
 

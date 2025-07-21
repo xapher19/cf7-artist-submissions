@@ -1282,6 +1282,7 @@
                         <div class="cf7-submission-meta">
                             ${submission.email} • ID: ${submission.id}
                         </div>
+                        ${this.renderMediumTags(submission.mediums)}
                     </div>
                     <div class="cf7-submission-date">
                         <div class="cf7-submission-date-main">${formattedDate}</div>
@@ -1317,6 +1318,27 @@
                 'rejected': 'dashicons-dismiss'
             };
             return statusIcons[status] || 'dashicons-marker';
+        }
+
+        renderMediumTags(mediums) {
+            if (!mediums || mediums.length === 0) {
+                return '';
+            }
+
+            // Limit to maximum 4 tags to maintain consistent row height
+            const maxTags = 4;
+            const visibleMediums = mediums.slice(0, maxTags);
+            const remainingCount = mediums.length - maxTags;
+
+            const tags = visibleMediums.map(medium => {
+                return `<span class="cf7-medium-tag cf7-dashboard-medium" style="background-color: ${medium.bg_color}; color: ${medium.text_color};">${medium.name}</span>`;
+            }).join('');
+
+            // Add overflow indicator if there are more tags
+            const overflowTag = remainingCount > 0 ? 
+                `<span class="cf7-medium-overflow">+${remainingCount}</span>` : '';
+
+            return `<div class="cf7-submission-mediums">${tags}${overflowTag}</div>`;
         }
 
         buildEmptyState() {

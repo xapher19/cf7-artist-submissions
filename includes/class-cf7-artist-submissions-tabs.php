@@ -38,6 +38,7 @@ class CF7_Artist_Submissions_Tabs {
         add_action('wp_ajax_cf7_update_status', array(__CLASS__, 'ajax_update_status'));
         add_action('wp_ajax_cf7_save_submission_data', array(__CLASS__, 'ajax_save_submission_data'));
         add_action('wp_ajax_cf7_save_curator_notes', array(__CLASS__, 'ajax_save_curator_notes'));
+        add_action('wp_ajax_cf7_save_artistic_mediums', array(__CLASS__, 'ajax_save_artistic_mediums'));
         
         // Override the post edit page layout
         add_action('edit_form_after_title', array(__CLASS__, 'render_custom_page_layout'));
@@ -498,10 +499,22 @@ class CF7_Artist_Submissions_Tabs {
             }
         }
         
+        // Separate artist statement fields from other profile fields for proper ordering
+        $statement_fields = array();
+        $non_statement_profile_fields = array();
+        
+        foreach ($profile_fields as $key => $value) {
+            if (strpos($key, 'statement') !== false || strpos($key, 'bio') !== false) {
+                $statement_fields[$key] = $value;
+            } else {
+                $non_statement_profile_fields[$key] = $value;
+            }
+        }
+        
         echo '<div class="cf7-profile-grid">';
         
         // Profile Information Section
-        if (!empty($profile_fields)) {
+        if (!empty($non_statement_profile_fields) || !empty($statement_fields) || true) { // Always show this section now since it includes mediums
             echo '<div class="cf7-profile-section">';
             echo '<h3 class="cf7-section-title">';
             echo '<span class="dashicons dashicons-admin-users"></span>';
@@ -509,7 +522,16 @@ class CF7_Artist_Submissions_Tabs {
             echo '</h3>';
             echo '<div class="cf7-profile-fields">';
             
-            foreach ($profile_fields as $key => $value) {
+            // First render non-statement profile fields
+            foreach ($non_statement_profile_fields as $key => $value) {
+                self::render_modern_field($post->ID, $key, $value);
+            }
+            
+            // Add artistic mediums field within profile information (before artist statement)
+            self::render_artistic_mediums_field($post->ID);
+            
+            // Then render artist statement fields
+            foreach ($statement_fields as $key => $value) {
                 self::render_modern_field($post->ID, $key, $value);
             }
             
@@ -623,6 +645,105 @@ class CF7_Artist_Submissions_Tabs {
         
         echo '</div>'; // .cf7-field-content
         echo '</div>'; // .cf7-profile-field
+    }
+    
+    /**
+     * Render artistic mediums field with selectable tags
+     * 
+     * @since 2.1.0
+     * 
+     * @param int $post_id The submission post ID
+     * @return void
+     */
+    private static function render_artistic_mediums_field($post_id) {
+        // Get current medium terms assigned to this submission
+        $current_terms = get_the_terms($post_id, 'artistic_medium');
+        $current_medium_ids = array();
+        $current_medium_names = array();
+        
+        if (!empty($current_terms) && !is_wp_error($current_terms)) {
+            foreach ($current_terms as $term) {
+                $current_medium_ids[] = $term->term_id;
+                $current_medium_names[] = $term->name;
+            }
+        }
+        
+        // Get all available medium terms
+        $all_mediums = get_terms(array(
+            'taxonomy' => 'artistic_medium',
+            'hide_empty' => false,
+            'orderby' => 'name',
+            'order' => 'ASC'
+        ));
+        
+        if (empty($all_mediums) || is_wp_error($all_mediums)) {
+            echo '<div class="cf7-no-mediums">';
+            echo '<p>' . __('No artistic mediums are available. Please configure the mediums taxonomy.', 'cf7-artist-submissions') . '</p>';
+            echo '</div>';
+            return;
+        }
+        
+        echo '<div class="cf7-artistic-mediums-field cf7-profile-field" data-post-id="' . esc_attr($post_id) . '" data-field="artistic_mediums" data-type="mediums">';
+        
+        echo '<div class="cf7-field-header">';
+        echo '<span class="cf7-field-icon dashicons dashicons-art"></span>';
+        echo '<label class="cf7-field-label">' . __('Artistic Mediums', 'cf7-artist-submissions') . '</label>';
+        echo '</div>';
+        
+        echo '<div class="cf7-field-content">';
+        
+        // Display mode - shown when not in edit mode
+        echo '<div class="cf7-mediums-display">';
+        if (!empty($current_medium_names)) {
+            // Get the full term objects to access colors
+            $current_terms_objects = get_the_terms($post_id, 'artistic_medium');
+            foreach ($current_terms_objects as $term) {
+                $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+                $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+                
+                if ($bg_color && $text_color) {
+                    $style = ' style="--medium-color: ' . esc_attr($bg_color) . '; --medium-text-color: ' . esc_attr($text_color) . ';"';
+                    $data_attrs = ' data-color="' . esc_attr($bg_color) . '" data-text-color="' . esc_attr($text_color) . '"';
+                } else {
+                    $style = '';
+                    $data_attrs = ' data-color=""';
+                }
+                echo '<span class="cf7-medium-tag"' . $data_attrs . $style . '>' . esc_html($term->name) . '</span>';
+            }
+        } else {
+            echo '<span class="cf7-no-mediums-text">' . __('No mediums selected', 'cf7-artist-submissions') . '</span>';
+        }
+        echo '</div>';
+        
+        // Edit mode - shown when in edit mode (hidden by CSS initially)
+        echo '<div class="cf7-mediums-edit" style="display: none;">';
+        foreach ($all_mediums as $term) {
+            $checked = in_array($term->term_id, $current_medium_ids) ? 'checked' : '';
+            $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+            $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+            
+            $style_vars = '';
+            $data_attrs = '';
+            if ($bg_color && $text_color) {
+                $style_vars = ' style="--medium-color: ' . esc_attr($bg_color) . '; --medium-text-color: ' . esc_attr($text_color) . ';"';
+                $data_attrs = ' data-color="' . esc_attr($bg_color) . '" data-text-color="' . esc_attr($text_color) . '"';
+            } else {
+                $data_attrs = ' data-color=""';
+            }
+            
+            echo '<label class="cf7-medium-checkbox"' . $data_attrs . $style_vars . '>';
+            echo '<input type="checkbox" name="artistic_mediums[]" value="' . esc_attr($term->term_id) . '" ' . $checked . '>';
+            echo '<span class="checkmark"></span>';
+            echo '<span class="medium-name">' . esc_html($term->name) . '</span>';
+            echo '</label>';
+        }
+        echo '</div>';
+        
+        // Hidden input to store current values for the edit system
+        echo '<input type="hidden" name="cf7_editable_fields[artistic_mediums]" value="' . esc_attr(implode(',', $current_medium_ids)) . '" class="field-input" />';
+        
+        echo '</div>'; // .cf7-field-content
+        echo '</div>'; // .cf7-artistic-mediums-field
     }
     
     /**
@@ -1144,6 +1265,43 @@ class CF7_Artist_Submissions_Tabs {
         // Save field data
         if (is_array($field_data)) {
             foreach ($field_data as $meta_key => $value) {
+                // Handle artistic mediums separately
+                if ($meta_key === 'artistic_mediums') {
+                    if (is_array($value)) {
+                        // Get old mediums for logging
+                        $old_terms = get_the_terms($post_id, 'artistic_medium');
+                        $old_medium_names = array();
+                        if (!empty($old_terms) && !is_wp_error($old_terms)) {
+                            foreach ($old_terms as $term) {
+                                $old_medium_names[] = $term->name;
+                            }
+                        }
+                        
+                        // Update the artistic mediums
+                        $medium_ids = array_map('intval', $value);
+                        $result = wp_set_object_terms($post_id, $medium_ids, 'artistic_medium');
+                        
+                        if (!is_wp_error($result)) {
+                            $updated_fields++;
+                            
+                            // Get new medium names for logging
+                            $new_terms = get_the_terms($post_id, 'artistic_medium');
+                            $new_medium_names = array();
+                            if (!empty($new_terms) && !is_wp_error($new_terms)) {
+                                foreach ($new_terms as $term) {
+                                    $new_medium_names[] = $term->name;
+                                }
+                            }
+                            
+                            // Log the update
+                            $old_medium_names_str = implode(', ', $old_medium_names);
+                            $new_medium_names_str = implode(', ', $new_medium_names);
+                            do_action('cf7_artist_submission_field_updated', $post_id, 'artistic_mediums', $old_medium_names_str, $new_medium_names_str);
+                        }
+                    }
+                    continue;
+                }
+                
                 // Skip empty values or non-cf7 meta keys for safety
                 if (empty($value) || strpos($meta_key, 'cf7_') !== 0) {
                     continue;
@@ -1201,9 +1359,43 @@ class CF7_Artist_Submissions_Tabs {
             }
         }
         
+        // Get updated field values to return to the frontend
+        $updated_data = array();
+        
+        // Get all meta fields that were potentially updated
+        foreach ($field_data as $meta_key => $value) {
+            if ($meta_key === 'artistic_mediums') {
+                // Get updated artistic mediums display HTML
+                $terms = get_the_terms($post_id, 'artistic_medium');
+                $medium_tags_html = '';
+                if (!empty($terms) && !is_wp_error($terms)) {
+                    foreach ($terms as $term) {
+                        $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+                        $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+                        
+                        if ($bg_color && $text_color) {
+                            $style = ' style="--medium-color: ' . esc_attr($bg_color) . '; --medium-text-color: ' . esc_attr($text_color) . ';"';
+                            $data_attrs = ' data-color="' . esc_attr($bg_color) . '" data-text-color="' . esc_attr($text_color) . '"';
+                        } else {
+                            $style = '';
+                            $data_attrs = ' data-color=""';
+                        }
+                        $medium_tags_html .= '<span class="cf7-medium-tag"' . $data_attrs . $style . '>' . esc_html($term->name) . '</span>';
+                    }
+                }
+                if (empty($medium_tags_html)) {
+                    $medium_tags_html = '<span class="cf7-no-mediums-text">' . __('No mediums selected', 'cf7-artist-submissions') . '</span>';
+                }
+                $updated_data['artistic_mediums'] = $medium_tags_html;
+            } else {
+                $updated_data[$meta_key] = get_post_meta($post_id, $meta_key, true);
+            }
+        }
+        
         wp_send_json_success(array(
             'message' => "Successfully updated {$updated_fields} field(s)",
-            'updated_fields' => $updated_fields
+            'updated_fields' => $updated_fields,
+            'field_data' => $updated_data
         ));
     }
     
@@ -1236,6 +1428,69 @@ class CF7_Artist_Submissions_Tabs {
         wp_send_json_success(array(
             'message' => 'Curator notes saved successfully',
             'notes' => $notes
+        ));
+    }
+    
+    /**
+     * AJAX handler for saving artistic mediums
+     * 
+     * @since 2.1.0
+     * 
+     * @return void
+     */
+    public static function ajax_save_artistic_mediums() {
+        // Check nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_tabs_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        $medium_ids = isset($_POST['medium_ids']) ? array_map('intval', $_POST['medium_ids']) : array();
+        
+        // Check permissions
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error(array('message' => 'Permission denied'));
+        }
+        
+        // Get old mediums for logging
+        $old_terms = get_the_terms($post_id, 'artistic_medium');
+        $old_medium_names = array();
+        if (!empty($old_terms) && !is_wp_error($old_terms)) {
+            foreach ($old_terms as $term) {
+                $old_medium_names[] = $term->name;
+            }
+        }
+        
+        // Update the artistic mediums
+        $result = wp_set_object_terms($post_id, $medium_ids, 'artistic_medium');
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error(array('message' => 'Failed to update artistic mediums: ' . $result->get_error_message()));
+        }
+        
+        // Get updated mediums for response
+        $updated_terms = get_the_terms($post_id, 'artistic_medium');
+        $medium_names = array();
+        $medium_tags_html = '';
+        
+        if (!empty($updated_terms) && !is_wp_error($updated_terms)) {
+            foreach ($updated_terms as $term) {
+                $medium_names[] = $term->name;
+                $medium_tags_html .= '<span class="cf7-medium-tag">' . esc_html($term->name) . '</span>';
+            }
+        } else {
+            $medium_tags_html = '<span class="cf7-no-mediums-text">' . __('No mediums selected', 'cf7-artist-submissions') . '</span>';
+        }
+        
+        // Log the update
+        $new_medium_names = implode(', ', $medium_names);
+        $old_medium_names_str = implode(', ', $old_medium_names);
+        do_action('cf7_artist_submission_field_updated', $post_id, 'artistic_mediums', $old_medium_names_str, $new_medium_names);
+        
+        wp_send_json_success(array(
+            'message' => 'Artistic mediums saved successfully',
+            'medium_names' => $medium_names,
+            'medium_tags_html' => $medium_tags_html
         ));
     }
 }

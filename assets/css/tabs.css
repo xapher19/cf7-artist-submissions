@@ -990,6 +990,128 @@ body.cf7-edit-mode .cf7-header-field:hover {
     line-height: 1.6;
 }
 
+/* ===== ARTISTIC MEDIUMS FIELD ===== */
+
+.cf7-mediums-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: 2rem;
+}
+
+.cf7-medium-tag {
+    display: inline-block;
+    background: var(--medium-color, #4299e1); /* Use stored background color */
+    color: var(--medium-text-color, #ffffff); /* Use stored text color */
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Removed light/dark text shadow styles and hover animations as requested */
+
+.cf7-no-mediums-text {
+    color: #a0aec0;
+    font-style: italic;
+    font-size: 0.875rem;
+    margin-left: 2rem;
+}
+
+/* Hide edit interface by default */
+.cf7-mediums-edit {
+    display: none !important;
+    margin-left: 2rem;
+}
+
+/* Show edit interface when in edit mode */
+.cf7-profile-tab-container.edit-mode .cf7-mediums-display {
+    display: none !important;
+}
+
+.cf7-profile-tab-container.edit-mode .cf7-mediums-edit {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.cf7-medium-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    background: white;
+    position: relative;
+}
+
+/* Removed hover animations and shadow effects as requested */
+
+.cf7-medium-checkbox input[type="checkbox"] {
+    display: none;
+}
+
+.cf7-medium-checkbox .checkmark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #cbd5e0;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cf7-medium-checkbox input[type="checkbox"]:checked + .checkmark {
+    background: var(--medium-color, #4299e1);
+    border-color: var(--medium-color, #4299e1);
+}
+
+.cf7-medium-checkbox input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.cf7-medium-checkbox .medium-name {
+    font-size: 0.875rem;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.cf7-medium-checkbox input[type="checkbox"]:checked ~ .medium-name {
+    font-weight: 600;
+}
+
+.cf7-medium-checkbox input[type="checkbox"]:checked {
+    & + .checkmark {
+        background: var(--medium-color, #4299e1);
+        border-color: var(--medium-color, #4299e1);
+    }
+    
+    & ~ .medium-name {
+        font-weight: 600;
+    }
+}
+
+/* Removed dynamic text color styling as using hard-coded values */
+
+/* Admin list page medium tags */
+.wp-admin .mediums-content .medium-tag {
+    display: inline-block;
+    margin: 1px 2px;
+    font-weight: 500;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* ===== END ARTISTIC MEDIUMS ===== */
+
 .cf7-profile-empty {
     padding: 4rem 2rem;
     text-align: center;

@@ -116,6 +116,9 @@ class CF7_Artist_Submissions_Form_Handler {
             update_post_meta($post_id, 'cf7_' . sanitize_key($key), sanitize_text_field($value));
         }
         
+        // Handle artistic medium tags
+        $this->process_medium_tags($post_id, $posted_data);
+        
         // Store uploaded files
         if (!empty($options['store_files']) && $options['store_files'] === 'yes') {
             $files = $submission->uploaded_files();
@@ -198,5 +201,61 @@ class CF7_Artist_Submissions_Form_Handler {
         
         // Fire submission created action for logging and email triggers
         do_action('cf7_artist_submission_created', $post_id);
+    }
+    
+    /**
+     * Process artistic medium tags from form submission.
+     * 
+     * Looks for medium-related fields in the submitted data and assigns
+     * appropriate taxonomies to the submission post.
+     * 
+     * @since 2.1.0
+     * 
+     * @param int   $post_id     The submission post ID
+     * @param array $posted_data The form submission data
+     * 
+     * @return void
+     */
+    private function process_medium_tags($post_id, $posted_data) {
+        // Look for fields that might contain medium information
+        $medium_fields = array(
+            'medium',
+            'mediums', 
+            'artistic-medium',
+            'artistic_medium',
+            'art-medium',
+            'art_medium',
+            'techniques',
+            'materials'
+        );
+        
+        $medium_terms = array();
+        
+        // Check each possible field name
+        foreach ($medium_fields as $field) {
+            if (isset($posted_data[$field]) && !empty($posted_data[$field])) {
+                $field_value = $posted_data[$field];
+                
+                // Handle array values (checkboxes/multiple selects)
+                if (is_array($field_value)) {
+                    $medium_terms = array_merge($medium_terms, $field_value);
+                } else {
+                    // Handle comma-separated values or single values
+                    $values = array_map('trim', explode(',', $field_value));
+                    $medium_terms = array_merge($medium_terms, $values);
+                }
+            }
+        }
+        
+        // Clean and validate terms
+        $medium_terms = array_filter(array_map('sanitize_text_field', $medium_terms));
+        
+        if (!empty($medium_terms)) {
+            // Set the artistic medium terms for this submission
+            wp_set_object_terms($post_id, $medium_terms, 'artistic_medium');
+            
+            // Also store as post meta for backwards compatibility
+            update_post_meta($post_id, 'cf7_artistic_mediums', implode(', ', $medium_terms));
+        }
     }
 }
