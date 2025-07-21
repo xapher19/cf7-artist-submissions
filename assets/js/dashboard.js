@@ -645,7 +645,9 @@
                 return;
             }
             
-            if (this.loadingStates.submissions) return;
+            if (this.loadingStates.submissions) {
+                return;
+            }
             
             this.loadingStates.submissions = true;
             this.showSubmissionsLoading();
@@ -1143,6 +1145,8 @@
                 this.renderPagination(data.pagination);
             } else {
                 $container.html(this.buildEmptyState());
+                // Always call renderPagination, even for empty state
+                this.renderPagination(data.pagination);
             }
             
             this.selectedItems.clear();
@@ -1256,14 +1260,17 @@
         }
 
         renderPagination(pagination) {
-            if (!pagination || pagination.total_pages <= 1) {
-                $('.cf7-pagination').hide();
-                return;
-            }
-
             const $pagination = $('.cf7-pagination');
             const $info = $pagination.find('.cf7-pagination-info');
             const $buttons = $pagination.find('.cf7-pagination-buttons');
+            
+            // If no pagination data or only 1 page, hide pagination
+            if (!pagination || pagination.total_pages <= 1) {
+                $info.text('');
+                $buttons.html('<button class="cf7-page-btn" disabled>‹ Previous</button><button class="cf7-page-btn active">1</button><button class="cf7-page-btn" disabled>Next ›</button>');
+                $pagination.hide();
+                return;
+            }
 
             // Update info
             const start = ((pagination.current_page - 1) * pagination.per_page) + 1;
@@ -1276,6 +1283,8 @@
             // Previous button
             if (pagination.current_page > 1) {
                 buttonsHtml += `<button class="cf7-page-btn" data-page="${pagination.current_page - 1}">‹ Previous</button>`;
+            } else {
+                buttonsHtml += `<button class="cf7-page-btn" disabled>‹ Previous</button>`;
             }
 
             // Page numbers
@@ -1304,6 +1313,8 @@
             // Next button
             if (pagination.current_page < pagination.total_pages) {
                 buttonsHtml += `<button class="cf7-page-btn" data-page="${pagination.current_page + 1}">Next ›</button>`;
+            } else {
+                buttonsHtml += `<button class="cf7-page-btn" disabled>Next ›</button>`;
             }
 
             $buttons.html(buttonsHtml);

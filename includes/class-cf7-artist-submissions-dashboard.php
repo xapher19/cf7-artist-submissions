@@ -421,8 +421,8 @@ class CF7_Artist_Submissions_Dashboard {
                         </div>
                         
                         <!-- Pagination -->
-                        <div class="cf7-pagination" id="cf7-pagination">
-                            <div class="cf7-pagination-info"></div>
+                        <div class="cf7-pagination" id="cf7-pagination" style="display: block;">
+                            <div class="cf7-pagination-info">Loading submissions...</div>
                             <div class="cf7-pagination-controls">
                                 <div class="cf7-per-page-selector">
                                     <label for="cf7-per-page">Show:</label>
@@ -434,7 +434,11 @@ class CF7_Artist_Submissions_Dashboard {
                                     </select>
                                     <span>per page</span>
                                 </div>
-                                <div class="cf7-pagination-buttons"></div>
+                                <div class="cf7-pagination-buttons">
+                                    <button class="cf7-page-btn" disabled>‹ Previous</button>
+                                    <button class="cf7-page-btn active">1</button>
+                                    <button class="cf7-page-btn" disabled>Next ›</button>
+                                </div>
                             </div>
                         </div>
                     </div>
