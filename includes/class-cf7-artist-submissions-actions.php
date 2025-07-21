@@ -1299,6 +1299,212 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
+     * Generate sample actions data for testing daily summary emails
+     */
+    public static function generate_sample_actions_summary() {
+        // Create sample action objects with the same structure as real data
+        $sample_overdue = array(
+            (object) array(
+                'id' => 101,
+                'submission_id' => 1001,
+                'action_type' => 'review',
+                'title' => 'Review portfolio submission',
+                'description' => 'Complete initial review of artist portfolio and provide feedback',
+                'assigned_to' => 1,
+                'assigned_by' => 1,
+                'due_date' => date('Y-m-d H:i:s', strtotime('-2 days')),
+                'priority' => 'high',
+                'status' => 'pending',
+                'submission_title' => 'Digital Art Portfolio - Sarah Johnson',
+                'assigned_user_name' => 'Art Director',
+                'assigned_user_email' => 'test@example.com'
+            ),
+            (object) array(
+                'id' => 102,
+                'submission_id' => 1002,
+                'action_type' => 'follow_up',
+                'title' => 'Follow up on missing documents',
+                'description' => 'Contact artist about missing portfolio pieces',
+                'assigned_to' => 1,
+                'assigned_by' => 1,
+                'due_date' => date('Y-m-d H:i:s', strtotime('-1 day')),
+                'priority' => 'medium',
+                'status' => 'pending',
+                'submission_title' => 'Photography Collection - Mike Chen',
+                'assigned_user_name' => 'Art Director',
+                'assigned_user_email' => 'test@example.com'
+            )
+        );
+
+        $sample_today = array(
+            (object) array(
+                'id' => 103,
+                'submission_id' => 1003,
+                'action_type' => 'interview',
+                'title' => 'Schedule artist interview',
+                'description' => 'Arrange video call to discuss commissioned work details',
+                'assigned_to' => 1,
+                'assigned_by' => 1,
+                'due_date' => date('Y-m-d H:i:s'),
+                'priority' => 'high',
+                'status' => 'pending',
+                'submission_title' => 'Mural Design Proposal - Lisa Rodriguez',
+                'assigned_user_name' => 'Art Director',
+                'assigned_user_email' => 'test@example.com'
+            )
+        );
+
+        $sample_upcoming = array(
+            (object) array(
+                'id' => 104,
+                'submission_id' => 1004,
+                'action_type' => 'review',
+                'title' => 'Final approval needed',
+                'description' => 'Review revised artwork and provide final approval',
+                'assigned_to' => 1,
+                'assigned_by' => 1,
+                'due_date' => date('Y-m-d H:i:s', strtotime('+2 days')),
+                'priority' => 'medium',
+                'status' => 'pending',
+                'submission_title' => 'Abstract Paintings Series - David Kim',
+                'assigned_user_name' => 'Art Director',
+                'assigned_user_email' => 'test@example.com'
+            ),
+            (object) array(
+                'id' => 105,
+                'submission_id' => 1005,
+                'action_type' => 'payment',
+                'title' => 'Process artist payment',
+                'description' => 'Submit payment request for approved commissioned work',
+                'assigned_to' => 1,
+                'assigned_by' => 1,
+                'due_date' => date('Y-m-d H:i:s', strtotime('+5 days')),
+                'priority' => 'low',
+                'status' => 'pending',
+                'submission_title' => 'Sculpture Design - Emma Wilson',
+                'assigned_user_name' => 'Art Director',
+                'assigned_user_email' => 'test@example.com'
+            )
+        );
+
+        $sample_high_priority = array(
+            (object) array(
+                'id' => 106,
+                'submission_id' => 1006,
+                'action_type' => 'urgent_review',
+                'title' => 'Urgent: Exhibition deadline approaching',
+                'description' => 'Critical review needed for upcoming gallery exhibition',
+                'assigned_to' => 1,
+                'assigned_by' => 1,
+                'due_date' => null,
+                'priority' => 'urgent',
+                'status' => 'pending',
+                'submission_title' => 'Contemporary Installation - Alex Thompson',
+                'assigned_user_name' => 'Art Director',
+                'assigned_user_email' => 'test@example.com'
+            )
+        );
+
+        return array(
+            'overdue' => $sample_overdue,
+            'today' => $sample_today,
+            'upcoming' => $sample_upcoming,
+            'high_priority' => $sample_high_priority
+        );
+    }
+
+    /**
+     * Send test daily summary email with sample data to specified email address
+     */
+    public static function send_test_daily_summary_email($test_email) {
+        // Validate email format
+        if (!is_email($test_email)) {
+            return array('error' => 'Invalid email address format');
+        }
+
+        // Validate email configuration
+        $email_validation = self::validate_email_config();
+        if (!$email_validation['valid']) {
+            return array('error' => 'Email validation failed: ' . implode(', ', $email_validation['issues']));
+        }
+
+        // Generate sample actions summary
+        $summaries = self::generate_sample_actions_summary();
+
+        // Create a sample user object for the test
+        $test_user = (object) array(
+            'ID' => 1,
+            'display_name' => 'Test User',
+            'user_email' => $test_email
+        );
+
+        // Calculate total actions for subject
+        $total_actions = count($summaries['overdue']) + count($summaries['today']) + 
+                        count($summaries['upcoming']) + count($summaries['high_priority']);
+
+        $subject = sprintf(__('TEST: Task Summary - %d items need your attention (%s)', 'cf7-artist-submissions'), 
+                          $total_actions, date('M j, Y'));
+
+        // Use validated email configuration
+        $from_email = $email_validation['from_email'];
+        $from_name = $email_validation['from_name'];
+
+        // Get email options for WooCommerce template setting
+        $email_options = get_option('cf7_artist_submissions_email_options', array());
+        $use_wc_template = isset($email_options['use_wc_template']) && $email_options['use_wc_template'] && class_exists('WooCommerce');
+
+        // Generate email content with sample data
+        $message = self::generate_summary_email_content($summaries, $test_user, $use_wc_template);
+
+        // Add test notice to the beginning of the email
+        $test_notice = '<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #856404;">
+            <p style="margin: 0; font-weight: bold; font-size: 16px;">📧 TEST EMAIL</p>
+            <p style="margin: 5px 0 0 0; font-size: 14px;">This is a test daily summary email with sample data. Real emails will contain actual task information.</p>
+        </div>';
+
+        $message = $test_notice . $message;
+
+        // Simple headers
+        $headers = array(
+            'Content-Type: text/html; charset=UTF-8'
+        );
+
+        // Only add From header if we have both email and name
+        if (!empty($from_name) && !empty($from_email)) {
+            $headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
+        }
+
+        // Set up mail filters temporarily
+        add_filter('wp_mail_from', function($from) use ($from_email) {
+            return $from_email;
+        });
+
+        add_filter('wp_mail_from_name', function($from_name_filter) use ($from_name) {
+            return $from_name;
+        });
+
+        add_filter('wp_mail_content_type', function() {
+            return 'text/html';
+        });
+
+        // Send the email
+        $result = wp_mail($test_email, $subject, $message, $headers);
+
+        // Clean up filters
+        remove_all_filters('wp_mail_from');
+        remove_all_filters('wp_mail_from_name');
+        remove_all_filters('wp_mail_content_type');
+
+        return array(
+            'success' => $result,
+            'test_email' => $test_email,
+            'validation' => $email_validation,
+            'smtp_info' => self::get_smtp_config_info(),
+            'sample_data' => true
+        );
+    }
+
+    /**
      * Send daily summary email to all users with pending actions
      */
     public static function send_daily_summary_to_all() {

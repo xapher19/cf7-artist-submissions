@@ -1,20 +1,50 @@
 /**
- * Actions Tab Styles for CF7 Artist Submissions
+ * Actions Management CSS - CF7 Artist Submissions
  * 
- * Provides comprehensive styling for the actions/tasks management system:
- * - Action container layouts and responsive design
- * - Priority indicators and status badges
- * - Modal styling for action creation/editing
- * - Button states and hover effects
- * - Loading states and animations
- * - Filter controls and interface elements
+ * Modern, streamlined styling for the action/task management system.
+ * All legacy code has been removed, leaving only active modern components.
  * 
- * @package CF7_Artist_Submissions
- * @since 1.0.0
- * @since 2.0.0 Enhanced with modern UI components and improved accessibility
+ * FILE STRUCTURE:
+ * ├── Actions Container & Header Layout
+ * ├── Filter Controls & Interactive Buttons  
+ * ├── Action List & Item Styling
+ * ├── Priority Indicators & Status Badges
+ * ├── Context Menu System (Modern)
+ * └── Responsive Design & Mobile Optimizations
+ * 
+ * KEY FEATURES:
+ * - Modern cf7-* prefixed components for consistency
+ * - Priority-based color coding (high=red, medium=orange, low=green)
+ * - Interactive filter system with active states
+ * - Smooth hover effects and transitions
+ * - Context menu with fade animations
+ * - Mobile-responsive card layouts
+ * - Loading states and empty state styling
+ * 
+ * DEPENDENCIES:
+ * - common.css: Modal system, button components, form styling
+ * - WordPress Dashicons: Icons for actions and indicators
+ * 
+ * SCOPE: Enqueued only on CF7 submission edit pages
+ * LINES: ~600 lines of clean, modern CSS
+ * 
+ * @package    CF7_Artist_Submissions
+ * @subpackage Assets/CSS
+ * @since      1.0.0
+ * @version    2.0.0 - Legacy code removed
  */
 
-/* Actions Tab Styles - Updated to match PHP output */
+/* ========================================================================
+   ACTIONS CONTAINER & HEADER LAYOUT
+   ======================================================================== */
+
+/**
+ * Actions Container
+ * 
+ * Main container for the actions interface with modern card styling.
+ * Features white background, subtle border, rounded corners, and shadow.
+ * Uses !important to override any conflicting WordPress admin styles.
+ */
 .cf7-actions-container {
     background: #fff !important;
     border: 1px solid #e2e8f0 !important;
@@ -23,6 +53,12 @@
     box-shadow: 0 1px 3px 0 rgb(0, 0, 0, 0.1) !important;
 }
 
+/**
+ * Actions Header with Gradient Background
+ * 
+ * Header section containing title and add action button.
+ * Features subtle gradient background and consistent padding.
+ */
 .cf7-actions-header {
     display: flex;
     justify-content: space-between;
@@ -32,6 +68,12 @@
     border-bottom: 1px solid #e2e8f0;
 }
 
+/**
+ * Actions Header Title
+ * 
+ * Header title with emoji icon prefix and modern typography.
+ * Uses consistent spacing and weights for professional appearance.
+ */
 .cf7-actions-header h3 {
     margin: 0;
     color: #1e293b;
@@ -47,6 +89,12 @@
     font-size: 1.1rem;
 }
 
+/**
+ * Add Action Button
+ * 
+ * Primary call-to-action button with blue gradient and hover effects.
+ * Includes smooth transitions and shadow for modern appearance.
+ */
 #cf7-add-action-btn {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
     color: white !important;
@@ -69,6 +117,16 @@
     transform: translateY(-1px);
 }
 
+/* ========================================================================
+   FILTER CONTROLS & BUTTONS
+   ======================================================================== */
+
+/**
+ * Actions Filter Container
+ * 
+ * Horizontal filter bar with subtle background and flexible layout.
+ * Supports multiple filter buttons with responsive wrapping.
+ */
 .cf7-actions-filters {
     display: flex;
     gap: 8px;
@@ -78,6 +136,12 @@
     flex-wrap: wrap;
 }
 
+/**
+ * Individual Filter Buttons
+ * 
+ * Pill-shaped filter buttons with hover states and active selection.
+ * Features smooth transitions and consistent spacing.
+ */
 .cf7-filter-btn {
     padding: 8px 16px;
     border: 1px solid #d1d5db;
@@ -96,6 +160,12 @@
     color: #374151;
 }
 
+/**
+ * Active Filter State
+ * 
+ * Selected filter button with blue gradient background.
+ * Maintains visual hierarchy and clear selection state.
+ */
 .cf7-filter-btn.active {
     background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
     color: white;
@@ -103,11 +173,27 @@
     box-shadow: 0 2px 4px rgb(59, 130, 246, 0.2);
 }
 
+/* ========================================================================
+   ACTION LIST & ITEM STYLING
+   ======================================================================== */
+
+/**
+ * Actions List Container
+ * 
+ * Main container for action items with consistent padding and minimum height.
+ * Provides scrollable area for action items.
+ */
 .cf7-actions-list {
     padding: 20px;
     min-height: 200px;
 }
 
+/**
+ * Empty State Display
+ * 
+ * Friendly empty state message when no actions are available.
+ * Features centered layout with dashed border for visual appeal.
+ */
 .cf7-no-actions {
     text-align: center;
     padding: 40px 20px;
@@ -123,6 +209,12 @@
     border: 2px dashed #d1d5db;
 }
 
+/**
+ * Action Item Cards
+ * 
+ * Individual action items with card styling and hover effects.
+ * Features smooth transitions and responsive behavior.
+ */
 .cf7-action-item {
     background: white;
     border: 1px solid #e5e7eb;
@@ -139,6 +231,12 @@
     transform: translateY(-1px);
 }
 
+/**
+ * Action Item States
+ * 
+ * Visual indicators for different action states including completion,
+ * overdue status, and priority levels with color coding.
+ */
 .cf7-action-item.completed {
     background: #f0fdf4;
     border-color: #22c55e;
@@ -150,6 +248,14 @@
     background: #fef2f2;
 }
 
+/**
+ * Priority Level Indicators
+ * 
+ * Left border color coding for priority levels:
+ * - Red (high): Urgent actions requiring immediate attention
+ * - Orange (medium): Important actions with moderate urgency
+ * - Green (low): Standard actions with normal priority
+ */
 .cf7-action-item.high-priority {
     border-left: 4px solid #ef4444;
 }
@@ -162,7 +268,16 @@
     border-left: 4px solid #22c55e;
 }
 
-/* Action Item Content */
+/* ========================================================================
+   PRIORITY INDICATORS & STATUS BADGES
+   ======================================================================== */
+
+/**
+ * Action Item Content Structure
+ * 
+ * Header layout containing priority indicator, content, and action controls.
+ * Uses flexbox for proper alignment and spacing.
+ */
 .cf7-action-header {
     display: flex;
     align-items: flex-start;
@@ -171,11 +286,22 @@
     border-bottom: 1px solid #f3f4f6;
 }
 
+/**
+ * Priority Indicator Container
+ * 
+ * Container for the circular priority indicator with proper positioning.
+ */
 .cf7-action-priority {
     flex-shrink: 0;
     margin-top: 2px;
 }
 
+/**
+ * Circular Priority Indicators
+ * 
+ * Color-coded circular badges indicating action priority levels.
+ * Features shadow rings for better visual separation.
+ */
 .cf7-priority-indicator {
     display: inline-block;
     width: 12px;
@@ -199,7 +325,12 @@
     box-shadow: 0 0 0 2px #f0fdf4;
 }
 
-/* Completed action priority indicator - show green check */
+/**
+ * Completed Action Priority Indicator
+ * 
+ * Special styling for completed actions showing green check mark.
+ * Overrides priority colors with success state.
+ */
 .cf7-action-item.status-completed .cf7-priority-indicator,
 .cf7-action-item.completed .cf7-priority-indicator {
     background: #22c55e;
@@ -221,6 +352,12 @@
     line-height: 1;
 }
 
+/**
+ * Action Content & Controls
+ * 
+ * Main content area and control buttons for each action item.
+ * Features responsive layout and accessible button styling.
+ */
 .cf7-action-content {
     flex: 1;
     min-width: 0;
@@ -241,6 +378,12 @@
     line-height: 1.5;
 }
 
+/**
+ * Action Control Buttons
+ * 
+ * Icon-based action buttons with hover effects and color-coded states.
+ * Includes complete, edit, and delete actions.
+ */
 .cf7-action-controls {
     display: flex;
     gap: 4px;
@@ -285,6 +428,12 @@
     color: white;
 }
 
+/**
+ * Action Metadata Section
+ * 
+ * Footer section displaying due dates, completion info, and additional details.
+ * Features subtle background and organized information display.
+ */
 .cf7-action-meta {
     padding: 12px 16px;
     background: #fafbfc;
@@ -310,6 +459,12 @@
     font-weight: 600;
 }
 
+/**
+ * Completion Information Display
+ * 
+ * Special styling for completed actions showing completion details
+ * and any associated notes with success color scheme.
+ */
 .cf7-completion-info {
     margin-top: 8px;
     padding-top: 8px;
@@ -328,480 +483,17 @@
     border-left: 3px solid #22c55e;
 }
 
-/* Legacy styles - keeping for compatibility but should be updated */
-.action-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 12px;
-    color: #666;
-}
-
-.action-priority {
-    display: inline-block;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
-
-.action-priority.high {
-    background: #fee2e2;
-    color: #dc2626;
-}
-
-.action-priority.medium {
-    background: #fef3c7;
-    color: #d97706;
-}
-
-.action-priority.low {
-    background: #dcfce7;
-    color: #16a34a;
-}
-
-.action-due-date {
-    color: #666;
-}
-
-.action-due-date.overdue {
-    color: #dc2626;
-    font-weight: 600;
-}
-
-.action-description {
-    color: #555;
-    line-height: 1.5;
-    margin: 8px 0;
-}
-
-.action-assignee {
-    font-size: 12px;
-    color: #666;
-    margin-bottom: 10px;
-}
-
-.action-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.action-btn {
-    padding: 4px 8px;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s;
-}
-
-.action-btn:hover {
-    background: #f0f0f0;
-}
-
-.action-btn.complete {
-    background: #4caf50;
-    color: white;
-    border-color: #4caf50;
-}
-
-.action-btn.complete:hover {
-    background: #45a049;
-}
-
-.action-btn.edit {
-    background: #0073aa;
-    color: white;
-    border-color: #0073aa;
-}
-
-.action-btn.edit:hover {
-    background: #005a87;
-}
-
-.action-btn.delete {
-    background: #dc3545;
-    color: white;
-    border-color: #dc3545;
-}
-
-.action-btn.delete:hover {
-    background: #c82333;
-}
-
-/* Modal Styles */
-.cf7-modal {
-    display: none;
-    position: fixed;
-    z-index: 100000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgb(0, 0, 0, 0.6);
-    animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.cf7-modal-content {
-    background: white;
-    margin: 3% auto;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgb(0, 0, 0, 0.3);
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from { 
-        opacity: 0;
-        transform: translateY(-50px) scale(0.95);
-    }
-
-    to { 
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-.cf7-modal-header {
-    padding: 24px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-
-.cf7-modal-header h3 {
-    margin: 0;
-    color: #1f2937;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.cf7-modal-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #6b7280;
-    padding: 8px;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.cf7-modal-close:hover {
-    background: #f3f4f6;
-    color: #374151;
-}
-
-.cf7-modal-body {
-    padding: 24px;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.cf7-form-group {
-    margin-bottom: 20px;
-}
-
-.cf7-form-group label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: #374151;
-    font-size: 14px;
-}
-
-.cf7-form-group input,
-.cf7-form-group select,
-.cf7-form-group textarea {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    font-size: 14px;
-    background: white;
-    transition: all 0.2s;
-    box-sizing: border-box;
-}
-
-/* Fix select dropdown arrow styling */
-.cf7-form-group select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
-    padding-right: 40px;
-}
-
-.cf7-form-group input:focus,
-.cf7-form-group select:focus,
-.cf7-form-group textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgb(59, 130, 246, 0.1);
-}
-
-.cf7-form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-    font-family: inherit;
-}
-
-.cf7-form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-}
-
-@media (width <= 640px) {
-    .cf7-form-row {
-        grid-template-columns: 1fr;
-    }
-}
-
-.cf7-modal-footer {
-    padding: 20px 24px;
-    border-top: 1px solid #e5e7eb;
-    background: #fafbfc;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-}
-
-/* Button Styles */
-.cf7-modal-btn {
-    padding: 10px 20px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.2s;
-    background: white;
-    color: #374151;
-}
-
-.cf7-modal-btn.cf7-btn-primary {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    color: white;
-    border-color: #3b82f6;
-}
-
-.cf7-modal-btn.cf7-btn-primary:hover {
-    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-    box-shadow: 0 4px 8px rgb(59, 130, 246, 0.3);
-}
-
-.cf7-modal-btn.cf7-btn-secondary {
-    background: white;
-    color: #6b7280;
-}
-
-.cf7-modal-btn.cf7-btn-secondary:hover {
-    background: #f9fafb;
-}
-
-/* Legacy styles - remove when fully updated */
-.action-form-group input,
-.action-form-group select,
-.action-form-group textarea {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-/* Fix legacy select dropdown arrow styling */
-.action-form-group select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 16px;
-    padding-right: 32px;
-}
-
-.action-form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-.action-form-group input:focus,
-.action-form-group select:focus,
-.action-form-group textarea:focus {
-    outline: none;
-    border-color: #0073aa;
-    box-shadow: 0 0 0 1px #0073aa;
-}
-
-.action-modal-footer {
-    padding: 20px;
-    border-top: 1px solid #e1e1e1;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.action-modal-btn {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.action-modal-btn.primary {
-    background: #0073aa;
-    color: white;
-    border-color: #0073aa;
-}
-
-.action-modal-btn.primary:hover {
-    background: #005a87;
-}
-
-.action-modal-btn.secondary {
-    background: white;
-    color: #666;
-}
-
-.action-modal-btn.secondary:hover {
-    background: #f0f0f0;
-}
-
-/* Context Menu Styles */
-.action-context-menu {
-    position: fixed;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgb(0,0,0,0.15);
-    z-index: 10001;
-    min-width: 180px;
-    display: none;
-}
-
-.action-context-menu-item {
-    padding: 10px 15px;
-    cursor: pointer;
-    border-bottom: 1px solid #f0f0f0;
-    transition: background-color 0.2s;
-    font-size: 14px;
-}
-
-.action-context-menu-item:last-child {
-    border-bottom: none;
-}
-
-.action-context-menu-item:hover {
-    background: #f0f0f0;
-}
-
-.action-context-menu-item i {
-    margin-right: 8px;
-    width: 16px;
-    text-align: center;
-}
-
-/* Empty State */
-.actions-empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: #666;
-}
-
-.actions-empty-icon {
-    font-size: 48px;
-    color: #ddd;
-    margin-bottom: 15px;
-}
-
-.actions-empty h3 {
-    margin: 0 0 10px 0;
-    color: #666;
-}
-
-.actions-empty p {
-    margin: 0;
-    color: #999;
-}
-
-/* Loading State */
-.actions-loading {
-    text-align: center;
-    padding: 40px 20px;
-    color: #666;
-}
-
-.actions-spinner {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #0073aa;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 10px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Responsive Design */
-@media (width <= 768px) {
-    .action-modal-content {
-        width: 95%;
-        margin: 2% auto;
-    }
-    
-    .actions-filters {
-        justify-content: center;
-    }
-    
-    .action-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-    
-    .action-meta {
-        flex-wrap: wrap;
-    }
-    
-    .action-actions {
-        flex-wrap: wrap;
-    }
-}
-
-/* Context Menu Styles */
+/* ========================================================================
+   CONTEXT MENU SYSTEM
+   ======================================================================== */
+
+/**
+ * Modern Context Menu System
+ * 
+ * Enhanced context menu with smooth animations and modern styling.
+ * Features fade-in animation, improved accessibility, and better
+ * visual hierarchy.
+ */
 .cf7-context-menu {
     position: fixed;
     background: white;
@@ -814,6 +506,12 @@
     animation: contextMenuFadeIn 0.15s ease;
 }
 
+/**
+ * Context Menu Fade-in Animation
+ * 
+ * Smooth entrance animation with scale and translate effects.
+ * Creates a polished, modern appearance when menu opens.
+ */
 @keyframes contextMenuFadeIn {
     from {
         opacity: 0;
@@ -826,6 +524,12 @@
     }
 }
 
+/**
+ * Context Menu Items
+ * 
+ * Individual menu items with hover states and icon support.
+ * Features consistent spacing and accessible interaction design.
+ */
 .cf7-context-item {
     padding: 12px 16px;
     cursor: pointer;
@@ -846,4 +550,49 @@
     font-size: 16px;
     width: 16px;
     height: 16px;
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS
+   ======================================================================== */
+
+/**
+ * Mobile and Tablet Responsive Design
+ * 
+ * Responsive adjustments for actions interface on smaller screens.
+ * Transforms desktop layouts into mobile-friendly card format.
+ * 
+ * Breakpoint: 768px and below
+ * - Modal content becomes full-width with margins
+ * - Filter buttons center-aligned for better touch interaction
+ * - Action headers stack vertically for better readability
+ * - Metadata and action buttons wrap on multiple lines
+ */
+@media (max-width: 768px) {
+    /* Modal Responsiveness */
+    .cf7-modal-content {
+        width: 95%;
+        margin: 2% auto;
+    }
+    
+    /* Filter Controls */
+    .cf7-actions-filters {
+        justify-content: center;
+    }
+    
+    /* Action Item Layout */
+    .cf7-action-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    /* Metadata and Action Wrapping */
+    .cf7-action-meta {
+        flex-wrap: wrap;
+    }
+    
+    .cf7-action-controls {
+        flex-wrap: wrap;
+    }
 }

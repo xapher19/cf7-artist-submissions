@@ -162,7 +162,7 @@
         // Show loading state
         const $display = $dropdown.find('.cf7-status-display');
         const originalHtml = $display.html();
-        $display.html('<span class="dashicons dashicons-update cf7-spinning"></span> Updating...');
+        $display.html('<span class="dashicons dashicons-update cf7-spin"></span> Updating...');
         
         // AJAX call to update status
         $.ajax({
@@ -1140,7 +1140,7 @@
         
         // Show saving state
         $button.prop('disabled', true);
-        $button.find('.dashicons').removeClass('dashicons-saved').addClass('dashicons-update cf7-spinning');
+        $button.find('.dashicons').removeClass('dashicons-saved').addClass('dashicons-update cf7-spin');
         $status.text('Saving...').css('color', '#666');
         
         // Make AJAX request
@@ -1157,7 +1157,7 @@
                 if (response.success) {
                     // Reset button state
                     $button.prop('disabled', false);
-                    $button.find('.dashicons').removeClass('dashicons-update cf7-spinning').addClass('dashicons-saved');
+                    $button.find('.dashicons').removeClass('dashicons-update cf7-spin').addClass('dashicons-saved');
                     
                     // Show success status
                     $status.text('Saved successfully').css('color', '#28a745');
@@ -1171,14 +1171,14 @@
                 } else {
                     // Handle error
                     $button.prop('disabled', false);
-                    $button.find('.dashicons').removeClass('dashicons-update cf7-spinning').addClass('dashicons-saved');
+                    $button.find('.dashicons').removeClass('dashicons-update cf7-spin').addClass('dashicons-saved');
                     $status.text('Save failed: ' + (response.data?.message || 'Unknown error')).css('color', '#dc3545');
                 }
             },
             error: function(xhr, status, error) {
                 // Handle network error
                 $button.prop('disabled', false);
-                $button.find('.dashicons').removeClass('dashicons-update cf7-spinning').addClass('dashicons-saved');
+                $button.find('.dashicons').removeClass('dashicons-update cf7-spin').addClass('dashicons-saved');
                 $status.text('Network error. Please try again.').css('color', '#dc3545');
             }
         });

@@ -121,8 +121,13 @@ class CF7_Artist_Submissions_Dashboard {
             return;
         }
         
+        // Enqueue common styles first (foundation for all other styles)
+        wp_enqueue_style('cf7-common-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/common.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+        
+        // Enqueue dashboard-specific styles (depends on common.css)
+        wp_enqueue_style('cf7-dashboard-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/dashboard.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+        
         wp_enqueue_script('cf7-dashboard-js', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/dashboard.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
-        wp_enqueue_style('cf7-dashboard-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/dashboard.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
         
         wp_localize_script('cf7-dashboard-js', 'cf7_dashboard', array(
             'nonce' => wp_create_nonce('cf7_dashboard_nonce'),
@@ -168,10 +173,10 @@ class CF7_Artist_Submissions_Dashboard {
         ?>
         <div class="cf7-modern-dashboard">
             <!-- Dashboard Header -->
-            <div class="cf7-dashboard-header">
+            <div class="cf7-gradient-header cf7-header-context">
                 <div class="cf7-header-content">
-                    <h1 class="cf7-dashboard-title">Artist Submissions Dashboard</h1>
-                    <p class="cf7-dashboard-subtitle">Manage and review artist submissions</p>
+                    <h1 class="cf7-header-title">Artist Submissions Dashboard</h1>
+                    <p class="cf7-header-subtitle">Manage and review artist submissions</p>
                 </div>
                 <div class="cf7-header-actions">
                     <button class="cf7-btn cf7-btn-primary" id="cf7-refresh-dashboard">

@@ -39,15 +39,26 @@ class CF7_Artist_Submissions_Settings {
         add_action('wp_ajax_setup_daily_cron', array($this, 'ajax_setup_daily_cron'));
         add_action('wp_ajax_clear_daily_cron', array($this, 'ajax_clear_daily_cron'));
         add_action('wp_ajax_update_actions_schema', array($this, 'ajax_update_actions_schema'));
+        add_action('wp_ajax_migrate_conversation_tokens', array($this, 'ajax_migrate_conversation_tokens'));
+        add_action('wp_ajax_test_form_config', array($this, 'ajax_test_form_config'));
         
         // AJAX handlers for email debugging
         add_action('wp_ajax_validate_email_config', array($this, 'ajax_validate_email_config'));
         add_action('wp_ajax_test_smtp_config', array($this, 'ajax_test_smtp_config'));
+        
+        // AJAX handlers for IMAP and other tests
+        add_action('wp_ajax_cf7_test_imap', array($this, 'ajax_test_imap_connection'));
+        add_action('wp_ajax_cf7_cleanup_inbox', array($this, 'ajax_cleanup_inbox'));
+        add_action('wp_ajax_cf7_test_template', array($this, 'ajax_test_template_email'));
+        add_action('wp_ajax_cf7_preview_template', array($this, 'ajax_preview_template_email'));
+        
+        // AJAX handlers for audit log functionality
+        add_action('wp_ajax_update_missing_artist_info', array($this, 'ajax_update_missing_artist_info'));
     }
     
     public function add_settings_page() {
         // Add as submenu under Submissions instead of under Settings
-        add_submenu_page(
+        $page_hook = add_submenu_page(
             'edit.php?post_type=cf7_submission',  // Parent slug
             __('CF7 Submissions Settings', 'cf7-artist-submissions'),
             __('Settings', 'cf7-artist-submissions'),
@@ -55,6 +66,46 @@ class CF7_Artist_Submissions_Settings {
             'cf7-artist-submissions-settings',
             array($this, 'render_settings_page')
         );
+        
+        // Enqueue styles and scripts only on this settings page
+        add_action('admin_print_styles-' . $page_hook, array($this, 'enqueue_settings_assets'));
+    }
+    
+    /**
+     * Enqueue assets specifically for the settings page
+     */
+    public function enqueue_settings_assets() {
+        // Enqueue common styles first (foundation for all other styles)
+        wp_enqueue_style('cf7-common-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/common.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+        
+        // Enqueue settings-specific styles (depends on common.css)
+        wp_enqueue_style('cf7-settings-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/settings.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+        
+        // Enqueue admin styles for additional functionality (depends on common.css)
+        wp_enqueue_style('cf7-admin-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+        
+        wp_enqueue_script('cf7-admin-js', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
+        
+        // Localize script for AJAX
+        wp_localize_script('cf7-admin-js', 'cf7_admin_ajax', array(
+            'nonce' => wp_create_nonce('cf7_admin_nonce'),
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'admin_email' => get_option('admin_email'),
+            'strings' => array(
+                'testing' => __('Testing...', 'cf7-artist-submissions'),
+                'saving' => __('Saving...', 'cf7-artist-submissions'),
+                'success' => __('Success!', 'cf7-artist-submissions'),
+                'error' => __('Error occurred', 'cf7-artist-submissions'),
+            )
+        ));
+        
+        // Also provide backward compatibility
+        wp_localize_script('cf7-admin-js', 'cf7ArtistSubmissions', array(
+            'nonce' => wp_create_nonce('cf7_admin_nonce'),
+            'conversationNonce' => wp_create_nonce('cf7_conversation_nonce'),
+            'adminEmail' => get_option('admin_email'),
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+        ));
     }
     
     public function settings_notice() {
@@ -83,95 +134,7 @@ class CF7_Artist_Submissions_Settings {
     public function register_settings() {
         register_setting('cf7_artist_submissions_options', 'cf7_artist_submissions_options', array($this, 'validate_options'));
         register_setting('cf7_artist_submissions_email_options', 'cf7_artist_submissions_email_options', array($this, 'validate_email_options'));
-        register_setting('cf7_artist_submissions_email_templates', 'cf7_artist_submissions_email_templates', array($this, 'validate_email_templates'));
         register_setting('cf7_artist_submissions_imap_options', 'cf7_artist_submissions_imap_options', array($this, 'validate_imap_options'));
-        
-        add_settings_section(
-            'cf7_artist_submissions_main',
-            __('Main Settings', 'cf7-artist-submissions'),
-            array($this, 'render_main_section'),
-            'cf7-artist-submissions'
-        );
-        
-        add_settings_field(
-            'form_id',
-            __('Contact Form 7 ID', 'cf7-artist-submissions'),
-            array($this, 'render_form_id_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_main'
-        );
-        
-        add_settings_field(
-            'menu_label',
-            __('Menu Label', 'cf7-artist-submissions'),
-            array($this, 'render_menu_label_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_main'
-        );
-        
-        add_settings_field(
-            'store_files',
-            __('Store Uploaded Files', 'cf7-artist-submissions'),
-            array($this, 'render_store_files_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_main'
-        );
-        
-        // IMAP Settings Section
-        add_settings_section(
-            'cf7_artist_submissions_imap',
-            __('IMAP Settings (for Email Conversations)', 'cf7-artist-submissions'),
-            array($this, 'render_imap_section'),
-            'cf7-artist-submissions'
-        );
-        
-        add_settings_field(
-            'imap_server',
-            __('IMAP Server', 'cf7-artist-submissions'),
-            array($this, 'render_imap_server_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_imap'
-        );
-        
-        add_settings_field(
-            'imap_port',
-            __('IMAP Port', 'cf7-artist-submissions'),
-            array($this, 'render_imap_port_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_imap'
-        );
-        
-        add_settings_field(
-            'imap_username',
-            __('IMAP Username', 'cf7-artist-submissions'),
-            array($this, 'render_imap_username_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_imap'
-        );
-        
-        add_settings_field(
-            'imap_password',
-            __('IMAP Password', 'cf7-artist-submissions'),
-            array($this, 'render_imap_password_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_imap'
-        );
-        
-        add_settings_field(
-            'imap_encryption',
-            __('IMAP Encryption', 'cf7-artist-submissions'),
-            array($this, 'render_imap_encryption_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_imap'
-        );
-        
-        add_settings_field(
-            'imap_delete_processed',
-            __('Delete Processed Emails', 'cf7-artist-submissions'),
-            array($this, 'render_imap_delete_processed_field'),
-            'cf7-artist-submissions',
-            'cf7_artist_submissions_imap'
-        );
     }
     
     public function render_settings_page() {
@@ -179,7 +142,7 @@ class CF7_Artist_Submissions_Settings {
             return;
         }
         
-        // Handle form submissions
+        // Handle form submissions (legacy support)
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($_POST['action'] === 'update_missing_artist_info' && wp_verify_nonce($_POST['cf7_artist_info_nonce'], 'cf7_update_artist_info')) {
                 if (class_exists('CF7_Artist_Submissions_Action_Log')) {
@@ -197,1157 +160,15 @@ class CF7_Artist_Submissions_Settings {
             }
         }
         
-        // Get current tab
-        $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
-        
-        // Get available forms
-        $forms = array();
-        if (class_exists('WPCF7_ContactForm')) {
-            $cf7_forms = WPCF7_ContactForm::find();
-            foreach ($cf7_forms as $form) {
-                $forms[$form->id()] = $form->title();
-            }
-        }
+        // Load the modern template
+        include CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'templates/admin-settings.php';
+    }
 
-        ?>
-        <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            
-            <!-- Tab Navigation -->
-            <nav class="nav-tab-wrapper">
-                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=general" 
-                   class="nav-tab <?php echo $current_tab === 'general' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('General Settings', 'cf7-artist-submissions'); ?>
-                </a>
-                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=email" 
-                   class="nav-tab <?php echo $current_tab === 'email' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Email Settings', 'cf7-artist-submissions'); ?>
-                </a>
-                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=templates" 
-                   class="nav-tab <?php echo $current_tab === 'templates' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Email Templates', 'cf7-artist-submissions'); ?>
-                </a>
-                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=imap" 
-                   class="nav-tab <?php echo $current_tab === 'imap' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('IMAP Settings', 'cf7-artist-submissions'); ?>
-                </a>
-                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=debug" 
-                   class="nav-tab <?php echo $current_tab === 'debug' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Debug', 'cf7-artist-submissions'); ?>
-                </a>
-                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" 
-                   class="nav-tab <?php echo $current_tab === 'audit' ? 'nav-tab-active' : ''; ?>">
-                    <?php _e('Audit Log', 'cf7-artist-submissions'); ?>
-                </a>
-            </nav>
-            
-            <!-- Tab Content -->
-            <?php if ($current_tab === 'general'): ?>
-                
-                <?php if (empty($forms)): ?>
-                    <div class="notice notice-error">
-                        <p>
-                            <?php _e('No Contact Form 7 forms found. Please create at least one form first.', 'cf7-artist-submissions'); ?>
-                        </p>
-                    </div>
-                <?php else: ?>
-                    <form action="options.php" method="post">
-                        <?php
-                        settings_fields('cf7_artist_submissions_options');
-                        ?>
-                        
-                        <table class="form-table">
-                            <tr>
-                                <th scope="row"><?php _e('Contact Form 7 ID', 'cf7-artist-submissions'); ?></th>
-                                <td>
-                                    <?php $this->render_form_id_field(); ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><?php _e('Menu Label', 'cf7-artist-submissions'); ?></th>
-                                <td>
-                                    <?php $this->render_menu_label_field(); ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row"><?php _e('Store Uploaded Files', 'cf7-artist-submissions'); ?></th>
-                                <td>
-                                    <?php $this->render_store_files_field(); ?>
-                                </td>
-                            </tr>
-                        </table>
-                        
-                        <?php submit_button(); ?>
-                    </form>
-                    
-                    <?php
-                    $options = get_option('cf7_artist_submissions_options', array());
-                    if (!empty($options['form_id'])):
-                        $form_id = $options['form_id'];
-                        $form_title = isset($forms[$form_id]) ? $forms[$form_id] : '';
-                    ?>
-                    <div class="cf7-artist-current-form" style="margin-top: 30px;">
-                        <h2><?php _e('Currently Tracking Form', 'cf7-artist-submissions'); ?></h2>
-                        <table class="widefat striped">
-                            <thead>
-                                <tr>
-                                    <th><?php _e('Form ID', 'cf7-artist-submissions'); ?></th>
-                                    <th><?php _e('Form Title', 'cf7-artist-submissions'); ?></th>
-                                    <th><?php _e('Actions', 'cf7-artist-submissions'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><?php echo esc_html($form_id); ?></td>
-                                    <td><?php echo esc_html($form_title); ?></td>
-                                    <td>
-                                        <a href="<?php echo admin_url('admin.php?page=wpcf7&post=' . $form_id . '&action=edit'); ?>" class="button">
-                                            <?php _e('Edit Form', 'cf7-artist-submissions'); ?>
-                                        </a>
-                                        <a href="<?php echo admin_url('edit.php?post_type=cf7_submission'); ?>" class="button">
-                                            <?php _e('View Submissions', 'cf7-artist-submissions'); ?>
-                                        </a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <?php endif; ?>
-                <?php endif; ?>
-                
-            <?php elseif ($current_tab === 'email'): ?>
-                
-                <h2><?php _e('Email Configuration', 'cf7-artist-submissions'); ?></h2>
-                <p><?php _e('Configure email settings for sending notifications and managing conversations with artists.', 'cf7-artist-submissions'); ?></p>
-                
-                <?php
-                // Check if functions exist to prevent critical errors
-                if (function_exists('settings_fields') && function_exists('submit_button')):
-                ?>
-                <form action="options.php" method="post">
-                    <?php
-                    settings_fields('cf7_artist_submissions_email_options');
-                    ?>
-                    
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row"><?php _e('From Email Address', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_from_email_field(); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><?php _e('From Name', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_from_name_field(); ?>
-                            </td>
-                        </tr>
-                        <?php if (class_exists('WooCommerce')): ?>
-                        <tr>
-                            <th scope="row"><?php _e('WooCommerce Email Template', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_wc_template_field(); ?>
-                            </td>
-                        </tr>
-                        <?php endif; ?>
-                    </table>
-                    
-                    <?php submit_button(__('Save Email Settings', 'cf7-artist-submissions')); ?>
-                </form>
-                
-                <!-- Daily Summary Email Testing -->
-                <div class="card" style="margin-top: 30px;">
-                    <h3><?php _e('Daily Summary Email Testing', 'cf7-artist-submissions'); ?></h3>
-                    <p><?php _e('Test the daily summary email functionality and WooCommerce template integration.', 'cf7-artist-submissions'); ?></p>
-                    
-                    <div style="margin: 20px 0;">
-                        <button type="button" id="send-test-summary-email" class="button button-secondary">
-                            <?php _e('Send Test Summary Email to Current User', 'cf7-artist-submissions'); ?>
-                        </button>
-                        <div id="test-summary-result" style="margin-top: 10px;"></div>
-                    </div>
-                    
-                    <div style="margin: 20px 0;">
-                        <button type="button" id="send-summary-to-all" class="button button-primary">
-                            <?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>
-                        </button>
-                        <div id="summary-all-result" style="margin-top: 10px;"></div>
-                    </div>
-                    
-                    <p class="description">
-                        <?php _e('The test email will use your current email settings and will include any pending actions assigned to you. The summary will respect the WooCommerce template setting if enabled.', 'cf7-artist-submissions'); ?>
-                    </p>
-                </div>
-                <?php else: ?>
-                    <div class="notice notice-error">
-                        <p><?php _e('Settings functions not available. Please ensure WordPress is properly loaded.', 'cf7-artist-submissions'); ?></p>
-                    </div>
-                <?php endif; ?>
-                
-            <?php elseif ($current_tab === 'templates'): ?>
-                
-                <h2><?php _e('Email Templates', 'cf7-artist-submissions'); ?></h2>
-                <p><?php _e('Configure email templates that will be sent to artists for various events and status changes.', 'cf7-artist-submissions'); ?></p>
-                
-                <form action="options.php" method="post">
-                    <?php
-                    settings_fields('cf7_artist_submissions_email_templates');
-                    ?>
-                    
-                    <?php $this->render_email_templates(); ?>
-                    
-                    <?php submit_button(__('Save Email Templates', 'cf7-artist-submissions')); ?>
-                </form>
-                
-                <!-- Merge Tags Reference -->
-                <div class="cf7-artist-email-merge-tags" style="margin-top: 30px;">
-                    <h3><?php _e('Available Merge Tags', 'cf7-artist-submissions'); ?></h3>
-                    <p><?php _e('Use these tags in your email templates to include dynamic content:', 'cf7-artist-submissions'); ?></p>
-                    <table class="widefat fixed">
-                        <thead>
-                            <tr>
-                                <th><?php _e('Tag', 'cf7-artist-submissions'); ?></th>
-                                <th><?php _e('Description', 'cf7-artist-submissions'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><code>{artist_name}</code></td>
-                                <td><?php _e('The name of the artist', 'cf7-artist-submissions'); ?></td>
-                            </tr>
-                            <tr>
-                                <td><code>{email}</code></td>
-                                <td><?php _e('The email address of the artist', 'cf7-artist-submissions'); ?></td>
-                            </tr>
-                            <tr>
-                                <td><code>{submission_date}</code></td>
-                                <td><?php _e('The date the submission was received', 'cf7-artist-submissions'); ?></td>
-                            </tr>
-                            <tr>
-                                <td><code>{submission_id}</code></td>
-                                <td><?php _e('The ID of the submission', 'cf7-artist-submissions'); ?></td>
-                            </tr>
-                            <tr>
-                                <td><code>{status}</code></td>
-                                <td><?php _e('The current status of the submission', 'cf7-artist-submissions'); ?></td>
-                            </tr>
-                            <tr>
-                                <td><code>{site_name}</code></td>
-                                <td><?php _e('Your website name', 'cf7-artist-submissions'); ?></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <p><em><?php _e('You can also use any custom field from the submission by using the format {field_name}', 'cf7-artist-submissions'); ?></em></p>
-                </div>
-                
-            <?php elseif ($current_tab === 'imap'): ?>
-                
-                <h2><?php _e('IMAP Configuration for Email Conversations', 'cf7-artist-submissions'); ?></h2>
-                <p><?php _e('Configure these settings to enable two-way email conversations with artists using plus addressing with your existing email address.', 'cf7-artist-submissions'); ?></p>
-                <p class="description"><?php _e('Uses your single email address with plus addressing (e.g., your-email+SUB123@domain.com). No extra email accounts or forwarding needed!', 'cf7-artist-submissions'); ?></p>
-                
-                <form action="options.php" method="post">
-                    <?php
-                    settings_fields('cf7_artist_submissions_imap_options');
-                    ?>
-                    
-                    <table class="form-table">
-                        <tr>
-                            <th scope="row"><?php _e('IMAP Server', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_imap_server_field(); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><?php _e('IMAP Port', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_imap_port_field(); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><?php _e('IMAP Username', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_imap_username_field(); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><?php _e('IMAP Password', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_imap_password_field(); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><?php _e('IMAP Encryption', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_imap_encryption_field(); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row"><?php _e('Delete Processed Emails', 'cf7-artist-submissions'); ?></th>
-                            <td>
-                                <?php $this->render_imap_delete_processed_field(); ?>
-                            </td>
-                        </tr>
-                    </table>
-                    
-                    <?php submit_button(__('Save IMAP Settings', 'cf7-artist-submissions')); ?>
-                </form>
-                
-                <!-- Test Connection Section -->
-                <div style="margin-top: 30px;">
-                    <h3><?php _e('Test IMAP Connection', 'cf7-artist-submissions'); ?></h3>
-                    <p><?php _e('Use this button to test your IMAP connection settings:', 'cf7-artist-submissions'); ?></p>
-                    <button type="button" id="test-imap-connection" class="button">
-                        <?php _e('Test Connection', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="imap-test-result" style="margin-top: 10px;"></div>
-                </div>
-                
-            <?php elseif ($current_tab === 'debug'): ?>
-                
-                <h2><?php _e('Debug Information', 'cf7-artist-submissions'); ?></h2>
-                <p><?php _e('Debug information for troubleshooting IMAP and conversation issues.', 'cf7-artist-submissions'); ?></p>
-                
-                <div class="card">
-                    <h3><?php _e('IMAP Status', 'cf7-artist-submissions'); ?></h3>
-                    
-                    <?php 
-                    $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
-                    $last_check = get_option('cf7_last_imap_check', '');
-                    
-                    echo '<h4>IMAP Configuration:</h4>';
-                    echo '<pre>';
-                    if (!empty($imap_settings)) {
-                        $safe_settings = $imap_settings;
-                        if (isset($safe_settings['password'])) {
-                            $safe_settings['password'] = str_repeat('*', strlen($safe_settings['password']));
-                        }
-                        print_r($safe_settings);
-                    } else {
-                        echo 'No IMAP settings found.';
-                    }
-                    echo '</pre>';
-                    
-                    echo '<h4>Last IMAP Check:</h4>';
-                    echo '<p>' . ($last_check ? $last_check : 'Never checked') . '</p>';
-                    
-                    echo '<h4>PHP IMAP Extension:</h4>';
-                    echo '<p>' . (extension_loaded('imap') ? 'Available' : 'NOT AVAILABLE - This is required for IMAP functionality') . '</p>';
-                    ?>
-                    
-                    <h4><?php _e('Manual IMAP Check', 'cf7-artist-submissions'); ?></h4>
-                    <button type="button" id="debug-check-imap" class="button button-secondary">
-                        <?php _e('Check IMAP Now', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="debug-imap-result" style="margin-top: 10px;"></div>
-                    
-                    <h4><?php _e('Debug Inbox Contents', 'cf7-artist-submissions'); ?></h4>
-                    <p><?php _e('This will show you the last 10 emails in your inbox with details about whether they match the expected format.', 'cf7-artist-submissions'); ?></p>
-                    <button type="button" id="debug-inbox" class="button button-secondary">
-                        <?php _e('Debug Inbox', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="debug-inbox-result" style="margin-top: 10px;"></div>
-                    
-                    <h4><?php _e('Clean Up IMAP Inbox', 'cf7-artist-submissions'); ?></h4>
-                    <p><?php _e('This will scan all emails on the IMAP server and delete any that have already been processed and stored in the database. It will also delete orphaned emails from deleted submissions. Use this to clean up your inbox manually.', 'cf7-artist-submissions'); ?></p>
-                    <p class="description" style="color: #d63384;"><?php _e('⚠️ Warning: This will permanently delete processed emails and orphaned emails from your IMAP server. Make sure you have backups if needed.', 'cf7-artist-submissions'); ?></p>
-                    <button type="button" id="cleanup-imap-inbox" class="button button-secondary">
-                        <?php _e('Clean Up Inbox', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="cleanup-imap-result" style="margin-top: 10px;"></div>
-                </div>
-                
-                <div class="card" style="margin-top: 20px;">
-                    <h3><?php _e('Database Status', 'cf7-artist-submissions'); ?></h3>
-                    
-                    <?php
-                    // Include conversations class to use debug method
-                    if (class_exists('CF7_Artist_Submissions_Conversations')) {
-                        $db_status = CF7_Artist_Submissions_Conversations::debug_database_status();
-                        
-                        echo '<h4>Conversations Table:</h4>';
-                        echo '<ul>';
-                        echo '<li>Table Name: ' . esc_html($db_status['table_name']) . '</li>';
-                        echo '<li>Table Exists: ' . ($db_status['table_exists'] ? 'YES' : 'NO') . '</li>';
-                        
-                        if (isset($db_status['error'])) {
-                            echo '<li style="color: red;">Error: ' . esc_html($db_status['error']) . '</li>';
-                        } else {
-                            echo '<li>Total Messages: ' . esc_html($db_status['total_messages']) . '</li>';
-                        }
-                        echo '</ul>';
-                        
-                        if (isset($db_status['recent_messages']) && !empty($db_status['recent_messages'])) {
-                            echo '<h4>Recent Messages:</h4>';
-                            echo '<table class="widefat" style="margin-top: 10px;">';
-                            echo '<thead><tr><th>ID</th><th>Submission</th><th>Direction</th><th>Subject</th><th>Date</th></tr></thead>';
-                            echo '<tbody>';
-                            foreach ($db_status['recent_messages'] as $msg) {
-                                echo '<tr>';
-                                echo '<td>' . esc_html($msg->id) . '</td>';
-                                echo '<td>' . esc_html($msg->submission_id) . '</td>';
-                                echo '<td>' . esc_html($msg->direction) . '</td>';
-                                echo '<td>' . esc_html(substr($msg->subject, 0, 50)) . '</td>';
-                                echo '<td>' . esc_html($msg->sent_at) . '</td>';
-                                echo '</tr>';
-                            }
-                            echo '</tbody></table>';
-                        } else {
-                            echo '<p>No recent messages found in database.</p>';
-                        }
-                        
-                        if (isset($db_status['db_error'])) {
-                            echo '<p style="color: red;">Database Error: ' . esc_html($db_status['db_error']) . '</p>';
-                        }
-                    } else {
-                        echo '<p>Conversations class not loaded.</p>';
-                    }
-                    ?>
-                </div>
-                
-                <div class="card" style="margin-top: 20px;">
-                    <h3><?php _e('Token Migration', 'cf7-artist-submissions'); ?></h3>
-                    <p><?php _e('Migrate existing conversations to use consistent reply tokens. This fixes issues where artists reply to old emails with different tokens.', 'cf7-artist-submissions'); ?></p>
-                    
-                    <button type="button" id="migrate-tokens" class="button button-secondary">
-                        <?php _e('Migrate to Consistent Tokens', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="migrate-tokens-result" style="margin-top: 10px;"></div>
-                </div>
-                
-                <div class="card" style="margin-top: 20px;">
-                    <h3><?php _e('Daily Summary Emails', 'cf7-artist-submissions'); ?></h3>
-                    <p><?php _e('Test the daily summary email system by manually triggering emails for users with pending actions.', 'cf7-artist-submissions'); ?></p>
-                    
-                    <?php
-                    // Show current daily summary status
-                    $next_scheduled = wp_next_scheduled('cf7_daily_summary_cron');
-                    if ($next_scheduled) {
-                        echo '<p><strong>Next scheduled email:</strong> ' . date(get_option('date_format') . ' ' . get_option('time_format'), $next_scheduled) . '</p>';
-                    } else {
-                        echo '<p style="color: #d63384;"><strong>⚠️ Daily emails are not scheduled!</strong> They should be set up automatically.</p>';
-                    }
-                    
-                    // Show users with pending actions
-                    if (class_exists('CF7_Artist_Submissions_Actions')) {
-                        global $wpdb;
-                        $table_name = $wpdb->prefix . 'cf7_actions';
-                        $users_with_actions = $wpdb->get_results(
-                            "SELECT DISTINCT a.assigned_to, u.display_name, u.user_email, COUNT(*) as pending_count
-                             FROM $table_name a 
-                             LEFT JOIN {$wpdb->users} u ON a.assigned_to = u.ID
-                             WHERE a.status = 'pending' 
-                             AND a.assigned_to IS NOT NULL 
-                             GROUP BY a.assigned_to 
-                             ORDER BY u.display_name"
-                        );
-                        
-                        if (!empty($users_with_actions)) {
-                            echo '<h4>Users with Pending Actions:</h4>';
-                            echo '<ul style="margin-left: 20px;">';
-                            foreach ($users_with_actions as $user) {
-                                echo '<li>' . esc_html($user->display_name) . ' (' . esc_html($user->user_email) . ') - ' . esc_html($user->pending_count) . ' pending action(s)</li>';
-                            }
-                            echo '</ul>';
-                        } else {
-                            echo '<p>No users currently have pending actions assigned to them.</p>';
-                        }
-                    }
-                    ?>
-                    
-                    <h4><?php _e('Email Configuration Debug', 'cf7-artist-submissions'); ?></h4>
-                    <p><?php _e('Check email configuration and test SMTP settings:', 'cf7-artist-submissions'); ?></p>
-                    
-                    <?php
-                    // Show current email configuration
-                    $email_options = get_option('cf7_artist_submissions_email_options', array());
-                    $from_email = isset($email_options['from_email']) ? $email_options['from_email'] : get_option('admin_email');
-                    $from_name = isset($email_options['from_name']) && !empty($email_options['from_name']) ? $email_options['from_name'] : get_bloginfo('name');
-                    
-                    echo '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; margin: 10px 0;">';
-                    echo '<strong>Current Email Configuration:</strong><br>';
-                    echo 'From Email: ' . esc_html($from_email) . '<br>';
-                    echo 'From Name: ' . esc_html($from_name) . '<br>';
-                    echo 'WooCommerce Templates: ' . (isset($email_options['use_wc_template']) && $email_options['use_wc_template'] && class_exists('WooCommerce') ? 'Enabled' : 'Disabled') . '<br>';
-                    echo 'WordPress Admin Email: ' . esc_html(get_option('admin_email')) . '<br>';
-                    echo 'Site Name: ' . esc_html(get_bloginfo('name'));
-                    echo '</div>';
-                    ?>
-                    
-                    <button type="button" id="validate-email-config" class="button button-secondary">
-                        <?php _e('Validate Email Configuration', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <button type="button" id="test-smtp-config" class="button button-secondary">
-                        <?php _e('Test SMTP Configuration', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="email-config-result" style="margin-top: 10px;"></div>
-                    
-                    <h4><?php _e('Test Daily Summary', 'cf7-artist-submissions'); ?></h4>
-                    <p><?php _e('Send test summary emails to all users with pending actions:', 'cf7-artist-submissions'); ?></p>
-                    <button type="button" id="test-daily-summary" class="button button-secondary">
-                        <?php _e('Send Test Summary Emails', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="test-daily-summary-result" style="margin-top: 10px;"></div>
-                    
-                    <h4><?php _e('Cron Management', 'cf7-artist-submissions'); ?></h4>
-                    <p><?php _e('Manage the automated daily email schedule:', 'cf7-artist-submissions'); ?></p>
-                    <button type="button" id="setup-daily-cron" class="button button-secondary">
-                        <?php _e('Setup Daily Cron', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <button type="button" id="clear-daily-cron" class="button button-secondary">
-                        <?php _e('Clear Daily Cron', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="daily-cron-result" style="margin-top: 10px;"></div>
-                    
-                    <h4><?php _e('Database Schema', 'cf7-artist-submissions'); ?></h4>
-                    <p><?php _e('Update the actions database table to include the latest schema changes:', 'cf7-artist-submissions'); ?></p>
-                    <button type="button" id="update-actions-schema" class="button button-secondary">
-                        <?php _e('Update Actions Schema', 'cf7-artist-submissions'); ?>
-                    </button>
-                    <div id="update-schema-result" style="margin-top: 10px;"></div>
-                </div>
-                
-                <div class="card" style="margin-top: 20px;">
-                    <h3><?php _e('Live Debug Messages', 'cf7-artist-submissions'); ?></h3>
-                    <p><?php _e('Recent activity and debugging information from conversation processing.', 'cf7-artist-submissions'); ?></p>
-                    
-                    <?php
-                    $debug_messages = get_option('cf7_debug_messages', array());
-                    if (!empty($debug_messages)) {
-                        echo '<div style="background: #f9f9f9; padding: 10px; border: 1px solid #ddd; max-height: 400px; overflow-y: auto;">';
-                        echo '<table class="widefat" style="margin-top: 10px;">';
-                        echo '<thead><tr><th>Time</th><th>Action</th><th>Details</th></tr></thead>';
-                        echo '<tbody>';
-                        
-                        // Show most recent messages first
-                        $recent_messages = array_reverse($debug_messages);
-                        foreach ($recent_messages as $msg) {
-                            echo '<tr>';
-                            echo '<td>' . esc_html($msg['timestamp']) . '</td>';
-                            echo '<td>' . esc_html($msg['action']) . '</td>';
-                            
-                            $details = '';
-                            foreach ($msg as $key => $value) {
-                                if ($key !== 'timestamp' && $key !== 'action') {
-                                    $details .= $key . ': ' . $value . '<br>';
-                                }
-                            }
-                            echo '<td>' . $details . '</td>';
-                            echo '</tr>';
-                        }
-                        echo '</tbody></table>';
-                        echo '</div>';
-                        
-                        echo '<p><button type="button" id="clear-debug-messages" class="button button-secondary" style="margin-top: 10px;">Clear Debug Messages</button></p>';
-                    } else {
-                        echo '<p>No debug messages yet. Activity will appear here as conversations are processed.</p>';
-                    }
-                    ?>
-                </div>
-                
-                <div class="card" style="margin-top: 20px;">
-                    <h3><?php _e('Recent Conversations', 'cf7-artist-submissions'); ?></h3>
-                    
-                    <?php
-                    global $wpdb;
-                    $table_name = $wpdb->prefix . 'cf7_conversations';
-                    
-                    // Check if table exists
-                    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) {
-                        $recent_messages = $wpdb->get_results(
-                            "SELECT * FROM $table_name ORDER BY received_at DESC LIMIT 10"
-                        );
-                        
-                        if ($recent_messages) {
-                            echo '<table class="wp-list-table widefat fixed striped">';
-                            echo '<thead><tr><th>ID</th><th>Submission</th><th>Direction</th><th>From</th><th>Subject</th><th>Received</th></tr></thead>';
-                            echo '<tbody>';
-                            foreach ($recent_messages as $message) {
-                                echo '<tr>';
-                                echo '<td>' . $message->id . '</td>';
-                                echo '<td>' . $message->submission_id . '</td>';
-                                echo '<td>' . $message->direction . '</td>';
-                                echo '<td>' . esc_html($message->from_email) . '</td>';
-                                echo '<td>' . esc_html($message->subject) . '</td>';
-                                echo '<td>' . $message->received_at . '</td>';
-                                echo '</tr>';
-                            }
-                            echo '</tbody></table>';
-                        } else {
-                            echo '<p>No conversation messages found.</p>';
-                        }
-                    } else {
-                        echo '<p>Conversations table does not exist. Please activate the plugin to create it.</p>';
-                    }
-                    ?>
-                </div>
-                
-            <?php elseif ($current_tab === 'audit'): ?>
-                <div class="cf7-audit-tab">
-                    <h2><?php _e('Audit Log', 'cf7-artist-submissions'); ?></h2>
-                    <p><?php _e('View system activity and action logs for submissions.', 'cf7-artist-submissions'); ?></p>
-                    
-                    <?php $this->render_audit_log_interface(); ?>
-                </div>
-                
-            <?php endif; ?>
-        </div>
-        
-        <script type="text/javascript">
-        jQuery(document).ready(function($) {
-            $('#test-imap-connection').on('click', function() {
-                var $button = $(this);
-                var $result = $('#imap-test-result');
-                
-                // Show loading state
-                $button.prop('disabled', true).text('<?php _e('Testing...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Testing IMAP connection...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                // Send AJAX request
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_test_imap',
-                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Test Connection', 'cf7-artist-submissions'); ?>');
-                        
-                        if (response.success) {
-                            var detailsHtml = '';
-                            if (response.data.details) {
-                                detailsHtml = '<br><?php _e('Messages:', 'cf7-artist-submissions'); ?> ' + response.data.details.messages + 
-                                             ', <?php _e('Recent:', 'cf7-artist-submissions'); ?> ' + response.data.details.recent + 
-                                             ', <?php _e('Unseen:', 'cf7-artist-submissions'); ?> ' + response.data.details.unseen;
-                            }
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + detailsHtml + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Test Connection', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Connection error. Please try again.', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Debug IMAP check
-            $('#debug-check-imap').on('click', function() {
-                var $button = $(this);
-                var $result = $('#debug-imap-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Checking...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Checking IMAP and processing emails...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_check_replies_manual',
-                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Check IMAP Now', 'cf7-artist-submissions'); ?>');
-                        
-                        if (response.success) {
-                            var message = '<?php _e('IMAP check completed successfully!', 'cf7-artist-submissions'); ?>';
-                            if (response.data.checked_at) {
-                                message += '<br><?php _e('Last checked:', 'cf7-artist-submissions'); ?> ' + response.data.checked_at;
-                            }
-                            $result.html('<div class="notice notice-success"><p>' + message + '</p></div>');
-                            
-                            // Refresh the page after 2 seconds to show updated data
-                            setTimeout(function() {
-                                location.reload();
-                            }, 2000);
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Check IMAP Now', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('AJAX error. Please try again.', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Debug inbox contents
-            $('#debug-inbox').on('click', function() {
-                var $button = $(this);
-                var $result = $('#debug-inbox-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Debugging...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Analyzing inbox contents...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_debug_inbox',
-                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Debug Inbox', 'cf7-artist-submissions'); ?>');
-                        
-                        if (response.success) {
-                            var html = '<div class="notice notice-success"><p><?php _e('Inbox analysis completed!', 'cf7-artist-submissions'); ?></p>';
-                            html += '<pre style="background: #f9f9f9; padding: 10px; margin: 10px 0; max-height: 400px; overflow-y: auto;">';
-                            response.data.debug_info.forEach(function(line) {
-                                html += line + '\n';
-                            });
-                            html += '</pre></div>';
-                            $result.html(html);
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Debug Inbox', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('AJAX error. Please try again.', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Clean up IMAP inbox
-            $('#cleanup-imap-inbox').on('click', function() {
-                var $button = $(this);
-                var $result = $('#cleanup-imap-result');
-                
-                if (!confirm('<?php _e('This will permanently delete all processed emails from your IMAP server. Are you sure you want to continue?', 'cf7-artist-submissions'); ?>')) {
-                    return;
-                }
-                
-                $button.prop('disabled', true).text('<?php _e('Cleaning...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Scanning IMAP server and cleaning up processed emails...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    timeout: 120000, // 2 minute timeout for cleanup operations
-                    data: {
-                        action: 'cf7_cleanup_imap_inbox',
-                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Clean Up Inbox', 'cf7-artist-submissions'); ?>');
-                        
-                        if (response.success) {
-                            var message = '<?php _e('IMAP cleanup completed!', 'cf7-artist-submissions'); ?>';
-                            if (response.data.deleted_count !== undefined) {
-                                message += '<br><?php _e('Emails deleted:', 'cf7-artist-submissions'); ?> ' + response.data.deleted_count;
-                            }
-                            if (response.data.orphaned_count !== undefined && response.data.orphaned_count > 0) {
-                                message += '<br><?php _e('Orphaned emails deleted:', 'cf7-artist-submissions'); ?> ' + response.data.orphaned_count;
-                            }
-                            if (response.data.scanned_count !== undefined) {
-                                message += '<br><?php _e('Emails scanned:', 'cf7-artist-submissions'); ?> ' + response.data.scanned_count;
-                            }
-                            if (response.data.folders_deleted !== undefined && response.data.folders_deleted > 0) {
-                                message += '<br><?php _e('Empty folders deleted:', 'cf7-artist-submissions'); ?> ' + response.data.folders_deleted;
-                            }
-                            if (response.data.duration !== undefined) {
-                                message += '<br><?php _e('Duration:', 'cf7-artist-submissions'); ?> ' + response.data.duration;
-                            }
-                            $result.html('<div class="notice notice-success"><p>' + message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        $button.prop('disabled', false).text('<?php _e('Clean Up Inbox', 'cf7-artist-submissions'); ?>');
-                        
-                        var errorMessage = '<?php _e('AJAX error. Please try again.', 'cf7-artist-submissions'); ?>';
-                        if (status === 'timeout') {
-                            errorMessage = '<?php _e('Operation timed out. The cleanup may still be running on the server.', 'cf7-artist-submissions'); ?>';
-                        }
-                        $result.html('<div class="notice notice-error"><p>' + errorMessage + '</p></div>');
-                    }
-                });
-            });
-            
-            // Migrate tokens
-            $('#migrate-tokens').on('click', function() {
-                var $button = $(this);
-                var $result = $('#migrate-tokens-result');
-                
-                if (!confirm('<?php _e('This will update all existing conversation tokens to be consistent. Continue?', 'cf7-artist-submissions'); ?>')) {
-                    return;
-                }
-                
-                $button.prop('disabled', true).text('<?php _e('Migrating...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Migrating tokens...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_migrate_tokens',
-                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Migrate to Consistent Tokens', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            var message = '<?php _e('Migration completed successfully!', 'cf7-artist-submissions'); ?>';
-                            if (response.data.submissions_updated) {
-                                message += '<br><?php _e('Updated submissions:', 'cf7-artist-submissions'); ?> ' + response.data.submissions_updated;
-                            }
-                            $result.html('<div class="notice notice-success"><p>' + message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Migrate to Consistent Tokens', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Migration error. Please try again.', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Clear debug messages
-            $('#clear-debug-messages').on('click', function() {
-                var $button = $(this);
-                
-                if (!confirm('<?php _e('Are you sure you want to clear all debug messages?', 'cf7-artist-submissions'); ?>')) {
-                    return;
-                }
-                
-                $button.prop('disabled', true).text('<?php _e('Clearing...', 'cf7-artist-submissions'); ?>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_clear_debug_messages',
-                        nonce: '<?php echo wp_create_nonce('cf7_conversation_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Clear Debug Messages', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            location.reload(); // Reload to show cleared messages
-                        } else {
-                            alert('<?php _e('Error clearing debug messages', 'cf7-artist-submissions'); ?>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Clear Debug Messages', 'cf7-artist-submissions'); ?>');
-                        alert('<?php _e('Error clearing debug messages', 'cf7-artist-submissions'); ?>');
-                    }
-                });
-            });
-            
-            // Test daily summary emails
-            $('#test-daily-summary').on('click', function() {
-                var $button = $(this);
-                var $result = $('#test-daily-summary-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Sending...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Sending daily summary emails...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'test_daily_summary',
-                        nonce: '<?php echo wp_create_nonce('cf7_daily_summary_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Emails', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Emails', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error sending summary emails', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Setup daily cron
-            $('#setup-daily-cron').on('click', function() {
-                var $button = $(this);
-                var $result = $('#daily-cron-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Setting up...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Setting up daily cron...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'setup_daily_cron',
-                        nonce: '<?php echo wp_create_nonce('cf7_daily_summary_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Setup Daily Cron', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                            // Reload page to show updated cron status
-                            setTimeout(function() { location.reload(); }, 2000);
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Setup Daily Cron', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error setting up cron', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Clear daily cron
-            $('#clear-daily-cron').on('click', function() {
-                var $button = $(this);
-                var $result = $('#daily-cron-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Clearing...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Clearing daily cron...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'clear_daily_cron',
-                        nonce: '<?php echo wp_create_nonce('cf7_daily_summary_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Clear Daily Cron', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                            // Reload page to show updated cron status
-                            setTimeout(function() { location.reload(); }, 2000);
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Clear Daily Cron', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error clearing cron', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Update actions schema
-            $('#update-actions-schema').on('click', function() {
-                var $button = $(this);
-                var $result = $('#update-schema-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Updating...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Updating database schema...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'update_actions_schema',
-                        nonce: '<?php echo wp_create_nonce('cf7_admin_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Update Actions Schema', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Update Actions Schema', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error updating schema', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Send test summary email to current user
-            $('#send-test-summary-email').on('click', function() {
-                var $button = $(this);
-                var $result = $('#test-summary-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Sending...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Sending test summary email...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_test_summary_email',
-                        nonce: '<?php echo wp_create_nonce('cf7_email_test_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Email to Current User', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Send Test Summary Email to Current User', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error sending test email', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Send summary to all users
-            $('#send-summary-to-all').on('click', function() {
-                var $button = $(this);
-                var $result = $('#summary-all-result');
-                
-                if (!confirm('<?php _e('This will send daily summary emails to all users with pending actions. Continue?', 'cf7-artist-submissions'); ?>')) {
-                    return;
-                }
-                
-                $button.prop('disabled', true).text('<?php _e('Sending...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Sending daily summary emails to all users...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'cf7_send_summary_to_all',
-                        nonce: '<?php echo wp_create_nonce('cf7_email_test_nonce'); ?>'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Send Daily Summary to All Users', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error sending summary emails', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Validate email configuration
-            $('#validate-email-config').on('click', function() {
-                var $button = $(this);
-                var $result = $('#email-config-result');
-                
-                $button.prop('disabled', true).text('<?php _e('Validating...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Validating email configuration...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'validate_email_config'
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Validate Email Configuration', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Validate Email Configuration', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error validating email configuration', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-            
-            // Test SMTP configuration
-            $('#test-smtp-config').on('click', function() {
-                var $button = $(this);
-                var $result = $('#email-config-result');
-                var testEmail = '<?php echo esc_js(get_option('admin_email')); ?>';
-                
-                // Prompt for test email address
-                var userEmail = prompt('<?php _e('Enter email address to send test email to:', 'cf7-artist-submissions'); ?>', testEmail);
-                if (!userEmail) {
-                    return; // User cancelled
-                }
-                
-                $button.prop('disabled', true).text('<?php _e('Sending Test...', 'cf7-artist-submissions'); ?>');
-                $result.html('<div class="notice notice-info"><p><?php _e('Sending SMTP test email...', 'cf7-artist-submissions'); ?></p></div>');
-                
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'test_smtp_config',
-                        test_email: userEmail
-                    },
-                    success: function(response) {
-                        $button.prop('disabled', false).text('<?php _e('Test SMTP Configuration', 'cf7-artist-submissions'); ?>');
-                        if (response.success) {
-                            $result.html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>');
-                        } else {
-                            $result.html('<div class="notice notice-error"><p>' + response.data.message + '</p></div>');
-                        }
-                    },
-                    error: function() {
-                        $button.prop('disabled', false).text('<?php _e('Test SMTP Configuration', 'cf7-artist-submissions'); ?>');
-                        $result.html('<div class="notice notice-error"><p><?php _e('Error testing SMTP configuration', 'cf7-artist-submissions'); ?></p></div>');
-                    }
-                });
-            });
-        });
-        </script>
-        <?php
-    }    public function render_main_section() {
-        echo '<p>' . __('Configure which Contact Form 7 form to track and store submissions from.', 'cf7-artist-submissions') . '</p>';
-    }
+
     
-    public function render_form_id_field() {
-        $options = get_option('cf7_artist_submissions_options', array());
-        $form_id = isset($options['form_id']) ? $options['form_id'] : '';
-        
-        // Get all CF7 forms
-        $forms = array();
-        if (class_exists('WPCF7_ContactForm')) {
-            $cf7_forms = WPCF7_ContactForm::find();
-            foreach ($cf7_forms as $form) {
-                $forms[$form->id()] = $form->title();
-            }
-        }
-        
-        if (empty($forms)) {
-            echo '<select name="cf7_artist_submissions_options[form_id]" disabled>';
-            echo '<option>' . __('No Contact Form 7 forms found', 'cf7-artist-submissions') . '</option>';
-            echo '</select>';
-            echo '<p class="description">' . __('Please create a form in Contact Form 7 first.', 'cf7-artist-submissions') . '</p>';
-        } else {
-            echo '<select name="cf7_artist_submissions_options[form_id]">';
-            echo '<option value="">' . __('-- Select a form --', 'cf7-artist-submissions') . '</option>';
-            
-            foreach ($forms as $id => $title) {
-                echo '<option value="' . esc_attr($id) . '" ' . selected($form_id, $id, false) . '>';
-                echo esc_html($title) . ' (ID: ' . esc_html($id) . ')';
-                echo '</option>';
-            }
-            
-            echo '</select>';
-            echo '<p class="description">' . __('Select which Contact Form 7 form to track submissions from.', 'cf7-artist-submissions') . '</p>';
-        }
-    }
+
     
-    public function render_menu_label_field() {
-        $options = get_option('cf7_artist_submissions_options', array());
-        $menu_label = isset($options['menu_label']) ? $options['menu_label'] : 'Submissions';
-        
-        echo '<input type="text" name="cf7_artist_submissions_options[menu_label]" value="' . esc_attr($menu_label) . '" class="regular-text">';
-        echo '<p class="description">' . __('The label shown in the admin menu. Default: "Submissions"', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_store_files_field() {
-        $options = get_option('cf7_artist_submissions_options', array());
-        $store_files = isset($options['store_files']) ? $options['store_files'] : 'yes';
-        
-        echo '<label>';
-        echo '<input type="checkbox" name="cf7_artist_submissions_options[store_files]" value="yes" ' . checked('yes', $store_files, false) . '>';
-        echo ' ' . __('Store uploaded files with submissions', 'cf7-artist-submissions');
-        echo '</label>';
-        echo '<p class="description">' . __('When enabled, files uploaded through the form will be stored in the wp-content/uploads/cf7-submissions directory.', 'cf7-artist-submissions') . '</p>';
-    }
+
     
     public function validate_options($input) {
         $valid = array();
@@ -1363,64 +184,7 @@ class CF7_Artist_Submissions_Settings {
         return $valid;
     }
     
-    // IMAP Settings Section Methods
-    public function render_imap_section() {
-        echo '<p>' . __('Configure IMAP settings to enable two-way email conversations with artists. This uses plus addressing with your existing email address.', 'cf7-artist-submissions') . '</p>';
-        echo '<p class="description">' . __('Uses your single email address with plus addressing (e.g., your-email+SUB123@domain.com). No extra email accounts or forwarding needed!', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_imap_server_field() {
-        $options = get_option('cf7_artist_submissions_imap_options', array());
-        $server = isset($options['server']) ? $options['server'] : '';
-        
-        echo '<input type="text" name="cf7_artist_submissions_imap_options[server]" value="' . esc_attr($server) . '" class="regular-text">';
-        echo '<p class="description">' . __('IMAP server hostname (e.g., imap.gmail.com, mail.yourdomain.com)', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_imap_port_field() {
-        $options = get_option('cf7_artist_submissions_imap_options', array());
-        $port = isset($options['port']) ? $options['port'] : '993';
-        
-        echo '<input type="number" name="cf7_artist_submissions_imap_options[port]" value="' . esc_attr($port) . '" class="small-text" min="1" max="65535">';
-        echo '<p class="description">' . __('IMAP port (usually 993 for SSL/TLS, 143 for non-encrypted)', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_imap_username_field() {
-        $options = get_option('cf7_artist_submissions_imap_options', array());
-        $username = isset($options['username']) ? $options['username'] : '';
-        
-        echo '<input type="text" name="cf7_artist_submissions_imap_options[username]" value="' . esc_attr($username) . '" class="regular-text">';
-        echo '<p class="description">' . __('IMAP username (usually your email address)', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_imap_password_field() {
-        $options = get_option('cf7_artist_submissions_imap_options', array());
-        $password = isset($options['password']) ? $options['password'] : '';
-        
-        echo '<input type="password" name="cf7_artist_submissions_imap_options[password]" value="' . esc_attr($password) . '" class="regular-text">';
-        echo '<p class="description">' . __('IMAP password (consider using app-specific passwords for Gmail)', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_imap_encryption_field() {
-        $options = get_option('cf7_artist_submissions_imap_options', array());
-        $encryption = isset($options['encryption']) ? $options['encryption'] : 'ssl';
-        
-        echo '<select name="cf7_artist_submissions_imap_options[encryption]">';
-        echo '<option value="ssl"' . selected('ssl', $encryption, false) . '>SSL/TLS</option>';
-        echo '<option value="tls"' . selected('tls', $encryption, false) . '>STARTTLS</option>';
-        echo '<option value="none"' . selected('none', $encryption, false) . '>None (not recommended)</option>';
-        echo '</select>';
-        echo '<p class="description">' . __('Encryption method for IMAP connection', 'cf7-artist-submissions') . '</p>';
-    }
-    
-    public function render_imap_delete_processed_field() {
-        $options = get_option('cf7_artist_submissions_imap_options', array());
-        $delete_processed = isset($options['delete_processed']) ? $options['delete_processed'] : '1'; // Default to enabled
-        
-        echo '<label><input type="checkbox" name="cf7_artist_submissions_imap_options[delete_processed]" value="1"' . checked('1', $delete_processed, false) . '> ';
-        echo __('Delete emails from server after processing', 'cf7-artist-submissions') . '</label>';
-        echo '<p class="description">' . __('When enabled, emails are permanently deleted from the IMAP server after being imported into the database. This prevents duplicate processing when messages are cleared. Recommended for privacy and to avoid reprocessing emails.', 'cf7-artist-submissions') . '</p>';
-    }
+
     
     /**
      * Validate email options
@@ -1489,244 +253,24 @@ class CF7_Artist_Submissions_Settings {
         return $valid;
     }
     
-    /**
-     * Render from email field
-     */
-    public function render_from_email_field() {
-        $options = get_option('cf7_artist_submissions_email_options', array());
-        $from_email = isset($options['from_email']) ? $options['from_email'] : get_option('admin_email');
-        
-        echo '<input type="email" id="cf7_artist_submissions_email_options[from_email]" name="cf7_artist_submissions_email_options[from_email]" value="' . esc_attr($from_email) . '" class="regular-text">';
-        echo '<p class="description">' . __('The email address that emails will be sent from. Make sure this email is authorized in your SMTP provider settings.', 'cf7-artist-submissions') . '</p>';
-    }
+
     
-    /**
-     * Render from name field
-     */
-    public function render_from_name_field() {
-        $options = get_option('cf7_artist_submissions_email_options', array());
-        $from_name = isset($options['from_name']) ? $options['from_name'] : get_bloginfo('name');
-        
-        echo '<input type="text" id="cf7_artist_submissions_email_options[from_name]" name="cf7_artist_submissions_email_options[from_name]" value="' . esc_attr($from_name) . '" class="regular-text">';
-        echo '<p class="description">' . __('The name that emails will be sent from (e.g. "Pup and Tiger").', 'cf7-artist-submissions') . '</p>';
-    }
+
     
-    /**
-     * Render WooCommerce template field
-     */
-    public function render_wc_template_field() {
-        $options = get_option('cf7_artist_submissions_email_options', array());
-        $use_wc_template = isset($options['use_wc_template']) ? $options['use_wc_template'] : false;
-        
-        echo '<label>';
-        echo '<input type="checkbox" id="cf7_artist_submissions_email_options[use_wc_template]" name="cf7_artist_submissions_email_options[use_wc_template]" value="1" ' . checked(1, $use_wc_template, false) . '>';
-        echo ' ' . __('Use WooCommerce email template', 'cf7-artist-submissions');
-        echo '</label>';
-        echo '<p class="description">' . __('When enabled, emails will be styled using the WooCommerce email template for consistent branding.', 'cf7-artist-submissions') . '</p>';
-        
-        // Preview of WooCommerce template
-        echo '<div class="wc-template-preview" style="margin-top: 10px;">';
-        echo '<a href="#" class="button" id="preview-wc-template">' . __('Preview WooCommerce Template', 'cf7-artist-submissions') . '</a>';
-        echo '</div>';
-        
-        // Add preview modal
-        echo '<div id="wc-template-preview-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.7); z-index:99999;">';
-        echo '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:#fff; padding:20px; max-width:800px; width:90%; max-height:80vh; overflow:auto; border-radius:5px;">';
-        echo '<h3>' . __('WooCommerce Email Template Preview', 'cf7-artist-submissions') . '</h3>';
-        echo '<div id="wc-template-preview-content" style="border:1px solid #ddd; padding:15px; margin:15px 0;"></div>';
-        echo '<button type="button" class="button" id="close-wc-preview">' . __('Close Preview', 'cf7-artist-submissions') . '</button>';
-        echo '</div>';
-        echo '</div>';
-        
-        // Add script for preview
-        $this->add_wc_template_preview_script();
-    }
+
     
-    /**
-     * Add WC template preview script
-     */
-    private function add_wc_template_preview_script() {
-        ?>
-        <script type="text/javascript">
-            jQuery(document).ready(function($) {
-                $('#preview-wc-template').on('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Show loading
-                    $('#wc-template-preview-content').html('<p>Loading preview...</p>');
-                    $('#wc-template-preview-modal').show();
-                    
-                    // Load preview via AJAX
-                    $.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'cf7_preview_wc_template',
-                            nonce: '<?php echo wp_create_nonce('cf7_wc_template_preview_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                $('#wc-template-preview-content').html(response.data.template);
-                            } else {
-                                $('#wc-template-preview-content').html('<p>Error loading preview: ' + response.data.message + '</p>');
-                            }
-                        },
-                        error: function() {
-                            $('#wc-template-preview-content').html('<p>Error loading preview.</p>');
-                        }
-                    });
-                });
-                
-                $('#close-wc-preview').on('click', function() {
-                    $('#wc-template-preview-modal').hide();
-                });
-            });
-        </script>
-        <?php
-    }
+
     
-    /**
-     * Render email templates
-     */
-    public function render_email_templates() {
-        // Available email triggers
-        $triggers = array(
-            'submission_received' => array(
-                'name' => __('Submission Received', 'cf7-artist-submissions'),
-                'description' => __('Sent when a new submission is received', 'cf7-artist-submissions'),
-                'auto' => true,
-            ),
-            'status_changed_to_selected' => array(
-                'name' => __('Status Changed to Selected', 'cf7-artist-submissions'),
-                'description' => __('Sent when an artist is selected', 'cf7-artist-submissions'),
-                'auto' => false,
-            ),
-            'status_changed_to_reviewed' => array(
-                'name' => __('Status Changed to Reviewed', 'cf7-artist-submissions'),
-                'description' => __('Sent when a submission is marked as reviewed', 'cf7-artist-submissions'),
-                'auto' => false,
-            ),
-            'status_changed_to_shortlisted' => array(
-                'name' => __('Status Changed to Shortlisted', 'cf7-artist-submissions'),
-                'description' => __('Sent when a submission is shortlisted for consideration', 'cf7-artist-submissions'),
-                'auto' => false,
-            ),
-            'custom_notification' => array(
-                'name' => __('Custom Notification', 'cf7-artist-submissions'),
-                'description' => __('A custom email that can be sent manually at any time', 'cf7-artist-submissions'),
-                'auto' => false,
-            )
-        );
-        
-        foreach ($triggers as $trigger_id => $trigger) {
-            echo '<div class="cf7-email-template-section" style="margin-bottom: 30px; padding: 20px; border: 1px solid #e5e5e5; border-radius: 5px;">';
-            echo '<h3>' . esc_html($trigger['name']) . '</h3>';
-            echo '<p>' . esc_html($trigger['description']) . '</p>';
-            
-            // Get current template settings
-            $templates = get_option('cf7_artist_submissions_email_templates', array());
-            $template = isset($templates[$trigger_id]) ? $templates[$trigger_id] : array(
-                'enabled' => false,
-                'subject' => '',
-                'body' => '',
-                'auto_send' => $trigger['auto']
-            );
-            
-            // Enable/disable toggle
-            echo '<div class="cf7-template-field" style="margin-bottom: 15px;">';
-            echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][enabled]">';
-            echo '<input type="checkbox" id="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][enabled]" name="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][enabled]" value="1" ' . checked(1, $template['enabled'], false) . '>';
-            echo ' ' . __('Enable this email template', 'cf7-artist-submissions');
-            echo '</label>';
-            echo '</div>';
-            
-            // Auto-send toggle (only if applicable)
-            if ($trigger['auto'] !== false) {
-                echo '<div class="cf7-template-field" style="margin-bottom: 15px;">';
-                echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][auto_send]">';
-                echo '<input type="checkbox" id="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][auto_send]" name="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][auto_send]" value="1" ' . checked(1, $template['auto_send'], false) . '>';
-                echo ' ' . __('Automatically send this email when triggered', 'cf7-artist-submissions');
-                echo '</label>';
-                echo '</div>';
-            }
-            
-            // Subject field
-            echo '<div class="cf7-template-field" style="margin-bottom: 15px;">';
-            echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][subject]">' . __('Email Subject:', 'cf7-artist-submissions') . '</label><br>';
-            echo '<input type="text" id="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][subject]" name="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][subject]" value="' . esc_attr($template['subject']) . '" class="large-text">';
-            echo '</div>';
-            
-            // Body field
-            echo '<div class="cf7-template-field">';
-            echo '<label for="cf7_artist_submissions_email_templates[' . esc_attr($trigger_id) . '][body]">' . __('Email Body:', 'cf7-artist-submissions') . '</label>';
-            
-            $content = $template['body'];
-            if (empty($content)) {
-                // Default template based on trigger
-                switch ($trigger_id) {
-                    case 'submission_received':
-                        $content = "Dear {artist_name},\n\nThank you for your submission. We have received your application and will review it shortly.\n\nRegards,\n{site_name} Team";
-                        break;
-                    case 'status_changed_to_selected':
-                        $content = "Dear {artist_name},\n\nCongratulations! We are pleased to inform you that your submission has been selected.\n\nRegards,\n{site_name} Team";
-                        break;
-                    case 'status_changed_to_reviewed':
-                        $content = "Dear {artist_name},\n\nThank you for your submission. We have completed our review process.\n\nRegards,\n{site_name} Team";
-                        break;
-                    case 'custom_notification':
-                        $content = "Dear {artist_name},\n\nThis is a custom notification regarding your submission.\n\nRegards,\n{site_name} Team";
-                        break;
-                }
-            }
-            
-            // Use WordPress editor for the email body
-            wp_editor(
-                $content,
-                'cf7_artist_submissions_email_templates_' . $trigger_id . '_body',
-                array(
-                    'textarea_name' => 'cf7_artist_submissions_email_templates[' . $trigger_id . '][body]',
-                    'textarea_rows' => 10,
-                    'media_buttons' => false,
-                    'teeny' => true,
-                    'quicktags' => true,
-                )
-            );
-            echo '</div>';
-            
-            echo '</div>'; // End template section
-        }
-    }
+
     
-    /**
-     * Validate email templates
-     */
-    public function validate_email_templates($input) {
-        $valid = array();
-        $old_options = get_option('cf7_artist_submissions_email_templates', array());
-        
-        if (is_array($input)) {
-            foreach ($input as $template_id => $template_data) {
-                $valid[$template_id] = array(
-                    'enabled' => isset($template_data['enabled']) ? true : false,
-                    'auto_send' => isset($template_data['auto_send']) ? true : false,
-                    'subject' => isset($template_data['subject']) ? sanitize_text_field($template_data['subject']) : '',
-                    'body' => isset($template_data['body']) ? wp_kses_post($template_data['body']) : ''
-                );
-            }
-        }
-        
-        // Log setting changes
-        $this->log_settings_changes($old_options, $valid, 'templates');
-        
-        return $valid;
-    }
+
     
     /**
      * AJAX handler to test daily summary emails
      */
     public function ajax_test_daily_summary() {
         // Check nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'cf7_daily_summary_nonce')) {
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
             wp_send_json_error(array('message' => 'Security check failed'));
             return;
         }
@@ -1743,23 +287,40 @@ class CF7_Artist_Submissions_Settings {
             return;
         }
         
+        // Get test email from request
+        $test_email = sanitize_email($_POST['test_email'] ?? '');
+        if (empty($test_email)) {
+            wp_send_json_error(array('message' => 'Test email address is required'));
+            return;
+        }
+        
+        // Validate email format
+        if (!is_email($test_email)) {
+            wp_send_json_error(array('message' => 'Invalid email address format'));
+            return;
+        }
+        
         try {
-            $result = CF7_Artist_Submissions_Actions::send_daily_summary_to_all();
+            // Use the new test method that generates sample data
+            $result = CF7_Artist_Submissions_Actions::send_test_daily_summary_email($test_email);
             
-            $message = sprintf(
-                'Daily summary emails sent! Successfully sent to %d users, %d failed.',
-                $result['sent'],
-                $result['failed']
-            );
-            
-            if ($result['total_users'] === 0) {
-                $message = 'No users have pending actions assigned to them.';
+            if (!empty($result['error'])) {
+                wp_send_json_error(array('message' => $result['error']));
+                return;
             }
             
-            wp_send_json_success(array(
-                'message' => $message,
-                'details' => $result
-            ));
+            if ($result['success']) {
+                $message = '✓ Test daily summary email sent successfully to ' . esc_html($test_email);
+                $message .= '<br>Check your email inbox to confirm receipt.';
+                $message .= '<br><em>Note: This test email contains sample data, not real actions.</em>';
+                
+                wp_send_json_success(array(
+                    'message' => $message,
+                    'details' => $result
+                ));
+            } else {
+                wp_send_json_error(array('message' => 'Failed to send test email. Check your email configuration.'));
+            }
             
         } catch (Exception $e) {
             wp_send_json_error(array('message' => 'Error: ' . $e->getMessage()));
@@ -1770,6 +331,12 @@ class CF7_Artist_Submissions_Settings {
      * AJAX handler to setup daily cron
      */
     public function ajax_setup_daily_cron() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
         // Check permissions
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
@@ -1804,6 +371,12 @@ class CF7_Artist_Submissions_Settings {
      * AJAX handler to clear daily cron
      */
     public function ajax_clear_daily_cron() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
         // Check permissions
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
@@ -1856,6 +429,300 @@ class CF7_Artist_Submissions_Settings {
             
         } catch (Exception $e) {
             wp_send_json_error(array('message' => 'Error updating schema: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to migrate conversation tokens
+     */
+    public function ajax_migrate_conversation_tokens() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        global $wpdb;
+        
+        try {
+            // Get submissions without conversation tokens
+            $submissions_table = $wpdb->prefix . 'cf7_artist_submissions';
+            $conversations_table = $wpdb->prefix . 'cf7_conversations';
+            
+            $query = "SELECT id, form_id, entry_id 
+                     FROM {$submissions_table} 
+                     WHERE conversation_token IS NULL OR conversation_token = ''";
+            
+            $submissions = $wpdb->get_results($query);
+            $migrated_count = 0;
+            
+            foreach ($submissions as $submission) {
+                // Generate unique conversation token
+                $token = wp_generate_password(32, false);
+                
+                // Update submission with token
+                $updated = $wpdb->update(
+                    $submissions_table,
+                    array('conversation_token' => $token),
+                    array('id' => $submission->id),
+                    array('%s'),
+                    array('%d')
+                );
+                
+                if ($updated) {
+                    // Create conversation record if it doesn't exist
+                    $existing = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$conversations_table} WHERE submission_id = %d",
+                        $submission->id
+                    ));
+                    
+                    if (!$existing) {
+                        $wpdb->insert(
+                            $conversations_table,
+                            array(
+                                'submission_id' => $submission->id,
+                                'token' => $token,
+                                'status' => 'active',
+                                'created_at' => current_time('mysql')
+                            ),
+                            array('%d', '%s', '%s', '%s')
+                        );
+                    }
+                    
+                    $migrated_count++;
+                }
+            }
+            
+            wp_send_json_success(array('message' => "Successfully migrated {$migrated_count} conversation tokens."));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error migrating tokens: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to test form configuration
+     */
+    public function ajax_test_form_config() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        try {
+            $options = get_option('cf7_artist_submissions_options', array());
+            $issues = array();
+            
+            // Check if Contact Form 7 is active
+            if (!class_exists('WPCF7_ContactForm')) {
+                $issues[] = 'Contact Form 7 plugin is not active';
+            } else {
+                // Check if form is selected
+                if (empty($options['form_id'])) {
+                    $issues[] = 'No Contact Form 7 form has been selected';
+                } else {
+                    // Verify the selected form exists
+                    $form = \WPCF7_ContactForm::get_instance($options['form_id']);
+                    if (!$form) {
+                        $issues[] = 'Selected form (ID: ' . $options['form_id'] . ') no longer exists';
+                    } else {
+                        // Check form fields
+                        $form_fields = $form->scan_form_tags();
+                        $has_file_field = false;
+                        $has_email_field = false;
+                        $has_name_field = false;
+                        $field_details = array();
+                        
+                        foreach ($form_fields as $field) {
+                            // Store field details for debugging
+                            $field_details[] = array(
+                                'type' => $field->type,
+                                'name' => $field->name,
+                                'required' => $field->is_required()
+                            );
+                            
+                            // Check for file upload fields (both single and multiple file uploads)
+                            if ($field->type === 'file' || $field->type === 'mfile') {
+                                $has_file_field = true;
+                            }
+                            
+                            // Check for email fields - be more flexible
+                            if ($field->type === 'email' || strpos(strtolower($field->name), 'email') !== false) {
+                                $has_email_field = true;
+                            }
+                            
+                            // Check for name fields - be more flexible
+                            if (in_array($field->type, array('text', 'textarea')) && 
+                                (strpos(strtolower($field->name), 'name') !== false || 
+                                 strpos(strtolower($field->name), 'artist') !== false ||
+                                 $field->name === 'your-name' || // Common CF7 default
+                                 strpos(strtolower($field->name), 'author') !== false)) {
+                                $has_name_field = true;
+                            }
+                        }
+                        
+                        // Additional fallback checks by examining form content directly
+                        $form_content = $form->prop('form');
+                        if (!$has_email_field && (strpos($form_content, 'type="email"') !== false || strpos($form_content, '[email') !== false)) {
+                            $has_email_field = true;
+                        }
+                        if (!$has_file_field && (strpos($form_content, 'type="file"') !== false || strpos($form_content, '[file') !== false || strpos($form_content, '[mfile') !== false)) {
+                            $has_file_field = true;
+                        }
+                        if (!$has_name_field && (strpos($form_content, 'name') !== false || strpos($form_content, 'artist') !== false)) {
+                            $has_name_field = true;
+                        }
+                        
+                        // Only flag as issues if fields are truly missing
+                        if (!$has_email_field) {
+                            $issues[] = 'Form should have an email field for artist contact';
+                        }
+                        if (!$has_name_field) {
+                            $issues[] = 'Form should have a name or artist field for identification';
+                        }
+                        if (!$has_file_field) {
+                            $issues[] = 'Form should have a file upload field for artwork submissions';
+                        }
+                    }
+                }
+            }
+            
+            // Check database tables
+            global $wpdb;
+            $submissions_table = $wpdb->prefix . 'cf7_artist_submissions';
+            $conversations_table = $wpdb->prefix . 'cf7_conversations';
+            
+            // First check if we're using the custom post type instead of a custom table
+            $post_type_exists = post_type_exists('cf7_submission');
+            
+            // Check if submissions table exists
+            $submissions_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $submissions_table));
+            if (!$submissions_exists && !$post_type_exists) {
+                $issues[] = 'Neither submissions database table nor custom post type found';
+            } elseif (!$submissions_exists && $post_type_exists) {
+                // This is actually fine - we're using the custom post type
+                $submissions_exists = true; // Mark as exists for status display
+            }
+            
+            // Check if conversations table exists  
+            $conversations_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $conversations_table));
+            if (!$conversations_exists) {
+                $issues[] = 'Conversations database table is missing: ' . $conversations_table;
+            }
+            
+            // Check file storage directory
+            if (($options['store_files'] ?? false) === 'yes') {
+                $upload_dir = wp_upload_dir();
+                $cf7_dir = $upload_dir['basedir'] . '/cf7-submissions';
+                
+                if (!file_exists($cf7_dir)) {
+                    $issues[] = 'File storage directory does not exist: ' . $cf7_dir;
+                } elseif (!is_writable($cf7_dir)) {
+                    $issues[] = 'File storage directory is not writable: ' . $cf7_dir;
+                }
+            }
+            
+            if (empty($issues)) {
+                $message = '✓ Configuration test passed!';
+                $message .= '<br><br><strong>Configuration Details:</strong>';
+                $message .= '<br>Form ID: #' . esc_html($options['form_id']);
+                $message .= '<br>Menu Label: ' . esc_html($options['menu_label'] ?? 'Artist Submissions');
+                $message .= '<br>File Storage: ' . (($options['store_files'] ?? false) === 'yes' ? 'Enabled' : 'Disabled');
+                $message .= '<br>Database Tables: ✓ Present';
+                
+                if (isset($form) && isset($form_fields)) {
+                    $message .= '<br><br><strong>Form Analysis:</strong>';
+                    $message .= '<br>Form Title: ' . esc_html($form->title());
+                    $message .= '<br>Total Fields: ' . count($form_fields);
+                    $message .= '<br>Email Field: ' . ($has_email_field ? '✓ Found' : '✗ Missing');
+                    $message .= '<br>Name/Artist Field: ' . ($has_name_field ? '✓ Found' : '✗ Missing');
+                    $message .= '<br>File Upload Field: ' . ($has_file_field ? '✓ Found' : '✗ Missing');
+                    
+                    // Show field details for debugging
+                    if (isset($field_details) && !empty($field_details)) {
+                        $message .= '<br><br><strong>Field Details:</strong>';
+                        foreach ($field_details as $field_detail) {
+                            $message .= '<br>• ' . esc_html($field_detail['type']) . ' field: "' . esc_html($field_detail['name']) . '"';
+                            if ($field_detail['required']) {
+                                $message .= ' (required)';
+                            }
+                        }
+                    }
+                    
+                    // Show database table status
+                    if (isset($submissions_exists) && isset($conversations_exists)) {
+                        $message .= '<br><br><strong>Database Status:</strong>';
+                        if ($post_type_exists) {
+                            $message .= '<br>Submissions Storage: ✓ Custom Post Type (cf7_submission)';
+                        } else {
+                            $message .= '<br>Submissions Table: ' . ($submissions_exists ? '✓ Present' : '✗ Missing');
+                        }
+                        $message .= '<br>Conversations Table: ' . ($conversations_exists ? '✓ Present' : '✗ Missing');
+                    }
+                }
+                
+                wp_send_json_success(array('message' => $message));
+            } else {
+                $message = '✗ Configuration issues found:';
+                foreach ($issues as $issue) {
+                    $message .= '<br>• ' . esc_html($issue);
+                }
+                
+                // Add debugging information even when there are issues
+                if (isset($form) && isset($form_fields)) {
+                    $message .= '<br><br><strong>Debug Information:</strong>';
+                    $message .= '<br>Form ID: #' . esc_html($options['form_id']);
+                    $message .= '<br>Form Title: ' . esc_html($form->title());
+                    $message .= '<br>Total Fields Found: ' . count($form_fields);
+                    
+                    if (isset($field_details) && !empty($field_details)) {
+                        $message .= '<br><br><strong>Detected Fields:</strong>';
+                        foreach ($field_details as $field_detail) {
+                            $message .= '<br>• ' . esc_html($field_detail['type']) . ' field: "' . esc_html($field_detail['name']) . '"';
+                            if ($field_detail['required']) {
+                                $message .= ' (required)';
+                            }
+                        }
+                    }
+                    
+                    // Show field detection results
+                    $message .= '<br><br><strong>Field Detection Results:</strong>';
+                    $message .= '<br>Email Field Detected: ' . ($has_email_field ? 'Yes' : 'No');
+                    $message .= '<br>Name Field Detected: ' . ($has_name_field ? 'Yes' : 'No');  
+                    $message .= '<br>File Field Detected: ' . ($has_file_field ? 'Yes' : 'No');
+                    
+                    // Show database table status
+                    if (isset($submissions_exists) || isset($conversations_exists)) {
+                        $message .= '<br><br><strong>Database Status:</strong>';
+                        if (isset($post_type_exists) && $post_type_exists) {
+                            $message .= '<br>Submissions Storage: Custom Post Type (cf7_submission) - Present';
+                        } elseif (isset($submissions_exists)) {
+                            $message .= '<br>Submissions Table: ' . ($submissions_exists ? 'Present' : 'Missing');
+                        }
+                        if (isset($conversations_exists)) {
+                            $message .= '<br>Conversations Table: ' . ($conversations_exists ? 'Present' : 'Missing');
+                        }
+                    }
+                }
+                
+                wp_send_json_error(array('message' => $message));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error testing configuration: ' . $e->getMessage()));
         }
     }
     
@@ -1959,470 +826,6 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * Render the audit log interface
-     * 
-     * Displays a comprehensive audit log with filtering and search capabilities.
-     * Shows all logged actions including email sends, status changes, and system events.
-     * 
-     * @since 2.0.0
-     * 
-     * @return void
-     */
-    private function render_audit_log_interface() {
-        global $wpdb;
-        
-        // Get filter parameters
-        $action_type = isset($_GET['action_type']) ? sanitize_text_field($_GET['action_type']) : '';
-        $submission_id = isset($_GET['submission_id']) ? intval($_GET['submission_id']) : 0;
-        $date_from = isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : '';
-        $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : '';
-        $page_num = isset($_GET['log_page']) ? max(1, intval($_GET['log_page'])) : 1;
-        $per_page = 20;
-        $offset = ($page_num - 1) * $per_page;
-        
-        // Build query
-        $table_name = $wpdb->prefix . 'cf7_action_log';
-        $where_conditions = array('1=1');
-        $where_values = array();
-        
-        if (!empty($action_type)) {
-            $where_conditions[] = 'action_type = %s';
-            $where_values[] = $action_type;
-        }
-        
-        if ($submission_id > 0) {
-            $where_conditions[] = 'submission_id = %d';
-            $where_values[] = $submission_id;
-        }
-        
-        if (!empty($date_from)) {
-            $where_conditions[] = 'DATE(date_created) >= %s';
-            $where_values[] = $date_from;
-        }
-        
-        if (!empty($date_to)) {
-            $where_conditions[] = 'DATE(date_created) <= %s';
-            $where_values[] = $date_to;
-        }
-        
-        $where_clause = implode(' AND ', $where_conditions);
-        
-        // Get total count for pagination
-        $count_query = "SELECT COUNT(*) FROM {$table_name} WHERE {$where_clause}";
-        if (!empty($where_values)) {
-            $count_query = $wpdb->prepare($count_query, $where_values);
-        }
-        $total_items = $wpdb->get_var($count_query);
-        
-        // Get logs with pagination
-        $query = "SELECT al.*, p.post_title, u.display_name 
-                  FROM {$table_name} al 
-                  LEFT JOIN {$wpdb->posts} p ON al.submission_id = p.ID 
-                  LEFT JOIN {$wpdb->users} u ON al.user_id = u.ID 
-                  WHERE {$where_clause} 
-                  ORDER BY al.date_created DESC 
-                  LIMIT %d OFFSET %d";
-        
-        $query_values = array_merge($where_values, array($per_page, $offset));
-        $logs = $wpdb->get_results($wpdb->prepare($query, $query_values));
-        
-        // Calculate pagination
-        $total_pages = ceil($total_items / $per_page);
-        
-        ?>
-        <div class="cf7-audit-log-container">
-            <!-- Filters -->
-            <div class="cf7-audit-filters">
-                <form method="get" class="cf7-filters-form">
-                    <input type="hidden" name="post_type" value="cf7_submission">
-                    <input type="hidden" name="page" value="cf7-artist-submissions-settings">
-                    <input type="hidden" name="tab" value="audit">
-                    
-                    <div class="filter-row">
-                        <div class="filter-group">
-                            <label for="action_type"><?php _e('Action Type:', 'cf7-artist-submissions'); ?></label>
-                            <select name="action_type" id="action_type">
-                                <option value=""><?php _e('All Actions', 'cf7-artist-submissions'); ?></option>
-                                <option value="email_sent" <?php selected($action_type, 'email_sent'); ?>><?php _e('Email Sent', 'cf7-artist-submissions'); ?></option>
-                                <option value="status_change" <?php selected($action_type, 'status_change'); ?>><?php _e('Status Change', 'cf7-artist-submissions'); ?></option>
-                                <option value="form_submission" <?php selected($action_type, 'form_submission'); ?>><?php _e('Form Submission', 'cf7-artist-submissions'); ?></option>
-                                <option value="file_upload" <?php selected($action_type, 'file_upload'); ?>><?php _e('File Upload', 'cf7-artist-submissions'); ?></option>
-                                <option value="action_created" <?php selected($action_type, 'action_created'); ?>><?php _e('Action Created', 'cf7-artist-submissions'); ?></option>
-                                <option value="action_completed" <?php selected($action_type, 'action_completed'); ?>><?php _e('Action Completed', 'cf7-artist-submissions'); ?></option>
-                                <option value="conversation_cleared" <?php selected($action_type, 'conversation_cleared'); ?>><?php _e('Conversation Cleared', 'cf7-artist-submissions'); ?></option>
-                                <option value="setting_changed" <?php selected($action_type, 'setting_changed'); ?>><?php _e('Setting Changed', 'cf7-artist-submissions'); ?></option>
-                            </select>
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="submission_id"><?php _e('Submission ID:', 'cf7-artist-submissions'); ?></label>
-                            <input type="number" name="submission_id" id="submission_id" value="<?php echo esc_attr($submission_id); ?>" min="0">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="date_from"><?php _e('From Date:', 'cf7-artist-submissions'); ?></label>
-                            <input type="date" name="date_from" id="date_from" value="<?php echo esc_attr($date_from); ?>">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <label for="date_to"><?php _e('To Date:', 'cf7-artist-submissions'); ?></label>
-                            <input type="date" name="date_to" id="date_to" value="<?php echo esc_attr($date_to); ?>">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <button type="submit" class="button button-primary"><?php _e('Filter', 'cf7-artist-submissions'); ?></button>
-                            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" class="button"><?php _e('Clear', 'cf7-artist-submissions'); ?></a>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            
-            <!-- Results Summary -->
-            <div class="cf7-audit-summary">
-                <p><?php printf(__('Showing %d of %d audit log entries', 'cf7-artist-submissions'), count($logs), $total_items); ?></p>
-                
-                <!-- Update Missing Artist Info Button -->
-                <div class="cf7-audit-tools">
-                    <form method="post" style="display: inline-block;">
-                        <?php wp_nonce_field('cf7_update_artist_info', 'cf7_artist_info_nonce'); ?>
-                        <input type="hidden" name="action" value="update_missing_artist_info">
-                        <button type="submit" class="button button-secondary" onclick="return confirm('<?php _e('This will update all audit log entries with missing artist information. Continue?', 'cf7-artist-submissions'); ?>');">
-                            <?php _e('Update Missing Artist Info', 'cf7-artist-submissions'); ?>
-                        </button>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Audit Log Table -->
-            <div class="cf7-audit-table-container">
-                <?php if (empty($logs)): ?>
-                    <div class="notice notice-info">
-                        <p><?php _e('No audit log entries found matching your criteria.', 'cf7-artist-submissions'); ?></p>
-                    </div>
-                <?php else: ?>
-                    <table class="wp-list-table widefat fixed striped">
-                        <thead>
-                            <tr>
-                                <th style="width: 140px;"><?php _e('Date & Time', 'cf7-artist-submissions'); ?></th>
-                                <th style="width: 100px;"><?php _e('Action Type', 'cf7-artist-submissions'); ?></th>
-                                <th style="width: 200px;"><?php _e('Submission & Artist', 'cf7-artist-submissions'); ?></th>
-                                <th style="width: 120px;"><?php _e('User', 'cf7-artist-submissions'); ?></th>
-                                <th><?php _e('Details', 'cf7-artist-submissions'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($logs as $log): ?>
-                                <tr>
-                                    <td>
-                                        <strong><?php echo esc_html(date_i18n(get_option('date_format'), strtotime($log->date_created))); ?></strong><br>
-                                        <small><?php echo esc_html(date_i18n(get_option('time_format'), strtotime($log->date_created))); ?></small>
-                                    </td>
-                                    <td>
-                                        <?php
-                                        $type_labels = array(
-                                            'email_sent' => __('Email Sent', 'cf7-artist-submissions'),
-                                            'status_change' => __('Status Change', 'cf7-artist-submissions'),
-                                            'form_submission' => __('Form Submission', 'cf7-artist-submissions'),
-                                            'file_upload' => __('File Upload', 'cf7-artist-submissions'),
-                                            'action_created' => __('Action Created', 'cf7-artist-submissions'),
-                                            'action_completed' => __('Action Completed', 'cf7-artist-submissions'),
-                                            'conversation_cleared' => __('Conversation Cleared', 'cf7-artist-submissions'),
-                                            'setting_changed' => __('Setting Changed', 'cf7-artist-submissions')
-                                        );
-                                        $type_class = sanitize_html_class($log->action_type);
-                                        echo '<span class="audit-type audit-type-' . $type_class . '">';
-                                        echo esc_html($type_labels[$log->action_type] ?? ucwords(str_replace('_', ' ', $log->action_type)));
-                                        echo '</span>';
-                                        ?>
-                                    </td>
-                                    <td>
-                                        <!-- Combined Submission & Artist Info -->
-                                        <div class="submission-artist-info">
-                                            <?php if ($log->submission_id > 0): ?>
-                                                <!-- Submission Info -->
-                                                <div class="submission-info">
-                                                    <?php if ($log->post_title): ?>
-                                                        <a href="<?php echo esc_url(admin_url('post.php?post=' . $log->submission_id . '&action=edit')); ?>" class="submission-link">
-                                                            <strong>#<?php echo esc_html($log->submission_id); ?></strong>
-                                                        </a>
-                                                    <?php else: ?>
-                                                        <strong>#<?php echo esc_html($log->submission_id); ?></strong>
-                                                        <span class="submission-deleted"><?php _e('(Deleted)', 'cf7-artist-submissions'); ?></span>
-                                                    <?php endif; ?>
-                                                </div>
-                                                
-                                                <!-- Artist Info -->
-                                                <?php if (!empty($log->artist_name) || !empty($log->artist_email)): ?>
-                                                    <div class="artist-info">
-                                                        <?php if (!empty($log->artist_name)): ?>
-                                                            <span class="artist-name"><?php echo esc_html($log->artist_name); ?></span>
-                                                        <?php endif; ?>
-                                                        <?php if (!empty($log->artist_email)): ?>
-                                                            <span class="artist-email"><?php echo esc_html($log->artist_email); ?></span>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                <?php elseif ($log->post_title): ?>
-                                                    <!-- Fallback: Show post title if no artist info available -->
-                                                    <div class="artist-info">
-                                                        <span class="artist-name"><?php echo esc_html(wp_trim_words($log->post_title, 4)); ?></span>
-                                                    </div>
-                                                <?php endif; ?>
-                                            <?php else: ?>
-                                                <!-- System Action -->
-                                                <div class="system-action-info">
-                                                    <span class="system-action"><?php _e('System Action', 'cf7-artist-submissions'); ?></span>
-                                                    <?php if (!empty($log->artist_name) || !empty($log->artist_email)): ?>
-                                                        <div class="artist-info">
-                                                            <?php if (!empty($log->artist_name)): ?>
-                                                                <span class="artist-name"><?php echo esc_html($log->artist_name); ?></span>
-                                                            <?php endif; ?>
-                                                            <?php if (!empty($log->artist_email)): ?>
-                                                                <span class="artist-email"><?php echo esc_html($log->artist_email); ?></span>
-                                                            <?php endif; ?>
-                                                        </div>
-                                                    <?php endif; ?>
-                                                </div>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <?php if ($log->display_name): ?>
-                                            <?php echo esc_html($log->display_name); ?>
-                                        <?php else: ?>
-                                            <?php _e('System', 'cf7-artist-submissions'); ?>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php
-                                        $data = json_decode($log->data, true);
-                                        if (is_array($data)) {
-                                            echo '<div class="audit-details">';
-                                            foreach ($data as $key => $value) {
-                                                if (is_string($value) || is_numeric($value)) {
-                                                    echo '<div><strong>' . esc_html(ucwords(str_replace('_', ' ', $key))) . ':</strong> ';
-                                                    echo esc_html(wp_trim_words($value, 10));
-                                                    echo '</div>';
-                                                }
-                                            }
-                                            echo '</div>';
-                                        } else {
-                                            echo esc_html($log->data);
-                                        }
-                                        ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
-            
-            <!-- Pagination -->
-            <?php if ($total_pages > 1): ?>
-                <div class="cf7-audit-pagination">
-                    <div class="tablenav">
-                        <div class="tablenav-pages">
-                            <span class="displaying-num"><?php printf(__('%d items', 'cf7-artist-submissions'), $total_items); ?></span>
-                            
-                            <?php if ($page_num > 1): ?>
-                                <a class="button" href="<?php echo esc_url(add_query_arg('log_page', $page_num - 1)); ?>"><?php _e('Previous', 'cf7-artist-submissions'); ?></a>
-                            <?php endif; ?>
-                            
-                            <span class="current-page"><?php printf(__('Page %d of %d', 'cf7-artist-submissions'), $page_num, $total_pages); ?></span>
-                            
-                            <?php if ($page_num < $total_pages): ?>
-                                <a class="button" href="<?php echo esc_url(add_query_arg('log_page', $page_num + 1)); ?>"><?php _e('Next', 'cf7-artist-submissions'); ?></a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            <?php endif; ?>
-        </div>
-        
-        <style>
-        .cf7-audit-log-container {
-            margin-top: 20px;
-        }
-        
-        .cf7-audit-filters {
-            background: #f9f9f9;
-            padding: 15px;
-            border: 1px solid #ddd;
-            margin-bottom: 20px;
-        }
-        
-        .filter-row {
-            display: flex;
-            gap: 15px;
-            align-items: end;
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 120px;
-        }
-        
-        .filter-group label {
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-        
-        .filter-group input,
-        .filter-group select {
-            padding: 4px 8px;
-        }
-        
-        .cf7-audit-summary {
-            margin-bottom: 15px;
-            font-style: italic;
-        }
-        
-        .audit-type {
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .audit-type-email_sent {
-            background: #e7f3ff;
-            color: #0073aa;
-        }
-        
-        .audit-type-status_change {
-            background: #fff2e7;
-            color: #d63638;
-        }
-        
-        .audit-type-form_submission {
-            background: #e7ffe7;
-            color: #00a32a;
-        }
-        
-        .audit-type-file_upload {
-            background: #f0e7ff;
-            color: #6c2eb9;
-        }
-        
-        .audit-type-action_created {
-            background: #e0f7fa;
-            color: #006064;
-        }
-        
-        .audit-type-action_completed {
-            background: #e8f5e8;
-            color: #2e7d32;
-        }
-        
-        .audit-type-conversation_cleared {
-            background: #fff3e0;
-            color: #e65100;
-        }
-        
-        .audit-type-setting_changed {
-            background: #f3e5f5;
-            color: #7b1fa2;
-        }
-        
-        .audit-details div {
-            margin-bottom: 3px;
-            font-size: 12px;
-        }
-        
-        .system-action,
-        .no-artist {
-            color: #666;
-            font-style: italic;
-        }
-        
-        .cf7-audit-pagination {
-            margin-top: 20px;
-            text-align: center;
-        }
-        
-        .cf7-audit-table-container {
-            overflow-x: auto;
-        }
-        
-        /* Submission & Artist Combined Column Styles */
-        .submission-artist-info {
-            line-height: 1.4;
-        }
-        
-        .submission-info {
-            margin-bottom: 8px;
-            padding-bottom: 6px;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .submission-link {
-            text-decoration: none;
-            color: #0073aa;
-            font-weight: 600;
-        }
-        
-        .submission-link:hover {
-            color: #005177;
-            text-decoration: underline;
-        }
-        
-        .submission-title {
-            color: #666;
-            font-size: 12px;
-            margin-left: 6px;
-            font-style: italic;
-        }
-        
-        .submission-deleted {
-            color: #d63638;
-            font-size: 12px;
-            margin-left: 6px;
-            font-style: italic;
-        }
-        
-        .artist-info {
-            margin-top: 4px;
-        }
-        
-        .artist-name {
-            color: #333;
-            font-weight: 500;
-            display: block;
-            margin-bottom: 2px;
-        }
-        
-        .artist-email {
-            color: #666;
-            font-size: 12px;
-            display: block;
-        }
-        
-        .system-action-info .system-action {
-            color: #8a6914;
-            font-weight: 600;
-            font-size: 13px;
-            display: block;
-            margin-bottom: 6px;
-        }
-        
-        .system-action-info .artist-info {
-            margin-top: 6px;
-            padding-top: 4px;
-            border-top: 1px dashed #ddd;
-        }
-        
-        /* Remove old styles that are no longer needed */
-        .no-artist {
-            display: none;
-        }
-        </style>
-        <?php
-    }
-    
-    /**
      * Log settings changes to audit trail.
      * 
      * Compares old and new settings and logs any changes.
@@ -2465,4 +868,502 @@ class CF7_Artist_Submissions_Settings {
             }
         }
     }
+    
+    /**
+     * AJAX handler to test IMAP connection
+     */
+    public function ajax_test_imap_connection() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce') && !wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Check if IMAP extension is available first
+        if (!extension_loaded('imap')) {
+            wp_send_json_error(array('message' => 'PHP IMAP extension is not installed on this server. Please install php-imap to use IMAP functionality.'));
+            return;
+        }
+        
+        // Get IMAP settings
+        $imap_options = get_option('cf7_artist_submissions_imap_options', array());
+        
+        // Debug: Show what settings we have
+        if (empty($imap_options)) {
+            wp_send_json_error(array('message' => 'No IMAP settings found. Please save your IMAP configuration first.'));
+            return;
+        }
+        
+        // Validate required settings with specific error messages
+        $missing_fields = array();
+        if (empty($imap_options['server'])) {
+            $missing_fields[] = 'IMAP Server';
+        }
+        if (empty($imap_options['username'])) {
+            $missing_fields[] = 'Username';
+        }
+        if (empty($imap_options['password'])) {
+            $missing_fields[] = 'Password';
+        }
+        
+        if (!empty($missing_fields)) {
+            wp_send_json_error(array('message' => 'IMAP settings are incomplete. Missing: ' . implode(', ', $missing_fields) . '. Please configure all required fields and save.'));
+            return;
+        }
+        
+        try {
+            // Build connection string
+            $server = $imap_options['server'];
+            $port = isset($imap_options['port']) ? intval($imap_options['port']) : 993;
+            $encryption = isset($imap_options['encryption']) ? $imap_options['encryption'] : 'ssl';
+            
+            $connection_string = '{' . $server . ':' . $port;
+            if ($encryption === 'ssl') {
+                $connection_string .= '/ssl';
+            } elseif ($encryption === 'tls') {
+                $connection_string .= '/tls';
+            }
+            $connection_string .= '}INBOX';
+            
+            // Clear any previous IMAP errors
+            imap_errors();
+            imap_alerts();
+            
+            // Attempt connection with timeout
+            $connection = @imap_open(
+                $connection_string,
+                $imap_options['username'],
+                $imap_options['password'],
+                OP_READONLY
+            );
+            
+            if ($connection === false) {
+                // Get all IMAP errors for better debugging
+                $errors = imap_errors();
+                $alerts = imap_alerts();
+                
+                $error_message = 'IMAP connection failed';
+                if (!empty($errors)) {
+                    $error_message .= ': ' . implode(', ', $errors);
+                } elseif (!empty($alerts)) {
+                    $error_message .= ': ' . implode(', ', $alerts);
+                } else {
+                    $error_message .= ': Unknown error';
+                }
+                
+                $error_message .= '<br><br><strong>Connection Details:</strong>';
+                $error_message .= '<br>Server: ' . esc_html($connection_string);
+                $error_message .= '<br>Username: ' . esc_html($imap_options['username']);
+                
+                wp_send_json_error(array('message' => $error_message));
+                return;
+            }
+            
+            // Get mailbox info
+            $status = imap_status($connection, $connection_string, SA_ALL);
+            $message_count = $status ? $status->messages : 0;
+            
+            // Close connection
+            imap_close($connection);
+            
+            $message = '✓ IMAP connection successful';
+            $message .= '<br>Server: ' . esc_html($server . ':' . $port);
+            $message .= '<br>Encryption: ' . esc_html(strtoupper($encryption));
+            $message .= '<br>Messages in inbox: ' . $message_count;
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'details' => array(
+                    'server' => $server,
+                    'port' => $port,
+                    'encryption' => $encryption,
+                    'message_count' => $message_count
+                )
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error testing IMAP: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to cleanup inbox
+     */
+    public function ajax_cleanup_inbox() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce') && !wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Get IMAP settings
+        $imap_options = get_option('cf7_artist_submissions_imap_options', array());
+        
+        // Validate required settings
+        if (empty($imap_options['server']) || empty($imap_options['username']) || empty($imap_options['password'])) {
+            wp_send_json_error(array('message' => 'IMAP settings are incomplete. Please configure server, username, and password.'));
+            return;
+        }
+        
+        // Check if IMAP extension is available
+        if (!extension_loaded('imap')) {
+            wp_send_json_error(array('message' => 'PHP IMAP extension is not installed on this server.'));
+            return;
+        }
+        
+        try {
+            // Build connection string
+            $server = $imap_options['server'];
+            $port = isset($imap_options['port']) ? intval($imap_options['port']) : 993;
+            $encryption = isset($imap_options['encryption']) ? $imap_options['encryption'] : 'ssl';
+            
+            $connection_string = '{' . $server . ':' . $port;
+            if ($encryption === 'ssl') {
+                $connection_string .= '/ssl';
+            } elseif ($encryption === 'tls') {
+                $connection_string .= '/tls';
+            }
+            $connection_string .= '}INBOX';
+            
+            // Attempt connection
+            $connection = @imap_open(
+                $connection_string,
+                $imap_options['username'],
+                $imap_options['password']
+            );
+            
+            if ($connection === false) {
+                $error = imap_last_error();
+                wp_send_json_error(array(
+                    'message' => 'IMAP connection failed: ' . ($error ? $error : 'Unknown error')
+                ));
+                return;
+            }
+            
+            // Get messages marked for deletion or older messages
+            $messages = imap_search($connection, 'DELETED', SE_UID) ?: array();
+            $old_messages = imap_search($connection, 'BEFORE "' . date('d-M-Y', strtotime('-30 days')) . '"', SE_UID) ?: array();
+            
+            $all_cleanup_messages = array_unique(array_merge($messages, $old_messages));
+            $deleted_count = 0;
+            
+            if (!empty($all_cleanup_messages)) {
+                foreach ($all_cleanup_messages as $uid) {
+                    if (imap_delete($connection, $uid, FT_UID)) {
+                        $deleted_count++;
+                    }
+                }
+                
+                // Expunge to permanently delete
+                imap_expunge($connection);
+            }
+            
+            // Close connection
+            imap_close($connection);
+            
+            $message = '✓ Inbox cleanup completed';
+            $message .= '<br>Processed ' . count($all_cleanup_messages) . ' messages';
+            $message .= '<br>Successfully deleted ' . $deleted_count . ' messages';
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'details' => array(
+                    'total_processed' => count($all_cleanup_messages),
+                    'deleted_count' => $deleted_count
+                )
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error during cleanup: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to test template email
+     */
+    public function ajax_test_template_email() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Get template ID and test email
+        $template_id = isset($_POST['template_id']) ? sanitize_text_field($_POST['template_id']) : '';
+        $test_email = isset($_POST['test_email']) ? sanitize_email($_POST['test_email']) : get_option('admin_email');
+        
+        if (empty($template_id)) {
+            wp_send_json_error(array('message' => 'Template ID is required'));
+            return;
+        }
+        
+        if (!is_email($test_email)) {
+            wp_send_json_error(array('message' => 'Valid test email is required'));
+            return;
+        }
+        
+        try {
+            // Get email templates
+            $templates = get_option('cf7_artist_submissions_email_templates', array());
+            
+            if (!isset($templates[$template_id]) || !$templates[$template_id]['enabled']) {
+                wp_send_json_error(array('message' => 'Template not found or not enabled'));
+                return;
+            }
+            
+            $template = $templates[$template_id];
+            
+            // Get email options for from address
+            $email_options = get_option('cf7_artist_submissions_email_options', array());
+            $from_email = isset($email_options['from_email']) ? $email_options['from_email'] : get_option('admin_email');
+            $from_name = isset($email_options['from_name']) ? $email_options['from_name'] : get_bloginfo('name');
+            
+            // Replace placeholders with test data
+            $subject = str_replace(
+                array('{artist_name}', '{site_name}', '{submission_id}'),
+                array('Test Artist', get_bloginfo('name'), '123'),
+                $template['subject']
+            );
+            
+            $body = str_replace(
+                array('{artist_name}', '{site_name}', '{submission_id}', '{artist_email}'),
+                array('Test Artist', get_bloginfo('name'), '123', $test_email),
+                $template['body']
+            );
+            
+            // Send test email
+            $headers = array();
+            $headers[] = 'From: ' . $from_name . ' <' . $from_email . '>';
+            $headers[] = 'Content-Type: text/html; charset=UTF-8';
+            
+            $sent = wp_mail($test_email, $subject, $body, $headers);
+            
+            if ($sent) {
+                $message = '✓ Test email sent successfully to ' . esc_html($test_email);
+                $message .= '<br>Template: ' . esc_html($template_id);
+                $message .= '<br>Subject: ' . esc_html($subject);
+                wp_send_json_success(array(
+                    'message' => $message, 
+                    'details' => array(
+                        'template_id' => $template_id,
+                        'subject' => $subject,
+                        'to' => $test_email
+                    )
+                ));
+            } else {
+                wp_send_json_error(array('message' => 'Failed to send test email. Check your email configuration.'));
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error sending test email: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler to preview template email
+     */
+    public function ajax_preview_template_email() {
+        // Check nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Get template ID
+        $template_id = isset($_POST['template_id']) ? sanitize_text_field($_POST['template_id']) : '';
+        
+        if (empty($template_id)) {
+            wp_send_json_error(array('message' => 'Template ID is required'));
+            return;
+        }
+        
+        try {
+            // Get email templates
+            $templates = get_option('cf7_artist_submissions_email_templates', array());
+            
+            if (!isset($templates[$template_id])) {
+                wp_send_json_error(array('message' => 'Template not found'));
+                return;
+            }
+
+            $template = $templates[$template_id];
+            
+            // Use sample data for preview
+            $sample_data = array(
+                'artist_name' => 'Jane Smith',
+                'artist_email' => 'jane.smith@example.com',
+                'submission_title' => 'Sample Artwork Submission',
+                'submission_id' => '123',
+                'site_name' => get_bloginfo('name'),
+                'site_url' => get_site_url(),
+                'status' => 'Selected'
+            );
+            
+            // Process merge tags with sample data
+            $subject = $this->process_merge_tags_with_data($template['subject'], $sample_data);
+            $body = $this->process_merge_tags_with_data($template['body'], $sample_data);
+            
+            // Check if WooCommerce template should be used
+            $email_options = get_option('cf7_artist_submissions_email_options', array());
+            $use_wc_template = isset($email_options['use_wc_template']) ? $email_options['use_wc_template'] : false;
+            
+            if ($use_wc_template && class_exists('WooCommerce')) {
+                // Apply WooCommerce email template styling
+                $body = $this->apply_woocommerce_template($body, $subject);
+            } else {
+                // Convert line breaks to HTML for regular templates
+                $body = wpautop($body);
+            }
+            
+            wp_send_json_success(array(
+                'subject' => $subject,
+                'body' => $body,
+                'template_name' => $this->get_template_name($template_id),
+                'uses_woocommerce' => $use_wc_template && class_exists('WooCommerce')
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error generating preview: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * Apply WooCommerce email template styling
+     */
+    private function apply_woocommerce_template($content, $subject) {
+        if (!class_exists('WooCommerce')) {
+            return wpautop($content);
+        }
+        
+        try {
+            // Make sure WooCommerce is properly initialized
+            require_once(WC_ABSPATH . 'includes/class-wc-emails.php');
+            require_once(WC_ABSPATH . 'includes/emails/class-wc-email.php');
+            
+            $wc_emails = new WC_Emails();
+            $wc_emails->init();
+            
+            // Create a generic WC_Email object to access template methods
+            $email = new WC_Email();
+            
+            // Get the email template content
+            ob_start();
+            
+            // Include the WooCommerce email header
+            wc_get_template('emails/email-header.php', array('email_heading' => $subject));
+            
+            // Add our content with proper formatting
+            echo wpautop($content);
+            
+            // Include the WooCommerce email footer
+            wc_get_template('emails/email-footer.php');
+            
+            // Get the complete email template
+            $formatted_email = ob_get_clean();
+            
+            // Apply WooCommerce inline styles
+            $formatted_email = $email->style_inline($formatted_email);
+            
+            return $formatted_email;
+        } catch (Exception $e) {
+            // If WooCommerce template fails, fall back to plain text
+            error_log('CF7 Template Preview: WooCommerce template error: ' . $e->getMessage());
+            return wpautop($content);
+        }
+    }
+    
+    /**
+     * Process merge tags with provided data
+     */
+    private function process_merge_tags_with_data($content, $data) {
+        $merge_tags = array(
+            '{artist_name}' => $data['artist_name'],
+            '{artist_email}' => $data['artist_email'],
+            '{submission_title}' => $data['submission_title'],
+            '{submission_id}' => $data['submission_id'],
+            '{site_name}' => $data['site_name'],
+            '{site_url}' => $data['site_url'],
+            '{status}' => $data['status']
+        );
+        
+        return str_replace(array_keys($merge_tags), array_values($merge_tags), $content);
+    }
+    
+    /**
+     * Get human-readable template name
+     */
+    private function get_template_name($template_id) {
+        $names = array(
+            'submission_received' => __('Submission Received', 'cf7-artist-submissions'),
+            'status_changed_to_selected' => __('Status Changed to Selected', 'cf7-artist-submissions'),
+            'status_changed_to_reviewed' => __('Status Changed to Reviewed', 'cf7-artist-submissions'),
+            'status_changed_to_shortlisted' => __('Status Changed to Shortlisted', 'cf7-artist-submissions'),
+            'custom_notification' => __('Custom Notification', 'cf7-artist-submissions')
+        );
+        
+        return isset($names[$template_id]) ? $names[$template_id] : ucwords(str_replace('_', ' ', $template_id));
+    }
+    
+    /**
+     * AJAX handler for updating missing artist info in audit logs
+     * 
+     * @since 2.1.0
+     */
+    public function ajax_update_missing_artist_info() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => __('Security check failed.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        // Check capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Insufficient permissions.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        // Update missing artist info
+        if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+            $updated_count = CF7_Artist_Submissions_Action_Log::update_missing_artist_info();
+            
+            if ($updated_count > 0) {
+                wp_send_json_success(array(
+                    'message' => sprintf(__('Successfully updated %d audit log entries with artist information.', 'cf7-artist-submissions'), $updated_count),
+                    'updated_count' => $updated_count
+                ));
+            } else {
+                wp_send_json_success(array(
+                    'message' => __('No audit log entries needed updating.', 'cf7-artist-submissions'),
+                    'updated_count' => 0
+                ));
+            }
+        } else {
+            wp_send_json_error(array('message' => __('Action Log class not available.', 'cf7-artist-submissions')));
+        }
+    }
+    
 }

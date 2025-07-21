@@ -42,18 +42,13 @@
 }
 
 /* ===== ARTIST HEADER SECTION ===== */
+/* Note: Artist header extends shared gradient header from common.css */
+/* Use .cf7-gradient-header and .cf7-header-context classes on artist header element */
+
 .cf7-artist-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 2rem;
-    margin: 0;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 2rem;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+    /* Specific styling for artist header beyond common gradient header */
     border-radius: 8px 8px 0 0;
-    margin-bottom: 0;
+    margin: 0 0 0 0; /* Override common margin for tabs */
 }
 
 .cf7-artist-header-content {
@@ -74,6 +69,9 @@
     border: 3px solid rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
     font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .cf7-artist-status .cf7-status-circle .dashicons {
@@ -100,6 +98,35 @@
     flex-wrap: wrap;
 }
 
+.cf7-artist-email {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+    color: white;
+    font-weight: 400;
+}
+
+.cf7-artist-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cf7-artist-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.875rem;
+}
+
+.cf7-artist-meta-item .dashicons {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+}
+
 .cf7-artist-pronouns {
     font-size: 1.25rem;
     font-weight: 400;
@@ -114,6 +141,16 @@
     color: white;
     font-weight: 400;
 }
+
+.cf7-profile-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Note: Button styles moved to common.css for shared use across all interfaces */
+/* Use .cf7-header-context class on header elements to get proper button styling */
 
 /* Header Field Editing */
 .cf7-header-field {
@@ -511,16 +548,6 @@ body.cf7-edit-mode .cf7-header-field:hover {
     background: white;
 }
 
-.cf7-profile-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    padding: 1.5rem 2rem;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-    justify-content: flex-end;
-}
-
 .cf7-profile-content {
     padding: 0;
 }
@@ -609,32 +636,6 @@ body.cf7-edit-mode .cf7-header-field:hover {
     border-radius: 4px;
     padding: 4px;
     margin: -4px;
-}
-
-.edit-active {
-    width: 100%;
-    padding: 6px 8px;
-    border: 2px solid #2271b1;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.edit-active:focus {
-    outline: none;
-    border-color: #0073aa;
-    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.2);
-}
-
-.edit-controls {
-    margin-top: 8px;
-    display: flex;
-    gap: 8px;
-}
-
-.edit-controls .button {
-    padding: 4px 12px;
-    font-size: 12px;
-    line-height: 1.4;
 }
 
 /* Spinning animation for loading states */
@@ -808,71 +809,8 @@ body.cf7-edit-mode .cf7-header-field:hover {
     color: white;
 }
 
-.cf7-profile-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.cf7-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    line-height: 1;
-    min-height: 44px;
-    white-space: nowrap;
-}
-
-.cf7-btn .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-    flex-shrink: 0;
-}
-
-.cf7-btn-primary {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.cf7-btn-primary:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-}
-
-.cf7-btn-secondary {
-    background: #48bb78;
-    color: white;
-}
-
-.cf7-btn-secondary:hover {
-    background: #38a169;
-    transform: translateY(-1px);
-}
-
-.cf7-btn-ghost {
-    background: transparent;
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-}
-
-.cf7-btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-}
+/* Note: Button styles moved to common.css for shared use across all interfaces */
+/* Use .cf7-header-context class on header elements to get proper button styling */
 
 .cf7-profile-content {
     padding: 0;

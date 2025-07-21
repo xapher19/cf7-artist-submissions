@@ -1,0 +1,728 @@
+/**
+ * CF7 Artist Submissions - Common/Shared Styles
+ * 
+ * Shared styling components used across multiple interface sections:
+ * - Button system with consistent styling and states
+ * - Modal overlay and dialog system
+ * - Common gradient headers and backgrounds
+ * - Typography and spacing utilities
+ * - Form components and input styling
+ * - Loading states and animations
+ * - Email interface components (sending, preview, templates)
+ * 
+ * This file contains the foundational design system components
+ * that are used across dashboard, settings, tabs, admin, and action interfaces.
+ * 
+ * COMPONENT LIBRARY:
+ * • Button System: Primary, secondary, ghost, icon variants
+ * • Modal System: Backdrop blur, animations, responsive
+ * • Gradient Headers: Consistent branding across interfaces
+ * • Loading States: Spinners, fade animations, error states
+ * • Email Components: Send interface, preview modals, template display
+ * • Tab Navigation: Shared tab styling system
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.1.0 Consolidated common styles for better organization
+ * @since 2.2.0 Added email interface components moved from admin.css
+ */
+
+/* ========================================================================
+   EMAIL INTERFACE COMPONENTS - SHARED ACROSS INTERFACES
+   ======================================================================== */
+
+/**
+ * Email Management Interface
+ * 
+ * Shared components for email sending, preview, and template management.
+ * Used across admin interface, settings, and other email-related features.
+ */
+
+/* Email Interface Container */
+.cf7-email-sending-interface {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #e5e5e5;
+    border-radius: 3px;
+}
+
+/* Email Form Fields */
+.cf7-email-field {
+    margin-bottom: 15px;
+}
+
+.cf7-email-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* Email Action Controls */
+.cf7-email-actions {
+    display: flex;
+    align-items: center;
+}
+
+.cf7-email-actions .spinner {
+    float: none;
+    margin-left: 10px;
+}
+
+.cf7-email-actions button {
+    margin-right: 10px;
+}
+
+/* Email Status Messages */
+#cf7_email_message {
+    margin: 10px 0 0 0;
+    padding: 5px 10px;
+}
+
+/* Email Preview Modal */
+#cf7-email-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgb(0,0,0,0.7);
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cf7-email-preview-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.cf7-email-preview-subject {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.cf7-email-preview-body {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border: 1px solid #eee;
+    border-radius: 3px;
+}
+
+/* Email Preview Actions */
+.cf7-email-preview-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+/* Email Log Container */
+.cf7-email-log {
+    margin-top: 20px;
+}
+
+/* Template Preview Components */
+.cf7-preview-notice {
+    background: #e3f2fd;
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    color: #1565c0;
+    border-left: 4px solid #2196f3;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.cf7-preview-template-name {
+    margin-bottom: 15px;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    color: #666;
+}
+
+.cf7-preview-subject {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007cba;
+}
+
+.cf7-preview-subject strong {
+    color: #333;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.cf7-preview-body {
+    margin-bottom: 0;
+}
+
+.cf7-preview-body strong {
+    color: #333;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ======================================================================== */
+
+/**min interfaces.
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.1.0 Consolidated common styles for better organization
+ */
+
+/* ========================================================================
+   BUTTON SYSTEM - SHARED ACROSS ALL INTERFACES
+   ======================================================================== */
+
+/**
+ * Base Button Styling
+ * 
+ * Consistent button design system used throughout the plugin.
+ * Provides flexible foundation for all button variants.
+ */
+.cf7-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    line-height: 1;
+    min-height: 44px;
+    white-space: nowrap;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.cf7-btn .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    flex-shrink: 0;
+}
+
+/* Button Variants */
+.cf7-btn-primary {
+    background: #2271b1;
+    color: white;
+}
+
+.cf7-btn-primary:hover {
+    background: #135e96;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.3);
+}
+
+.cf7-btn-secondary {
+    background: #4299e1;
+    color: white;
+}
+
+.cf7-btn-secondary:hover {
+    background: #3182ce;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+}
+
+.cf7-btn-ghost {
+    background: transparent;
+    color: #718096;
+    border: 1px solid #e2e8f0;
+}
+
+.cf7-btn-ghost:hover {
+    background: #f7fafc;
+    color: #4a5568;
+}
+
+/* Header Context Buttons (for gradient backgrounds) */
+.cf7-header-context .cf7-btn-primary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.cf7-header-context .cf7-btn-primary:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+.cf7-header-context .cf7-btn-secondary {
+    background: #48bb78;
+    color: white;
+}
+
+.cf7-header-context .cf7-btn-secondary:hover {
+    background: #38a169;
+    transform: translateY(-1px);
+}
+
+.cf7-header-context .cf7-btn-ghost {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.cf7-header-context .cf7-btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Icon Button Variant */
+.cf7-btn-icon {
+    padding: 0.75rem;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 101;
+}
+
+.cf7-btn-icon:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.cf7-btn-icon.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+/* ========================================================================
+   MODAL SYSTEM - SHARED ACROSS ALL INTERFACES
+   ======================================================================== */
+
+/**
+ * Modal Overlay System
+ * 
+ * Consistent modal dialog system used for settings, actions, and previews.
+ * Features backdrop blur, smooth animations, and responsive design.
+ */
+.cf7-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.cf7-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.cf7-modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 600px;
+    display: flex;
+    flex-direction: column;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.cf7-modal.show .cf7-modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.cf7-modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border-radius: 12px 12px 0 0;
+}
+
+.cf7-modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.cf7-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #718096;
+    padding: 0.5rem;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.cf7-modal-close:hover {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.cf7-modal-body {
+    padding: 2rem;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 200px;
+}
+
+.cf7-modal-footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.cf7-modal-btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.cf7-modal-btn.cf7-btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.cf7-modal-btn.cf7-btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.cf7-modal-btn.cf7-btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.cf7-modal-btn.cf7-btn-secondary:hover {
+    background: #d1d5db;
+    transform: translateY(-1px);
+}
+
+/* ========================================================================
+   GRADIENT HEADERS - SHARED DESIGN SYSTEM
+   ======================================================================== */
+
+/**
+ * Common Gradient Header System
+ * 
+ * Consistent gradient header design used across dashboard, settings,
+ * tabs, and other major interface sections.
+ */
+.cf7-gradient-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+    margin: 0 -20px 2rem -20px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+    gap: 2rem;
+    position: relative;
+}
+
+.cf7-header-content {
+    flex: 1;
+}
+
+.cf7-header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.cf7-header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: white;
+    line-height: 1.2;
+}
+
+.cf7-header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* ========================================================================
+   FORM COMPONENTS - SHARED INPUT STYLING
+   ======================================================================== */
+
+/**
+ * Form Input System
+ * 
+ * Consistent form styling across all interfaces.
+ */
+.cf7-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.cf7-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.cf7-form-input,
+.cf7-form-select,
+.cf7-form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: white;
+}
+
+.cf7-form-input:focus,
+.cf7-form-select:focus,
+.cf7-form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cf7-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* ========================================================================
+   LOADING STATES - SHARED ANIMATIONS
+   ======================================================================== */
+
+/**
+ * Loading and Animation System
+ */
+.cf7-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: cf7-spin 1s linear infinite;
+}
+
+@keyframes cf7-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.cf7-fade-in {
+    animation: cf7-fadeIn 0.3s ease-in;
+}
+
+@keyframes cf7-fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================================================
+   NAVIGATION TABS - SHARED TAB SYSTEM
+   ======================================================================== */
+
+/**
+ * Navigation Tab System
+ * 
+ * Consistent tab navigation used across settings, admin, and other interfaces.
+ */
+.cf7-settings-nav {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.cf7-nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.cf7-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.cf7-nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: #646970;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    background: transparent;
+    white-space: nowrap;
+    min-width: max-content;
+}
+
+.cf7-nav-tab:hover {
+    color: #2271b1;
+    background-color: rgba(34, 113, 177, 0.05);
+    text-decoration: none;
+}
+
+.cf7-nav-tab.active {
+    color: #2271b1;
+    border-bottom-color: #2271b1;
+    background-color: rgba(34, 113, 177, 0.05);
+}
+
+.cf7-nav-tab .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+}
+
+.cf7-nav-tab .tab-label {
+    font-size: 0.875rem;
+}
+
+/* Settings variant with different colors */
+.cf7-settings-nav .cf7-nav-tab:hover {
+    color: #667eea;
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+.cf7-settings-nav .cf7-nav-tab.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background-color: rgba(102, 126, 234, 0.1);
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN - SHARED BREAKPOINTS
+   ======================================================================== */
+
+/**
+ * Mobile Responsive Design
+ */
+@media (max-width: 768px) {
+    .cf7-gradient-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .cf7-header-title {
+        font-size: 2rem;
+    }
+    
+    .cf7-header-actions {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .cf7-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        min-height: 40px;
+    }
+    
+    .cf7-modal-content {
+        width: 95vw;
+        margin: 1rem;
+    }
+    
+    .cf7-modal-header,
+    .cf7-modal-body,
+    .cf7-modal-footer {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7-gradient-header {
+        margin: 0 -10px 1rem -10px;
+        padding: 1rem;
+    }
+    
+    .cf7-header-title {
+        font-size: 1.5rem;
+    }
+    
+    .cf7-header-subtitle {
+        font-size: 1rem;
+    }
+    
+    .cf7-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+        min-height: 36px;
+    }
+}

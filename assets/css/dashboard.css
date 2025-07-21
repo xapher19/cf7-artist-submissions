@@ -11,8 +11,13 @@
  * - Mobile-first responsive breakpoints
  * - Integration with WordPress admin design patterns
  * 
+ * DEPENDENCIES:
+ * - common.css: Shared button system, modal dialogs, navigation tabs,
+ *   gradient headers, form components, and responsive breakpoints
+ * 
  * @package CF7_Artist_Submissions
  * @since 2.0.0 Complete dashboard redesign with modern UI patterns
+ * @since 2.1.0 Refactored to use common.css for shared components
  */
 
 /* ===== RESET & BASE ===== */
@@ -30,29 +35,8 @@
 }
 
 /* ===== DASHBOARD HEADER ===== */
-.cf7-dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 2rem;
-    margin: 0 -20px 2rem -20px;
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 20px rgb(102, 126, 234, 0.15);
-    gap: 2rem;
-    position: relative;
-}
-
-.cf7-header-content {
-    flex: 1;
-}
-
-.cf7-header-actions {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-shrink: 0;
-}
+/* Note: Dashboard header extends shared gradient header from common.css */
+/* Use .cf7-gradient-header and .cf7-header-context classes on dashboard header element */
 
 .cf7-dashboard-title {
     font-size: 2.5rem;
@@ -70,64 +54,7 @@
     line-height: 1.4;
 }
 
-/* ===== BUTTONS ===== */
-.cf7-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    line-height: 1;
-    min-height: 44px;
-    white-space: nowrap;
-}
-
-.cf7-btn .dashicons {
-    font-size: 16px;
-    width: 16px;
-    height: 16px;
-    line-height: 16px;
-    flex-shrink: 0;
-}
-
-.cf7-btn-primary {
-    background: rgb(255, 255, 255, 0.2);
-    color: white;
-    backdrop-filter: blur(10px);
-}
-
-.cf7-btn-primary:hover {
-    background: rgb(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-}
-
-.cf7-btn-secondary {
-    background: #4299e1;
-    color: white;
-}
-
-.cf7-btn-secondary:hover {
-    background: #3182ce;
-    transform: translateY(-1px);
-}
-
-.cf7-btn-ghost {
-    background: transparent;
-    color: #718096;
-    border: 1px solid #e2e8f0;
-}
-
-.cf7-btn-ghost:hover {
-    background: #f7fafc;
-    color: #4a5568;
-}
+/* Note: Button styles moved to common.css for shared use across all interfaces */
 
 /* ===== REDESIGNED METRICS OVERVIEW ===== */
 .cf7-metrics-overview {
@@ -844,36 +771,7 @@
     color: #ef4444;
 }
 
-/* Search Toggle Button */
-.cf7-btn-icon {
-    padding: 0.75rem;
-    min-height: 44px;
-    width: 44px;
-    height: 44px;
-    border-radius: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #e2e8f0;
-    background: white;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    z-index: 101;
-}
-
-.cf7-btn-icon:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #475569;
-}
-
-.cf7-btn-icon.active {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    color: white;
-}
+/* Note: Icon button styles moved to common.css */
 
 /* Expandable Search Bar (Remove old styles) */
 .cf7-search-expandable {
@@ -2914,13 +2812,7 @@
     text-decoration: none;
 }
 
-.cf7-btn-primary {
-    background: #667eea;
-}
-
-.cf7-btn-primary:hover {
-    background: #5a67d8;
-}
+/* Note: Button styles moved to common.css for shared use across all interfaces */
 
 /* Responsive Design for Actions */
 @media (width <= 768px) {
@@ -3176,4 +3068,183 @@
 .cf7-status-filter-dropdown.open {
     position: relative;
     z-index: 10001;
+}
+
+/* ========================================================================
+   ADMIN DASHBOARD INTEGRATION STYLES
+   ======================================================================== */
+
+/**
+ * Additional dashboard styles from admin.css for consistency.
+ * These styles complement the main modern dashboard with 
+ * traditional WordPress admin integration.
+ */
+
+/**
+ * Dashboard Container & Layout
+ * 
+ * Main dashboard container with gradient background and responsive grid layout.
+ * Features glass-morphism effect with backdrop-filter for modern appearance.
+ */
+.cf7-submissions-dashboard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 30px;
+    margin: 20px 0 20px 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgb(102, 126, 234, 0.15);
+    position: relative;
+    z-index: 1;
+}
+
+/**
+ * Dashboard Statistics Cards Grid
+ * 
+ * Responsive grid layout that adapts from 4 columns on desktop
+ * to 2 columns on tablet and 1 column on mobile.
+ */
+.cf7-dashboard-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+/**
+ * Individual Dashboard Card
+ * 
+ * Semi-transparent cards with glass-morphism effect and hover animations.
+ * Contains icon, number, and label elements.
+ */
+.cf7-dashboard-card {
+    background: rgb(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cf7-dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgb(0,0,0,0.1);
+}
+
+/**
+ * Card Icons with Status-Based Color Schemes
+ * 
+ * Circular icons with gradient backgrounds representing different
+ * submission statuses (total, new, reviewed, selected).
+ */
+.cf7-card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cf7-card-icon .dashicons {
+    font-size: 24px;
+    color: white;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+}
+
+/* Status-specific gradient backgrounds */
+.cf7-card-total .cf7-card-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.cf7-card-new .cf7-card-icon {
+    background: linear-gradient(135deg, #2196f3, #1976d2);
+}
+
+.cf7-card-reviewed .cf7-card-icon {
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+}
+
+.cf7-card-selected .cf7-card-icon {
+    background: linear-gradient(135deg, #4caf50, #388e3c);
+}
+
+/**
+ * Card Content (Number & Label)
+ * 
+ * Typography and layout for the numerical data and descriptive labels.
+ */
+.cf7-card-content {
+    flex: 1;
+}
+
+.cf7-card-number {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1d2327;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.cf7-card-label {
+    font-size: 14px;
+    color: #646970;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/**
+ * Recent Activity Section
+ * 
+ * Additional dashboard element for showing recent submissions or activity.
+ */
+.cf7-dashboard-recent {
+    background: rgb(255, 255, 255, 0.9);
+    padding: 15px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1d2327;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+.cf7-dashboard-recent .dashicons {
+    color: #667eea;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+}
+
+/**
+ * Dashboard Responsive Design
+ * 
+ * Responsive breakpoints for tablet and mobile devices.
+ */
+@media (width <= 768px) {
+    .cf7-dashboard-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .cf7-card-number {
+        font-size: 24px;
+    }
+    
+    .cf7-card-icon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .cf7-card-icon .dashicons {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        line-height: 20px;
+    }
 }

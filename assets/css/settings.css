@@ -1,0 +1,944 @@
+/**
+ * CF7 Artist Submissions - Modern Settings Interface
+ * 
+ * Complete styling system for the modern settings page including:
+ * - Settings page container and layout
+ * - Toggle switches and form components
+ * - Template management interface
+ * - Debug section and system information
+ * - Test results and modal overlays
+ * - Status indicators and feedback messages
+ * 
+ * DEPENDENCIES:
+ * - common.css: Shared gradient headers, navigation tabs, button system,
+ *   modal dialogs, form components, and responsive design
+ * 
+ * @package CF7_Artist_Submissions
+ * @since 2.0.0 Modern settings interface implementation
+ * @since 2.1.0 Refactored to use common.css for shared components
+ */
+
+/* ========================================================================
+   SETTINGS PAGE CONTAINER & LAYOUT
+   ======================================================================== */
+
+/**
+ * Settings Page Container
+ * 
+ * Main container for the modern settings interface with centered layout
+ * and responsive design. Uses modern system fonts for better readability.
+ */
+.cf7-modern-settings {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/**
+ * Settings Header with Gradient Background
+ * 
+ * Note: Settings header extends shared gradient header from common.css
+ * Use .cf7-gradient-header and .cf7-header-context classes on settings header element
+ */
+
+.cf7-settings-title {
+    font-size: 2rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cf7-settings-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 300;
+}
+
+.cf7-header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* ========================================================================
+   SETTINGS CONTENT & LAYOUT
+   ======================================================================== */
+
+/* Settings Content */
+.cf7-settings-content {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+/* Settings Cards */
+.cf7-settings-card {
+    padding: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.cf7-settings-card:last-child {
+    border-bottom: none;
+}
+
+.cf7-card-header {
+    margin-bottom: 1.5rem;
+}
+
+.cf7-card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin: 0 0 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cf7-card-title .dashicons {
+    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    line-height: 1.25rem;
+    color: #2271b1;
+}
+
+.cf7-card-description {
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.cf7-card-body {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* ========================================================================
+   SETTINGS NAVIGATION & TABS
+   ======================================================================== */
+
+/* Settings Navigation */
+.cf7-settings-nav {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+/* Note: Tab navigation styles moved to common.css for shared use across all interfaces */
+/* Use .cf7-settings-nav class to get the settings color variant */
+
+/* ========================================================================
+   TOGGLE SWITCHES
+   ======================================================================== */
+
+/* Toggle Switches */
+.cf7-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.cf7-toggle input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.cf7-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.cf7-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.cf7-toggle input:checked + .cf7-toggle-slider {
+    background-color: #667eea;
+}
+
+.cf7-toggle input:checked + .cf7-toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.cf7-toggle-changing {
+    animation: cf7-toggle-pulse 0.2s ease-in-out;
+}
+
+@keyframes cf7-toggle-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.cf7-toggle-label {
+    margin-left: 0.75rem;
+    font-weight: 500;
+    color: #333;
+}
+
+/* ========================================================================
+   STATUS INDICATORS
+   ======================================================================== */
+
+/* Status Indicators */
+.cf7-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.cf7-status-success {
+    background: rgba(40, 167, 69, 0.1);
+    color: #155724;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.cf7-status-warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.cf7-status-info {
+    background: rgba(102, 126, 234, 0.1);
+    color: #0c5460;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+/* ========================================================================
+   TEMPLATE MANAGEMENT SECTIONS
+   ======================================================================== */
+
+/* Template Sections */
+.cf7-template-section {
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+}
+
+.cf7-template-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.cf7-template-title h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.cf7-template-description {
+    margin: 0;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+.cf7-template-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.cf7-template-content {
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.cf7-template-content.active {
+    padding: 1.5rem;
+    max-height: 1000px;
+}
+
+/* Ensure template actions are always visible for debugging */
+.cf7-template-actions {
+    display: flex !important;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ========================================================================
+   MERGE TAG HELPER
+   ======================================================================== */
+
+/* Merge Tag Helper */
+.cf7-merge-tags {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
+}
+
+.cf7-merge-tags span {
+    font-size: 0.875rem;
+    color: #666;
+    margin-right: 0.5rem;
+    font-weight: 500;
+}
+
+.cf7-merge-tag-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    margin: 0.125rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-family: monospace;
+}
+
+.cf7-merge-tag-btn:hover {
+    background: #5a6fd8;
+}
+
+.cf7-template-modified {
+    border-left: 4px solid #667eea;
+}
+
+/* ========================================================================
+   TEMPLATE PREVIEW STYLES
+   ======================================================================== */
+
+/* Template preview styles */
+.cf7-template-preview {
+    font-family: Arial, sans-serif;
+}
+
+.preview-subject {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.preview-body {
+    margin-bottom: 1rem;
+}
+
+.preview-body pre {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    font-family: 'Segoe UI', sans-serif;
+    line-height: 1.5;
+}
+
+/* ========================================================================
+   DEBUG SECTION & SYSTEM INFO
+   ======================================================================== */
+
+/* Debug Section Styling */
+.cf7-debug-section {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.cf7-debug-section h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.cf7-debug-section p {
+    margin: 0 0 1rem 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.cf7-debug-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.cf7-debug-actions .cf7-test-btn {
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.cf7-debug-actions .cf7-test-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+/* System Information Table */
+.cf7-system-info table {
+    margin-top: 1rem;
+}
+
+.cf7-system-info td,
+.cf7-system-info th {
+    padding: 0.75rem;
+    vertical-align: top;
+}
+
+.cf7-status-ok {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.cf7-status-warning {
+    color: #ffc107;
+    font-weight: 600;
+}
+
+.cf7-status-error {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.cf7-status-info {
+    color: #17a2b8;
+    font-weight: 600;
+}
+
+/* ========================================================================
+   DEBUG MESSAGES & LOGGING
+   ======================================================================== */
+
+/* Debug Messages */
+.cf7-debug-messages {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    background: #f8f9fa;
+}
+
+.cf7-debug-log {
+    padding: 0;
+}
+
+.cf7-debug-entry {
+    display: flex;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e5e5e5;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.cf7-debug-entry:last-child {
+    border-bottom: none;
+}
+
+.cf7-debug-time {
+    flex: 0 0 140px;
+    color: #666;
+    font-family: monospace;
+    font-size: 0.8rem;
+}
+
+.cf7-debug-text {
+    flex: 1;
+    color: #333;
+}
+
+.cf7-debug-info {
+    background-color: rgba(102, 126, 234, 0.05);
+}
+
+.cf7-debug-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.cf7-debug-error {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.cf7-no-messages {
+    padding: 2rem;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* ========================================================================
+   TEST RESULTS & MODAL OVERLAYS
+   ======================================================================== */
+
+/* Enhanced test results for debug */
+#cf7-debug-test-results {
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    width: 450px;
+    z-index: 99999;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e5e5e5;
+    max-height: 80vh;
+    overflow: hidden;
+}
+
+#cf7-debug-test-results .cf7-test-results-body {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* ========================================================================
+   RESPONSIVE DESIGN FOR SETTINGS
+   ======================================================================== */
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+    .cf7-settings-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .cf7-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .cf7-modern-settings {
+        padding: 0 1rem;
+    }
+    
+    .cf7-settings-header {
+        margin: 0 -1rem 2rem -1rem;
+        padding: 1.5rem 1rem;
+    }
+    
+    .cf7-nav-tabs {
+        flex-direction: column;
+    }
+    
+    .cf7-nav-tab {
+        padding: 0.75rem 1rem;
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+    
+    .cf7-nav-tab.active {
+        border-left-color: #667eea;
+        border-bottom-color: transparent;
+    }
+    
+    .cf7-template-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .cf7-debug-actions {
+        flex-direction: column;
+    }
+    
+    .cf7-debug-actions .cf7-test-btn {
+        width: 100%;
+        text-align: center;
+    }
+    
+    #cf7-debug-test-results {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-height: 70vh;
+    }
+}
+
+/* ========================================================================
+   AUDIT LOG INTERFACE
+   ======================================================================== */
+
+/**
+ * Comprehensive audit log interface for tracking actions and changes.
+ * 
+ * Features:
+ * - Filtering interface with multiple criteria
+ * - Color-coded action types for visual organization
+ * - Responsive table design with mobile card transformation
+ * - Combined submission and artist information display
+ * - Pagination and summary information
+ * 
+ * Action Types:
+ * - Email sent, status changes, form submissions
+ * - File uploads, action creation/completion
+ * - Conversation management, setting changes
+ * 
+ * Mobile Design:
+ * - Tables convert to card layouts on mobile devices
+ * - Touch-friendly filtering controls
+ * - Stacked information display
+ */
+
+.cf7-audit-log-container {
+    margin-top: 20px;
+}
+
+.cf7-audit-filters {
+    background: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 15px;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    margin-bottom: 3px;
+    color: #333;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 8px 12px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.cf7-audit-summary {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.cf7-audit-summary p {
+    margin: 0;
+    color: #666;
+    font-style: italic;
+}
+
+/* Action Type Color Coding */
+.audit-type {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.audit-type-email_sent {
+    background: #e7f3ff;
+    color: #0073aa;
+}
+
+.audit-type-status_change {
+    background: #fff2e7;
+    color: #d63638;
+}
+
+.audit-type-form_submission {
+    background: #e7ffe7;
+    color: #00a32a;
+}
+
+.audit-type-file_upload {
+    background: #f0e7ff;
+    color: #6c2eb9;
+}
+
+.audit-type-action_created {
+    background: #e0f7fa;
+    color: #006064;
+}
+
+.audit-type-action_completed {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+.audit-type-conversation_cleared {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.audit-type-setting_changed {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.audit-details div {
+    margin-bottom: 3px;
+    font-size: 12px;
+}
+
+.system-action,
+.no-artist {
+    color: #666;
+    font-style: italic;
+}
+
+.cf7-audit-pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.cf7-audit-table-container {
+    overflow-x: auto;
+}
+
+/* Submission & Artist Combined Column Styles */
+.submission-artist-info {
+    line-height: 1.4;
+}
+
+.submission-info {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.submission-link {
+    text-decoration: none;
+    color: #0073aa;
+    font-weight: 600;
+}
+
+.submission-link:hover {
+    color: #005177;
+}
+
+.submission-deleted {
+    color: #d63638;
+    font-size: 11px;
+}
+
+.artist-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.artist-name {
+    font-weight: 600;
+    color: #333;
+}
+
+.artist-email {
+    font-size: 11px;
+    color: #666;
+}
+
+.system-action-info {
+    color: #666;
+    font-style: italic;
+}
+
+.cf7-audit-tools {
+    display: flex;
+    gap: 10px;
+}
+
+#update-missing-artist-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ========================================================================
+   SETTINGS RESPONSIVE DESIGN
+   ======================================================================== */
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .cf7-settings-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .cf7-header-actions {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .cf7-modern-settings {
+        margin: 0 -20px;
+    }
+    
+    .cf7-settings-header {
+        margin: 0 0 2rem 0;
+        border-radius: 0;
+    }
+    
+    .cf7-settings-content {
+        border-radius: 0;
+    }
+    
+    .cf7-settings-card {
+        padding: 1.5rem;
+    }
+    
+    .cf7-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .cf7-form-actions-left,
+    .cf7-form-actions-right {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .cf7-nav-tab .tab-label {
+        display: none;
+    }
+    
+    .cf7-nav-tab {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7-settings-card {
+        padding: 1rem;
+    }
+    
+    .cf7-settings-title {
+        font-size: 1.5rem;
+    }
+    
+    .cf7-nav-tabs {
+        justify-content: center;
+    }
+}
+
+/* ========================================================================
+   AUDIT LOG RESPONSIVE DESIGN
+   ======================================================================== */
+
+/* Tablet Breakpoint (768px) - Audit Log Mobile Layout */
+@media (max-width: 768px) {
+    /* Transform complex table layouts into mobile-friendly card format. */
+    .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        min-width: 100%;
+    }
+    
+    .cf7-audit-summary {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    /* Table to Card Transformation */
+    .cf7-audit-table-container table,
+    .cf7-audit-table-container thead,
+    .cf7-audit-table-container tbody,
+    .cf7-audit-table-container th,
+    .cf7-audit-table-container td,
+    .cf7-audit-table-container tr {
+        display: block;
+    }
+    
+    /* Hide Table Headers on Mobile */
+    .cf7-audit-table-container thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    
+    /* Mobile Card Styling */
+    .cf7-audit-table-container tr {
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    /* Mobile Cell Layout */
+    .cf7-audit-table-container td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50% !important;
+    }
+    
+    /* Data Labels for Mobile */
+    .cf7-audit-table-container td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+    }
+}
+
+/* Tablet adjustments */
+@media (max-width: 1024px) {
+    .cf7-modern-settings {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    
+    .cf7-settings-header {
+        margin: 0 -1rem 2rem -1rem;
+    }
+}

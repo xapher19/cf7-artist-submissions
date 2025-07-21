@@ -58,11 +58,15 @@ class CF7_Artist_Submissions_Tabs {
         
         // Only on single submission edit page
         if ($hook === 'post.php' || $hook === 'post-new.php') {
-            wp_enqueue_style('cf7-artist-submissions-tabs', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/tabs.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
-            wp_enqueue_style('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/lightbox.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
-            wp_enqueue_style('cf7-artist-submissions-conversations', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/conversations.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
-            wp_enqueue_style('cf7-artist-submissions-actions', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/actions.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
-            wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            // Enqueue common styles first (foundation for all other styles)
+            wp_enqueue_style('cf7-common-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/common.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            
+            // Enqueue specialized styles in logical order (all depend on common.css)
+            wp_enqueue_style('cf7-artist-submissions-tabs', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/tabs.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_style('cf7-artist-submissions-conversations', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/conversations.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_style('cf7-artist-submissions-actions', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/actions.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_style('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/lightbox.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+            wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
             
             wp_enqueue_script('cf7-artist-submissions-tabs', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/tabs.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
             wp_enqueue_script('cf7-artist-submissions-lightbox', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/lightbox.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
@@ -173,7 +177,7 @@ class CF7_Artist_Submissions_Tabs {
         ?>
         
         <!-- Artist Profile Header -->
-        <div class="cf7-artist-header">
+        <div class="cf7-gradient-header cf7-header-context cf7-artist-header">
             <div class="cf7-artist-header-content">
                 <div class="cf7-status-selector cf7-artist-status">
                     <?php echo self::render_status_circle($current_status, $post->ID); ?>
@@ -204,7 +208,7 @@ class CF7_Artist_Submissions_Tabs {
                     </p>
                 </div>
             </div>
-            <div class="cf7-artist-actions">
+            <div class="cf7-profile-actions">
                 <button type="button" class="cf7-edit-save-button cf7-btn cf7-btn-primary" data-edit-text="<?php esc_attr_e('Edit Profile', 'cf7-artist-submissions'); ?>" data-save-text="<?php esc_attr_e('Save Changes', 'cf7-artist-submissions'); ?>">
                     <span class="dashicons dashicons-edit"></span>
                     <?php _e('Edit Profile', 'cf7-artist-submissions'); ?>
@@ -1083,8 +1087,8 @@ class CF7_Artist_Submissions_Tabs {
                 width: 100%;
             }
             
-            /* Artist header contained within post area */
-            .cf7-artist-header {
+            /* Artist header contained within post area - using shared gradient header */
+            .cf7-gradient-header.cf7-artist-header {
                 margin-top: 0 !important;
                 margin-bottom: 0 !important;
                 margin-left: 0 !important;

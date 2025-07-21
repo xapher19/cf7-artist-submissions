@@ -225,7 +225,7 @@ jQuery(document).ready(function($) {
         
         // Show loading state
         const originalText = $button.text();
-        $button.prop('disabled', true).html('<span class="dashicons dashicons-update cf7-spinning"></span> Saving...');
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update cf7-spin"></span> Saving...');
         
         // Gather all editable field data
         const fieldData = {};
@@ -294,7 +294,7 @@ jQuery(document).ready(function($) {
         
         // Show loading state
         $circle.prop('disabled', true);
-        $circle.find('.dashicons').addClass('cf7-spinning');
+        $circle.find('.dashicons').addClass('cf7-spin');
         
         // Make AJAX request
         $.ajax({
@@ -331,7 +331,7 @@ jQuery(document).ready(function($) {
             complete: function() {
                 // Remove loading state
                 $circle.prop('disabled', false);
-                $circle.find('.dashicons').removeClass('cf7-spinning');
+                $circle.find('.dashicons').removeClass('cf7-spin');
             }
         });
     });

@@ -82,7 +82,12 @@ class CF7_Artist_Submissions_Post_Type {
         
         // Only load admin styles on submission list page
         if ($screen->id === 'edit-cf7_submission') {
-            wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            // Enqueue common styles first (foundation for all other styles)
+            wp_enqueue_style('cf7-common-css', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/common.css', array(), CF7_ARTIST_SUBMISSIONS_VERSION);
+            
+            // Enqueue admin styles for submission list page (depends on common.css)
+            wp_enqueue_style('cf7-artist-submissions-admin', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/admin.css', array('cf7-common-css'), CF7_ARTIST_SUBMISSIONS_VERSION);
+            
             wp_enqueue_script('jquery');
         }
         
