@@ -179,6 +179,24 @@ class CF7_Artist_Submissions_Settings {
             return;
         }
         
+        // Handle form submissions
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+            if ($_POST['action'] === 'update_missing_artist_info' && wp_verify_nonce($_POST['cf7_artist_info_nonce'], 'cf7_update_artist_info')) {
+                if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+                    $updated_count = CF7_Artist_Submissions_Action_Log::update_missing_artist_info();
+                    if ($updated_count > 0) {
+                        echo '<div class="notice notice-success is-dismissible"><p>' . 
+                             sprintf(__('Successfully updated %d audit log entries with artist information.', 'cf7-artist-submissions'), $updated_count) . 
+                             '</p></div>';
+                    } else {
+                        echo '<div class="notice notice-info is-dismissible"><p>' . 
+                             __('No audit log entries needed updating.', 'cf7-artist-submissions') . 
+                             '</p></div>';
+                    }
+                }
+            }
+        }
+        
         // Get current tab
         $current_tab = isset($_GET['tab']) ? $_GET['tab'] : 'general';
         
@@ -2062,6 +2080,17 @@ class CF7_Artist_Submissions_Settings {
             <!-- Results Summary -->
             <div class="cf7-audit-summary">
                 <p><?php printf(__('Showing %d of %d audit log entries', 'cf7-artist-submissions'), count($logs), $total_items); ?></p>
+                
+                <!-- Update Missing Artist Info Button -->
+                <div class="cf7-audit-tools">
+                    <form method="post" style="display: inline-block;">
+                        <?php wp_nonce_field('cf7_update_artist_info', 'cf7_artist_info_nonce'); ?>
+                        <input type="hidden" name="action" value="update_missing_artist_info">
+                        <button type="submit" class="button button-secondary" onclick="return confirm('<?php _e('This will update all audit log entries with missing artist information. Continue?', 'cf7-artist-submissions'); ?>');">
+                            <?php _e('Update Missing Artist Info', 'cf7-artist-submissions'); ?>
+                        </button>
+                    </form>
+                </div>
             </div>
             
             <!-- Audit Log Table -->
@@ -2076,8 +2105,7 @@ class CF7_Artist_Submissions_Settings {
                             <tr>
                                 <th style="width: 140px;"><?php _e('Date & Time', 'cf7-artist-submissions'); ?></th>
                                 <th style="width: 100px;"><?php _e('Action Type', 'cf7-artist-submissions'); ?></th>
-                                <th style="width: 80px;"><?php _e('Submission', 'cf7-artist-submissions'); ?></th>
-                                <th style="width: 150px;"><?php _e('Artist', 'cf7-artist-submissions'); ?></th>
+                                <th style="width: 200px;"><?php _e('Submission & Artist', 'cf7-artist-submissions'); ?></th>
                                 <th style="width: 120px;"><?php _e('User', 'cf7-artist-submissions'); ?></th>
                                 <th><?php _e('Details', 'cf7-artist-submissions'); ?></th>
                             </tr>
@@ -2108,31 +2136,54 @@ class CF7_Artist_Submissions_Settings {
                                         ?>
                                     </td>
                                     <td>
-                                        <?php if ($log->submission_id > 0): ?>
-                                            <?php if ($log->post_title): ?>
-                                                <a href="<?php echo esc_url(admin_url('post.php?post=' . $log->submission_id . '&action=edit')); ?>">
-                                                    #<?php echo esc_html($log->submission_id); ?>
-                                                </a>
-                                                <br><small><?php echo esc_html(wp_trim_words($log->post_title, 3)); ?></small>
+                                        <!-- Combined Submission & Artist Info -->
+                                        <div class="submission-artist-info">
+                                            <?php if ($log->submission_id > 0): ?>
+                                                <!-- Submission Info -->
+                                                <div class="submission-info">
+                                                    <?php if ($log->post_title): ?>
+                                                        <a href="<?php echo esc_url(admin_url('post.php?post=' . $log->submission_id . '&action=edit')); ?>" class="submission-link">
+                                                            <strong>#<?php echo esc_html($log->submission_id); ?></strong>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <strong>#<?php echo esc_html($log->submission_id); ?></strong>
+                                                        <span class="submission-deleted"><?php _e('(Deleted)', 'cf7-artist-submissions'); ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                
+                                                <!-- Artist Info -->
+                                                <?php if (!empty($log->artist_name) || !empty($log->artist_email)): ?>
+                                                    <div class="artist-info">
+                                                        <?php if (!empty($log->artist_name)): ?>
+                                                            <span class="artist-name"><?php echo esc_html($log->artist_name); ?></span>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($log->artist_email)): ?>
+                                                            <span class="artist-email"><?php echo esc_html($log->artist_email); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php elseif ($log->post_title): ?>
+                                                    <!-- Fallback: Show post title if no artist info available -->
+                                                    <div class="artist-info">
+                                                        <span class="artist-name"><?php echo esc_html(wp_trim_words($log->post_title, 4)); ?></span>
+                                                    </div>
+                                                <?php endif; ?>
                                             <?php else: ?>
-                                                #<?php echo esc_html($log->submission_id); ?>
-                                                <br><small><?php _e('(Deleted)', 'cf7-artist-submissions'); ?></small>
+                                                <!-- System Action -->
+                                                <div class="system-action-info">
+                                                    <span class="system-action"><?php _e('System Action', 'cf7-artist-submissions'); ?></span>
+                                                    <?php if (!empty($log->artist_name) || !empty($log->artist_email)): ?>
+                                                        <div class="artist-info">
+                                                            <?php if (!empty($log->artist_name)): ?>
+                                                                <span class="artist-name"><?php echo esc_html($log->artist_name); ?></span>
+                                                            <?php endif; ?>
+                                                            <?php if (!empty($log->artist_email)): ?>
+                                                                <span class="artist-email"><?php echo esc_html($log->artist_email); ?></span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
                                             <?php endif; ?>
-                                        <?php else: ?>
-                                            <span class="system-action"><?php _e('System', 'cf7-artist-submissions'); ?></span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <?php if (!empty($log->artist_name) || !empty($log->artist_email)): ?>
-                                            <?php if (!empty($log->artist_name)): ?>
-                                                <strong><?php echo esc_html($log->artist_name); ?></strong><br>
-                                            <?php endif; ?>
-                                            <?php if (!empty($log->artist_email)): ?>
-                                                <small><?php echo esc_html($log->artist_email); ?></small>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <span class="no-artist"><?php _e('N/A', 'cf7-artist-submissions'); ?></span>
-                                        <?php endif; ?>
+                                        </div>
                                     </td>
                                     <td>
                                         <?php if ($log->display_name): ?>
@@ -2294,6 +2345,78 @@ class CF7_Artist_Submissions_Settings {
         
         .cf7-audit-table-container {
             overflow-x: auto;
+        }
+        
+        /* Submission & Artist Combined Column Styles */
+        .submission-artist-info {
+            line-height: 1.4;
+        }
+        
+        .submission-info {
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .submission-link {
+            text-decoration: none;
+            color: #0073aa;
+            font-weight: 600;
+        }
+        
+        .submission-link:hover {
+            color: #005177;
+            text-decoration: underline;
+        }
+        
+        .submission-title {
+            color: #666;
+            font-size: 12px;
+            margin-left: 6px;
+            font-style: italic;
+        }
+        
+        .submission-deleted {
+            color: #d63638;
+            font-size: 12px;
+            margin-left: 6px;
+            font-style: italic;
+        }
+        
+        .artist-info {
+            margin-top: 4px;
+        }
+        
+        .artist-name {
+            color: #333;
+            font-weight: 500;
+            display: block;
+            margin-bottom: 2px;
+        }
+        
+        .artist-email {
+            color: #666;
+            font-size: 12px;
+            display: block;
+        }
+        
+        .system-action-info .system-action {
+            color: #8a6914;
+            font-weight: 600;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 6px;
+        }
+        
+        .system-action-info .artist-info {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        /* Remove old styles that are no longer needed */
+        .no-artist {
+            display: none;
         }
         </style>
         <?php

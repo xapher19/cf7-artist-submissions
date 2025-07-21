@@ -416,30 +416,26 @@ class CF7_Artist_Submissions_Action_Log {
             return null;
         }
         
-        // Get submission data
-        $submission_data = get_post_meta($submission_id, '_submission_data', true);
-        if (!$submission_data) {
-            return null;
-        }
-        
-        // Extract artist information
+        // Extract artist information from individual post meta fields
         $name = '';
         $email = '';
         
-        // Try to get name from various possible fields
-        $name_fields = array('your-name', 'name', 'artist-name', 'full-name', 'artist_name');
+        // Try to get name from various possible meta fields (with cf7_ prefix)
+        $name_fields = array('cf7_artist-name', 'cf7_your-name', 'cf7_name', 'cf7_full-name', 'cf7_artist_name');
         foreach ($name_fields as $field) {
-            if (isset($submission_data[$field]) && !empty($submission_data[$field])) {
-                $name = $submission_data[$field];
+            $value = get_post_meta($submission_id, $field, true);
+            if (!empty($value)) {
+                $name = $value;
                 break;
             }
         }
         
-        // Try to get email from various possible fields
-        $email_fields = array('your-email', 'email', 'artist-email', 'contact-email', 'artist_email');
+        // Try to get email from various possible meta fields (with cf7_ prefix)
+        $email_fields = array('cf7_artist-email', 'cf7_your-email', 'cf7_email', 'cf7_contact-email', 'cf7_artist_email');
         foreach ($email_fields as $field) {
-            if (isset($submission_data[$field]) && !empty($submission_data[$field])) {
-                $email = $submission_data[$field];
+            $value = get_post_meta($submission_id, $field, true);
+            if (!empty($value)) {
+                $email = $value;
                 break;
             }
         }
@@ -575,5 +571,48 @@ class CF7_Artist_Submissions_Action_Log {
         );
         
         return self::log_action($submission_id, 'status_change', $data);
+    }
+    
+    /**
+     * Update existing audit log entries with missing artist information.
+     * 
+     * This method can be called to retroactively populate artist names
+     * for existing audit log entries that have empty artist_name fields.
+     * 
+     * @since 2.1.0
+     * 
+     * @return int Number of entries updated
+     */
+    public static function update_missing_artist_info() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cf7_action_log';
+        
+        // Find entries with missing artist information
+        $entries = $wpdb->get_results(
+            "SELECT id, submission_id FROM {$table_name} 
+             WHERE submission_id > 0 AND (artist_name = '' OR artist_name IS NULL)"
+        );
+        
+        $updated_count = 0;
+        
+        foreach ($entries as $entry) {
+            $artist_info = self::get_artist_info($entry->submission_id);
+            
+            if ($artist_info && (!empty($artist_info['name']) || !empty($artist_info['email']))) {
+                $wpdb->update(
+                    $table_name,
+                    array(
+                        'artist_name' => $artist_info['name'],
+                        'artist_email' => $artist_info['email']
+                    ),
+                    array('id' => $entry->id),
+                    array('%s', '%s'),
+                    array('%d')
+                );
+                $updated_count++;
+            }
+        }
+        
+        return $updated_count;
     }
 }

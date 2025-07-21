@@ -796,6 +796,7 @@ function clearAllMessages() {
     }
     
     // Debug logging
+    console.log('Clearing messages for submission:', {
         submissionId: submissionId,
         ajaxUrl: cf7Conversations.ajaxUrl,
         nonce: cf7Conversations.nonce

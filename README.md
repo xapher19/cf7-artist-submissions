@@ -66,12 +66,14 @@ A sophisticated WordPress plugin that transforms Contact Form 7 submissions into
 - **PDF Export**: Professional PDF generation with two-column artwork layouts and configurable content sections
 
 ### 📊 **Audit & Compliance**
-- **Comprehensive Audit Log**: Complete activity trail for all submission actions
+- **Comprehensive Audit Log**: Complete activity trail for all submission actions with artist attribution
 - **Email Tracking**: Track all emails sent with templates, recipients, and timestamps
 - **Status Change History**: Full audit trail of status changes with user attribution
 - **File Upload Logging**: Track all file uploads with metadata and user details
-- **Advanced Filtering**: Filter audit logs by action type, date range, and submission
-- **Compliance Ready**: Professional audit trail for administrative oversight
+- **Action System Tracking**: Task creation, assignment, and completion logging
+- **Advanced Filtering**: Filter audit logs by action type, date range, submission, and artist
+- **Compliance Ready**: Professional audit trail for administrative oversight and regulatory requirements
+- **Privacy Protection**: Sensitive data properly redacted in audit logs
 
 ### 🎨 **Professional Interface**
 - **Organized Layout**: Clean tabbed interface reduces clutter
@@ -223,14 +225,9 @@ Create a Contact Form 7 form with the following field names (the plugin expects 
 [submit "Submit Application"]
 ```
 
-### Email Configuration
+### Additional Notes
 
-Configure the conversation system in **Artist Submissions > Settings**:
-
-1. **Primary Email**: Set your main gallery/organization email
-2. **Plus Addressing**: Enable for unique conversation tracking
-3. **Email Templates**: Customize automated response templates
-4. **Notification Settings**: Configure who receives notifications
+For developers looking to extend functionality, the plugin provides WordPress hooks and filters for customization. The audit log system tracks all activities automatically, and the conversation system integrates with standard email workflows.
 
 ---
 
@@ -341,19 +338,26 @@ Configure the conversation system in **Artist Submissions > Settings**:
 3. **Audit Capabilities**:
    - Complete trail of all submission activities
    - Email sending history with templates and recipients
-   - Status changes with before/after values
+   - Status changes with before/after values and user attribution
    - File upload tracking and user attribution
    - Administrative actions and system events
+   - Artist information automatically linked to all actions
+   - Action system integration (task creation and completion)
+   - Settings changes with before/after values
+   - Conversation management activities
 4. **Advanced Filtering**:
-   - Filter by action type (email sent, status change, file upload)
+   - Filter by action type (email sent, status change, file upload, action created/completed)
    - Date range filtering with calendar pickers
    - Submission-specific log viewing
    - User-based activity filtering
+   - Artist-specific audit trails
 5. **Professional Interface**:
    - Paginated results with navigation
    - Color-coded action types for quick identification
    - Detailed action data with JSON expansion
+   - Artist column showing name and email for easy identification
    - Export capabilities for compliance reporting
+   - Secure access with proper user permissions
 
 #### Advanced CSV Export Features
 1. Go to **Artist Submissions > Dashboard**
@@ -368,96 +372,16 @@ Configure the conversation system in **Artist Submissions > Settings**:
 
 ## 🔧 Technical Details
 
-### Enhanced File Structure
+### Plugin Architecture
 
-```
-cf7-artist-submissions/
-├── cf7-artist-submissions.php     # Main plugin file
-├── uninstall.php                  # Cleanup on uninstall
-├── includes/                      # Core functionality
-│   ├── class-cf7-artist-submissions-admin.php        # Admin interface
-│   ├── class-cf7-artist-submissions-dashboard.php    # Modern dashboard
-│   ├── class-cf7-artist-submissions-tabs.php         # Tabbed interface
-│   ├── class-cf7-artist-submissions-actions.php      # Actions/task system
-│   ├── class-cf7-artist-submissions-conversations.php # Messaging system
-│   ├── class-cf7-artist-submissions-emails.php       # Email handling
-│   ├── class-cf7-artist-submissions-form-handler.php # CF7 integration
-│   ├── class-cf7-artist-submissions-post-type.php    # Custom post type
-│   ├── class-cf7-artist-submissions-action-log.php   # Action logging
-│   └── class-cf7-artist-submissions-settings.php     # Plugin settings
-├── assets/                        # Frontend resources
-│   ├── css/
-│   │   ├── dashboard.css          # Modern dashboard styling
-│   │   ├── tabs.css              # Professional tabbed interface
-│   │   ├── conversations.css     # Messaging interface
-│   │   ├── actions.css           # Task management styling
-│   │   ├── lightbox.css          # Image lightbox styling
-│   │   └── admin.css             # General admin styles
-│   └── js/
-│       ├── dashboard.js           # Dashboard interactivity
-│       ├── tabs.js               # Tab navigation & routing
-│       ├── fields.js             # Field editing system
-│       ├── conversation.js       # Messaging functionality
-│       ├── actions.js            # Task management
-│       ├── lightbox.js           # Image lightbox
-│       ├── filters.js            # Dashboard filtering
-│       └── admin.js              # General admin scripts
-└── templates/                     # PHP templates
-    ├── admin-settings.php         # Settings interface
-    ├── submission-list.php        # Dashboard submission list
-    └── submission-view.php        # Detailed submission view
-```
+The CF7 Artist Submissions plugin integrates with Contact Form 7 to provide professional artist submission management with features including:
 
-### Modern Database Schema
-
-The plugin uses an enhanced database structure:
-
-**Core Tables:**
-- **WordPress Posts**: Main submission data in `wp_posts` table
-- **Custom Fields**: Form and system data in `wp_postmeta` table  
-- **File Attachments**: Organized file management via `wp_posts` attachments
-
-**Enhanced Features:**
-- **Action Log Table**: Comprehensive task and action tracking
-- **Conversation Threads**: Structured messaging and communication history
-- **Status History**: Complete audit trail of status changes
-- **User Activity**: Track all user interactions and modifications
-
-### Advanced Hooks and Filters
-
-**Enhanced Actions:**
-- `cf7_artist_submission_created` - Fired when new submission is created
-- `cf7_artist_submission_status_changed` - Fired when status changes
-- `cf7_artist_action_created` - Triggered when new action is assigned
-- `cf7_artist_action_completed` - Fired when action is marked complete
-- `cf7_artist_field_updated` - Called when any field is edited
-- `cf7_artist_conversation_message` - Triggered on new messages
-
-**Advanced Filters:**
-- `cf7_artist_submission_fields` - Modify field mapping and validation
-- `cf7_artist_submission_email_content` - Customize notification emails
-- `cf7_artist_dashboard_widgets` - Add custom dashboard widgets
-- `cf7_artist_tab_content` - Modify tabbed interface content
-- `cf7_artist_status_badges` - Customize status badge appearance
-- `cf7_artist_export_fields` - Control export data fields
-
-### JavaScript API & Events
-
-**Field Editing Events:**
-- `cf7FieldEditStart` - Field enters edit mode
-- `cf7FieldEditSave` - Field saves successfully  
-- `cf7FieldEditCancel` - Edit mode cancelled
-- `cf7AllFieldsSaved` - All profile fields saved
-
-**Tab Navigation Events:**
-- `cf7TabChanged` - Tab switches
-- `cf7TabContentLoaded` - Tab content loads via AJAX
-- `cf7TabRouted` - Smart routing from dashboard widgets
-
-**Dashboard Events:**
-- `cf7DashboardRefresh` - Dashboard data refreshes
-- `cf7StatusFilterApplied` - Submission filtering activated
-- `cf7ExportGenerated` - Export file created
+- **Modern Dashboard**: Real-time statistics and interactive widgets
+- **Professional Interface**: Tabbed navigation for efficient workflow
+- **Conversation Management**: Integrated messaging system
+- **Action Tracking**: Task assignment and completion system  
+- **Audit System**: Comprehensive activity logging
+- **File Management**: Secure artwork and document handling
 
 ---
 
@@ -501,37 +425,16 @@ The plugin uses an enhanced database structure:
 3. Test email delivery with simple messages
 4. Confirm conversation refresh is working
 
-### Debug Mode & Logging
+### Debug Mode
 
-Enable enhanced debugging for comprehensive error tracking:
-
-```php
-// Add to wp-config.php
-define('WP_DEBUG', true);
-define('WP_DEBUG_LOG', true);
-define('SCRIPT_DEBUG', true);
-
-// Plugin-specific debugging
-define('CF7_ARTIST_DEBUG', true);
-```
-
-**Log Locations:**
-- WordPress logs: `/wp-content/debug.log`
-- Plugin logs: `/wp-content/uploads/cf7-artist-submissions/logs/`
-- Action logs: Available in admin dashboard under **Tools > Action Logs**
+For debugging assistance, enable WordPress debug mode and check the plugin's audit log system in the admin dashboard under **Artist Submissions > Settings > Audit Log**.
 
 ### Performance Optimization
 
-**Large Dataset Optimization:**
-- Enable object caching for dashboard statistics
+For optimal performance with large datasets:
 - Use pagination for submission lists over 100 items  
-- Optimize database queries with proper indexing
+- Enable object caching if available
 - Consider CDN for uploaded artwork files
-
-**AJAX Performance:**
-- Implement request debouncing for field editing
-- Use browser caching for static tab content
-- Optimize database queries for real-time updates
 - Monitor memory usage with large file uploads
 
 ---
