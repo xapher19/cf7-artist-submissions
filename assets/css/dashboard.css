@@ -1,7 +1,7 @@
 /**
  * CF7 Artist Submissions - Modern Interactive Dashboard
  * 
- * Complete styling system for the modern tabbed dashboard interface:
+ * Complete styling system for the modern tabbed dashboard interface featuring:
  * - Responsive grid layout with flexible column system
  * - Interactive tab navigation with smooth transitions
  * - Modern card-based design with subtle shadows
@@ -11,17 +11,48 @@
  * - Mobile-first responsive breakpoints
  * - Integration with WordPress admin design patterns
  * 
+ * ARCHITECTURE:
+ * ├── Dashboard Foundation (responsive container and typography)
+ * ├── Header Typography (title and subtitle components)
+ * ├── Metrics Overview (statistical cards and activity indicators)
+ * ├── Dashboard Grid (flexible layout system)
+ * ├── Search & Filters (form controls and date pickers)
+ * ├── Submissions Table (data display and pagination)
+ * ├── Activity Panel (notifications and recent activity)
+ * └── Responsive Design (mobile-first breakpoints)
+ * 
+ * INTEGRATION POINTS:
+ * - templates/submission-list.php: Main dashboard page structure
+ * - assets/js/dashboard.js: Dashboard interactions and AJAX operations
+ * - assets/js/filters.js: Search and filtering functionality
+ * 
  * DEPENDENCIES:
  * - common.css: Shared button system, modal dialogs, navigation tabs,
  *   gradient headers, form components, and responsive breakpoints
+ * - WordPress Dashicons: Icon system for UI elements
+ * 
+ * COLOR SYSTEM:
+ * - Primary: #667eea (Purple gradient brand color)
+ * - Success: #10b981 (Green for positive states)
+ * - Warning: #f59e0b (Yellow for attention states)
+ * - Error: #ef4444 (Red for error states)
+ * - Info: #3b82f6 (Blue for informational states)
+ * 
+ * RESPONSIVE STRATEGY:
+ * - Desktop: Full grid layouts with multi-column metrics
+ * - Tablet: 1024px breakpoint with reduced columns
+ * - Mobile: 768px breakpoint with stacked layouts
+ * - Small Mobile: 480px breakpoint with single column design
  * 
  * @package CF7_Artist_Submissions
  * @since 2.0.0 Complete dashboard redesign with modern UI patterns
  * @since 2.1.0 Refactored to use common.css for shared components
- * @since 2.2.0 Removed legacy code patterns and unused styles
+ * @since 2.2.0 Enhanced documentation and code organization
  */
 
-/* ===== RESET & BASE ===== */
+/* ========================================================================
+   DASHBOARD FOUNDATION & RESET STYLES
+   ======================================================================== */
 .cf7-modern-dashboard {
     margin: 0 20px 0 0;
     padding: 0;
@@ -35,7 +66,9 @@
     box-sizing: border-box;
 }
 
-/* ===== DASHBOARD HEADER ===== */
+/* ========================================================================
+   DASHBOARD HEADER TYPOGRAPHY
+   ======================================================================== */
 /* Note: Dashboard header extends shared gradient header from common.css */
 /* Use .cf7-gradient-header and .cf7-header-context classes on dashboard header element */
 
@@ -57,7 +90,25 @@
 
 /* Note: Button styles moved to common.css for shared use across all interfaces */
 
-/* ===== REDESIGNED METRICS OVERVIEW ===== */
+/* ========================================================================
+   DASHBOARD METRICS OVERVIEW
+   ======================================================================== */
+
+/**
+ * Dashboard Statistics System
+ * 
+ * Comprehensive metrics display featuring primary submission counts and 
+ * secondary activity indicators. Includes trend indicators, status breakdowns,
+ * and interactive hover states.
+ * 
+ * Key Components:
+ * - .cf7-primary-metrics: 4-column grid for main submission statistics
+ * - .cf7-activity-metrics: 4-column grid for activity indicators  
+ * - .cf7-metric-card: Individual statistic cards with hover animations
+ * - .breakdown-item: Status-specific count pills within cards
+ * 
+ * Used in: Dashboard statistics display area
+ */
 .cf7-metrics-overview {
     margin-bottom: 2rem;
 }
@@ -512,7 +563,18 @@
 .cf7-stat-change.negative { color: #e53e3e; }
 .cf7-stat-change.neutral { color: #718096; }
 
-/* ===== DASHBOARD GRID ===== */
+/* ========================================================================
+   DASHBOARD GRID LAYOUT
+   ======================================================================== */
+
+/**
+ * Main Dashboard Grid System
+ * 
+ * Two-column layout system dividing dashboard into main content (2fr) and 
+ * sidebar (1fr) areas. Responsive design collapses to single column on mobile.
+ * 
+ * Used in: Primary dashboard layout structure
+ */
 .cf7-dashboard-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -773,7 +835,9 @@
 
 
 
-/* ===== SEARCH & FILTERS ===== */
+/* ========================================================================
+   SEARCH & FILTERS INTERFACE
+   ======================================================================== */
 .cf7-search-wrapper {
     position: relative;
     width: 44px;
@@ -851,7 +915,9 @@
     line-height: 16px;
 }
 
-/* ===== MODERN CALENDAR DATE PICKER ===== */
+/* ========================================================================
+   MODERN CALENDAR DATE PICKER
+   ======================================================================== */
 .cf7-date-filter-bar {
     background: #f8fafc;
     border-bottom: 1px solid #e2e8f0;
@@ -1759,7 +1825,27 @@
     min-width: 140px;
 }
 
-/* ===== SUBMISSIONS TABLE ===== */
+/* ========================================================================
+   SUBMISSIONS TABLE DISPLAY
+   ======================================================================== */
+
+/**
+ * Submissions Data Table System
+ * 
+ * Complex table interface featuring bulk selection, sorting, filtering,
+ * and individual submission row management. Includes status indicators,
+ * action dropdowns, and responsive design adaptations.
+ * 
+ * Key Components:
+ * - .cf7-submissions-container: Flexible container with max-height constraint
+ * - .cf7-submission-row: Grid-based row layout (checkbox, content, status, actions)
+ * - .cf7-bulk-actions: Selection and mass action controls
+ * - Status badges and priority indicators
+ * 
+ * Integration: Works with dashboard.js for AJAX operations and filtering
+ * 
+ * Used in: Main submissions data display and management
+ */
 .cf7-submissions-container {
     flex: 1;
     display: flex;
@@ -2007,7 +2093,9 @@
     border-color: #cbd5e0;
 }
 
-/* ===== PAGINATION ===== */
+/* ========================================================================
+   PAGINATION CONTROLS
+   ======================================================================== */
 .cf7-pagination {
     padding: 1rem 1.5rem;
     border-top: 1px solid #e2e8f0;
@@ -2094,7 +2182,9 @@
     border-color: #e2e8f0;
 }
 
-/* ===== ACTIVITY PANEL ===== */
+/* ========================================================================
+   ACTIVITY PANEL INTERFACE
+   ======================================================================== */
 .cf7-activity-section {
     padding: 1.5rem;
     border-bottom: 1px solid #f1f5f9;
@@ -2457,7 +2547,9 @@
     }
 }
 
-/* ===== RESPONSIVE DESIGN ===== */
+/* ========================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ======================================================================== */
 @media (width <= 1200px) {
     .cf7-dashboard-grid {
         grid-template-columns: 1fr;
