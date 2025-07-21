@@ -747,6 +747,9 @@ class CF7_Artist_Submissions_Dashboard {
             }
         }
         
+        // Clear today's stats cache after bulk deletions
+        $this->clear_daily_stats_cache();
+        
         wp_send_json_success(array(
             'message' => sprintf('%d submissions deleted', $deleted)
         ));
@@ -780,6 +783,9 @@ class CF7_Artist_Submissions_Dashboard {
             
             $updated++;
         }
+        
+        // Clear today's stats cache after bulk status changes
+        $this->clear_daily_stats_cache();
         
         wp_send_json_success(array(
             'message' => sprintf('%d submissions updated to %s', $updated, $term->name)
@@ -860,6 +866,9 @@ class CF7_Artist_Submissions_Dashboard {
             );
         }
         
+        // Clear today's stats cache after status update
+        $this->clear_daily_stats_cache();
+        
         wp_send_json_success(array(
             'message' => 'Status updated successfully'
         ));
@@ -869,6 +878,13 @@ class CF7_Artist_Submissions_Dashboard {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
             wp_send_json_error('Invalid nonce');
+        }
+        
+        // Check if cache-busting is requested (from JavaScript)
+        $cache_buster = isset($_POST['_cache_buster']);
+        if ($cache_buster) {
+            // Clear the cache to ensure fresh data
+            $this->clear_daily_stats_cache();
         }
         
         try {
@@ -1201,6 +1217,12 @@ class CF7_Artist_Submissions_Dashboard {
             // Also store in options for permanent history (keep last 30 days)
             $this->store_daily_stats_history($today, $stats);
         }
+    }
+    
+    private function clear_daily_stats_cache() {
+        $today = date('Y-m-d');
+        $cache_key = 'cf7_daily_stats_' . $today;
+        delete_transient($cache_key);
     }
     
     private function get_cached_daily_stats($days_ago) {

@@ -407,6 +407,57 @@
     transition: transform 0.1s ease;
 }
 
+/* Stat updating animation */
+.cf7-stat-card.cf7-stat-updating {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    transition: all 0.3s ease;
+}
+
+.cf7-stat-card.cf7-stat-updating .cf7-stat-number {
+    color: #667eea;
+    transition: color 0.3s ease;
+}
+
+/* Metric card updating animation */
+.cf7-metric-card.cf7-stat-updating {
+    transform: scale(1.02);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+    transition: all 0.3s ease;
+}
+
+.cf7-metric-card.cf7-stat-updating .metric-value {
+    color: #667eea;
+    transition: color 0.3s ease;
+}
+
+/* Dashboard refreshing state */
+.cf7-modern-dashboard.cf7-refreshing {
+    position: relative;
+}
+
+.cf7-modern-dashboard.cf7-refreshing::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    background-size: 200% 100%;
+    animation: refreshProgress 1s linear infinite;
+    z-index: 9999;
+}
+
+@keyframes refreshProgress {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
 /* Activity loading states */
 .activity-detail.loading::after {
     content: "...";

@@ -11,6 +11,8 @@
             this.perPage = 10; // Default to 10 entries per page
             this.selectedItems = new Set();
             this.searchTimeout = null;
+            this.isPerformingBulkAction = false;
+            this.isInitialLoad = true; // Track if this is the first load
             this.loadingStates = {
                 submissions: false,
                 stats: false,
@@ -50,7 +52,7 @@
         bindEvents() {
             // Header buttons
             $(document).on('click', '#cf7-refresh-dashboard', () => {
-                this.refreshAll();
+                this.refreshAll(true);
             });
 
             $(document).on('click', '#cf7-export-all', () => {
@@ -159,7 +161,7 @@
             });
 
             // Bulk selection
-            $(document).on('change', '#cf7-select-all', (e) => {
+            $(document).on('change', '.cf7-select-all', (e) => {
                 const isChecked = $(e.currentTarget).is(':checked');
                 $('.cf7-submission-checkbox').prop('checked', isChecked);
                 this.updateSelectedItems();
@@ -170,7 +172,7 @@
             });
 
             // Bulk actions
-            $(document).on('click', '#cf7-bulk-action-btn', () => {
+            $(document).on('click', '#cf7-apply-bulk', () => {
                 this.handleBulkAction();
             });
 
@@ -210,8 +212,7 @@
 
             // Activity refresh
             $(document).on('click', '#cf7-refresh-activity', () => {
-                this.loadRecentMessages();
-                this.loadOutstandingActions();
+                this.refreshActivity();
             });
 
             // Mark message as read
@@ -225,12 +226,12 @@
             $(document).on('click', '.cf7-mark-submission-read-btn', (e) => {
                 e.stopPropagation();
                 const submissionId = $(e.currentTarget).data('submission-id');
-                this.markSubmissionAsRead(submissionId);
+                this.markSubmissionRead(submissionId);
             });
 
             // Mark all as read
             $(document).on('click', '#cf7-mark-all-read', () => {
-                this.markAllAsRead();
+                this.markAllMessagesRead();
             });
 
             // Keyboard shortcuts
@@ -576,7 +577,8 @@
 
             const data = {
                 action: 'cf7_dashboard_get_stats',
-                nonce: cf7_dashboard.nonce
+                nonce: cf7_dashboard.nonce,
+                _cache_buster: Date.now() // Add cache-busting parameter
             };
 
             $.ajax({
@@ -588,14 +590,16 @@
                 .done((response) => {
                     if (response && response.success) {
                         this.renderStats(response.data);
+                        
+                        // Mark initial load as complete
+                        if (this.isInitialLoad) {
+                            this.isInitialLoad = false;
+                        }
                     } else {
-                        console.error('Stats error:', response);
                         this.showToast('Error loading stats: ' + (response?.data || 'Unknown error'), 'error');
                     }
                 })
                 .fail((xhr, status, error) => {
-                    console.error('Stats AJAX failed:', xhr, status, error);
-                    console.error('Response text:', xhr.responseText);
                     this.showToast('Failed to load statistics', 'error');
                 })
                 .always(() => {
@@ -624,13 +628,10 @@
                     if (response && response.success) {
                         this.renderOutstandingActions(response.data);
                     } else {
-                        console.error('Outstanding actions error:', response);
                         this.showToast('Error loading outstanding actions: ' + (response?.data || 'Unknown error'), 'error');
                     }
                 })
                 .fail((xhr, status, error) => {
-                    console.error('Outstanding actions AJAX failed:', xhr, status, error);
-                    console.error('Response text:', xhr.responseText);
                     this.showToast('Failed to load outstanding actions', 'error');
                 })
                 .always(() => {
@@ -705,11 +706,117 @@
         }
 
         renderStats(stats) {
+            // Update metric cards with aggregated values
+            this.updateMetricCards(stats);
+            
+            // Update individual stat elements if they exist
+            this.updateIndividualStats(stats);
+            
+            // Update unread messages count in activity panel
+            const unreadCount = stats.unread_messages || 0;
+            const $unreadStat = $('#cf7-unread-messages-stat');
+            $unreadStat.text(unreadCount);
+            
+            // Update the activity card badges with improved logic
+            const $messagesCard = $('.activity-messages');
+            let $messagesBadge = $messagesCard.find('.activity-badge');
+            
+            if (unreadCount > 0) {
+                // If badge doesn't exist, create it
+                if ($messagesBadge.length === 0) {
+                    $messagesCard.find('.activity-icon').append('<span class="activity-badge">0</span>');
+                    $messagesBadge = $messagesCard.find('.activity-badge');
+                }
+                $messagesBadge.text(unreadCount).show();
+            } else {
+                // Hide the badge when no unread messages
+                $messagesBadge.hide();
+            }
+            
+            // Generate charts for each stat type if chart containers exist
+            this.generateStatsCharts(stats);
+        }
+
+        updateMetricCards(stats) {
+            // Update the primary metric cards with new values and visual feedback
+            const metricUpdates = {
+                'overview': {
+                    value: stats.total || 0,
+                    selector: '.cf7-metric-card[data-type="overview"] .metric-value'
+                },
+                'workflow': {
+                    value: (stats.new || 0) + (stats['awaiting-information'] || 0),
+                    selector: '.cf7-metric-card[data-type="workflow"] .metric-value',
+                    breakdown: {
+                        new: stats.new || 0,
+                        waiting: stats['awaiting-information'] || 0
+                    }
+                },
+                'progress': {
+                    value: (stats.reviewed || 0) + (stats.shortlisted || 0),
+                    selector: '.cf7-metric-card[data-type="progress"] .metric-value',
+                    breakdown: {
+                        reviewed: stats.reviewed || 0,
+                        shortlisted: stats.shortlisted || 0
+                    }
+                },
+                'outcomes': {
+                    value: (stats.selected || 0) + (stats.rejected || 0),
+                    selector: '.cf7-metric-card[data-type="outcomes"] .metric-value',
+                    breakdown: {
+                        selected: stats.selected || 0,
+                        rejected: stats.rejected || 0
+                    }
+                }
+            };
+
+            Object.keys(metricUpdates).forEach(type => {
+                const update = metricUpdates[type];
+                const $valueElement = $(update.selector);
+                const $card = $valueElement.closest('.cf7-metric-card');
+                
+                if ($valueElement.length > 0) {
+                    // Add visual feedback
+                    $card.addClass('cf7-stat-updating');
+                    
+                    // Update main value with fade effect
+                    $valueElement.fadeOut(150, function() {
+                        $(this).text(update.value).fadeIn(150);
+                    });
+                    
+                    // Update breakdown if exists
+                    if (update.breakdown) {
+                        Object.keys(update.breakdown).forEach(breakdownType => {
+                            const $breakdownElement = $card.find(`.breakdown-item.${breakdownType}`);
+                            if ($breakdownElement.length > 0) {
+                                const newText = `${update.breakdown[breakdownType]} ${breakdownType}`;
+                                $breakdownElement.fadeOut(150, function() {
+                                    $(this).text(newText).fadeIn(150);
+                                });
+                            }
+                        });
+                    }
+                    
+                    // Remove updating class after animation
+                    setTimeout(() => {
+                        $card.removeClass('cf7-stat-updating');
+                    }, 300);
+                }
+            });
+        }
+
+        updateIndividualStats(stats) {
+            // Update individual stat cards if they exist (fallback for different layouts)
             const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected', 'unread_messages'];
             
             statTypes.forEach(type => {
                 const $card = $(`.cf7-stat-card[data-type="${type}"]`);
                 let $number = $card.find('.cf7-stat-number');
+                
+                if ($card.length === 0) {
+                    // Individual stat cards don't exist in this layout, skip
+                    return;
+                }
                 
                 // If the stat card structure was destroyed, rebuild it
                 if ($number.length === 0) {
@@ -735,8 +842,6 @@
                         'unread_messages': 'Unread Messages'
                     };
                     
-                    const iconClass = `${type} ${iconMap[type] ? iconMap[type].replace('dashicons-', '') : 'chart-bar'}`;
-                    
                     $card.html(`
                         <div class="cf7-stat-header">
                             <div class="cf7-stat-left">
@@ -758,8 +863,13 @@
                 
                 const value = stats[type] || 0;
                 
-                // Update the number
-                $number.text(value);
+                // Force visual update by adding animation class
+                $card.addClass('cf7-stat-updating');
+                
+                // Update the number with fade effect for visual confirmation
+                $number.fadeOut(150, function() {
+                    $(this).text(value).fadeIn(150);
+                });
                 
                 // Update percentage change if available
                 const changeKey = `${type}_change`;
@@ -779,30 +889,12 @@
                         .addClass(changeClass)
                         .text(`${changeText} from last week`);
                 }
+                
+                // Remove the updating class after animation
+                setTimeout(() => {
+                    $card.removeClass('cf7-stat-updating');
+                }, 300);
             });
-            
-            // Update unread messages count in activity panel
-            const unreadCount = stats.unread_messages || 0;
-            $('#cf7-unread-messages-stat').text(unreadCount);
-            
-            // Update the activity card badges with improved logic
-            const $messagesCard = $('.activity-messages');
-            let $messagesBadge = $messagesCard.find('.activity-badge');
-            
-            if (unreadCount > 0) {
-                // If badge doesn't exist, create it
-                if ($messagesBadge.length === 0) {
-                    $messagesCard.find('.activity-icon').append('<span class="activity-badge">0</span>');
-                    $messagesBadge = $messagesCard.find('.activity-badge');
-                }
-                $messagesBadge.text(unreadCount).show();
-            } else {
-                // Hide the badge when no unread messages
-                $messagesBadge.hide();
-            }
-            
-            // Generate charts for each stat type
-            this.generateStatsCharts(stats);
         }
 
         generateStatsCharts(stats) {
@@ -1050,6 +1142,7 @@
             
             // Update the activity card badge counter
             const $activityBadge = $('.activity-actions-count');
+            
             if (totalCount > 0) {
                 $activityBadge.text(totalCount).show();
             } else {
@@ -1410,9 +1503,24 @@
             }
         }
 
+        handleBulkAction() {
+            const action = $('#cf7-bulk-action-select').val();
+            if (!action) {
+                this.showToast('Please select a bulk action', 'info');
+                return;
+            }
+            
+            this.performBulkAction(action);
+        }
+
         performBulkAction(action) {
             if (this.selectedItems.size === 0) {
                 this.showToast('Please select items first', 'info');
+                return;
+            }
+
+            // Prevent double execution
+            if (this.isPerformingBulkAction) {
                 return;
             }
 
@@ -1423,6 +1531,8 @@
                     return;
                 }
             }
+
+            this.isPerformingBulkAction = true;
 
             const data = {
                 action: 'cf7_dashboard_bulk_action',
@@ -1440,15 +1550,22 @@
                             this.triggerDownload(response.data.download_url, response.data.filename || 'cf7-submissions-export.csv');
                         }
                         
-                        // Only refresh submissions and stats after bulk actions, not messages/actions
-                        this.refreshSubmissions();
+                        // Delay refresh slightly to ensure database updates are complete
+                        setTimeout(() => {
+                            this.refreshAll(true);
+                        }, 500);
                     } else {
                         this.showToast(response.data || 'Action failed', 'error');
                     }
                 })
                 .fail((xhr, status, error) => {
-                    console.error('Bulk action failed:', xhr, status, error);
                     this.showToast('Failed to perform action', 'error');
+                })
+                .always(() => {
+                    // Reset the flag after the action completes (success or failure)
+                    setTimeout(() => {
+                        this.isPerformingBulkAction = false;
+                    }, 1000); // Wait a bit longer to prevent rapid re-triggering
                 });
         }
 
@@ -1482,7 +1599,9 @@
                     if (response.success) {
                         this.showToast(response.data.message || 'Action completed successfully', 'success');
                         // Submission actions usually affect submissions and stats, not messages
-                        this.refreshSubmissions();
+                        setTimeout(() => {
+                            this.refreshSubmissions();
+                        }, 300);
                     } else {
                         this.showToast(response.data || 'Action failed', 'error');
                     }
@@ -1507,8 +1626,11 @@
                     .done((response) => {
                         if (response.success) {
                             this.showToast('Status updated successfully', 'success');
-                            // Status updates affect submissions and stats
-                            this.refreshSubmissions();
+                            // Status updates affect submissions, stats, and activity
+                            setTimeout(() => {
+                                this.refreshSubmissions();
+                                this.refreshActivity();
+                            }, 300);
                         } else {
                             this.showToast(response.data || 'Failed to update status', 'error');
                         }
@@ -1517,6 +1639,32 @@
                         this.showToast('Failed to update status', 'error');
                     });
             }
+        }
+
+        updateSubmissionStatus(submissionId, status) {
+            const data = {
+                action: 'cf7_dashboard_update_status',
+                nonce: cf7_dashboard.nonce,
+                id: submissionId,
+                status: status
+            };
+
+            $.post(ajaxurl, data)
+                .done((response) => {
+                    if (response.success) {
+                        this.showToast('Status updated successfully', 'success');
+                        // Status updates affect submissions, stats, and activity
+                        setTimeout(() => {
+                            this.refreshSubmissions(); // This includes loadStats()
+                            this.refreshActivity();
+                        }, 300);
+                    } else {
+                        this.showToast(response.data || 'Failed to update status', 'error');
+                    }
+                })
+                .fail(() => {
+                    this.showToast('Failed to update status', 'error');
+                });
         }
 
         exportSubmissions() {
@@ -1543,11 +1691,33 @@
                 });
         }
 
-        refreshAll() {
+        refreshAll(forced = false) {
+            // Visual feedback - add refreshing class to dashboard
+            $('.cf7-modern-dashboard').addClass('cf7-refreshing');
+            
+            // Show toast notification for manual refresh
+            if (forced) {
+                this.showToast('Refreshing dashboard...', 'info');
+                // Reset loading states for forced refresh
+                this.loadingStates.stats = false;
+                this.loadingStates.actions = false;
+                this.loadingStates.messages = false;
+                this.loadingStates.submissions = false;
+            }
+            
             this.loadStats();
             this.loadOutstandingActions();
             this.loadSubmissions();
             this.loadRecentMessages();
+            this.updateTodayActivity();
+            
+            // Remove refreshing class after delay
+            setTimeout(() => {
+                $('.cf7-modern-dashboard').removeClass('cf7-refreshing');
+                if (forced) {
+                    this.showToast('Dashboard refreshed', 'success');
+                }
+            }, 1000);
         }
 
         // Selective refresh methods for better performance
@@ -1563,6 +1733,13 @@
             this.loadStats();
         }
 
+        refreshActivity() {
+            // Refresh activity cards (messages, actions, and today's activity)
+            this.loadRecentMessages();
+            this.loadOutstandingActions();
+            this.updateTodayActivity();
+        }
+
         refreshStats() {
             // Only refresh stats
             this.loadStats();
@@ -1573,9 +1750,8 @@
             // Don't poll stats or actions automatically - they should refresh on user action
             this.pollingInterval = setInterval(() => {
                 if (!document.hidden) {
-                    // Refresh unread messages and stats to update badge counts
+                    // Only refresh unread messages, not stats (to prevent conflicts)
                     this.loadRecentMessages();
-                    this.loadStats(); // Add this to update unread message counts in badges
                 }
             }, 120000); // 2 minutes instead of 30 seconds
         }
@@ -1738,6 +1914,33 @@
     });
 
     // Add new methods for message management
+    CF7Dashboard.prototype.markMessageAsRead = function(messageId) {
+        const data = {
+            action: 'cf7_dashboard_mark_message_read',
+            nonce: cf7_dashboard.nonce,
+            message_id: messageId
+        };
+
+        $.post(ajaxurl, data)
+            .done((response) => {
+                if (response.success) {
+                    // Remove visual unread indicators
+                    $(`.cf7-message-item[data-message-id="${messageId}"]`).removeClass('unread');
+                    
+                    // Refresh activity and stats to update counts
+                    this.refreshActivity();
+                    this.loadStats();
+                    
+                    this.showToast('Message marked as read', 'success');
+                } else {
+                    this.showToast('Failed to mark message as read', 'error');
+                }
+            })
+            .fail(() => {
+                this.showToast('Failed to mark message as read', 'error');
+            });
+    };
+
     CF7Dashboard.prototype.markSubmissionRead = function(submissionId) {
         const data = {
             action: 'cf7_dashboard_mark_submission_read',
@@ -1757,8 +1960,8 @@
                             $('.cf7-recent-messages').html('<div class="cf7-loading-state">No unread messages</div>');
                         }
                     });
-                    // Refresh actions and stats to update counts
-                    this.loadOutstandingActions();
+                    // Refresh activity and stats to update counts
+                    this.refreshActivity();
                     this.loadStats(); // Update unread message badge counts
                     
                     // Force immediate badge update
@@ -1793,8 +1996,8 @@
                         $(this).remove();
                         $('.cf7-recent-messages').html('<div class="cf7-loading-state">No unread messages</div>');
                     });
-                    // Refresh actions, stats, and messages
-                    this.loadOutstandingActions();
+                    // Refresh activity, stats, and messages
+                    this.refreshActivity();
                     this.loadStats(); // Update unread message badge counts
                     
                     // Force immediate badge update
