@@ -209,7 +209,7 @@ class CF7_Artist_Submissions_Post_Type {
      * interface. Implements complete artistic categorization system with visual
      * organization and professional presentation capabilities.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     public function register_mediums_taxonomy() {
         $labels = array(
@@ -498,7 +498,7 @@ class CF7_Artist_Submissions_Post_Type {
      * metadata organization, status information, and curator notes integration
      * for comprehensive reporting and administrative workflow support.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function handle_bulk_actions($redirect_to, $action, $post_ids) {
         if ($action !== 'export_csv') {

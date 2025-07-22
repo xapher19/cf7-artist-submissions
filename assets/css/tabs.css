@@ -1,58 +1,34 @@
 /**
- * CF7 Artist Submissions - Modern Artist Page Styles
- * 
- * Complete styling system for the tabbed artist interface providing:
- * - Professional artist header with status management and live editing
- * - Modern tab navigation with smooth transitions and hover effects
- * - Comprehensive profile editing system with field-level controls
- * - Artistic mediums selection with custom checkboxes
- * - Real-time status updates with animated feedback
- * - PDF export functionality with enhanced styling
- * - Curator notes management with autosave capabilities
- * - Full responsive design for mobile and desktop
- * - WordPress admin integration with consistent styling
- * - Accessibility-compliant keyboard navigation and focus states
- * 
- * ARCHITECTURE:
- * - Artist Header: Gradient header with editable fields and status controls
- * - Tab System: Full-width tabs with content panels and loading states
- * - Field Editing: Click-to-edit system with validation and feedback
- * - Responsive Design: Mobile-first approach with breakpoint-specific layouts
- * 
- * DEPENDENCIES:
- * - common.css: Shared gradient headers, buttons, animations, and modals
- * - WordPress: Dashicons integration for consistent iconography
- * - JavaScript: fields.js, tabs.js for interactive functionality
- * 
- * FILE STRUCTURE:
- * 1. WordPress admin layout integration - Full-width overrides
- * 2. Artist header section - Gradient header with status and editing
- * 3. Live field editing system - Click-to-edit functionality 
- * 4. Header action controls - Edit/save buttons and actions
- * 5. Status management system - Interactive status dropdowns
- * 6. Tab navigation system - Modern tabbed interface
- * 7. Tab content panels & state management - Content areas and loading states
- * 8. Responsive design - Mobile optimization breakpoints
- * 9. Profile tab content system - Profile information display
- * 10. Status feedback & animation system - Real-time user feedback
- * 11. Field editing interface - Form inputs and validation
- * 12. Profile field interaction system - Edit mode behaviors
- * 13. Artistic mediums field system - Medium selection and display
- * 14. Admin list page medium tags - WordPress admin styling
- * 15. Curator notes section - Note management interface
- * 16. Export functionality - PDF generation and options
- * 17. Submitted works grid layout - Image gallery with responsive grid
- * 
+ * CF7 Artist Submissions - Modern Artist Page Design System
+ *
+ * Complete styling system for the tabbed artist interface providing professional
+ * artist management with live editing capabilities, status management, and
+ * comprehensive profile editing. Features modern tab navigation with smooth
+ * transitions and accessibility-compliant keyboard navigation.
+ *
+ * Features:
+ * • Professional artist header with gradient background and status management
+ * • Modern tab navigation system with smooth transitions and hover effects
+ * • Comprehensive profile editing with click-to-edit functionality
+ * • Artistic mediums selection with custom checkboxes and color theming
+ * • Real-time status updates with animated feedback and validation
+ * • PDF export functionality with customizable options and styling
+ * • Curator notes management with autosave capabilities
+ * • Full responsive design with mobile-first approach and touch optimization
+ * • WordPress admin integration with consistent styling and layout
+ * • Accessibility features with keyboard navigation and focus states
+ * • Live field editing system with validation and error handling
+ * • Interactive status management with dropdown controls and animations
+ *
  * @package CF7_Artist_Submissions
- * @since 1.0.0 Initial tabbed interface
- * @since 2.0.0 Complete redesign with modern UX and editing system
- * @since 2.1.0 Enhanced documentation and code organization
- * @version 2.1.0
+ * @subpackage Assets/CSS
+ * @since      1.0.0
+ * @version    1.0.0
  */
 
-/* ========================================================================
-   WORDPRESS ADMIN LAYOUT INTEGRATION
-   ======================================================================== */
+/* ============================================================================
+   WORDPRESS ADMIN LAYOUT INTEGRATION SECTION
+   ============================================================================ */
 
 /**
  * Full-Width Layout System
@@ -91,30 +67,16 @@
     max-width: 100% !important;
 }
 
-/* ========================================================================
-   ARTIST HEADER SECTION
-   ======================================================================== */
+/* ============================================================================
+   ARTIST HEADER SYSTEM SECTION
+   ============================================================================ */
 
 /**
- * Artist Header System
+ * Artist Header Display System
  * 
  * Professional artist header combining visual identity with functional controls.
  * Extends the shared gradient header system from common.css with artist-specific
- * functionality including status management and live field editing.
- * 
- * Key Features:
- * - Gradient background with glassmorphism effects
- * - Live-editable artist information (name, email, pronouns)
- * - Interactive status management with dropdown controls
- * - Action buttons for profile editing and export functions
- * - Responsive layout adapting to mobile screens
- * 
- * Dependencies:
- * - common.css: .cf7-gradient-header and .cf7-header-context classes
- * - fields.js: Provides click-to-edit functionality
- * - WordPress: Dashicons for consistent iconography
- * 
- * Usage: Apply .cf7-gradient-header and .cf7-header-context to header element
+ * functionality including status management and live field editing capabilities.
  */
 
 .cf7-artist-header {
@@ -138,10 +100,9 @@
 }
 
 /**
- * Artist Status Circle
+ * Artist Status Circle Display
  * 
- * Large status indicator with glassmorphism effect.
- * Shows current submission status with hover interactions.
+ * Large status indicator with glassmorphism effect for current submission status.
  */
 .cf7-artist-status {
     flex-shrink: 0;
@@ -167,10 +128,9 @@
 }
 
 /**
- * Artist Information Display
+ * Artist Information Display Container
  * 
- * Main artist details including name, email, pronouns, and metadata.
- * Supports live editing when in edit mode.
+ * Main artist details including name, email, pronouns, and metadata with live editing support.
  */
 .cf7-artist-info {
     flex: 1;
@@ -178,10 +138,9 @@
 }
 
 /**
- * Artist Name Display
+ * Artist Name Typography
  * 
- * Large, prominent artist name with flexible layout for pronouns.
- * Supports baseline alignment for optimal typography.
+ * Large, prominent artist name with flexible layout for pronouns and baseline alignment.
  */
 .cf7-artist-name {
     font-size: 2.5rem;
@@ -196,9 +155,9 @@
 }
 
 /**
- * Artist Contact Information
+ * Artist Contact Information Display
  * 
- * Secondary information including email and metadata.
+ * Secondary information including email and metadata with consistent styling.
  */
 .cf7-artist-email {
     font-size: 1.1rem;
@@ -209,10 +168,9 @@
 }
 
 /**
- * Artist Metadata Container
+ * Artist Metadata Container System
  * 
- * Flexible container for additional artist information
- * with responsive wrapping for mobile devices.
+ * Flexible container for additional artist information with responsive wrapping.
  */
 .cf7-artist-meta {
     display: flex;
@@ -236,9 +194,9 @@
 }
 
 /**
- * Artist Pronouns Styling
+ * Artist Pronouns Display
  * 
- * Subtle italic styling for pronoun display.
+ * Subtle italic styling for pronoun display with opacity effects.
  */
 .cf7-artist-pronouns {
     font-size: 1.25rem;
@@ -248,9 +206,9 @@
 }
 
 /**
- * Artist Subtitle
+ * Artist Subtitle Text
  * 
- * Additional descriptive text below main artist information.
+ * Additional descriptive text below main artist information with opacity styling.
  */
 .cf7-artist-subtitle {
     font-size: 1.1rem;
@@ -261,10 +219,9 @@
 }
 
 /**
- * Header Action Controls
+ * Header Action Controls Container
  * 
- * Container for header-level actions and buttons.
- * Uses shared button styling from common.css with header context.
+ * Container for header-level actions and buttons using shared button styling from common.css.
  */
 .cf7-profile-actions {
     display: flex;
@@ -273,23 +230,15 @@
     flex-shrink: 0;
 }
 
-/* ========================================================================
-   LIVE FIELD EDITING SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   LIVE FIELD EDITING SYSTEM SECTION
+   ============================================================================ */
 
 /**
- * Header Field Editing
+ * Header Field Editing System
  * 
- * Interactive field editing system for artist header information.
- * Provides click-to-edit functionality with visual feedback and validation.
- * 
- * Features:
- * - Hover states for edit mode discovery
- * - Smooth transitions between view and edit states
- * - Input validation with error styling
- * - Glassmorphism effects for edit overlays
- * 
- * Usage: Applied automatically by fields.js when edit mode is activated
+ * Interactive field editing system for artist header information providing
+ * click-to-edit functionality with visual feedback and validation states.
  */
 
 .cf7-header-field {
@@ -332,15 +281,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     outline: none;
 }
 
-/* ========================================================================
-   HEADER ACTION CONTROLS
-   ======================================================================== */
+/* ============================================================================
+   HEADER ACTION CONTROLS SECTION
+   ============================================================================ */
 
 /**
- * Artist Actions Container
+ * Artist Actions Container Layout
  * 
- * Layout container for header-level action buttons and controls.
- * Maintains consistent spacing and alignment for all action elements.
+ * Layout container for header-level action buttons maintaining consistent spacing and alignment.
  */
 .cf7-artist-actions {
     display: flex;
@@ -350,15 +298,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Edit/Save Button
+ * Edit Save Button System
  * 
- * Primary action button for toggling edit mode and saving changes.
- * Features glassmorphism effects and smooth state transitions.
- * 
- * States:
- * - Default: Edit mode activation
- * - Save mode: Active editing with save functionality
- * - Loading: Processing state with spinner animation
+ * Primary action button for toggling edit mode and saving changes with glassmorphism effects.
  */
 .cf7-edit-save-button {
     background: rgba(255, 255, 255, 0.2);
@@ -397,21 +339,15 @@ body.cf7-edit-mode .cf7-header-field:hover {
     line-height: 1;
 }
 
-/* ========================================================================
-   STATUS MANAGEMENT SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   STATUS MANAGEMENT SYSTEM SECTION
+   ============================================================================ */
 
 /**
- * Status Circle Dropdown
+ * Status Circle Dropdown System
  * 
- * Interactive status management with dropdown selection.
- * Provides visual status indication and hover-based menu access.
- * 
- * Features:
- * - Hover-activated dropdown menu
- * - Status-specific color coding
- * - Smooth transitions and micro-animations
- * - Accessible keyboard navigation
+ * Interactive status management with dropdown selection providing visual status
+ * indication and hover-based menu access with smooth transitions.
  */
 
 .cf7-status-dropdown {
@@ -444,9 +380,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Status Dropdown Menu
+ * Status Dropdown Menu Container
  * 
- * Contextual menu for status selection with smooth animations.
+ * Contextual menu for status selection with smooth animations and positioning.
  */
 .cf7-status-menu {
     position: absolute;
@@ -467,9 +403,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Status Menu Options
+ * Status Menu Option Buttons
  * 
- * Individual status selection options with hover states.
+ * Individual status selection options with hover states and active styling.
  */
 .cf7-status-option {
     display: flex;
@@ -515,10 +451,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Legacy Save Button
+ * Legacy Save Button Styling
  * 
- * Alternative save button styling for compatibility.
- * Note: Primary save functionality is handled by .cf7-edit-save-button
+ * Alternative save button styling for compatibility with existing functionality.
  */
 .cf7-save-button {
     background: #2271b1;
@@ -544,22 +479,15 @@ body.cf7-edit-mode .cf7-header-field:hover {
     line-height: 1;
 }
 
-/* ========================================================================
-   TAB NAVIGATION SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   TAB NAVIGATION SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Tab Container System
  * 
- * Full-width tabbed interface providing organized content sections.
- * Seamlessly integrates with artist header and provides smooth transitions
- * between different content areas.
- * 
- * Architecture:
- * - Tab navigation bar with equal-width items
- * - Content panels with lazy loading support
- * - Loading and error states for dynamic content
- * - Responsive design adapting to mobile layouts
+ * Full-width tabbed interface providing organized content sections with seamless
+ * integration with artist header and smooth transitions between content areas.
  */
 
 .cf7-tabs-container {
@@ -571,10 +499,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Tab Navigation Bar
+ * Tab Navigation Bar System
  * 
- * Modern tab navigation with equal-width distribution and smooth transitions.
- * Connects seamlessly with artist header above and content panels below.
+ * Modern tab navigation with equal-width distribution connecting seamlessly with artist header.
  */
 .cf7-tabs-nav {
     display: flex;
@@ -589,9 +516,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Individual Tab Items
+ * Individual Tab Items Layout
  * 
- * Flexible tab items with consistent sizing and border management.
+ * Flexible tab items with consistent sizing and border management for equal distribution.
  */
 .cf7-tab-nav-item {
     margin: 0;
@@ -612,10 +539,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Tab Link Styling
+ * Tab Link Interactive Styling
  * 
- * Interactive tab buttons with hover effects and active states.
- * Features consistent height, icon alignment, and smooth transitions.
+ * Interactive tab buttons with hover effects, active states, and icon alignment.
  */
 .cf7-tab-link {
     display: flex;
@@ -666,15 +592,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     flex-shrink: 0; /* Prevent icon compression */
 }
 
-/* ========================================================================
-   TAB CONTENT PANELS & STATE MANAGEMENT
-   ======================================================================== */
+/* ============================================================================
+   TAB CONTENT PANELS SECTION
+   ============================================================================ */
 
 /**
- * Tab Content Container
+ * Tab Content Container System
  * 
- * Main content area for tab panels with consistent styling and spacing.
- * Provides backdrop for all tab content with proper visual hierarchy.
+ * Main content area for tab panels with consistent styling and visual hierarchy.
  */
 .cf7-tabs-content {
     background: white;
@@ -688,8 +613,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
 /**
  * Individual Tab Content Panels
  * 
- * Content containers for each tab with show/hide functionality.
- * Only the active tab content is displayed.
+ * Content containers for each tab with show/hide functionality where only active tab displays.
  */
 .cf7-tab-content {
     padding: 30px;
@@ -701,10 +625,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Loading State Display
+ * Loading State Display System
  * 
- * Loading indicator for dynamic content with spinning animation.
- * Uses shared cf7-spin animation from common.css.
+ * Loading indicator for dynamic content with spinning animation using shared animations.
  */
 .cf7-tab-loading {
     display: flex;
@@ -720,10 +643,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Error State Display
+ * Error State Display System
  * 
- * Error message container for failed content loading or processing.
- * Features prominent error styling with consistent spacing.
+ * Error message container for failed content loading with prominent error styling.
  */
 .cf7-tab-error {
     display: flex;
@@ -739,20 +661,15 @@ body.cf7-edit-mode .cf7-header-field:hover {
 
 /* Note: Animation keyframes (cf7-spin) are defined in common.css for shared usage */
 
-/* ========================================================================
-   RESPONSIVE DESIGN - MOBILE OPTIMIZATION
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE DESIGN SECTION
+   ============================================================================ */
 
 /**
- * Mobile-First Responsive Design
+ * Mobile-First Responsive Design System
  * 
- * Comprehensive responsive layout adjustments for mobile and tablet devices.
- * Ensures optimal user experience across all screen sizes with touch-friendly
- * interfaces and appropriate content scaling.
- * 
- * Breakpoints:
- * - 768px and below: Mobile layout with stacked navigation
- * - 1200px and below: Tablet optimization with reduced spacing
+ * Comprehensive responsive layout adjustments for mobile and tablet devices
+ * ensuring optimal user experience across all screen sizes with touch-friendly interfaces.
  */
 
 @media (width <= 768px) {
@@ -829,15 +746,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     }
 }
 
-/* ========================================================================
-   PROFILE TAB CONTENT SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   PROFILE TAB CONTENT SECTION
+   ============================================================================ */
 
 /**
- * Profile Tab Content Area
+ * Profile Tab Content Area System
  * 
- * Main container for profile information display and editing.
- * Provides clean white background for optimal content readability.
+ * Main container for profile information display and editing with clean background.
  */
 .cf7-profile-tab-content {
     background: white;
@@ -848,11 +764,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Profile Section Title
+ * Profile Section Title Headers
  * 
- * Section headers for profile content areas with icon and title.
- * Provides clear visual separation between different profile sections
- * with enhanced margin spacing and improved vertical centering.
+ * Section headers for profile content areas with enhanced spacing and vertical centering.
  */
 .cf7-section-title {
     display: flex;
@@ -871,10 +785,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Profile Section Container
+ * Profile Section Container Layout
  * 
- * Main container for each profile section including title and fields.
- * Provides consistent spacing and visual structure for grouped content.
+ * Main container for each profile section including title and fields with consistent spacing.
  */
 .cf7-profile-section {
     margin-bottom: 2.5rem;
@@ -890,20 +803,15 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Profile Fields Container
+ * Profile Fields Container System
  * 
- * Container for the actual profile fields within each section.
- * Provides consistent padding and spacing for field content.
+ * Container for the actual profile fields within each section with consistent padding.
  */
 .cf7-profile-fields {
     padding: 1.5rem 2rem 2rem 2rem;
 }
 
-/**
- * Section Title Icon
- * 
- * Dashicon styling within section titles.
- */
+/* Section Title Icon Styling */
 .cf7-section-title .dashicons {
     font-size: 1.125rem;
     width: 1.125rem;
@@ -913,22 +821,15 @@ body.cf7-edit-mode .cf7-header-field:hover {
     flex-shrink: 0;
 }
 
-/* ========================================================================
-   STATUS FEEDBACK & ANIMATION SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   STATUS FEEDBACK & ANIMATIONS SECTION
+   ============================================================================ */
 
 /**
- * Status Update Animations and Feedback
+ * Status Update Animations and Feedback System
  * 
- * Real-time feedback system for status changes and form interactions.
- * Uses shared animation system from common.css for consistency.
- * 
- * Features:
- * - Slide-in animations for status messages
- * - Color-coded feedback (success, error, loading)
- * - Smooth transitions for enhanced user experience
- * 
- * Dependencies: common.css provides cf7-spin and cf7-slide-in animations
+ * Real-time feedback system for status changes and form interactions using
+ * shared animation system from common.css for consistency across interfaces.
  */
 
 .cf7-status-feedback {
@@ -953,9 +854,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Save Feedback Messages
+ * Save Feedback Message System
  * 
- * Dedicated feedback system for save operations with enhanced styling.
+ * Dedicated feedback system for save operations with enhanced styling and animations.
  */
 .cf7-save-feedback {
     position: relative;
@@ -979,9 +880,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Inline Edit Success Messages
+ * Inline Edit Success Indicators
  * 
- * Small success indicators for individual field updates.
+ * Small success indicators for individual field updates with absolute positioning.
  */
 .edit-success {
     position: absolute;
@@ -998,15 +899,11 @@ body.cf7-edit-mode .cf7-header-field:hover {
 
 /* Note: Animation keyframes (cf7-slide-in, cf7-spin) are defined in common.css */
 
-/* ========================================================================
-   FIELD EDITING INTERFACE
-   ======================================================================== */
+/* ============================================================================
+   FIELD EDITING INTERFACE SECTION
+   ============================================================================ */
 
-/**
- * Edit Save Button Loading States
- * 
- * Visual feedback for save operations with spinner animation.
- */
+/* Edit Save Button Loading States */
 .cf7-edit-save-button .dashicons-update {
     animation: cf7-spin 1s linear infinite;
 }
@@ -1016,11 +913,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     cursor: not-allowed;
 }
 
-/**
- * Form Validation & Error States
- * 
- * Visual feedback for form validation errors with prominent styling.
- */
+/* Form Validation Error States */
 .cf7-header-field input.error {
     border-color: #e53e3e !important;
     box-shadow: 0 0 0 1px #e53e3e !important;
@@ -1028,10 +921,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Profile Field Editing Input
+ * Profile Field Editing Input System
  * 
- * Standardized input styling for editable profile fields.
- * Provides consistent appearance and behavior across all field types.
+ * Standardized input styling for editable profile fields with consistent appearance.
  */
 .cf7-field-edit-input {
     width: 100% !important;
@@ -1050,27 +942,18 @@ body.cf7-edit-mode .cf7-header-field:hover {
     box-shadow: 0 0 0 1px #007cba !important;
 }
 
-/**
- * Field Editing Active State
- * 
- * Visual indication when a field is being edited.
- */
+/* Field Editing Active State */
 .cf7-profile-field.editing {
     background: #f8f9fa;
     border-radius: 4px;
     padding: 8px;
 }
 
-/* ========================================================================
-   PROFILE FIELD INTERACTION SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   PROFILE FIELD INTERACTION SECTION
+   ============================================================================ */
 
-/**
- * Non-Edit Mode Field Interaction
- * 
- * Ensures profile fields are not clickable when not in edit mode while
- * preserving normal interaction for links and text selection.
- */
+/* Non-Edit Mode Field Interaction */
 .cf7-profile-tab-container:not(.edit-mode) .cf7-profile-field {
     cursor: default;
     pointer-events: auto; /* Allow link clicks and selections but field editing disabled by JS */
@@ -1081,10 +964,10 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Edit Mode Field Interaction
+ * Edit Mode Field Interaction System
  * 
- * Visual feedback system for profile fields when edit mode is active.
- * Provides clear indication of editable areas with hover effects and edit icons.
+ * Visual feedback system for profile fields when edit mode is active with
+ * clear indication of editable areas through hover effects and edit icons.
  */
 .cf7-profile-tab-container.edit-mode .cf7-profile-field {
     cursor: pointer;
@@ -1095,12 +978,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     background-color: #f8f9fa;
 }
 
-/**
- * Edit Mode Visual Indicators
- * 
- * Subtle edit icon that appears on hover in edit mode to indicate
- * that fields can be clicked for editing.
- */
+/* Edit Mode Visual Indicators */
 .cf7-profile-tab-container.edit-mode .cf7-profile-field .cf7-field-content {
     position: relative;
 }
@@ -1121,10 +999,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Profile Field Header
+ * Profile Field Header System
  * 
- * Header section for profile fields containing icon and label.
- * Provides consistent styling for field identification with proper spacing.
+ * Header section for profile fields containing icon and label with consistent styling.
  */
 .cf7-field-header {
     display: flex;
@@ -1137,11 +1014,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     color: #374151;
 }
 
-/**
- * Field Header Icon
- * 
- * Dashicon styling within field headers.
- */
+/* Field Header Icon Styling */
 .cf7-field-header .cf7-field-icon {
     font-size: 1rem;
     width: 1rem;
@@ -1151,31 +1024,21 @@ body.cf7-edit-mode .cf7-header-field:hover {
     flex-shrink: 0;
 }
 
-/**
- * Field Header Label
- * 
- * Label text styling within field headers.
- */
+/* Field Header Label Styling */
 .cf7-field-header .cf7-field-label {
     font-size: 0.875rem;
     margin: 0;
 }
 
-/* ========================================================================
-   ARTISTIC MEDIUMS FIELD SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   ARTISTIC MEDIUMS FIELD SECTION
+   ============================================================================ */
 
 /**
- * Artistic Mediums Display
+ * Artistic Mediums Display System
  * 
- * Visual system for displaying selected artistic mediums as styled tags.
- * Uses CSS custom properties for dynamic color theming based on medium type.
- * 
- * Features:
- * - Flexible grid layout with wrapping
- * - Dynamic color theming via CSS variables
- * - Responsive spacing and typography
- * - Seamless integration with profile field system
+ * Visual system for displaying selected artistic mediums as styled tags using
+ * CSS custom properties for dynamic color theming based on medium type.
  */
 
 .cf7-mediums-display {
@@ -1186,10 +1049,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Individual Medium Tags
+ * Individual Medium Tags Styling
  * 
- * Styled tags for individual artistic mediums with dynamic color theming.
- * Colors are set via CSS custom properties based on medium configuration.
+ * Styled tags for individual artistic mediums with dynamic color theming via CSS variables.
  */
 .cf7-medium-tag {
     display: inline-block;
@@ -1203,11 +1065,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/**
- * Empty Mediums Display
- * 
- * Placeholder text when no artistic mediums are selected.
- */
+/* Empty Mediums Display Placeholder */
 .cf7-no-mediums-text {
     color: #a0aec0;
     font-style: italic;
@@ -1216,16 +1074,10 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Mediums Editing Interface
+ * Mediums Editing Interface System
  * 
- * Interactive editing interface for selecting artistic mediums.
- * Hidden by default and only shown when in edit mode.
- * 
- * Features:
- * - Grid-based layout for medium checkboxes
- * - Custom checkbox styling with color theming
- * - Smooth show/hide transitions
- * - Touch-friendly interface for mobile devices
+ * Interactive editing interface for selecting artistic mediums with grid-based
+ * layout and custom checkbox styling with color theming support.
  */
 
 /* Hide edit interface by default */
@@ -1247,10 +1099,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 }
 
 /**
- * Medium Checkbox Styling
+ * Medium Checkbox Interactive Styling
  * 
- * Custom styled checkboxes for medium selection with color theming.
- * Each checkbox displays the medium name with visual selection feedback.
+ * Custom styled checkboxes for medium selection with color theming and visual feedback.
  */
 .cf7-medium-checkbox {
     display: flex;
@@ -1264,20 +1115,12 @@ body.cf7-edit-mode .cf7-header-field:hover {
     position: relative;
 }
 
-/**
- * Hidden Checkbox Input
- * 
- * Native checkbox is hidden and replaced with custom styling.
- */
+/* Hidden Checkbox Input Styling */
 .cf7-medium-checkbox input[type="checkbox"] {
     display: none;
 }
 
-/**
- * Custom Checkbox Appearance
- * 
- * Visual checkbox replacement with dynamic color theming.
- */
+/* Custom Checkbox Appearance Styling */
 .cf7-medium-checkbox .checkmark {
     width: 16px;
     height: 16px;
@@ -1301,11 +1144,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     font-weight: bold;
 }
 
-/**
- * Medium Name Label
- * 
- * Text label for each medium with selection state styling.
- */
+/* Medium Name Label Styling */
 .cf7-medium-checkbox .medium-name {
     font-size: 0.875rem;
     color: #4a5568;
@@ -1316,11 +1155,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     font-weight: 600;
 }
 
-/**
- * Alternative Checkbox Selection Syntax
- * 
- * CSS nesting syntax support for modern browsers.
- */
+/* Alternative Checkbox Selection Syntax for Modern Browsers */
 .cf7-medium-checkbox input[type="checkbox"]:checked {
     & + .checkmark {
         background: var(--medium-color, #4299e1);
@@ -1332,16 +1167,11 @@ body.cf7-edit-mode .cf7-header-field:hover {
     }
 }
 
-/* ========================================================================
-   ADMIN LIST PAGE MEDIUM TAGS
-   ======================================================================== */
+/* ============================================================================
+   ADMIN LIST PAGE MEDIUM TAGS SECTION
+   ============================================================================ */
 
-/**
- * WordPress Admin List Medium Tags
- * 
- * Simplified medium tag styling for admin list pages.
- * Maintains visual consistency with the main artist interface.
- */
+/* WordPress Admin List Medium Tags */
 .wp-admin .mediums-content .medium-tag {
     display: inline-block;
     margin: 1px 2px;
@@ -1349,20 +1179,29 @@ body.cf7-edit-mode .cf7-header-field:hover {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* ===== END ARTISTIC MEDIUMS ===== */
+/* ============================================================================
+   PROFILE EDIT MODE SECTION
+   ============================================================================ */
 
+/**
+ * Profile Empty State Display
+ * 
+ * Empty state messaging for profiles with no content or data.
+ */
 .cf7-profile-empty {
     padding: 4rem 2rem;
     text-align: center;
     color: #718096;
 }
 
+/* Empty Icon Styling */
 .cf7-empty-icon .dashicons {
     font-size: 4rem;
     opacity: 0.5;
     margin-bottom: 1rem;
 }
 
+/* Empty State Typography */
 .cf7-profile-empty h3 {
     font-size: 1.5rem;
     color: #2d3748;
@@ -1374,7 +1213,11 @@ body.cf7-edit-mode .cf7-header-field:hover {
     margin: 0;
 }
 
-/* Edit Mode Styles */
+/**
+ * Edit Mode Input Styling
+ * 
+ * Active editing interface styling for profile fields with enhanced visual feedback.
+ */
 .cf7-profile-field .edit-active {
     width: 100%;
     padding: 0.75rem;
@@ -1397,6 +1240,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     resize: vertical;
 }
 
+/* Edit Controls Layout */
 .cf7-profile-field .edit-controls {
     display: flex;
     gap: 0.75rem;
@@ -1404,6 +1248,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     justify-content: flex-end;
 }
 
+/* Edit Control Buttons */
 .cf7-profile-field .edit-controls .button {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
@@ -1412,6 +1257,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     transition: all 0.2s ease;
 }
 
+/* Primary Button Styling */
 .cf7-profile-field .button-primary {
     background: #4299e1;
     border-color: #4299e1;
@@ -1423,7 +1269,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     border-color: #3182ce;
 }
 
-/* Success Message */
+/* Success Message for Individual Fields */
 .cf7-profile-field .edit-success {
     position: absolute;
     top: 1rem;
@@ -1438,25 +1284,37 @@ body.cf7-edit-mode .cf7-header-field:hover {
     animation: cf7-slide-in 0.3s ease-out;
 }
 
-/* Profile Edit Mode */
+/**
+ * Profile Edit Mode Container States
+ * 
+ * Container styling for edit mode with interactive field highlighting.
+ */
 .cf7-profile-container.edit-mode .cf7-profile-field {
     cursor: pointer;
 }
 
+/* Edit Mode Hover Effects */
 .cf7-profile-container.edit-mode .cf7-profile-field:hover {
     background: #f0f8ff;
     border-left: 3px solid #e2e8f0;
 }
 
+/* Non-Edit Mode Cursor */
 .cf7-profile-container:not(.edit-mode) .cf7-profile-field {
     cursor: default;
 }
 
+/* Non-Edit Mode Hover Reset */
 .cf7-profile-container:not(.edit-mode) .cf7-profile-field:hover {
     background: white;
 }
 
-/* Responsive Design */
+/**
+ * Profile Mobile Responsive Design
+ * 
+ * Mobile-first responsive layouts for artist profile interfaces across devices.
+ */
+/* Mobile Header Layout */
 @media (width <= 768px) {
     .cf7-profile-header {
         flex-direction: column;
@@ -1465,44 +1323,53 @@ body.cf7-edit-mode .cf7-header-field:hover {
         text-align: center;
     }
     
+    /* Mobile Header Left Section */
     .cf7-profile-header-left {
         flex-direction: column;
         align-items: center;
         gap: 1rem;
     }
     
+    /* Mobile Profile Actions */
     .cf7-profile-actions {
         flex-direction: column;
         width: 100%;
     }
     
+    /* Mobile Button Styling */
     .cf7-btn {
         width: 100%;
         justify-content: center;
     }
     
+    /* Mobile Avatar Sizing */
     .cf7-profile-avatar {
         width: 60px;
         height: 60px;
         font-size: 1.5rem;
     }
     
+    /* Mobile Profile Name */
     .cf7-profile-name {
         font-size: 1.5rem;
     }
     
+    /* Mobile Section Title Padding */
     .cf7-section-title {
         padding: 1rem 1.5rem 0.75rem 1.5rem;
     }
     
+    /* Mobile Profile Field Padding */
     .cf7-profile-field {
         padding: 1rem 1.5rem;
     }
     
+    /* Mobile Field Content Margin */
     .cf7-field-content {
         margin-left: 1.5rem;
     }
     
+    /* Mobile Success Message Position */
     .cf7-profile-field .edit-success {
         right: 1.5rem;
     }
@@ -1521,12 +1388,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     max-width: 100%;
 }
 
-/**
- * Curator Notes Controls
- * 
- * Action buttons and controls for managing curator notes.
- * Includes save functionality with loading states.
- */
+/* Curator Notes Control Layout */
 .cf7-curator-notes-controls {
     display: flex;
     align-items: center;
@@ -1534,11 +1396,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     margin-bottom: 10px;
 }
 
-/**
- * Save Curator Notes Button
- * 
- * Primary action button for saving curator notes with hover and disabled states.
- */
+/* Save Button Styling */
 #cf7-save-curator-notes {
     display: inline-flex;
     align-items: center;
@@ -1550,16 +1408,19 @@ body.cf7-edit-mode .cf7-header-field:hover {
     transition: all 0.2s ease;
 }
 
+/* Save Button Hover State */
 #cf7-save-curator-notes:hover:not(:disabled) {
     background-color: #0073aa;
     border-color: #0073aa;
 }
 
+/* Save Button Disabled State */
 #cf7-save-curator-notes:disabled {
     opacity: 0.6;
     cursor: wait;
 }
 
+/* Save Button Icon */
 #cf7-save-curator-notes .dashicons {
     font-size: 16px;
     width: 16px;
@@ -1567,12 +1428,20 @@ body.cf7-edit-mode .cf7-header-field:hover {
     line-height: 16px;
 }
 
+/* Save Status Indicator */
 .cf7-save-status {
     font-size: 13px;
     font-style: italic;
     min-width: 120px;
 }
 
+/**
+ * Curator Notes Textarea
+ * 
+ * Main input area for curator notes with enhanced typography and focus states.
+ */
+
+/* Curator Notes Textarea */
 #cf7_curator_notes {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     font-size: 14px;
@@ -1585,23 +1454,41 @@ body.cf7-edit-mode .cf7-header-field:hover {
     min-height: 120px;
 }
 
+/* Curator Notes Focus State */
 #cf7_curator_notes:focus {
     border-color: #007cba;
     box-shadow: 0 0 0 1px #007cba;
     outline: none;
 }
 
-/* ===== RESPONSIVE DESIGN ===== */
+/* ============================================================================
+   RESPONSIVE DESIGN BREAKPOINTS SECTION
+   ============================================================================ */
+
+/**
+ * Desktop Responsive Adjustments
+ * 
+ * Medium screen responsive design for desktop and large tablet devices.
+ */
+/* Desktop Header Padding */
 @media (max-width: 1200px) {
     .cf7-artist-header {
         padding: 1.5rem;
     }
     
+    /* Desktop Artist Name Sizing */
     .cf7-artist-name {
         font-size: 2rem;
     }
 }
 
+/**
+ * Mobile and Tablet Responsive Design
+ * 
+ * Comprehensive mobile-first responsive adjustments for optimal touch interfaces.
+ */
+
+/* Mobile Artist Header Layout */
 @media (max-width: 768px) {
     .cf7-artist-header {
         flex-direction: column;
@@ -1610,31 +1497,35 @@ body.cf7-edit-mode .cf7-header-field:hover {
         gap: 1rem;
     }
     
+    /* Mobile Header Content Stacking */
     .cf7-artist-header-content {
         flex-direction: column;
         text-align: center;
     }
     
+    /* Mobile Tab Link Sizing */
     .cf7-tab-link {
         font-size: 13px;
         padding: 12px 8px;
         gap: 4px;
     }
     
+    /* Mobile Tab Icon Sizing */
     .cf7-tab-link .dashicons {
         font-size: 16px;
         width: 16px;
         height: 16px;
     }
     
+    /* Mobile Tab Content Padding */
     .cf7-tab-content {
         padding: 20px;
     }
 }
 
-/* ========================================================================
-   EXPORT FUNCTIONALITY
-   ======================================================================== */
+/* ============================================================================
+   EXPORT FUNCTIONALITY SECTION
+   ============================================================================ */
 
 /**
  * Export Options Container
@@ -1642,10 +1533,12 @@ body.cf7-edit-mode .cf7-header-field:hover {
  * Main container for PDF export functionality with organized layout.
  * Provides clear section separation and professional appearance.
  */
+/* Export Container Padding */
 .cf7-export-options {
     padding: 20px;
 }
 
+/* Export Options Title */
 .cf7-export-options h3 {
     margin-top: 0;
     margin-bottom: 15px;
@@ -1676,6 +1569,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
  * Styled checkboxes for selecting export options with hover effects.
  * Provides clear visual feedback for selection states.
  */
+/* Export Option Item Container */
 .export-option {
     display: flex;
     align-items: center;
@@ -1687,12 +1581,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     transition: all 0.2s ease;
 }
 
+/* Export Option Checkbox */
 .export-option input[type="checkbox"] {
     margin-right: 10px;
     width: 16px;
     height: 16px;
 }
 
+/* Export Option Hover State */
 .export-option:hover {
     background: #f8f9fa;
     border-color: #007cba;
@@ -1703,6 +1599,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
  * 
  * Container for export action buttons and controls.
  */
+/* Export Actions Container */
 .export-actions {
     margin-top: 20px;
 }
@@ -1729,12 +1626,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     text-decoration: none;
 }
 
+/* Export PDF Button Hover State */
 #export-pdf-btn:hover {
     background: #005a87;
     border-color: #005a87;
     color: white;
 }
 
+/* Export PDF Button Disabled State */
 #export-pdf-btn:disabled {
     background: #ccc;
     border-color: #ccc;
@@ -1742,6 +1641,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     opacity: 0.7;
 }
 
+/* Export PDF Button Icon */
 #export-pdf-btn .dashicons {
     font-size: 16px;
 }
@@ -1752,6 +1652,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
  * Status messages for export operations with different states.
  * Provides clear feedback for loading, success, and error conditions.
  */
+/* Export Status Base */
 .export-status {
     margin-top: 15px;
     padding: 12px 15px;
@@ -1760,6 +1661,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     display: none;
 }
 
+/* Export Status Loading State */
 .export-status.loading {
     background: #e1f5fe;
     border: 1px solid #81d4fa;
@@ -1767,6 +1669,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     display: block;
 }
 
+/* Export Status Success State */
 .export-status.success {
     background: #e8f5e8;
     border: 1px solid #81c784;
@@ -1774,6 +1677,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     display: block;
 }
 
+/* Export Status Error State */
 .export-status.error {
     background: #ffebee;
     border: 1px solid #e57373;
@@ -1781,12 +1685,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     display: block;
 }
 
+/* Export Status Links */
 .export-status a {
     color: inherit;
     text-decoration: underline;
     font-weight: 600;
 }
 
+/* Export Status Link Hover */
 .export-status a:hover {
     text-decoration: none;
 }
@@ -1794,9 +1700,9 @@ body.cf7-edit-mode .cf7-header-field:hover {
 /* Note: Additional export styles defined inline in class-cf7-artist-submissions-tabs.php */
 /* for basic layout. Enhanced hover effects and styling defined here. */
 
-/* ========================================================================
-   SUBMITTED WORKS GRID LAYOUT
-   ======================================================================== */
+/* ============================================================================
+   SUBMITTED WORKS GRID LAYOUT SECTION
+   ============================================================================ */
 
 /**
  * Submitted Works Container
@@ -1811,6 +1717,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
  * - Consistent spacing and alignment
  * - Image preview optimization
  */
+/* Submitted Works Grid Base */
 .submission-files {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1819,7 +1726,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     margin-top: 1rem;
 }
 
-/* Ensure at least 4 columns on larger screens */
+/* Large Desktop Grid Layout */
 @media (min-width: 1024px) {
     .submission-files {
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1827,7 +1734,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     }
 }
 
-/* Force minimum 4 columns on very wide screens */
+/* Extra Wide Screen Grid Layout */
 @media (min-width: 1400px) {
     .submission-files {
         grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1840,6 +1747,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
  * Container for each submitted file with consistent styling.
  * Supports both image previews and file download links.
  */
+/* File Item Container */
 .submission-files .file-item {
     display: flex;
     flex-direction: column;
@@ -1850,6 +1758,7 @@ body.cf7-edit-mode .cf7-header-field:hover {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* File Item Hover Effect */
 .submission-files .file-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);

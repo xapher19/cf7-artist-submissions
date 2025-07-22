@@ -28,7 +28,7 @@
  * Provides comprehensive document generation with professional styling,
  * watermark support, and seamless integration with submission workflow.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 
 class CF7_Artist_Submissions_PDF_Export {
@@ -45,7 +45,7 @@ class CF7_Artist_Submissions_PDF_Export {
      * PDF export infrastructure including browser-based generation, configurable
      * content sections, and professional document formatting capabilities.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function init() {
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'handle_pdf_export'));
@@ -218,7 +218,7 @@ class CF7_Artist_Submissions_PDF_Export {
      * document generation coordination, and JSON response formatting for
      * seamless user interface integration and feedback.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function handle_pdf_export() {
         // Verify nonce
@@ -260,7 +260,7 @@ class CF7_Artist_Submissions_PDF_Export {
      * Implements configurable content sections, responsive design, and error
      * handling for seamless PDF generation workflow integration.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     private function generate_pdf($post_id, $options = array()) {
         // Check if post exists

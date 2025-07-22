@@ -856,7 +856,7 @@ class CF7_Artist_Submissions_Emails {
      * representation of WooCommerce email formatting for integration
      * decision making and template customization.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_preview_wc_template() {
         // Check nonce
@@ -1278,7 +1278,7 @@ class CF7_Artist_Submissions_Emails {
      * Provides diagnostic functionality for IMAP setup and
      * troubleshooting with comprehensive error reporting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_test_imap() {
         // Verify nonce

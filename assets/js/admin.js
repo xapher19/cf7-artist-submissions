@@ -36,7 +36,7 @@
      * Provides centralized management for settings, testing, and user interactions
      * with comprehensive safety mechanisms and error recovery.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     const CF7AdminInterface = {
         
@@ -45,7 +45,7 @@
          * Sets up event handlers, validation, templates, and recovery systems
          * for comprehensive admin functionality.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         init: function() {
             this.bindModernEvents();
@@ -66,7 +66,7 @@
          * Captures original button state and provides automatic recovery with
          * multiple fallback layers and timeout protection.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         initGlobalSafetyMechanism: function() {
             // Capture original state on mousedown (before click handlers run)
@@ -129,7 +129,7 @@
          * Centralized event handling for settings, testing, templates, and modals
          * with reliable operation across dynamic content.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         bindModernEvents: function() {
             // Settings form submissions
@@ -358,7 +358,7 @@
          * Manages loading states, action routing, and error recovery for all
          * admin test functions including SMTP, IMAP, forms, and templates.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         handleTestButton: function(e) {
             e.preventDefault();
@@ -491,7 +491,7 @@
          * Core AJAX handler providing safety timeouts, state management, and
          * comprehensive error handling for all admin test operations.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         performSafeAjaxTest: function($button, originalHtml, ajaxData, successCallback, errorCallback) {
             // Set safety timeout to ensure button always gets reset
@@ -553,7 +553,7 @@
          * Validates form setup, field mappings, and submission processing
          * for artist submission workflow compatibility.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         testFormConfiguration: function($button, originalHtml) {
             this.performSafeAjaxTest($button, originalHtml, {
@@ -585,7 +585,7 @@
          * Comprehensive SMTP testing requiring user email input for actual
          * delivery verification with modal-based email collection.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         testSmtpConfig: function($button, originalHtml) {
             // Store button reference for safety reset
@@ -682,7 +682,7 @@
          * Validates template system with test data and modal email collection
          * for comprehensive delivery verification.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         testTemplateEmail: function($button, originalHtml) {
             // Store button reference for safety reset
@@ -842,7 +842,7 @@
          * Generates template preview with sample data and shows in modal interface
          * with comprehensive error handling and state management.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         handleTemplatePreview: function(e) {
             e.preventDefault();
@@ -1182,7 +1182,7 @@
          * Display test results with auto-hiding notification and user feedback.
          * Shows standardized results in UI panel with timeout and manual dismissal.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         showTestResults: function(message, isSuccess) {
             const $results = $('#cf7-email-test-results');
@@ -1209,7 +1209,7 @@
          * Creates modal interface for email collection during SMTP and template
          * testing with keyboard navigation and callback management.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         showEmailInputModal: function(onConfirm, onCancel) {
             // Remove any existing modal

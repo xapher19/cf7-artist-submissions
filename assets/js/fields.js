@@ -41,7 +41,7 @@
      * and auto-save functionality for curator notes with comprehensive
      * validation and error handling.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     function initModernProfileEditing() {
         // Status Circle Dropdown (using existing cf7-status-selector design)
@@ -194,7 +194,7 @@
      * Updates both server state and UI display with loading indicators,
      * visual feedback, and error recovery capabilities.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     function updateStatus(postId, status, $dropdown, $option) {
         // Show loading state
@@ -248,7 +248,7 @@
      * Display floating notification messages for status update operations
      * with automatic dismissal and color-coded visual feedback.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function showStatusUpdateMessage(message, type) {
         const $message = $('<div class="cf7-status-update-message"></div>')
@@ -282,7 +282,7 @@
      * Display contextual guidance when users enter edit mode.
      * Shows click-to-edit hint with automatic dismissal and smooth animations.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function showEditHint() {
         const $hint = $('<div class="cf7-edit-hint">Click on any field to edit it</div>');
@@ -449,7 +449,7 @@
      * Convert static field display into editable input with field type handling.
      * Provides original value preservation and keyboard shortcut integration.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function startFieldEdit($field) {
         if ($field.hasClass('editing')) {
@@ -512,7 +512,7 @@
      * Process field edit completion with value validation and display updates.
      * Handles field type-specific formatting and hidden input synchronization.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function saveFieldEdit($field) {
         if (!$field.hasClass('editing')) {
@@ -598,7 +598,7 @@
      * Initialize inline editing for header fields with field type-specific inputs.
      * Handles artist name, pronouns, and email with dynamic sizing and validation.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function startHeaderFieldEdit($field) {
         const fieldType = $field.data('field');
@@ -707,7 +707,7 @@
      * Master save function collecting all field changes and persisting to server.
      * Handles comprehensive data collection, validation, and UI feedback systems.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function saveAllChanges() {
         const $container = $('.cf7-profile-tab-container');
@@ -1013,7 +1013,7 @@
      * Master cancellation function reverting all field changes and restoring
      * interface to non-editing state with original values.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function cancelAllEdits() {
         const $container = $('.cf7-profile-tab-container');
@@ -1084,7 +1084,7 @@
      * Dedicated save function for curator notes with independent AJAX handling
      * and specialized status feedback system.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     function saveCuratorNotes() {
         const $textarea = $('#cf7_curator_notes');

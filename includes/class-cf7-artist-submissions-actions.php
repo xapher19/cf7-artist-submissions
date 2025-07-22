@@ -29,7 +29,7 @@
  * management, notification systems, and database operations for action tracking
  * throughout the submission review lifecycle.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Actions {
     
@@ -41,7 +41,7 @@ class CF7_Artist_Submissions_Actions {
      * schema management with version control, and plugin lifecycle hooks
      * for proper activation and deactivation handling.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function init() {
         // AJAX handlers - matching JavaScript expectations
@@ -73,7 +73,7 @@ class CF7_Artist_Submissions_Actions {
      * consistency and conflict prevention. This method maintains
      * compatibility while delegating to the unified script management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function enqueue_scripts($hook) {
         // Actions scripts are now globally enqueued by the Tabs system
@@ -92,7 +92,7 @@ class CF7_Artist_Submissions_Actions {
      * structure including strategic indexing, appropriate data types,
      * and referential integrity support for robust action management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function create_table() {
         global $wpdb;
@@ -138,7 +138,7 @@ class CF7_Artist_Submissions_Actions {
      * exists and is accessible for operations. Used for conditional
      * table creation and schema validation processes.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function table_exists() {
         global $wpdb;
@@ -156,7 +156,7 @@ class CF7_Artist_Submissions_Actions {
      * ensuring backward compatibility while adding new functionality.
      * Performs version-aware column additions and index optimization.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function update_table_schema() {
         global $wpdb;
@@ -186,7 +186,7 @@ class CF7_Artist_Submissions_Actions {
      * during admin initialization. Uses transient caching to prevent
      * repeated database introspection and ensure optimal performance.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function check_and_update_schema() {
         // Only run once per admin session to avoid repeated checks
@@ -216,7 +216,7 @@ class CF7_Artist_Submissions_Actions {
      * capability requirements and role permissions. Provides structured
      * user data optimized for frontend assignment interfaces.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_assignable_users() {
         $users = get_users(array(
@@ -245,7 +245,7 @@ class CF7_Artist_Submissions_Actions {
      * data for frontend assignment interfaces. Includes comprehensive
      * security validation and structured response formatting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function ajax_get_assignable_users() {
         // Verify nonce
@@ -276,7 +276,7 @@ class CF7_Artist_Submissions_Actions {
      * trail integration. Handles database schema validation and
      * automatic table creation for seamless operation.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function add_action($submission_id, $title, $description = '', $options = array()) {
         global $wpdb;
@@ -357,7 +357,7 @@ class CF7_Artist_Submissions_Actions {
      * sorting for workflow efficiency. Features intelligent priority-based
      * organization and due date management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_actions($submission_id, $status = '') {
         global $wpdb;
@@ -398,7 +398,7 @@ class CF7_Artist_Submissions_Actions {
      * of pending actions for administrative oversight and workload management.
      * Features intelligent priority organization and artist name integration.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_outstanding_actions($limit = 50) {
         global $wpdb;
@@ -430,7 +430,7 @@ class CF7_Artist_Submissions_Actions {
      * or overdue for immediate attention and escalation. Provides critical
      * deadline management and workflow prioritization support.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_imminent_actions($days_ahead = 3) {
         global $wpdb;
@@ -460,7 +460,7 @@ class CF7_Artist_Submissions_Actions {
      * completion documentation. Features error handling and rollback
      * capabilities for data integrity.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function complete_action($action_id, $notes = '') {
         global $wpdb;
@@ -504,7 +504,7 @@ class CF7_Artist_Submissions_Actions {
      * trail integration. Features whitelist-based field filtering
      * for security and data integrity.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function update_action($action_id, $data) {
         global $wpdb;
@@ -549,7 +549,7 @@ class CF7_Artist_Submissions_Actions {
      * and cleanup procedures. Features audit trail preservation
      * and error handling for safe data removal.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function delete_action($action_id) {
         global $wpdb;
@@ -577,7 +577,7 @@ class CF7_Artist_Submissions_Actions {
      * analysis and optimization. Features multi-dimensional counting
      * with status classification and overdue detection.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_actions_count_by_submission() {
         global $wpdb;
@@ -616,7 +616,7 @@ class CF7_Artist_Submissions_Actions {
      * actions with optional status filtering for dynamic frontend interfaces.
      * Features comprehensive security validation and structured responses.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function ajax_get_actions() {
         // Verify nonce
@@ -646,7 +646,7 @@ class CF7_Artist_Submissions_Actions {
      * compatibility. Redirects to the unified save action method for
      * consistent processing and reduced code duplication.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      * @deprecated 2.1.0 Use ajax_save_action instead
      */
     public static function ajax_add_action() {
@@ -707,7 +707,7 @@ class CF7_Artist_Submissions_Actions {
      * compatibility. Features comprehensive field validation and
      * security controls for safe action modification.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      * @deprecated 2.1.0 Use ajax_save_action instead
      */
     public static function ajax_update_action() {
@@ -757,7 +757,7 @@ class CF7_Artist_Submissions_Actions {
      * and structured error handling. Features intelligent action ID detection
      * for automatic create/update routing.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function ajax_save_action() {
         // Verify nonce
@@ -856,7 +856,7 @@ class CF7_Artist_Submissions_Actions {
      * documentation support. Features secure completion processing
      * and structured response formatting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function ajax_complete_action() {
         // Verify nonce
@@ -890,7 +890,7 @@ class CF7_Artist_Submissions_Actions {
      * validation, permission checking, and error handling. Features safe
      * deletion processing with audit trail considerations.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function ajax_delete_action() {
         // Verify nonce
@@ -924,7 +924,7 @@ class CF7_Artist_Submissions_Actions {
      * general outstanding actions for workflow overview. Features
      * optimized queries for dashboard performance.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function ajax_get_outstanding_actions() {
         // Verify nonce
@@ -960,7 +960,7 @@ class CF7_Artist_Submissions_Actions {
      * responsive design, real-time interaction, and comprehensive modal
      * interfaces for action creation and management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function render_actions_tab($post) {
         $submission_id = $post->ID;
@@ -1078,7 +1078,7 @@ class CF7_Artist_Submissions_Actions {
      * analysis, and user-specific filtering. Features multi-dimensional
      * action classification for comprehensive workflow reporting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_actions_summary($user_id = null, $days_ahead = 7) {
         global $wpdb;
@@ -1167,7 +1167,7 @@ class CF7_Artist_Submissions_Actions {
      * delivery capabilities, plugin compatibility, and configuration status
      * for email system diagnostics and troubleshooting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function get_smtp_config_info() {
         $config_info = array(
@@ -1212,7 +1212,7 @@ class CF7_Artist_Submissions_Actions {
      * integrity for reliable delivery of daily summary notifications with
      * comprehensive field validation and error reporting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function validate_email_config() {
         $email_options = get_option('cf7_artist_submissions_email_options', array());
@@ -1259,7 +1259,7 @@ class CF7_Artist_Submissions_Actions {
      * email plugins and their activation status for optimal email delivery
      * configuration and compatibility assessment.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function is_wp_mail_smtp_configured() {
         // Check for WP Mail SMTP plugin
@@ -1295,7 +1295,7 @@ class CF7_Artist_Submissions_Actions {
      * handling. Features intelligent content generation, template support,
      * and delivery optimization for reliable notification delivery.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function send_daily_summary_email($user_id) {
         $user = get_user_by('id', $user_id);
@@ -1407,7 +1407,7 @@ class CF7_Artist_Submissions_Actions {
      * configuration analysis, test email generation, and detailed reporting
      * for email system optimization.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function test_smtp_configuration($test_email = null) {
         if (!$test_email) {
@@ -1488,7 +1488,7 @@ class CF7_Artist_Submissions_Actions {
      * test execution, user override capabilities, and detailed diagnostic
      * reporting for troubleshooting email delivery issues.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function debug_daily_summary_email($user_id = null, $test_email = null) {
         // Use admin user if no user specified
@@ -1544,7 +1544,7 @@ class CF7_Artist_Submissions_Actions {
      * providing detailed error information and debugging context for
      * troubleshooting email delivery issues.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function log_mail_error($wp_error) {
         error_log('CF7 Actions: wp_mail failed - ' . $wp_error->get_error_message());
@@ -1561,7 +1561,7 @@ class CF7_Artist_Submissions_Actions {
      * daily summary email testing and template validation. Features
      * comprehensive action categorization and realistic metadata.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function generate_sample_actions_summary() {
         // Create sample action objects with the same structure as real data
@@ -1683,7 +1683,7 @@ class CF7_Artist_Submissions_Actions {
      * verification. Features complete email generation pipeline with sample data
      * integration and delivery confirmation.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function send_test_daily_summary_email($test_email) {
         // Validate email format
@@ -1785,7 +1785,7 @@ class CF7_Artist_Submissions_Actions {
      * user discovery, personalized content generation, and efficient
      * batch processing for reliable notification automation.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function send_daily_summary_to_all() {
         global $wpdb;
@@ -1830,7 +1830,7 @@ class CF7_Artist_Submissions_Actions {
      * and optional WooCommerce styling integration. Features comprehensive
      * action categorization and contextual formatting.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     private static function generate_summary_email_content($summaries, $user, $use_wc_template = false) {
         $site_name = get_bloginfo('name');
@@ -2010,7 +2010,7 @@ class CF7_Artist_Submissions_Actions {
     /**
      * Format daily summary email using WooCommerce template.
      *
-     * @since 2.0.0
+     * @since 1.0.0
      */
     private static function format_woocommerce_daily_summary_email($content, $heading) {
         // Use the existing, working WooCommerce template method from the conversations system
@@ -2026,7 +2026,7 @@ class CF7_Artist_Submissions_Actions {
     /**
      * Setup WordPress cron for daily summary emails.
      *
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function setup_daily_summary_cron() {
         if (!wp_next_scheduled('cf7_daily_summary_cron')) {
@@ -2037,7 +2037,7 @@ class CF7_Artist_Submissions_Actions {
     /**
      * Clear WordPress cron for daily summary emails.
      *
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function clear_daily_summary_cron() {
         wp_clear_scheduled_hook('cf7_daily_summary_cron');
@@ -2046,7 +2046,7 @@ class CF7_Artist_Submissions_Actions {
     /**
      * Render individual action item.
      *
-     * @since 2.0.0
+     * @since 1.0.0
      */
     private static function render_action_item($action) {
         $priority_class = 'priority-' . $action->priority;

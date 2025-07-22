@@ -31,7 +31,7 @@
  * widgets, advanced filtering capabilities, and bulk operations with seamless
  * AJAX functionality for efficient submission workflow management.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Dashboard {
     
@@ -172,7 +172,7 @@ class CF7_Artist_Submissions_Dashboard {
      * for immediate display with AJAX enhancement for dynamic updates and
      * seamless user interaction experience.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function render_dashboard_page() {
         // Get initial stats for server-side rendering
@@ -568,7 +568,7 @@ class CF7_Artist_Submissions_Dashboard {
      * filters for unread messages and outstanding actions with optimized database
      * queries and formatted response data for frontend display.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_load_submissions() {
         // Check nonce
@@ -733,7 +733,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for bulk actions with comprehensive validation.
      * Processes batch operations including export, delete, and status changes.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_bulk_action() {
         // Check nonce
@@ -868,7 +868,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for loading unread messages with submission context.
      * Retrieves unviewed messages grouped by submission for activity panel.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_load_recent_messages() {
         // Check nonce
@@ -921,7 +921,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for status updates with validation and logging.
      * Updates submission status via dashboard interface with audit trail.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_update_status() {
         check_ajax_referer('cf7_dashboard_nonce', 'nonce');
@@ -962,7 +962,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for dashboard statistics with percentage calculations.
      * Provides real-time submission counts and trends for dashboard widgets.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_get_stats() {
         // Check nonce
@@ -1025,7 +1025,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for CSV export generation with security validation.
      * Creates downloadable CSV files of filtered submission data.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_export() {
         // Check nonce
@@ -1099,7 +1099,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for CSV download with security validation.
      * Serves generated CSV files with proper headers and cleanup.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_download_csv() {
         // Check nonce
@@ -1145,7 +1145,7 @@ class CF7_Artist_Submissions_Dashboard {
      * AJAX handler for outstanding actions with priority sorting.
      * Retrieves pending actions ordered by priority and due date.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_get_outstanding_actions() {
         // Check nonce
@@ -1504,7 +1504,7 @@ class CF7_Artist_Submissions_Dashboard {
      * timestamp tracking and validation. Provides granular message
      * management for dashboard message activity panel.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_mark_message_read() {
         // Check nonce
@@ -1553,7 +1553,7 @@ class CF7_Artist_Submissions_Dashboard {
      * class delegation. Provides batch message management functionality
      * for submission-specific message clearing operations.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_mark_submission_read() {
         // Check nonce
@@ -1584,7 +1584,7 @@ class CF7_Artist_Submissions_Dashboard {
      * management with conditional logic for targeted or system-wide
      * message status updates.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_mark_all_read() {
         // Check nonce
@@ -1626,7 +1626,7 @@ class CF7_Artist_Submissions_Dashboard {
      * with date filtering and validation. Supports real-time activity
      * tracking for current day submission management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_get_today_activity() {
         // Check nonce
@@ -1664,7 +1664,7 @@ class CF7_Artist_Submissions_Dashboard {
      * date parameters. Provides weekly trend analysis for dashboard activity
      * monitoring and submission volume tracking functionality.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_get_weekly_activity() {
         // Check nonce
@@ -1757,7 +1757,7 @@ class CF7_Artist_Submissions_Dashboard {
      * for dashboard display and submission categorization. Provides
      * comprehensive medium information with visual presentation data.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     private function get_submission_mediums($post_id) {
         $terms = get_the_terms($post_id, 'artistic_medium');

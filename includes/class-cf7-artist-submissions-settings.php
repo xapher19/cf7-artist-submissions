@@ -313,7 +313,7 @@ class CF7_Artist_Submissions_Settings {
      * daily notification system with error handling and detailed feedback for
      * administrative configuration validation and system verification.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_test_daily_summary() {
         // Check nonce
@@ -569,7 +569,7 @@ class CF7_Artist_Submissions_Settings {
      * detailed diagnostic information with field analysis, database status,
      * and comprehensive troubleshooting feedback for optimal system configuration.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function ajax_test_form_config() {
         // Check nonce

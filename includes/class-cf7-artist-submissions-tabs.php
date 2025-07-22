@@ -1,36 +1,54 @@
 <?php
 /**
- * CF7 Artist Submissions - Professional Tabbed Admin Interface
- * 
- * This class completely transforms the standard WordPress edit page into
- * a modern, professional tabbed interface with 5 specialized tabs:
- * Profile, Works, Conversations, Actions, and Curator Notes. Features
- * include AJAX tab loading, smart navigation, field editing, and
- * comprehensive asset management.
- * 
+ * CF7 Artist Submissions - Professional Tabbed Admin Interface System
+ *
+ * Complete transformation engine converting standard WordPress edit pages into
+ * modern, professional tabbed interfaces with specialized content management,
+ * AJAX-powered navigation, integrated field editing capabilities, and
+ * comprehensive asset coordination for streamlined submission administration.
+ *
+ * Features:
+ * • Professional 6-tab layout with Profile, Works, Conversations, Actions, Notes, and PDF Export
+ * • Editable header system with real-time artist information updates and status management
+ * • Advanced AJAX tab loading with smart navigation and URL hash support integration
+ * • Comprehensive field editing system with validation and live preview capabilities
+ * • Integrated lightbox image viewing with professional gallery presentation
+ * • Seamless conversation management interface with real-time messaging integration
+ * • Advanced action and task management interface with priority tracking
+ * • Independent curator notes system with auto-save and audit trail logging
+ * • Complete WordPress admin integration with custom styling and asset management
+ * • Professional PDF export functionality with customizable options and watermarking
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage TabsInterface
  * @since 1.0.0
+ * @version 1.0.0
  */
 
 /**
  * CF7 Artist Submissions Tabs Class
  * 
- * Creates and manages the professional tabbed interface including:
- * - 5-tab layout (Profile, Works, Conversations, Actions, Notes)
- * - Editable header with artist information
- * - AJAX tab content loading
- * - Smart navigation with URL hash support
- * - Field editing system integration
- * - Lightbox image viewing
- * - Conversation management interface
- * - Action/task management interface
- * - Independent notes saving system
- * - Complete WordPress admin integration
+ * Comprehensive tabbed interface management system providing complete transformation
+ * of WordPress admin edit pages into modern, professional submission interfaces.
+ * Integrates advanced AJAX navigation, real-time field editing, conversation
+ * management, action tracking, and seamless asset coordination for optimal
+ * administrative workflow and user experience enhancement.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Tabs {
     
+    /**
+     * Initialize comprehensive tabbed interface system with admin integration.
+     * 
+     * Establishes complete tabbed interface infrastructure including admin menu
+     * modifications, comprehensive asset management with dependency coordination,
+     * extensive AJAX handler registration for all tab functionality, custom page
+     * layout overrides, and integrated saving mechanisms for fields and notes.
+     * Provides foundation for modern submission management interface.
+     * 
+     * @since 1.0.0
+     */
     public static function init() {
         add_action('admin_enqueue_scripts', array(__CLASS__, 'enqueue_tab_assets'));
         add_action('add_meta_boxes', array(__CLASS__, 'replace_meta_boxes_with_tabs'), 20);
@@ -49,6 +67,17 @@ class CF7_Artist_Submissions_Tabs {
         add_action('save_post_cf7_submission', array(__CLASS__, 'save_notes'), 10, 2);
     }
     
+    /**
+     * Enqueue comprehensive tabbed interface assets with dependency management.
+     * 
+     * Loads all required CSS and JavaScript files in proper dependency order for
+     * optimal performance and functionality. Includes specialized styles for tabs,
+     * conversations, actions, lightbox viewing, and admin interface components.
+     * Provides complete AJAX configuration with nonce security and localized
+     * strings for seamless frontend-backend integration across all components.
+     * 
+     * @since 1.0.0
+     */
     public static function enqueue_tab_assets($hook) {
         $screen = get_current_screen();
         
@@ -119,6 +148,10 @@ class CF7_Artist_Submissions_Tabs {
         }
     }
     
+    /**
+     * Replace default WordPress meta boxes with integrated tabbed interface.
+     * Removes standard submission meta boxes and integrates unified tabs system.
+     */
     public static function replace_meta_boxes_with_tabs() {
         // Remove existing meta boxes
         remove_meta_box('cf7_submission_details', 'cf7_submission', 'normal');
@@ -137,6 +170,17 @@ class CF7_Artist_Submissions_Tabs {
         );
     }
     
+    /**
+     * Render comprehensive tabbed interface with editable artist header.
+     * 
+     * Generates complete tabbed administration interface including professional
+     * artist profile header with editable fields and status management, six
+     * specialized content tabs for submission administration, integrated AJAX
+     * navigation system, and seamless WordPress admin integration. Provides
+     * modern, intuitive interface for efficient submission workflow management.
+     * 
+     * @since 1.0.0
+     */
     public static function render_tabbed_interface($post) {
         // Get artist information for the header
         $artist_name = get_post_meta($post->ID, 'cf7_artist-name', true);
@@ -286,6 +330,10 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
     
+    /**
+     * Render artist profile tab with comprehensive submission details.
+     * Displays organized profile information with editable field system.
+     */
     public static function render_profile_tab($post) {
         ?>
         <div class="cf7-profile-tab-container">
@@ -296,6 +344,10 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
     
+    /**
+     * Render submitted works tab with lightbox gallery integration.
+     * Displays artist submissions with professional image preview capabilities.
+     */
     public static function render_works_tab($post) {
         ?>
         <div class="cf7-tab-section">
@@ -308,6 +360,10 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
     
+    /**
+     * Render conversation management tab with integrated messaging system.
+     * Delegates to conversation class for comprehensive email communication interface.
+     */
     public static function render_conversations_tab($post) {
         ?>
         <div class="cf7-tab-section">
@@ -323,7 +379,11 @@ class CF7_Artist_Submissions_Tabs {
         </div>
         <?php
     }
-    
+
+    /**
+     * Render action management tab with task tracking interface.
+     * Delegates to actions class for comprehensive task and priority management.
+     */
     public static function render_actions_tab($post) {
         ?>
         <div class="cf7-tab-section">
@@ -339,6 +399,10 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
 
+    /**
+     * Render curator notes tab with independent saving system.
+     * Provides private note-taking interface with auto-save functionality.
+     */
     public static function render_notes_tab($post) {
         ?>
         <div class="cf7-tab-section">
@@ -351,6 +415,10 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
     
+    /**
+     * Render PDF export tab with customizable export options.
+     * Provides professional PDF generation with watermarking and content selection.
+     */
     public static function render_export_tab($post) {
         ?>
         <div class="cf7-tab-section">
@@ -448,8 +516,20 @@ class CF7_Artist_Submissions_Tabs {
         <?php
     }
     
+    // ============================================================================
+    // CONTENT RENDERING SECTION
+    // ============================================================================
+    
     /**
-     * Render submission details (copied from admin class)
+     * Render comprehensive submission details with categorized field organization.
+     * 
+     * Processes and displays all submission metadata in organized sections including
+     * profile information, contact details, and additional data. Implements advanced
+     * field categorization, editable field system integration, artistic mediums
+     * management, and professional layout presentation for optimal administrative
+     * workflow and data accessibility across all submission types.
+     * 
+     * @since 1.0.0
      */
     public static function render_submission_details($post) {
         // Add nonce field for editable fields
@@ -581,7 +661,8 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render a modern field layout
+     * Render modern field layout with intelligent type detection and editing.
+     * Formats individual submission fields with appropriate icons and interactive editing.
      */
     private static function render_modern_field($post_id, $key, $value) {
         // Format label from meta key
@@ -652,12 +733,15 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render artistic mediums field with selectable tags
+     * Render artistic mediums field with interactive tag selection system.
      * 
-     * @since 2.1.0
+     * Provides comprehensive artistic medium management with visual tag display,
+     * interactive editing capabilities, taxonomy integration, and color-coded
+     * presentation. Supports real-time updates and seamless integration with
+     * WordPress taxonomy system for professional medium categorization and
+     * administrative workflow optimization across submission management.
      * 
-     * @param int $post_id The submission post ID
-     * @return void
+     * @since 1.0.0
      */
     private static function render_artistic_mediums_field($post_id) {
         // Get current medium terms assigned to this submission
@@ -751,7 +835,8 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render submitted files (copied from admin class)
+     * Render submitted files gallery with lightbox integration.
+     * Displays uploaded files with image previews and download capabilities.
      */
     public static function render_submitted_files($post) {
         // Start with an empty array of file URLs to display
@@ -839,7 +924,8 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render curator notes (copied from admin class)
+     * Render curator notes interface with independent saving functionality.
+     * Provides private note-taking system with auto-save and audit trail integration.
      */
     public static function render_curator_notes($post) {
         wp_nonce_field('cf7_artist_submissions_notes_nonce', 'cf7_artist_submissions_notes_nonce');
@@ -857,8 +943,20 @@ class CF7_Artist_Submissions_Tabs {
         echo '</div>';
     }
     
+    // ============================================================================
+    // AJAX HANDLERS SECTION
+    // ============================================================================
+    
     /**
-     * AJAX handler for loading tab content
+     * AJAX handler for dynamic tab content loading with security validation.
+     * 
+     * Processes secure tab content requests with comprehensive nonce verification,
+     * permission checking, and dynamic content generation. Supports all tab types
+     * including profile, works, conversations, actions, notes, and export tabs.
+     * Provides seamless AJAX navigation experience with proper error handling
+     * and optimized content delivery for enhanced administrative efficiency.
+     * 
+     * @since 1.0.0
      */
     public static function ajax_load_tab_content() {
         // Check nonce
@@ -915,7 +1013,15 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Save the edited fields when the post is updated
+     * Save editable field data with validation and audit trail integration.
+     * 
+     * Processes field updates during post save with comprehensive validation,
+     * type-specific sanitization, and change detection. Handles standard fields,
+     * artistic mediums taxonomy updates, and automatic post title synchronization.
+     * Implements audit logging and WordPress action hooks for extensible field
+     * management and administrative oversight across submission workflows.
+     * 
+     * @since 1.0.0
      */
     public static function save_fields($post_id, $post) {
         // Skip autosaves
@@ -990,7 +1096,10 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Save curator notes
+     * Save curator notes with change detection and audit logging.
+     * Processes curator notes updates with validation and audit trail integration.
+     * 
+     * @since 1.0.0
      */
     public static function save_notes($post_id, $post) {
         // Skip autosaves
@@ -1028,8 +1137,13 @@ class CF7_Artist_Submissions_Tabs {
         }
     }
     
+    // ============================================================================
+    // WORDPRESS INTEGRATION SECTION
+    // ============================================================================
+    
     /**
-     * Hide default WordPress post page elements
+     * Hide default WordPress edit page elements for clean tabbed interface.
+     * Removes standard admin elements to provide seamless tabbed experience.
      */
     public static function hide_default_elements() {
         $screen = get_current_screen();
@@ -1116,7 +1230,8 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render custom page layout after title
+     * Render custom page layout integration hook.
+     * Maintains backward compatibility for custom layout rendering.
      */
     public static function render_custom_page_layout($post) {
         // This method is now replaced by the integrated header in render_tabbed_interface
@@ -1124,7 +1239,8 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render status circle dropdown
+     * Render professional status circle dropdown with visual status management.
+     * Creates interactive status selector with color-coded indicators and smooth transitions.
      */
     public static function render_status_circle($current_status, $post_id) {
         $statuses = array(
@@ -1188,7 +1304,15 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * AJAX handler for status updates
+     * AJAX handler for status updates with validation and audit integration.
+     * 
+     * Processes submission status changes with comprehensive security validation,
+     * status verification, and taxonomy updates. Provides real-time status
+     * management with visual feedback and maintains audit trail for administrative
+     * oversight. Supports all submission statuses with proper error handling
+     * and seamless frontend integration for efficient workflow management.
+     * 
+     * @since 1.0.0
      */
     public static function ajax_update_status() {
         // Verify nonce
@@ -1233,7 +1357,15 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * AJAX handler to save submission data
+     * AJAX handler for comprehensive submission data saving with field validation.
+     * 
+     * Processes real-time field updates including standard submission data,
+     * artistic mediums taxonomy management, and curator notes. Implements
+     * comprehensive validation, type-specific sanitization, and change detection
+     * with audit trail integration. Provides seamless frontend editing experience
+     * with proper error handling and optimized data persistence workflows.
+     * 
+     * @since 1.0.0
      */
     public static function ajax_save_submission_data() {
         // Verify nonce
@@ -1404,7 +1536,10 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * AJAX handler for saving curator notes independently
+     * AJAX handler for independent curator notes saving with audit integration.
+     * Provides real-time notes saving with validation and change logging.
+     * 
+     * @since 1.0.0
      */
     public static function ajax_save_curator_notes() {
         // Check nonce
@@ -1436,11 +1571,10 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * AJAX handler for saving artistic mediums
+     * AJAX handler for artistic mediums taxonomy management with validation.
+     * Processes medium assignments with taxonomy integration and audit logging.
      * 
-     * @since 2.1.0
-     * 
-     * @return void
+     * @since 1.0.0
      */
     public static function ajax_save_artistic_mediums() {
         // Check nonce

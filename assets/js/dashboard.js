@@ -42,7 +42,7 @@
      * with lightweight polling, and dynamic UI rendering with performance
      * optimization for scalable dashboard operations.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     class CF7Dashboard {
         /**
@@ -52,7 +52,7 @@
          * Establishes foundation for all dashboard operations with proper error
          * handling and graceful degradation for missing dependencies.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         constructor() {
             this.currentPage = 1;
@@ -80,7 +80,7 @@
          * Includes parallel data loading, conditional polling activation,
          * and progressive enhancement for modern browser features.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         init() {
             // Check if required globals are available
@@ -120,7 +120,7 @@
          * throttled resize events, and memory-efficient event cleanup with
          * accessibility features and screen reader compatible event handling.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         bindEvents() {
             // Header buttons
@@ -346,7 +346,7 @@
          * and automatic filter state management with smart filter combination
          * for complex views and page reset to ensure proper result display.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         handleMetricCardClick(type, $card) {
             switch(type) {
@@ -730,7 +730,7 @@
          * unread message counts, and activity metrics. Includes cache-busting
          * for accurate data and visual loading feedback.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         loadStats() {
             if (this.loadingStates.stats) return;
@@ -815,7 +815,7 @@
          * and search capabilities. Includes loading state management and
          * race condition prevention for large result sets.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         loadSubmissions() {
             // Prevent loading during clear operations
@@ -898,7 +898,7 @@
          * and mini-charts. Provides smooth animations and comprehensive data
          * visualization for dashboard overview.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         renderStats(stats) {
             // Update metric cards with aggregated values
@@ -1113,7 +1113,7 @@
          * data generation and responsive design. Includes ResizeObserver
          * integration for dynamic layout adaptation.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         generateStatsCharts(stats) {
             const statTypes = ['total', 'new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected'];
@@ -1465,7 +1465,7 @@
          * Processes submission data to generate complete table interface including
          * search indicators, interactive rows, and pagination controls.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         renderSubmissions(data) {
             const $container = $('.cf7-submissions-table');
@@ -1659,7 +1659,7 @@
          * Generates complete pagination controls including information display,
          * intelligent page button layout, and responsive navigation elements.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         renderPagination(pagination) {
             const $pagination = $('.cf7-pagination');
@@ -2063,7 +2063,7 @@
          * user notifications, and proper state management. Supports both
          * automatic and manual refresh scenarios.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         refreshAll(forced = false) {
             // Visual feedback - add refreshing class to dashboard
@@ -2157,7 +2157,7 @@
          * detection and resource management. Optimized for minimal server load
          * and battery usage while maintaining real-time dashboard updates.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         startPolling() {
             // Only poll for unread messages every 2 minutes (less frequent)
@@ -2261,7 +2261,7 @@
          * automatic removal after timeout. Provides consistent user feedback
          * across all dashboard operations.
          * 
-         * @since 2.1.0
+         * @since 1.0.0
          */
         showToast(message, type = 'info') {
             const toastId = 'cf7-toast-' + Date.now();
@@ -2332,7 +2332,7 @@
      * Sets up dashboard instance with conditional initialization, page visibility
      * handling, and proper cleanup for optimal resource usage and performance.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     $(document).ready(function() {
         // Only initialize if we're on the dashboard page
@@ -2372,7 +2372,7 @@
      * common dashboard operations. Includes proper context detection
      * and conflict prevention with browser/OS shortcuts.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     $(document).keydown(function(e) {
         if (!$('.cf7-modern-dashboard').length) return;
@@ -2532,7 +2532,7 @@
      * Sets up complete calendar system including state management, event
      * binding, keyboard navigation, and responsive positioning.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     CF7Dashboard.prototype.initCalendarDatePicker = function() {
         this.calendar = {
@@ -3017,7 +3017,7 @@
      * Performs complete filter state reset including search inputs,
      * status dropdowns, date selections, and UI synchronization.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     CF7Dashboard.prototype.clearAllFilters = function() {
         // Set a flag to prevent other loadSubmissions calls during clearing
@@ -3216,7 +3216,7 @@
      * dashboard functionality. Includes safety checks to ensure dashboard
      * instance availability before method execution.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     window.CF7Dashboard = {
         clearAllFilters: function() {

@@ -39,7 +39,7 @@ jQuery(document).ready(function($) {
      * multiple container selector patterns for flexible DOM integration with
      * session storage support for scroll position restoration.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     function scrollToBottom() {
         // Try multiple selectors to find the conversation container
@@ -99,7 +99,7 @@ jQuery(document).ready(function($) {
      * Manages switching between custom and template message modes with
      * dynamic interface updates and real-time template preview generation.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     $('#message-type').on('change', function() {
         var messageType = $(this).val();
@@ -125,7 +125,7 @@ jQuery(document).ready(function($) {
      * before sending. Includes comprehensive error handling and user feedback
      * for template rendering failures or configuration issues.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     function loadTemplatePreview(templateId) {
         var submissionId = $('#submission-id').val();
@@ -262,7 +262,7 @@ jQuery(document).ready(function($) {
      * and error handling. Supports both custom and template message types
      * with automatic conversation refresh after successful delivery.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     $('#send-message-btn').on('click', function(e) {
         e.preventDefault();
@@ -351,7 +351,7 @@ jQuery(document).ready(function($) {
      * timeout warnings, and automatic conversation refresh. Provides
      * reliable inbox synchronization with detailed user feedback.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     $('#check-replies-manual').on('click', function(e) {
         e.preventDefault();
@@ -458,7 +458,7 @@ jQuery(document).ready(function($) {
      * and interactive elements. Provides complete conversation visualization
      * with bidirectional support and accessibility features.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     function updateConversationDisplay(messages) {
         var conversationDiv = jQuery('.conversation-messages');
@@ -628,7 +628,7 @@ jQuery(document).ready(function($) {
      * keyboard accessibility, outside click dismissal, and conditional
      * activation based on conversation interface presence.
      * 
-     * @since 2.1.0
+     * @since 1.0.0
      */
     function initializeContextMenu() {
         // Only initialize if we're on the conversations tab
@@ -915,7 +915,7 @@ jQuery(document).ready(function($) {
  * and manual dismissal options. Provides consistent user feedback
  * across all conversation operations and error conditions.
  * 
- * @since 2.1.0
+ * @since 1.0.0
  */
 function showNotice(message, type) {
     // Remove any existing notices
@@ -979,7 +979,7 @@ function hideClearMessagesModal() {
  * extensive validation, error handling, and user feedback.
  * Includes safety checks and graceful error recovery.
  * 
- * @since 2.1.0
+ * @since 1.0.0
  */
 function clearAllMessages() {
     const submissionId = jQuery('#cf7-clear-messages-btn').data('submission-id');

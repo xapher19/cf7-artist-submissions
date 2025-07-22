@@ -41,7 +41,7 @@ jQuery(document).ready(function($) {
      * Ensures all interactive elements maintain functionality when switching tabs
      * with event-driven component coordination.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     
     $(document).on('cf7_tab_changed', function(e, tabId) {
@@ -135,7 +135,7 @@ jQuery(document).ready(function($) {
  * Comprehensive tab navigation system handling click events, state persistence,
  * URL routing, and widget-based deep linking with multi-priority tab selection.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 function initializeTabs() {
     const $ = jQuery;
@@ -212,7 +212,7 @@ function initializeTabs() {
  * Dynamic content loading system for tab interfaces with comprehensive
  * error handling, loading states, and callback support for server-side rendering.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 function loadTabContent(tabId, callback) {
     const $ = jQuery;
@@ -264,7 +264,7 @@ jQuery(document).ready(function($) {
      * Handle all save operations for profile fields and curator notes with
      * comprehensive validation, error handling, and user feedback.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     $(document).on('click', '.cf7-save-button', function(e) {
         e.preventDefault();
@@ -334,7 +334,7 @@ jQuery(document).ready(function($) {
      * Comprehensive status update handler with visual feedback, validation,
      * and real-time UI updates for submission status management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     $(document).on('click', '.cf7-status-option', function(e) {
         e.preventDefault();

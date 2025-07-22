@@ -28,8 +28,8 @@
  *
  * @package CF7_Artist_Submissions
  * @subpackage ActionManagement
- * @since 2.0.0
- * @version 2.2.0
+ * @since 1.0.0
+ * @version 1.0.0
  * 
  */
 
@@ -45,7 +45,7 @@
  * Provides comprehensive task management capabilities with real-time AJAX
  * operations, cross-tab compatibility, and integrated security validation.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 class ActionsManager {
     /**
@@ -56,7 +56,7 @@ class ActionsManager {
      * comprehensive task management workflow with performance optimization
      * and cross-tab compatibility support.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     constructor() {
         this.currentFilter = 'all';
@@ -81,7 +81,7 @@ class ActionsManager {
      * and filter controls with proper event propagation management and error
      * handling for reliable user interaction workflow.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     bindEvents() {
         // Add action button
@@ -178,7 +178,7 @@ class ActionsManager {
      * request and handles success/error responses with appropriate user
      * feedback and cache management for optimal performance.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     loadActions() {
         const submissionId = jQuery('#post_ID').val();
@@ -217,7 +217,7 @@ class ActionsManager {
      * proper filtering, status indicators, and interactive controls for
      * comprehensive action management interface.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     renderActions() {
         const container = jQuery('#cf7-actions-list');
@@ -441,7 +441,7 @@ class ActionsManager {
      * injection if not present and provides seamless user experience with
      * proper form state management and error handling.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     showActionModal(messageId = null) {
         const modal = jQuery('#cf7-action-modal');
@@ -626,7 +626,7 @@ class ActionsManager {
      * includes context message association, and provides comprehensive
      * error handling with user feedback and UI state management.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     saveAction() {
         const form = jQuery('#cf7-action-form');
@@ -693,7 +693,7 @@ class ActionsManager {
      * Provides seamless editing experience with proper form state management
      * and error handling for action data validation and display.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     editAction(actionId) {
         const action = this.actions.find(a => a.id == actionId);
@@ -881,7 +881,7 @@ class ActionsManager {
  * initialization across different WordPress admin contexts and tab states
  * with graceful fallback mechanisms for optimal compatibility.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 
 // Initialize when the actions tab is loaded
@@ -942,7 +942,7 @@ jQuery(document).ready(function() {
  * error-resistant operation with comprehensive fallbacks for reliable external
  * integration across different WordPress admin contexts.
  * 
- * @since 2.0.0
+ * @since 1.0.0
  */
 
 // Ensure window.CF7_Actions is always available
@@ -982,7 +982,7 @@ Object.assign(window.CF7_Actions, {
      * conflicts and provides seamless modal experience with proper form
      * pre-filling and user assignment loading for optimal user workflow.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     openModal: function(options) {
         
@@ -1214,7 +1214,7 @@ Object.assign(window.CF7_Actions, {
      * AJAX submission with fallback configuration, success notification display,
      * and graceful error management for reliable action persistence.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     saveAction: function() {
         

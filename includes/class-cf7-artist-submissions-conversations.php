@@ -28,7 +28,7 @@
  * threading, template integration, real-time administrative interface, and secure
  * token-based conversation tracking for seamless artist communication workflows.
  * 
- * @since 1.5.0
+ * @since 1.0.0
  */
 class CF7_Artist_Submissions_Conversations {
     
@@ -40,7 +40,7 @@ class CF7_Artist_Submissions_Conversations {
      * infrastructure including real-time messaging, IMAP reply detection, template
      * integration, and administrative interface for seamless artist communication.
      * 
-     * @since 1.5.0
+     * @since 1.0.0
      */
     public static function init() {
         add_action('add_meta_boxes', array(__CLASS__, 'add_conversation_meta_box'));
@@ -200,7 +200,7 @@ class CF7_Artist_Submissions_Conversations {
      * for conversation continuity. Implements plus addressing format for automated
      * reply detection and processing through IMAP integration.
      * 
-     * @since 1.5.0
+     * @since 1.0.0
      */
     public static function generate_reply_token($submission_id) {
         // Check if this submission already has a token
@@ -251,7 +251,7 @@ class CF7_Artist_Submissions_Conversations {
      * threading integrity while ensuring backward compatibility with existing
      * message history. Critical for conversation continuity after system updates.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function migrate_to_consistent_tokens() {
         global $wpdb;
@@ -332,7 +332,7 @@ class CF7_Artist_Submissions_Conversations {
      * and administrative controls. Provides full conversation lifecycle management
      * with read status tracking, message threading, and privacy compliance features.
      * 
-     * @since 1.5.0
+     * @since 1.0.0
      */
     public static function render_conversation_meta_box($post) {
         $submission_id = $post->ID;
@@ -690,7 +690,7 @@ class CF7_Artist_Submissions_Conversations {
      * through the email system and custom message composition with automatic
      * subject generation. Implements security validation and error handling.
      * 
-     * @since 1.5.0
+     * @since 1.0.0
      */
     public static function ajax_send_message() {
         // Verify nonce
@@ -833,7 +833,7 @@ class CF7_Artist_Submissions_Conversations {
      * conversation database logging, and error handling. Implements secure
      * reply token generation and IMAP-compatible threading for automated processing.
      * 
-     * @since 1.5.0
+     * @since 1.0.0
      */
     public static function send_message($submission_id, $to_email, $subject, $message_body) {
         global $wpdb;
@@ -976,7 +976,7 @@ class CF7_Artist_Submissions_Conversations {
      * by implementing execution time limits and proper resource cleanup. Provides
      * safe wrapper around core email checking functionality for AJAX endpoints.
      * 
-     * @since 1.6.0
+     * @since 1.0.0
      */
     public static function check_email_replies_with_timeout($timeout_seconds = 30) {
         // Set a timeout for the operation
@@ -1013,7 +1013,7 @@ class CF7_Artist_Submissions_Conversations {
      * and integrates with conversation threading system. Handles complex email
      * server configurations including Migadu plus addressing and folder structures.
      * 
-     * @since 1.5.0
+     * @since 1.0.0
      */
     public static function check_email_replies() {
         $imap_settings = get_option('cf7_artist_submissions_imap_options', array());

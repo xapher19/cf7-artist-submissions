@@ -35,7 +35,7 @@ jQuery(document).ready(function($) {
      * and AJAX communication. Provides seamless export workflow with real-time
      * progress tracking and automatic document delivery.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     
     // Handle PDF export button click
@@ -109,7 +109,7 @@ jQuery(document).ready(function($) {
      * Provide dynamic validation of export configuration with real-time feedback
      * and automatic button state management for valid content selections.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     
     // Show/hide options based on checkboxes
