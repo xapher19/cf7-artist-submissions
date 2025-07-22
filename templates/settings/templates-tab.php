@@ -1,9 +1,23 @@
 <?php
 /**
- * Email Templates Tab Template
- * 
+ * CF7 Artist Submissions - Email Templates Tab Template
+ *
+ * Email template customization interface providing comprehensive template
+ * management for automated notifications, status updates, and custom
+ * communications with merge tag support and preview functionality.
+ *
+ * Features:
+ * • Multiple email templates for submission lifecycle events
+ * • Merge tag system for dynamic content personalization
+ * • Template preview functionality with real-time rendering
+ * • Automatic and manual email sending configuration
+ * • Template reset and default restoration capabilities
+ * • Test email functionality with validation feedback
+ *
  * @package CF7_Artist_Submissions
- * @since 2.1.0
+ * @subpackage Templates
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 // Prevent direct access

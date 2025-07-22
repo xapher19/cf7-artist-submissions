@@ -1,18 +1,23 @@
 <?php
 /**
- * Submission List Template for CF7 Artist Submissions
- * 
- * This template renders the submissions list page in WordPress admin,
- * providing an overview of all artist submissions with:
- * - Status filtering and categorization
- * - Bulk actions for submission management
- * - Search functionality across submission data
- * - Quick status updates and navigation
- * - Integration with WordPress list table structure
- * 
+ * CF7 Artist Submissions - Submission List Template
+ *
+ * WordPress admin submission listing interface template providing comprehensive
+ * submission overview with status filtering, bulk management capabilities,
+ * and seamless WordPress list table integration for efficient administration.
+ *
+ * Features:
+ * • Status filtering and categorization with taxonomy integration
+ * • Bulk actions for efficient submission management
+ * • Search functionality across submission data fields
+ * • Quick status updates and navigation tools
+ * • WordPress list table structure integration
+ * • Professional admin interface with responsive design
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage Templates
  * @since 1.0.0
- * @since 2.0.0 Enhanced with improved filtering and status management
+ * @version 1.0.0
  */
 
 // Prevent direct access

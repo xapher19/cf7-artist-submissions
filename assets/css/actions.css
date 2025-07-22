@@ -1,42 +1,29 @@
 /**
- * Actions Management CSS - CF7 Artist Submissions
- * 
- * Modern, streamlined styling for the action/task management system.
- * All legacy code has been removed, leaving only active modern components.
- * 
- * FILE STRUCTURE:
- * ├── Actions Container & Header Layout
- * ├── Filter Controls & Interactive Buttons  
- * ├── Action List & Item Styling
- * ├── Priority Indicators & Status Badges
- * ├── Context Menu System (Modern)
- * └── Responsive Design & Mobile Optimizations
- * 
- * KEY FEATURES:
- * - Modern cf7-* prefixed components for consistency
- * - Priority-based color coding (high=red, medium=orange, low=green)
- * - Interactive filter system with active states
- * - Smooth hover effects and transitions
- * - Context menu with fade animations
- * - Mobile-responsive card layouts
- * - Loading states and empty state styling
- * 
- * DEPENDENCIES:
- * - common.css: Modal system, button components, form styling
- * - WordPress Dashicons: Icons for actions and indicators
- * 
- * SCOPE: Enqueued only on CF7 submission edit pages
- * LINES: ~600 lines of clean, modern CSS
- * 
- * @package    CF7_Artist_Submissions
+ * CF7 Artist Submissions - Actions Management System CSS
+ *
+ * Modern, streamlined styling for comprehensive action and task management
+ * system with priority-based organization, interactive filtering, context
+ * menus, and responsive design for optimal workflow management.
+ *
+ * Features:
+ * • Modern cf7-* prefixed components for consistent naming conventions
+ * • Priority-based color coding system (high=red, medium=orange, low=green)
+ * • Interactive filter system with active states and smooth transitions
+ * • Context menu system with fade animations and modern styling
+ * • Mobile-responsive card layouts with touch-friendly interactions
+ * • Loading states and empty state styling for better user experience
+ * • Completion tracking with visual indicators and status badges
+ * • Professional gradient backgrounds and shadow effects
+ *
+ * @package CF7_Artist_Submissions
  * @subpackage Assets/CSS
- * @since      1.0.0
- * @version    2.0.0 - Legacy code removed
+ * @since 1.0.0
+ * @version    1.0.0
  */
 
-/* ========================================================================
-   ACTIONS CONTAINER & HEADER LAYOUT
-   ======================================================================== */
+/* ============================================================================
+   ACTIONS CONTAINER & HEADER LAYOUT SECTION
+   ============================================================================ */
 
 /**
  * Actions Container
@@ -117,9 +104,9 @@
     transform: translateY(-1px);
 }
 
-/* ========================================================================
-   FILTER CONTROLS & BUTTONS
-   ======================================================================== */
+/* ============================================================================
+   FILTER CONTROLS & INTERACTIVE BUTTONS SECTION
+   ============================================================================ */
 
 /**
  * Actions Filter Container
@@ -173,9 +160,9 @@
     box-shadow: 0 2px 4px rgb(59, 130, 246, 0.2);
 }
 
-/* ========================================================================
-   ACTION LIST & ITEM STYLING
-   ======================================================================== */
+/* ============================================================================
+   ACTION LIST & ITEM STYLING SECTION
+   ============================================================================ */
 
 /**
  * Actions List Container
@@ -268,9 +255,9 @@
     border-left: 4px solid #22c55e;
 }
 
-/* ========================================================================
-   PRIORITY INDICATORS & STATUS BADGES
-   ======================================================================== */
+/* ============================================================================
+   PRIORITY INDICATORS & STATUS BADGES SECTION
+   ============================================================================ */
 
 /**
  * Action Item Content Structure
@@ -483,9 +470,9 @@
     border-left: 3px solid #22c55e;
 }
 
-/* ========================================================================
-   CONTEXT MENU SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   CONTEXT MENU SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Modern Context Menu System
@@ -552,9 +539,9 @@
     height: 16px;
 }
 
-/* ========================================================================
-   RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE DESIGN & MOBILE OPTIMIZATIONS SECTION
+   ============================================================================ */
 
 /**
  * Mobile and Tablet Responsive Design

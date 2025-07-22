@@ -19,8 +19,8 @@
  *
  * @package CF7_Artist_Submissions
  * @subpackage Dashboard
- * @since 2.0.0
- * @version 2.1.0
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 /**
@@ -44,7 +44,7 @@ class CF7_Artist_Submissions_Dashboard {
      * real-time statistics. Provides foundation for modern submission
      * management workflow with performance optimization.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public function init() {
         add_action('admin_menu', array($this, 'add_dashboard_page'), 999); // Run late to modify menu

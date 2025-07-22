@@ -1,134 +1,45 @@
 /**
- * ========================================
  * CF7 Artist Submissions - Conversation Management Interface
- * ========================================
  * 
  * Comprehensive conversation management system providing real-time message
  * handling, IMAP integration, and interactive communication tools for
  * artist submission workflows. Manages bidirectional email conversations
  * with automatic scrolling, context menus, and message state management.
  * 
- * System Architecture:
- * ┌─ Conversation Display Engine
- * │  ├─ Auto-scroll Management (DOM-aware positioning)
- * │  ├─ Message Rendering (bidirectional with status indicators)
- * │  ├─ Template Preview System (real-time AJAX rendering)
- * │  └─ Context Menu Integration (message actions and status)
- * │
- * ┌─ Message Composition Interface
- * │  ├─ Template Selection (dynamic preview loading)
- * │  ├─ Custom Message Editor (Ctrl+Enter shortcuts)
- * │  ├─ AJAX Delivery System (comprehensive error handling)
- * │  └─ Status Feedback (real-time delivery confirmation)
- * │
- * ┌─ IMAP Integration Layer
- * │  ├─ Manual Reply Checking (timeout-aware processing)
- * │  ├─ Inbox Cleanup Operations (safe deletion workflows)
- * │  ├─ Message Synchronization (cross-tab state management)
- * │  └─ Connection Validation (error recovery mechanisms)
- * │
- * └─ Context Menu System
- *    ├─ Message Actions (add to actions, read status)
- *    ├─ Cross-Tab Integration (actions system communication)
- *    ├─ Status Management (read/unread state toggles)
- *    └─ Keyboard Navigation (accessibility compliance)
- * 
- * Integration Points:
- * → WordPress AJAX System: admin-ajax.php handlers for all server communication
- * → CF7 Actions Integration: Cross-tab communication via window.CF7_Actions
- * → Email Template System: Dynamic template rendering and delivery validation
- * → IMAP Backend Services: includes/class-cf7-artist-submissions-conversations.php
- * → Message Storage Layer: Database operations with comprehensive logging
- * → Tab System Integration: Cross-component state synchronization
- * 
- * Dependencies:
- * • jQuery 3.x: Core DOM manipulation and AJAX operations
- * • WordPress Admin: Localized AJAX configuration and nonce validation
- * • cf7Conversations Object: Server-side configuration and endpoint mapping
- * • Session Storage API: Cross-page state persistence for scroll management
- * • Window Object: Cross-component communication and global function export
- * 
- * AJAX Endpoints:
- * • cf7_preview_email: Template rendering with submission data injection
- * • cf7_send_message: Message composition and delivery with status tracking
- * • cf7_check_replies_manual: Manual IMAP synchronization with timeout handling
- * • cf7_check_new_messages: Automatic message polling (currently disabled)
- * • cf7_toggle_message_read: Message status management for admin workflow
- * • cf7_clear_messages: Conversation deletion with confirmation workflows
- * 
- * Security Features:
- * • Nonce Validation: All AJAX requests include WordPress nonce verification
- * • Input Sanitization: HTML escaping for user-generated content display
- * • XSS Prevention: Safe HTML injection with escapeHtml utility function
- * • CSRF Protection: Token-based request validation for all server operations
- * • Permission Checking: Server-side capability validation for admin actions
- * 
- * Performance Optimizations:
- * • Debounced Scroll Events: Smooth scrolling with performance considerations
- * • Conditional Initialization: Feature detection for optimal resource usage
- * • Memory Management: Proper event cleanup and DOM element removal
- * • AJAX Timeout Handling: Responsive error recovery with user feedback
- * • Session Storage: Efficient state persistence across page reloads
- * 
- * Accessibility Features:
- * • Keyboard Navigation: Ctrl+Enter shortcuts and escape key handling
- * • Screen Reader Support: Semantic HTML structure with proper ARIA labels
- * • Focus Management: Logical tab order and focus restoration
- * • Status Indicators: Visual and textual feedback for message states
- * • Error Messaging: Clear, actionable error descriptions for user guidance
+ * Features:
+ * • Real-time message handling with bidirectional conversation support
+ * • IMAP integration with manual reply checking and timeout handling
+ * • Interactive message composition with template and custom modes
+ * • Context menu system for message actions and status management
+ * • Auto-scroll management with cross-page state persistence
+ * • Template preview system with dynamic AJAX rendering
+ * • Message status management for admin workflow optimization
+ * • Cross-tab integration with CF7 Actions system
+ * • Keyboard accessibility with Ctrl+Enter shortcuts
+ * • Comprehensive error handling and user feedback
+ * • Security features with nonce validation and XSS prevention
+ * • Performance optimizations with debounced events
  * 
  * @package    CF7ArtistSubmissions
  * @subpackage ConversationManagement
- * @version    2.1.0
  * @since      1.0.0
- * @author     CF7 Artist Submissions Development Team
+ * @version    1.0.0
  */
 jQuery(document).ready(function($) {
     
-    // ========================================
-    // Conversation Display Management
-    // ========================================
-    // Core conversation interface with intelligent scrolling, message
-    // rendering, and cross-page state persistence. Provides smooth
-    // user experience with automatic positioning and responsive updates.
-    //
-    // Display Features:
-    // • Multi-selector container detection for flexible DOM integration
-    // • Height-aware scrolling with overflow detection
-    // • Animated positioning with smooth transitions
-    // • Cross-page scroll state persistence via sessionStorage
-    // • Image load detection for accurate final positioning
-    //
-    // Integration Points:
-    // → Session Storage: Cross-page scroll position persistence
-    // → Window Load Events: Image load detection for layout stability
-    // → DOM Ready Events: Initial positioning and state restoration
-    // → Tab System: Global function export for cross-component access
-    // ========================================
+    // ============================================================================
+    // CONVERSATION DISPLAY MANAGEMENT
+    // ============================================================================
 
     /**
-     * Intelligent conversation scroll management
+     * Intelligent conversation scroll management with cross-page state persistence.
      * 
      * Provides automatic scrolling to bottom of conversation with intelligent
      * container detection, overflow checking, and smooth animation. Handles
-     * multiple container selector patterns for flexible DOM integration.
+     * multiple container selector patterns for flexible DOM integration with
+     * session storage support for scroll position restoration.
      * 
-     * Container Detection Strategy:
-     * 1. Attempts multiple common selector patterns for conversation containers
-     * 2. Uses first available container that exists in DOM
-     * 3. Validates container has content before attempting scroll operations
-     * 4. Checks for overflow condition to prevent unnecessary scroll attempts
-     * 
-     * Animation Features:
-     * • 300ms smooth jQuery animation for professional user experience
-     * • 100ms delay to ensure DOM rendering completion
-     * • Height validation to prevent scrolling empty containers
-     * • Overflow detection to avoid scrolling containers that fit content
-     * 
-     * Cross-Page Integration:
-     * • Global window function export for tab system integration
-     * • Session storage integration for post-reload scroll restoration
-     * • Image load event binding for layout-complete positioning
+     * @since 2.1.0
      */
     function scrollToBottom() {
         // Try multiple selectors to find the conversation container
@@ -178,32 +89,18 @@ jQuery(document).ready(function($) {
         scrollToBottom();
     });
     
-    // ========================================
-    // Message Composition System
-    // ========================================
-    // Interactive message creation interface with template support,
-    // real-time preview generation, and comprehensive delivery management.
-    // Provides dual-mode composition (custom/template) with validation.
-    //
-    // Composition Modes:
-    // • Custom Message: Direct text input with validation and shortcuts
-    // • Template Message: Dynamic template selection with preview rendering
-    // • Hybrid Workflow: Seamless switching between modes with state preservation
-    //
-    // Template Integration:
-    // • Real-time AJAX preview generation with submission data injection
-    // • Error handling for template rendering failures
-    // • Nonce validation for secure template access
-    // • Fallback content for configuration errors
-    //
-    // User Experience Features:
-    // • Ctrl+Enter keyboard shortcuts for efficient message sending
-    // • Visual feedback for all user interactions and system states
-    // • Automatic field validation with inline error messaging
-    // • Session state persistence for unsaved content protection
-    // ========================================
+    // ============================================================================
+    // MESSAGE COMPOSITION SYSTEM
+    // ============================================================================
 
-    // Handle message type selection
+    /**
+     * Handle message type selection with template preview integration.
+     * 
+     * Manages switching between custom and template message modes with
+     * dynamic interface updates and real-time template preview generation.
+     * 
+     * @since 2.1.0
+     */
     $('#message-type').on('change', function() {
         var messageType = $(this).val();
         var $customField = $('#custom-message-field');
@@ -222,36 +119,13 @@ jQuery(document).ready(function($) {
     });
     
     /**
-     * Dynamic template preview generation (Primary Implementation)
+     * Dynamic template preview generation with comprehensive error handling.
      * 
      * Renders email templates with live submission data for accurate preview
      * before sending. Includes comprehensive error handling and user feedback
      * for template rendering failures or configuration issues.
      * 
-     * @param {string} templateId - Template identifier for rendering
-     * 
-     * Preview Process:
-     * 1. Validate template ID and submission context availability
-     * 2. Execute AJAX request with proper nonce validation
-     * 3. Render template with submission-specific data injection
-     * 4. Update preview interface with subject and body content
-     * 5. Handle errors with user-friendly messaging and fallback content
-     * 
-     * Error Handling:
-     * • Configuration validation with descriptive error messages
-     * • Server communication error recovery with retry suggestions
-     * • Template rendering failure feedback with technical details
-     * • Graceful degradation for missing template resources
-     * 
-     * Security Features:
-     * • cf7Conversations object availability validation
-     * • Nonce verification for template access authorization
-     * • HTML content sanitization for safe preview display
-     * 
-     * Backend Integration:
-     * • cf7_preview_email action handler in PHP backend
-     * • Submission data injection with personalization
-     * • Template engine integration with error boundary handling
+     * @since 2.1.0
      */
     function loadTemplatePreview(templateId) {
         var submissionId = $('#submission-id').val();
@@ -299,23 +173,11 @@ jQuery(document).ready(function($) {
     }
     
     /**
-     * Keyboard shortcut handler for efficient message sending
+     * Keyboard shortcut handler for efficient message sending.
      * 
      * Implements Ctrl+Enter shortcut for quick message dispatch without
      * requiring mouse interaction. Enhances user productivity during
      * conversation management by providing keyboard-driven workflow.
-     * 
-     * Shortcut Features:
-     * • Ctrl+Enter: Trigger send message button click event
-     * • Cross-browser compatibility with standardized key codes
-     * • Event delegation to handle dynamically loaded content
-     * • Integration with existing button validation and AJAX workflows
-     * 
-     * Accessibility Benefits:
-     * • Reduces mouse dependency for power users
-     * • Maintains consistent behavior with button click handlers
-     * • Preserves all existing validation and error handling
-     * • Supports assistive technology compatibility
      */
     $('#message-body').on('keydown', function(e) {
         if (e.ctrlKey && e.which === 13) { // Ctrl+Enter
@@ -323,7 +185,11 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Handle message type change (custom vs template)
+    /**
+     * Handle message type selection with interface updates.
+     * 
+     * Manages switching between custom and template message modes.
+     */
     $('#message-type').on('change', function() {
         var messageType = $(this).val();
         var $customField = $('#custom-message-field');
@@ -341,7 +207,11 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Function to load template preview
+    /**
+     * Load template preview with email nonce validation.
+     * 
+     * Alternative template preview loader with enhanced error handling.
+     */
     function loadTemplatePreview(templateId) {
         if (!templateId || templateId === 'custom') {
             return;
@@ -381,68 +251,18 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // ========================================
-    // Message Delivery System
-    // ========================================
-    // Comprehensive message sending interface with validation, progress
-    // tracking, and automatic page refresh for conversation updates.
-    // Handles both custom and template-based message composition.
-    //
-    // Delivery Features:
-    // • Pre-send validation with inline error feedback
-    // • Progress indication with button state management
-    // • AJAX delivery with comprehensive error handling
-    // • Automatic conversation refresh for immediate visibility
-    // • Cross-page scroll restoration for user experience continuity
-    //
-    // Validation System:
-    // • Required field checking for custom message content
-    // • Email address validation for delivery destination
-    // • Template selection validation for template-based messages
-    // • Configuration object availability verification
-    //
-    // User Experience:
-    // • Loading states with disabled controls during processing
-    // • Success confirmation with visual feedback
-    // • Error messaging with actionable guidance
-    // • Form field clearing after successful delivery
-    // ========================================
+    // ============================================================================
+    // MESSAGE DELIVERY SYSTEM
+    // ============================================================================
 
     /**
-     * Message delivery handler with comprehensive validation and feedback
+     * Message delivery handler with comprehensive validation and feedback.
      * 
      * Processes message sending with full validation, progress tracking,
      * and error handling. Supports both custom and template message types
      * with automatic conversation refresh after successful delivery.
      * 
-     * @param {Event} e - Click event from send button
-     * 
-     * Delivery Process:
-     * 1. Prevent default form submission behavior
-     * 2. Extract and validate all required form data
-     * 3. Perform client-side validation with user feedback
-     * 4. Display loading state with button disabling
-     * 5. Execute AJAX request with proper error handling
-     * 6. Process response and update interface accordingly
-     * 7. Refresh conversation view to show new message
-     * 
-     * Validation Rules:
-     * • Custom messages: Require non-empty message body content
-     * • Template messages: Validate template selection and configuration
-     * • Email addresses: Verify valid destination email format
-     * • Configuration: Ensure cf7Conversations object availability
-     * 
-     * Error Handling:
-     * • Client-side validation with immediate feedback
-     * • Server communication error recovery with retry guidance
-     * • Configuration error detection with diagnostic information
-     * • Network error handling with connectivity troubleshooting
-     * 
-     * Success Workflow:
-     * • Clear form fields for continued conversation
-     * • Display success confirmation with visual feedback
-     * • Set session storage flag for scroll position restoration
-     * • Refresh page to display updated conversation thread
+     * @since 2.1.0
      */
     $('#send-message-btn').on('click', function(e) {
         e.preventDefault();
@@ -520,73 +340,18 @@ jQuery(document).ready(function($) {
         });
     });
     
-    // ========================================
-    // IMAP Integration System
-    // ========================================
-    // Manual inbox synchronization with comprehensive timeout handling,
-    // progress tracking, and automatic conversation refresh. Provides
-    // reliable email checking with user feedback and error recovery.
-    //
-    // Integration Features:
-    // • Manual reply checking with comprehensive timeout management
-    // • Progress indication with real-time status updates
-    // • Timeout warning system for long-running IMAP operations
-    // • Automatic conversation refresh after successful synchronization
-    // • Error handling with detailed diagnostic information
-    //
-    // Timeout Management:
-    // • 5-second progress warning for user feedback
-    // • 30-second total timeout for IMAP operations
-    // • Graceful timeout handling with user notification
-    // • Automatic button state restoration after timeout
-    //
-    // User Experience:
-    // • Button state management during processing
-    // • Visual progress indicators in thread controls
-    // • Success notification with processing statistics
-    // • Error feedback with actionable troubleshooting guidance
-    // ========================================
+    // ============================================================================
+    // IMAP INTEGRATION SYSTEM
+    // ============================================================================
 
     /**
-     * Manual IMAP reply checking with comprehensive timeout handling
+     * Manual IMAP reply checking with comprehensive timeout handling.
      * 
      * Initiates manual check for new email replies with progress tracking,
      * timeout warnings, and automatic conversation refresh. Provides
      * reliable inbox synchronization with detailed user feedback.
      * 
-     * @param {Event} e - Click event from check replies button
-     * 
-     * Check Process:
-     * 1. Validate configuration object availability
-     * 2. Update button state and display loading indicators
-     * 3. Set timeout warning for long-running operations
-     * 4. Execute AJAX request with extended timeout handling
-     * 5. Process response and update conversation interface
-     * 6. Refresh page to display newly synchronized messages
-     * 
-     * Timeout Strategy:
-     * • 5-second warning: Update status with "still checking" message
-     * • 30-second limit: Abort request with timeout notification
-     * • Progress indicators: Real-time status updates in UI
-     * • Recovery handling: Automatic button state restoration
-     * 
-     * Success Response Processing:
-     * • Display last checked timestamp with operation duration
-     * • Show processed email count for transparency
-     * • Set session storage flag for scroll position restoration
-     * • Trigger page refresh to display updated conversation
-     * 
-     * Error Handling:
-     * • Configuration validation with diagnostic messaging
-     * • Network error recovery with connectivity guidance
-     * • Timeout handling with server status information
-     * • AJAX error processing with detailed error reporting
-     * 
-     * Backend Integration:
-     * • cf7_check_replies_manual action handler
-     * • IMAP connection management with authentication
-     * • Email processing with conversation thread updates
-     * • Response formatting with operation statistics
+     * @since 2.1.0
      */
     $('#check-replies-manual').on('click', function(e) {
         e.preventDefault();
@@ -682,81 +447,18 @@ jQuery(document).ready(function($) {
         });
     });
     
-    // ========================================
-    // Conversation Display Engine
-    // ========================================
-    // Dynamic conversation rendering with message classification,
-    // status indicators, and intelligent UI updates. Handles bidirectional
-    // message display with comprehensive styling and interaction support.
-    //
-    // Display Features:
-    // • Bidirectional message rendering (incoming/outgoing)
-    // • Template message identification with visual badges
-    // • Read/unread status indicators for admin workflow
-    // • Dynamic message classification with CSS class management
-    // • Automatic scrolling for optimal user experience
-    //
-    // Message Classification:
-    // • Direction: Incoming vs outgoing message styling
-    // • Template Status: Template-generated vs custom message identification
-    // • Read Status: Admin viewed status for workflow management
-    // • Message Type: Visual differentiation for different content types
-    //
-    // Security Features:
-    // • HTML content escaping for XSS prevention
-    // • Safe DOM manipulation with sanitized content
-    // • Input validation for message data structures
-    // ========================================
+    // ============================================================================
+    // CONVERSATION DISPLAY ENGINE
+    // ============================================================================
 
     /**
-     * Dynamic conversation display with comprehensive message rendering
+     * Dynamic conversation display with comprehensive message rendering.
      * 
      * Renders conversation messages with full classification, status indicators,
      * and interactive elements. Provides complete conversation visualization
      * with bidirectional support and accessibility features.
      * 
-     * @param {Array} messages - Array of message objects for rendering
-     * 
-     * Rendering Process:
-     * 1. Validate conversation container availability
-     * 2. Clear existing messages for fresh rendering
-     * 3. Handle empty conversation state with appropriate messaging
-     * 4. Process each message with classification and styling
-     * 5. Generate HTML structure with status indicators
-     * 6. Apply automatic scrolling for optimal positioning
-     * 
-     * Message Structure:
-     * • id: Unique message identifier for tracking
-     * • direction/type: Message flow direction (inbound/outbound)
-     * • message_body/message: Content for display
-     * • is_template: Template generation flag
-     * • admin_viewed_at: Read status for workflow management
-     * • sent_at/date: Timestamp information
-     * • human_time_diff: Formatted relative time
-     * 
-     * Classification System:
-     * • Direction Classes: .incoming, .outgoing for message flow
-     * • Template Classes: .template-message for generated content
-     * • Status Classes: .unviewed for unread messages
-     * • Interactive Classes: Support for context menu integration
-     * 
-     * Status Indicators:
-     * • Template Badges: Visual identification of template-generated content
-     * • Read Status: Unread/read indicators with WordPress dashicons
-     * • Message Type: Sent/received labels for clarity
-     * • Timestamp Display: Relative time formatting for context
-     * 
-     * Accessibility Features:
-     * • Semantic HTML structure with proper element hierarchy
-     * • Screen reader compatible content with descriptive labels
-     * • Keyboard navigation support through proper focus management
-     * • High contrast status indicators for visual accessibility
-     * 
-     * Security Implementation:
-     * • HTML escaping through escapeHtml utility function
-     * • Safe DOM manipulation preventing XSS vulnerabilities
-     * • Input validation for message data integrity
-     * • Controlled HTML injection with sanitized content
+     * @since 2.1.0
      */
     function updateConversationDisplay(messages) {
         var conversationDiv = jQuery('.conversation-messages');
@@ -857,7 +559,11 @@ jQuery(document).ready(function($) {
         }, 100);
     }
     
-    // Helper function to escape HTML content
+    /**
+     * Escape HTML content to prevent XSS vulnerabilities.
+     * 
+     * Provides secure text escaping for user-generated content display.
+     */
     function escapeHtml(text) {
         if (!text) return '';
         var div = document.createElement('div');
@@ -865,7 +571,11 @@ jQuery(document).ready(function($) {
         return div.innerHTML;
     }
     
-    // Auto-refresh function for checking new messages
+    /**
+     * Automated message checking for new conversation replies.
+     * 
+     * Performs background checks for new messages with submission validation.
+     */
     function checkForNewMessages() {
         var submissionId = jQuery('input[name="submission_id"]').val();
         
@@ -889,7 +599,11 @@ jQuery(document).ready(function($) {
         });
     }
     
-    // Refresh messages function
+    /**
+     * Trigger page reload for conversation refresh.
+     * 
+     * Simple page reload mechanism for conversation updates.
+     */
     function refreshMessages() {
         location.reload();
     }
@@ -903,56 +617,18 @@ jQuery(document).ready(function($) {
     // setTimeout(checkForNewMessages, 5000);
     
     
-    // ========================================
-    // Context Menu System
-    // ========================================
-    // Interactive right-click context menus for message management with
-    // cross-tab integration, keyboard accessibility, and comprehensive
-    // action handling. Provides efficient workflow for message operations.
-    //
-    // Context Menu Features:
-    // • Right-click activation with prevention of browser default menu
-    // • Dynamic menu item generation based on message type and status
-    // • Viewport boundary detection with intelligent positioning
-    // • Keyboard navigation support (Escape key dismissal)
-    // • Cross-tab integration with CF7 Actions system
-    //
-    // Available Actions:
-    // • Add to Actions: Cross-tab integration for follow-up task creation
-    // • Mark as Read/Unread: Status management for admin workflow
-    // • Message-specific operations based on content and direction
-    //
-    // Integration Points:
-    // → CF7 Actions System: Cross-tab communication for task creation
-    // → Message Status API: Read/unread state management
-    // → Global Event System: Document-level event handling
-    // → Viewport Detection: Intelligent menu positioning
-    // ========================================
+    // ============================================================================
+    // CONTEXT MENU SYSTEM
+    // ============================================================================
 
     /**
-     * Context menu initialization with comprehensive event management
+     * Context menu initialization with comprehensive event management.
      * 
      * Sets up right-click context menus for conversation messages with
      * keyboard accessibility, outside click dismissal, and conditional
      * activation based on conversation interface presence.
      * 
-     * Initialization Features:
-     * • Conditional activation based on conversation interface presence
-     * • Event delegation for dynamically loaded message content
-     * • Document-level event handling for menu dismissal
-     * • Keyboard accessibility with escape key support
-     * 
-     * Event Management:
-     * • Right-click prevention: Disable browser context menu
-     * • Outside click detection: Automatic menu dismissal
-     * • Escape key handling: Keyboard-driven menu closure
-     * • Memory management: Proper event cleanup and removal
-     * 
-     * Accessibility Features:
-     * • Keyboard navigation support with standard key bindings
-     * • Focus management for screen reader compatibility
-     * • High contrast menu styling for visual accessibility
-     * • Semantic HTML structure for assistive technology
+     * @since 2.1.0
      */
     function initializeContextMenu() {
         // Only initialize if we're on the conversations tab
@@ -981,6 +657,12 @@ jQuery(document).ready(function($) {
         });
     }
     
+    /**
+     * Display context menu for message interaction.
+     * 
+     * Creates and positions contextual menu with message-specific actions
+     * including Actions integration and read status management.
+     */
     function showContextMenu(event, $message) {
         var messageId = $message.data('message-id');
         
@@ -1073,6 +755,12 @@ jQuery(document).ready(function($) {
         });
     }
     
+    /**
+     * Process context menu action selection.
+     * 
+     * Handles context menu interactions including Actions integration
+     * and message read status management with user feedback.
+     */
     function handleContextMenuAction($item, $message) {
         var action = $item.data('action');
         var messageId = $item.data('message-id');
@@ -1128,38 +816,19 @@ jQuery(document).ready(function($) {
         }
     }
     
-    // Initialize context menu when document is ready
+    /**
+     * Initialize context menu system.
+     * 
+     * Sets up context menu functionality when document is ready.
+     */
     initializeContextMenu();
     
-    // ========================================
-    // Message Management Operations
-    // ========================================
-    // Administrative message management with confirmation workflows,
-    // modal interfaces, and comprehensive safety mechanisms. Provides
-    // secure conversation deletion with user confirmation requirements.
-    //
-    // Management Features:
-    // • Manual conversation refresh with page reload
-    // • Secure message clearing with multi-step confirmation
-    // • Modal-based confirmation interface with input validation
-    // • Comprehensive error handling with user feedback
-    // • Safety mechanisms preventing accidental data loss
-    //
-    // Confirmation Workflow:
-    // • Modal display with clear warning messaging
-    // • Text input confirmation requiring "CLEAR" typing
-    // • Button state management based on confirmation status
-    // • Outside click and escape key dismissal support
-    //
-    // Security Features:
-    // • Multi-step confirmation process for destructive operations
-    // • Input validation for confirmation text matching
-    // • Comprehensive error reporting with diagnostic information
-    // • Rollback support and error recovery mechanisms
-    // ========================================
+    // ============================================================================
+    // MESSAGE MANAGEMENT OPERATIONS
+    // ============================================================================
 
     /**
-     * Manual conversation refresh functionality
+     * Manual conversation refresh functionality.
      * 
      * Provides simple page reload mechanism for conversation updates.
      * Used when automatic refresh is needed or AJAX updates fail.
@@ -1170,7 +839,7 @@ jQuery(document).ready(function($) {
     });
 
     /**
-     * Clear messages initialization with modal display
+     * Clear messages initialization with modal display.
      * 
      * Initiates secure message clearing workflow by displaying confirmation
      * modal with safety mechanisms and user guidance for destructive operation.
@@ -1180,19 +849,31 @@ jQuery(document).ready(function($) {
         showClearMessagesModal();
     });
 
-    // Clear messages modal handlers
+    /**
+     * Clear messages modal dismissal handlers.
+     * 
+     * Provides multiple dismissal methods for modal interface.
+     */
     $('#cf7-clear-cancel, #cf7-clear-messages-modal .cf7-modal-close').on('click', function() {
         hideClearMessagesModal();
     });
 
-    // Close modal on outside click
+    /**
+     * Modal outside click dismissal handler.
+     * 
+     * Closes modal when clicking outside modal content area.
+     */
     $('#cf7-clear-messages-modal').on('click', function(e) {
         if (e.target === this) {
             hideClearMessagesModal();
         }
     });
 
-    // Monitor confirmation input
+    /**
+     * Confirmation input monitoring for clear operation.
+     * 
+     * Enables confirm button only when correct confirmation text is entered.
+     */
     $('#cf7-clear-confirmation').on('input', function() {
         const confirmText = $(this).val().trim();
         const confirmButton = $('#cf7-clear-confirm');
@@ -1204,7 +885,11 @@ jQuery(document).ready(function($) {
         }
     });
 
-    // Handle clear confirmation
+    /**
+     * Clear confirmation handler with validation.
+     * 
+     * Processes final confirmation and triggers message clearing operation.
+     */
     $('#cf7-clear-confirm').on('click', function(e) {
         e.preventDefault();
         
@@ -1219,53 +904,18 @@ jQuery(document).ready(function($) {
     
 });
 
-// ========================================
-// Global Utility Functions
-// ========================================
-// Shared utility functions for user interface feedback, modal management,
-// and conversation operations. Provides consistent experience across
-// all conversation management features.
-//
-// Utility Categories:
-// • User Notifications: Temporary feedback with auto-dismissal
-// • Modal Management: Show/hide operations with state management  
-// • Conversation Operations: Clear messages with confirmation workflow
-// • Interface Helpers: Common UI operations and state management
-//
-// Integration Points:
-// → WordPress Admin Notices: Consistent styling with admin interface
-// → jQuery UI: Smooth animations and transitions
-// → Session Management: State persistence across page operations
-// → Error Handling: Comprehensive user feedback for all operations
-// ========================================
+// ============================================================================
+// GLOBAL UTILITY FUNCTIONS
+// ============================================================================
 
 /**
- * Display temporary user notifications with auto-dismissal
+ * Display temporary user notifications with auto-dismissal.
  * 
  * Creates WordPress-styled admin notices with automatic timeout
  * and manual dismissal options. Provides consistent user feedback
  * across all conversation operations and error conditions.
  * 
- * @param {string} message - Notification message text
- * @param {string} type - Notification type ('error', 'success', or default)
- * 
- * Features:
- * • WordPress admin notice styling for consistent experience
- * • Automatic 3-second timeout with fade-out animation
- * • Manual dismissal with click handler on dismiss button
- * • Duplicate notice prevention with automatic cleanup
- * • Screen reader accessibility with descriptive dismiss text
- * 
- * Notice Types:
- * • 'error': Red error styling for failures and warnings
- * • 'success': Green success styling for confirmations
- * • Default: Blue info styling for general notifications
- * 
- * Accessibility Features:
- * • Screen reader compatible with descriptive dismiss text
- * • High contrast styling following WordPress standards
- * • Keyboard accessible dismiss functionality
- * • Semantic HTML structure for assistive technology
+ * @since 2.1.0
  */
 function showNotice(message, type) {
     // Remove any existing notices
@@ -1297,17 +947,11 @@ function showNotice(message, type) {
 }
 
 /**
- * Display clear messages confirmation modal
+ * Display clear messages confirmation modal.
  * 
  * Shows modal interface for message clearing with input focus,
  * button state initialization, and smooth fade-in animation.
  * Prepares secure workflow for destructive operation confirmation.
- * 
- * Modal Features:
- * • 200ms fade-in animation for smooth appearance
- * • Automatic focus on confirmation input for immediate interaction
- * • Disabled confirm button requiring user input validation
- * • Form state reset for consistent modal presentation
  */
 function showClearMessagesModal() {
     jQuery('#cf7-clear-messages-modal').fadeIn(200);
@@ -1316,17 +960,11 @@ function showClearMessagesModal() {
 }
 
 /**
- * Hide clear messages confirmation modal
+ * Hide clear messages confirmation modal.
  * 
  * Dismisses modal interface with cleanup of form state and
  * smooth fade-out animation. Ensures secure state reset
  * preventing partial confirmation states.
- * 
- * Cleanup Features:
- * • 200ms fade-out animation for smooth dismissal
- * • Complete form field clearing for security
- * • Button state reset preventing accidental activation
- * • Memory cleanup for proper state management
  */
 function hideClearMessagesModal() {
     jQuery('#cf7-clear-messages-modal').fadeOut(200);
@@ -1335,38 +973,13 @@ function hideClearMessagesModal() {
 }
 
 /**
- * Execute conversation clearing with comprehensive validation
+ * Execute conversation clearing with comprehensive validation.
  * 
  * Performs secure deletion of all conversation messages with
  * extensive validation, error handling, and user feedback.
  * Includes safety checks and graceful error recovery.
  * 
- * Validation Process:
- * 1. Verify submission ID availability from DOM data attributes
- * 2. Validate cf7Conversations configuration object presence
- * 3. Execute AJAX request with proper nonce authentication
- * 4. Process response with comprehensive error handling
- * 5. Provide user feedback and interface updates
- * 
- * Safety Features:
- * • Submission ID validation before processing
- * • Configuration object availability checking
- * • Comprehensive AJAX error handling with diagnostic information
- * • Button state management during processing
- * • Automatic page refresh after successful operation
- * 
- * Error Handling:
- * • Missing submission ID detection with user alert
- * • Configuration error handling with diagnostic logging
- * • Network error recovery with detailed error reporting
- * • Server error processing with status code analysis
- * • User-friendly error messaging with actionable guidance
- * 
- * Success Workflow:
- * • Modal dismissal with success notification
- * • 1.5-second delay for user feedback visibility
- * • Automatic page refresh to show updated conversation state
- * • Success message display with operation confirmation
+ * @since 2.1.0
  */
 function clearAllMessages() {
     const submissionId = jQuery('#cf7-clear-messages-btn').data('submission-id');

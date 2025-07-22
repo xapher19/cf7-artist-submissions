@@ -1,19 +1,23 @@
 <?php
 /**
- * Single Submission View Template for CF7 Artist Submissions
- * 
- * This template renders the detailed view of a single artist submission,
- * providing comprehensive information display and management tools:
- * - Submission header with title and current status
- * - Status management with real-time updates
- * - All submission metadata and field data
- * - File attachments and media display
- * - Administrative tools and actions
- * - Integration with tabbed dashboard interface
- * 
+ * CF7 Artist Submissions - Submission View Template
+ *
+ * Individual submission detail interface template providing comprehensive
+ * submission information display with real-time status management, metadata
+ * visualization, and administrative tools for detailed submission review.
+ *
+ * Features:
+ * • Comprehensive submission header with title and status display
+ * • Real-time status management with dropdown selection
+ * • Complete submission metadata and field data presentation
+ * • File attachments and media display integration
+ * • Administrative tools and action interfaces
+ * • Tabbed dashboard interface integration and navigation
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage Templates
  * @since 1.0.0
- * @since 2.0.0 Enhanced with tabbed interface and improved status management
+ * @version 1.0.0
  */
 
 // Prevent direct access

@@ -1,9 +1,23 @@
 <?php
 /**
- * Debug Tab Template
- * 
+ * CF7 Artist Submissions - Debug Tab Template
+ *
+ * System diagnostics and troubleshooting interface template providing
+ * comprehensive testing tools, configuration validation, and maintenance
+ * utilities for email systems, database operations, and system health monitoring.
+ *
+ * Features:
+ * • Email configuration testing and SMTP validation
+ * • IMAP connection testing and inbox cleanup utilities
+ * • Database schema updates and conversation token migration
+ * • Daily summary system testing and cron management
+ * • System information display with compatibility checks
+ * • Real-time test result feedback and debugging tools
+ *
  * @package CF7_Artist_Submissions
- * @since 2.1.0
+ * @subpackage Templates
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 // Prevent direct access

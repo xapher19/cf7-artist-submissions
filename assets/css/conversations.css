@@ -1,49 +1,29 @@
 /**
- * CF7 Artist Submissions - Conversation Styles
- * 
- * Complete styling system for the conversation/messaging interface including:
- * 
- * CORE FEATURES:
- * - Message threading with chat-style bubble layout
- * - Email integration with IMAP synchronization controls
- * - Template message support with visual differentiation
- * - Read/unread status tracking and visual indicators
- * - Conversation summary statistics and management
- * - Real-time message composition interface
- * 
- * DESIGN SYSTEM:
- * - Modern chat bubble interface with message tails
- * - Responsive design for mobile and desktop
- * - Consistent color scheme following WordPress admin standards
- * - Accessible typography and contrast ratios
- * - Smooth animations and transitions
- * 
- * COMPONENT ARCHITECTURE:
- * - Meta box container with thread controls
- * - Scrollable message thread area
- * - Message bubbles with metadata
- * - Compose form with template integration
- * - Status indicators and notifications
- * - Modal dialogs for destructive actions
- * 
+ * CF7 Artist Submissions - Comprehensive Conversation Management System CSS
+ *
+ * Complete styling system for real-time conversation interface providing
+ * modern chat-style messaging with email integration, template support,
+ * and administrative controls for seamless artist communication workflow.
+ *
+ * Features:
+ * • Modern chat bubble interface with directional message tails
+ * • Real-time email integration with IMAP synchronization controls
+ * • Template message system with visual differentiation and preview
+ * • Read/unread status tracking with visual indicators and notifications
+ * • Conversation summary statistics with management controls
+ * • Mobile-optimized responsive design for cross-device compatibility
+ * • Accessible typography with proper contrast ratios and focus states
+ * • Smooth animations and transitions for enhanced user experience
+ *
  * @package CF7_Artist_Submissions
- * @since 1.0.0 Initial conversation system
- * @since 2.0.0 Enhanced with real-time messaging and improved UX
- * @since 2.1.0 Added template message support and status tracking
+ * @subpackage Assets/CSS
+ * @since 1.0.0
+ * @version    1.0.0
  */
 
-/* ========================================================================
-   CONVERSATION META BOX & THREAD CONTROLS
-   
-   Primary container for the conversation interface within WordPress admin.
-   Includes IMAP synchronization controls and last-checked status display.
-   
-   Key Components:
-   - .conversation-meta-box: Main wrapper with consistent typography
-   - .thread-controls: Flex container for sync status and manual check button
-   - .last-checked: Timestamp display for IMAP synchronization
-   - .button-manual-check: Action button for triggering email checks
-   ======================================================================== */
+/* ============================================================================
+   CONVERSATION META BOX & THREAD CONTROLS SECTION
+   ============================================================================ */
 
 /**
  * Conversation Interface Container
@@ -113,19 +93,9 @@
     cursor: not-allowed;
 }
 
-/* ========================================================================
-   MESSAGE THREAD DISPLAY
-   
-   Scrollable container for conversation messages with chat-style layout.
-   Implements modern messaging interface patterns with proper spacing
-   and visual hierarchy.
-   
-   Key Components:
-   - .conversation-messages: Scrollable message container
-   - .no-messages: Empty state display
-   - .conversation-message: Individual message wrapper
-   - Directional modifiers: .outgoing, .incoming
-   ======================================================================== */
+/* ============================================================================
+   MESSAGE THREAD DISPLAY SECTION
+   ============================================================================ */
 
 /**
  * Message Thread Container
@@ -202,23 +172,9 @@
     margin-right: auto;
 }
 
-/* ========================================================================
-   MESSAGE BUBBLES & STYLING
-   
-   Chat-style message bubbles with directional tails and template support.
-   Implements modern messaging UI patterns with proper color coding
-   and visual hierarchy.
-   
-   Message Types:
-   - Regular outgoing: Blue (#2271b1) with right-pointing tail
-   - Template outgoing: Green (#4caf50) with right-pointing tail  
-   - Incoming: White with border and left-pointing tail
-   
-   Technical Implementation:
-   - CSS pseudo-elements (::before, ::after) create message tails
-   - Border triangles provide proper visual connection
-   - Template messages override default colors with specificity
-   ======================================================================== */
+/* ============================================================================
+   MESSAGE BUBBLES & STYLING SECTION
+   ============================================================================ */
 
 /**
  * Base Message Bubble
@@ -343,19 +299,9 @@
     border-left: 0;
 }
 
-/* ========================================================================
-   MESSAGE METADATA & CONTENT
-   
-   Styling for message headers, timestamps, status indicators, and content.
-   Provides clear information hierarchy and visual feedback for message state.
-   
-   Components:
-   - .message-meta: Header area with type, badges, and timestamp
-   - .message-type: Direction indicator (Sent/Received)
-   - .template-badge: Visual indicator for automated messages
-   - .message-date: Relative timestamp display
-   - .message-content: Main message body with typography
-   ======================================================================== */
+/* ============================================================================
+   MESSAGE METADATA & CONTENT SECTION
+   ============================================================================ */
 
 /**
  * Message Metadata Container
@@ -454,25 +400,9 @@
     margin-bottom: 0;
 }
 
-/* ========================================================================
-   SEND MESSAGE FORM
-   
-   Composition interface for creating new messages in the conversation.
-   Includes template selection, message composition, and preview functionality.
-   
-   Features:
-   - Template selection dropdown with live preview
-   - Rich text composition area
-   - Email field with validation styling
-   - Action buttons with loading states
-   - Error state handling and display
-   
-   Form Structure:
-   - .send-message-form: Main container
-   - .compose-field: Individual form field wrapper
-   - .compose-actions: Button container
-   - .template-preview: Template preview area
-   ======================================================================== */
+/* ============================================================================
+   SEND MESSAGE FORM SECTION
+   ============================================================================ */
 
 /**
  * Message Composition Form Container
@@ -658,24 +588,9 @@
     line-height: 1.4;
 }
 
-/* ========================================================================
-   NOTIFICATION STYLES
-   
-   Visual feedback system for conversation actions and message status.
-   Includes status badges, unread indicators, summary statistics, and
-   general notification styling.
-   
-   Notification Types:
-   - Status badges: Read/unread indicators for individual messages
-   - Unviewed styling: Highlight for new incoming messages
-   - Summary statistics: Conversation overview with counts
-   - General notices: Success/error feedback for actions
-   
-   Design Patterns:
-   - Color coding: Green for positive states, red for attention
-   - Animation: Subtle pulse for new/unread items
-   - Accessibility: Proper contrast and icon usage
-   ======================================================================== */
+/* ============================================================================
+   NOTIFICATION STYLES SECTION
+   ============================================================================ */
 
 /**
  * General Notice Container
@@ -931,23 +846,9 @@
     gap: 8px;
 }
 
-/* ========================================================================
-   RESPONSIVE DESIGN FOR CONVERSATIONS
-   
-   Mobile-first responsive design ensuring optimal conversation experience
-   across all device sizes. Includes specific breakpoints for tablets
-   and mobile devices with appropriate layout adjustments.
-   
-   Breakpoints:
-   - 782px and below: Tablet adjustments, vertical stacking
-   - 480px and below: Mobile optimizations, compact spacing
-   
-   Key Adaptations:
-   - Thread controls stack vertically on narrow screens
-   - Message bubbles expand to use more screen width
-   - Form actions stack for better touch targets
-   - Reduced padding and font sizes for compact displays
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE DESIGN FOR CONVERSATIONS SECTION
+   ============================================================================ */
 
 /**
  * Tablet and Small Desktop Adjustments (≤782px)
@@ -1071,25 +972,9 @@
     }
 }
 
-/* ========================================================================
-   CONVERSATION ADMIN INTERFACE COMPONENTS
-   
-   Administrative interface elements for conversation management including
-   danger buttons for destructive actions and specialized components for
-   conversation control workflows.
-   
-   Components:
-   - Danger buttons: Red-styled buttons for destructive actions
-   - Statistics containers: Summary information displays
-   - Action containers: Management control groupings
-   - Button state management: Hover, disabled, and focus states
-   
-   Design Philosophy:
-   - Clear visual hierarchy for administrative actions
-   - Consistent button styling following WordPress patterns
-   - Appropriate color coding for action severity
-   - Accessible interaction states and feedback
-   ======================================================================== */
+/* ============================================================================
+   CONVERSATION ADMIN INTERFACE COMPONENTS SECTION
+   ============================================================================ */
 
 /**
  * Summary Statistics Container
@@ -1187,27 +1072,9 @@
     cursor: not-allowed;
 }
 
-/* ========================================================================
-   CLEAR MESSAGES MODAL SYSTEM
-   
-   Complete modal dialog system for confirming destructive conversation
-   actions. Includes overlay, modal structure, warning content, and
-   verification input field for safe conversation management.
-   
-   Modal Architecture:
-   - Full-screen overlay with backdrop
-   - Centered modal container with responsive sizing
-   - Header with title and close button
-   - Warning content area with icon and text
-   - Verification input field
-   - Action button footer
-   
-   Security Features:
-   - Text verification requirement prevents accidental deletion
-   - Warning styling clearly communicates action severity
-   - Multiple exit points (close button, backdrop click)
-   - Clear visual hierarchy guides user through confirmation process
-   ======================================================================== */
+/* ============================================================================
+   CLEAR MESSAGES MODAL SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Modal Backdrop Overlay
@@ -1405,24 +1272,9 @@
     gap: 10px;
 }
 
-/* ========================================================================
-   CONVERSATION ADMIN RESPONSIVE DESIGN
-   
-   Mobile-optimized responsive design specifically for administrative
-   interface components within the conversation system.
-   
-   Focus Areas:
-   - Summary statistics layout on mobile devices
-   - Action button positioning and sizing
-   - Modal dialog responsive behavior
-   - Touch-friendly interface adaptations
-   
-   Design Considerations:
-   - Maintains accessibility across device sizes
-   - Preserves administrative functionality on mobile
-   - Optimizes touch targets for mobile interaction
-   - Ensures readable text and adequate spacing
-   ======================================================================== */
+/* ============================================================================
+   CONVERSATION ADMIN RESPONSIVE DESIGN SECTION
+   ============================================================================ */
 
 /**
  * Tablet and Mobile Administrative Layout (≤768px)

@@ -1,195 +1,51 @@
 /**
- * ============================================================================
- * CF7 ARTIST SUBMISSIONS - ADVANCED ADMIN INTERFACE SYSTEM
- * ============================================================================
- * 
- * Comprehensive WordPress admin interface controller for artist submission
- * management with advanced settings configuration, real-time validation,
- * template management, and comprehensive testing infrastructure. Provides
- * modern admin experience with safety mechanisms and user feedback systems.
- * 
- * This system manages the complete admin configuration workflow from settings
- * page initialization through complex test operations to template management.
- * Features sophisticated error handling, automatic recovery mechanisms, and
- * intuitive user interface components for streamlined administrative tasks.
- * 
- * ============================================================================
- * SYSTEM ARCHITECTURE
- * ============================================================================
- * 
- * CF7AdminInterfaceSystem
- * ├─ CoreInterfaceController
- * │  ├─ SettingsPageManager: Main settings page initialization and navigation
- * │  ├─ FormHandlingEngine: Settings form processing and validation
- * │  ├─ EventBindingSystem: Comprehensive event delegation and management
- * │  └─ StateManagementLayer: Admin interface state persistence and recovery
- * │
- * ├─ SafetyMechanismFramework
- * │  ├─ GlobalButtonSafety: Universal button state protection and recovery
- * │  ├─ TimeoutManagement: Automatic operation timeouts with graceful recovery
- * │  ├─ StateCapture: Original button state preservation before modifications
- * │  └─ RecoverySystem: Multi-layer fallback mechanisms for stuck operations
- * │
- * ├─ TestOperationsEngine
- * │  ├─ FormConfigurationTesting: CF7 form setup validation and diagnostics
- * │  ├─ EmailSystemTesting: SMTP/IMAP connection and delivery verification
- * │  ├─ TemplateTestingSystem: Email template rendering and delivery testing
- * │  ├─ DatabaseMaintenanceTools: Schema updates and data migration utilities
- * │  └─ CronJobManagement: Scheduled task configuration and validation
- * │
- * ├─ ModalManagementSystem
- * │  ├─ EmailInputModals: Interactive email address collection for testing
- * │  ├─ TemplatePreviewModals: Rich template preview with sample data rendering
- * │  ├─ ConfirmationDialogs: User confirmation workflows for destructive operations
- * │  └─ ResultsDisplay: Comprehensive test results and feedback presentation
- * │
- * ├─ TemplateManagementEngine
- * │  ├─ TemplateEditor: Rich text editing with merge tag assistance
- * │  ├─ PreviewSystem: Real-time template preview with sample data
- * │  ├─ ResetFunctionality: Template restoration to default configurations
- * │  ├─ MergeTagHelper: Interactive merge tag insertion and guidance
- * │  └─ ValidationEngine: Template syntax and content validation
- * │
- * ├─ AjaxCommunicationLayer
- * │  ├─ RequestManager: Standardized AJAX request handling with safety timeouts
- * │  ├─ ResponseProcessor: Comprehensive response handling and error management
- * │  ├─ SecurityValidation: Nonce verification and secure request transmission
- * │  └─ ErrorRecovery: Graceful failure handling with user-friendly messaging
- * │
- * └─ UserFeedbackFramework
- *    ├─ NotificationSystem: Real-time success/error/warning message display
- *    ├─ ProgressIndicators: Visual feedback for long-running operations
- *    ├─ ValidationFeedback: Real-time form validation with error highlighting
- *    └─ StatusUpdates: Comprehensive operation status communication
- * 
- * ============================================================================
- * INTEGRATION POINTS
- * ============================================================================
- * 
- * • WordPress Admin Framework: Native WordPress admin page and menu integration
- * • CF7 Settings Backend: Deep integration with settings storage and validation
- * • Email System Backend: SMTP/IMAP configuration and testing integration
- * • Template Engine: Email template rendering and management system
- * • Database Management: Schema updates and maintenance tool integration
- * • Cron System: WordPress scheduled task configuration and management
- * • Modal UI Framework: Advanced modal dialog system with accessibility
- * 
- * ============================================================================
- * DEPENDENCIES
- * ============================================================================
- * 
- * • jQuery 3.x: Core JavaScript framework for DOM manipulation and AJAX
- * • WordPress AJAX API: Server communication and nonce validation system
- * • cf7ArtistSubmissions: Localized admin configuration and security tokens
- * • cf7_admin_ajax: Template preview AJAX configuration and endpoints
- * • WordPress Admin UI: Native admin styling and component framework
- * • WordPress Notice System: Admin notification display and management
- * 
- * ============================================================================
- * ADMIN INTERFACE FEATURES
- * ============================================================================
- * 
- * • Settings Management: Comprehensive configuration interface with validation
- * • Test Operations: Real-time testing of SMTP, IMAP, forms, and templates
- * • Template Editor: Rich template editing with merge tag assistance
- * • Import/Export: Settings backup and restoration functionality
- * • Database Tools: Schema updates and maintenance utilities
- * • Cron Management: Scheduled task configuration and monitoring
- * • Modal Workflows: Interactive dialogs for complex operations
- * 
- * ============================================================================
- * SAFETY AND RELIABILITY
- * ============================================================================
- * 
- * • Global Safety Mechanism: Universal button protection with automatic recovery
- * • Timeout Management: Automatic operation timeouts preventing stuck states
- * • State Preservation: Original button state capture before any modifications
- * • Multi-Layer Recovery: Multiple fallback mechanisms for error conditions
- * • AJAX Safety: Comprehensive error handling with graceful degradation
- * • User Feedback: Clear communication of operation status and results
- * 
- * ============================================================================
- * TEST OPERATIONS SYSTEM
- * ============================================================================
- * 
- * • Form Configuration: CF7 form setup validation and field mapping verification
- * • Email Delivery: SMTP configuration testing with actual email delivery
- * • IMAP Connection: Inbox access validation and authentication testing
- * • Template Rendering: Email template processing and delivery verification
- * • Database Schema: Structure validation and migration utilities
- * • Cron Jobs: Scheduled task setup and execution verification
- * 
- * ============================================================================
- * PERFORMANCE FEATURES
- * ============================================================================
- * 
- * • Efficient Event Handling: Event delegation for optimal performance
- * • AJAX Optimization: Request batching and response caching
- * • Memory Management: Proper cleanup of event listeners and DOM elements
- * • State Optimization: Minimal DOM manipulation during operations
- * • Resource Loading: On-demand loading of admin interface components
- * 
- * ============================================================================
- * ACCESSIBILITY FEATURES
- * ============================================================================
- * 
- * • Keyboard Navigation: Full keyboard support for all admin operations
- * • Screen Reader Support: Proper ARIA labels and semantic markup
- * • Focus Management: Logical tab order and focus indicators
- * • High Contrast: Visual elements optimized for accessibility standards
- * • Error Communication: Clear, accessible error and status messaging
- * 
- * ============================================================================
- * SECURITY FEATURES
- * ============================================================================
- * 
- * • Nonce Validation: WordPress security token verification for all operations
- * • Access Control: User permission verification before admin operations
- * • Input Sanitization: Comprehensive input validation and XSS prevention
- * • CSRF Protection: Cross-site request forgery prevention
- * • Secure AJAX: Protected server communication with validation
- * 
+ * CF7 Artist Submissions - Admin Interface Controller
+ *
+ * Comprehensive WordPress admin interface controller for artist submission management
+ * with advanced settings configuration, real-time validation, template management,
+ * and comprehensive testing infrastructure.
+ *
+ * Features:
+ * • Settings form handling with real-time validation
+ * • SMTP/IMAP connection testing with user feedback
+ * • Email template management and preview system
+ * • Database schema updates and maintenance tools
+ * • Import/export functionality for settings backup
+ * • Global safety mechanisms for button operations
+ * • Modal workflows for complex operations
+ * • Automated recovery from stuck operations
+ * • Real-time user feedback and notifications
+ * • Template editor with merge tag assistance
+ * • Cron job management and validation
+ * • Comprehensive error handling and logging
+ *
  * @package CF7_Artist_Submissions
  * @subpackage AdminInterface
- * @since 2.1.0
- * @version 2.3.0
- * @author CF7 Artist Submissions Development Team
+ * @since 1.0.0
+ * @version 1.0.0
  */
 (function($) {
     'use strict';
     
+    // ============================================================================
+    // CF7 ADMIN INTERFACE CONTROLLER
+    // ============================================================================
+    
     /**
-     * ========================================================================
-     * CF7 ADMIN INTERFACE CONTROLLER
-     * ========================================================================
-     * 
      * Main controller object managing all admin interface functionality.
-     * Provides centralized management for settings, testing, and user interactions.
+     * Provides centralized management for settings, testing, and user interactions
+     * with comprehensive safety mechanisms and error recovery.
      * 
-     * Key Responsibilities:
-     * - Settings form handling and validation
-     * - Test button operations with safety mechanisms
-     * - Template management and preview system
-     * - Modal workflows for email testing
-     * - Import/export functionality
-     * - Real-time user feedback and notifications
+     * @since 2.1.0
      */
     const CF7AdminInterface = {
         
         /**
-         * Initialize Admin Interface
+         * Initialize admin interface with all components and safety mechanisms.
+         * Sets up event handlers, validation, templates, and recovery systems
+         * for comprehensive admin functionality.
          * 
-         * Sets up all event handlers, safety mechanisms, and interface components.
-         * Called on document ready when settings page is detected.
-         * 
-         * Initialization Order:
-         * 1. Modern event binding
-         * 2. Toggle switches setup
-         * 3. Test button initialization
-         * 4. Form validation
-         * 5. Template editor
-         * 6. Modal systems
-         * 7. Global safety mechanism
+         * @since 2.1.0
          */
         init: function() {
             this.bindModernEvents();
@@ -200,27 +56,17 @@
             this.initModals();
             this.initGlobalSafetyMechanism();
         },
+
+        // ============================================================================
+        // SAFETY MECHANISMS
+        // ============================================================================
         
         /**
-         * ====================================================================
-         * GLOBAL SAFETY MECHANISM
-         * ====================================================================
+         * Initialize global button safety mechanism preventing stuck states.
+         * Captures original button state and provides automatic recovery with
+         * multiple fallback layers and timeout protection.
          * 
-         * Comprehensive button safety system preventing permanently stuck states.
-         * Captures original button state before any modifications and provides
-         * automatic recovery with multiple fallback layers.
-         * 
-         * Safety Features:
-         * - Original state capture on mousedown (before click handlers)
-         * - Multiple storage locations for redundancy
-         * - 60-second global timeout for all operations
-         * - Automatic cleanup and recovery
-         * - Prevention of double-click scenarios
-         * 
-         * Storage Strategy:
-         * - jQuery data attributes (primary)
-         * - DOM element properties (backup)
-         * - Multiple keys for different recovery scenarios
+         * @since 2.1.0
          */
         initGlobalSafetyMechanism: function() {
             // Capture original state on mousedown (before click handlers run)
@@ -273,23 +119,17 @@
                 $button.data('cf7-global-safety-id', globalSafetyId);
             });
         },
+
+        // ============================================================================
+        // EVENT BINDING SYSTEM
+        // ============================================================================
         
         /**
-         * ====================================================================
-         * EVENT BINDING SYSTEM
-         * ====================================================================
+         * Bind all admin interface event handlers with delegation and context binding.
+         * Centralized event handling for settings, testing, templates, and modals
+         * with reliable operation across dynamic content.
          * 
-         * Centralized event handler binding for all admin interface interactions.
-         * Uses event delegation and proper context binding for reliable operation.
-         * 
-         * Event Categories:
-         * - Settings form submissions with validation
-         * - Test button operations with safety handling
-         * - Toggle switches with visual feedback
-         * - Import/export functionality
-         * - Template management (preview, reset)
-         * - Modal close handlers with cleanup
-         * - WooCommerce template integration
+         * @since 2.1.0
          */
         bindModernEvents: function() {
             // Settings form submissions
@@ -335,6 +175,10 @@
             });
         },
         
+        /**
+         * Initialize toggle switches with visual feedback and state management.
+         * Sets up template enable/disable toggles and slider interactions.
+         */
         initToggles: function() {
             // Template enable/disable toggles
             $('input[id^="template_enabled_"]').on('change', function() {
@@ -366,6 +210,10 @@
             });
         },
         
+        /**
+         * Store original button text for reset functionality.
+         * Preserves initial button state for safety mechanism recovery.
+         */
         initTestButtons: function() {
             // Store original text for test buttons
             $('.cf7-test-btn').each(function() {
@@ -373,6 +221,10 @@
             });
         },
         
+        /**
+         * Initialize real-time form validation with visual feedback.
+         * Provides email validation and required field checking with error highlighting.
+         */
         initFormValidation: function() {
             // Real-time form validation
             $('.cf7-field-input').on('input', function() {
@@ -398,6 +250,10 @@
             });
         },
         
+        /**
+         * Initialize template editor with modification tracking and merge tag helper.
+         * Sets up template editing functionality with visual feedback and assistance.
+         */
         initTemplateEditor: function() {
             // Initialize template editor functionality
             $('.cf7-template-subject, .cf7-template-body').on('input', function() {
@@ -409,6 +265,10 @@
             this.addMergeTagHelper();
         },
         
+        /**
+         * Initialize modal dialog handlers with accessibility support.
+         * Sets up close behaviors including click outside, ESC key, and button handlers.
+         */
         initModals: function() {
             // Modal close handlers
             $('.cf7-modal-close').on('click', function() {
@@ -430,6 +290,10 @@
             });
         },
         
+        /**
+         * Add merge tag helper buttons to template editors.
+         * Creates interactive buttons for inserting common template variables.
+         */
         addMergeTagHelper: function() {
             // Add merge tag buttons to template editors
             const mergeTags = [
@@ -461,7 +325,15 @@
                 }
             });
         },
+
+        // ============================================================================
+        // EVENT HANDLERS
+        // ============================================================================
         
+        /**
+         * Handle settings form submission with loading state and recovery.
+         * Shows loading indicator and manages button state during form processing.
+         */
         handleFormSubmit: function(e) {
             const $form = $(e.target);
             const $submitBtn = $form.find('button[type="submit"]');
@@ -476,32 +348,17 @@
                 $submitBtn.prop('disabled', false).html(originalText);
             }, 100);
         },
+
+        // ============================================================================
+        // TEST OPERATIONS
+        // ============================================================================
         
         /**
-         * ====================================================================
-         * TEST OPERATIONS DISPATCHER
-         * ====================================================================
+         * Central dispatcher for all test button operations with safety handling.
+         * Manages loading states, action routing, and error recovery for all
+         * admin test functions including SMTP, IMAP, forms, and templates.
          * 
-         * Central dispatcher for all test button operations with standardized
-         * loading states and error handling.
-         * 
-         * Supported Test Operations:
-         * - test-form: Form configuration validation
-         * - validate-email-config: Email settings verification
-         * - test-smtp: SMTP connection and authentication
-         * - test-imap: IMAP connection testing
-         * - cleanup-inbox: Email cleanup operations
-         * - test-template: Template email sending
-         * - update-schema: Database schema updates
-         * - migrate-tokens: Conversation token migration
-         * - test-daily-summary: Daily summary email testing
-         * - setup-cron: Cron job configuration
-         * 
-         * Process Flow:
-         * 1. Extract action from button data attribute
-         * 2. Set standardized loading state
-         * 3. Dispatch to appropriate test method
-         * 4. Handle success/error with user feedback
+         * @since 2.1.0
          */
         handleTestButton: function(e) {
             e.preventDefault();
@@ -550,6 +407,10 @@
             }
         },
         
+        /**
+         * Handle toggle switch changes with visual feedback.
+         * Adds transition effects during toggle state changes.
+         */
         handleToggleChange: function(e) {
             const $toggle = $(e.target);
             const $slider = $toggle.siblings('.cf7-toggle-slider');
@@ -563,6 +424,10 @@
             }, 200);
         },
         
+        /**
+         * Export all settings as downloadable JSON file.
+         * Collects form data and triggers automatic download with timestamp.
+         */
         handleExportSettings: function(e) {
             e.preventDefault();
             
@@ -586,6 +451,10 @@
             this.showNotice('Settings exported successfully!', 'success');
         },
         
+        /**
+         * Import settings from user-selected JSON file.
+         * Creates file input dialog and processes uploaded configuration data.
+         */
         handleImportSettings: function(e) {
             e.preventDefault();
             
@@ -612,54 +481,17 @@
             
             input.click();
         },
-        
-        // ========================================
-        // AJAX Operations System
-        // ========================================
-        // Core AJAX request handling with comprehensive safety mechanisms
-        // and automatic error recovery. Provides standardized communication
-        // with WordPress backend handlers while maintaining UI consistency.
-        //
-        // System Features:
-        // • Automatic safety timeouts with graceful button state recovery
-        // • Standardized error handling with user feedback mechanisms
-        // • Cross-tab state synchronization for consistent UI experience
-        // • Request logging and debugging support for development
-        // • Configurable timeout periods for different operation types
-        //
-        // Integration Points:
-        // → WordPress AJAX handler system (admin-ajax.php)
-        // → cf7ArtistSubmissions localized data configuration
-        // → Global nonce validation for security compliance
-        // → Backend PHP action handlers in includes/ directory
-        //
-        // Request Lifecycle:
-        // 1. Button state management and visual feedback activation
-        // 2. Safety timeout establishment with automatic recovery
-        // 3. AJAX request dispatch with standardized data format
-        // 4. Response processing with success/error differentiation
-        // 5. UI state restoration and cleanup operations
-        // ========================================
 
+        // ============================================================================
+        // AJAX OPERATIONS
+        // ============================================================================
+        
         /**
-         * Perform safe AJAX test with automatic button reset fallback
+         * Perform safe AJAX test with automatic button reset and error recovery.
+         * Core AJAX handler providing safety timeouts, state management, and
+         * comprehensive error handling for all admin test operations.
          * 
-         * Core AJAX request handler that provides comprehensive safety mechanisms
-         * including automatic timeouts, button state management, and error recovery.
-         * Ensures consistent user experience across all test operations.
-         * 
-         * @param {jQuery} $button - Button element being tested
-         * @param {string} originalHtml - Original button HTML for restoration
-         * @param {Object} ajaxData - AJAX request data including action and nonce
-         * @param {Function} successCallback - Optional custom success handler
-         * @param {Function} errorCallback - Optional custom error handler
-         * 
-         * Process Flow:
-         * 1. Establish 15-second safety timeout for automatic recovery
-         * 2. Execute jQuery AJAX request with standardized configuration
-         * 3. Handle success response with optional custom processing
-         * 4. Manage error conditions with comprehensive logging
-         * 5. Restore button state with cleanup scheduling
+         * @since 2.1.0
          */
         performSafeAjaxTest: function($button, originalHtml, ajaxData, successCallback, errorCallback) {
             // Set safety timeout to ensure button always gets reset
@@ -711,31 +543,17 @@
                 }
             });
         },
-        
-        // ========================================
-        // Configuration Test Operations
-        // ========================================
-        // Specialized test functions for validating different system
-        // configurations with targeted error handling and user feedback.
-        //
-        // Test Categories:
-        // • Form Configuration: CF7 form setup and field validation
-        // • Email Configuration: SMTP settings and delivery validation
-        // • IMAP Configuration: Inbox connection and authentication
-        // • Template System: Email template rendering and delivery
-        // ========================================
 
+        // ============================================================================
+        // TEST CONFIGURATION FUNCTIONS
+        // ============================================================================
+        
         /**
-         * Test Contact Form 7 configuration
+         * Test Contact Form 7 configuration and integration.
+         * Validates form setup, field mappings, and submission processing
+         * for artist submission workflow compatibility.
          * 
-         * Validates CF7 form setup, field mappings, and submission processing.
-         * Checks for proper form configuration, required field validation,
-         * and integration with artist submission workflow.
-         * 
-         * @param {jQuery} $button - Test button element
-         * @param {string} originalHtml - Original button HTML for restoration
-         * 
-         * Backend Handler: test_form_config (includes/class-cf7-artist-submissions-admin.php)
+         * @since 2.1.0
          */
         testFormConfiguration: function($button, originalHtml) {
             this.performSafeAjaxTest($button, originalHtml, {
@@ -752,16 +570,8 @@
         },
         
         /**
-         * Test email configuration and delivery system
-         * 
-         * Validates SMTP settings, authentication credentials, and basic
-         * email delivery capability. Tests connection to mail server
-         * without requiring specific recipient email address.
-         * 
-         * @param {jQuery} $button - Test button element
-         * @param {string} originalHtml - Original button HTML for restoration
-         * 
-         * Backend Handler: validate_email_config (includes/class-cf7-artist-submissions-emails.php)
+         * Test email configuration and SMTP settings validation.
+         * Validates SMTP settings and authentication without requiring recipient.
          */
         testEmailConfig: function($button, originalHtml) {
             this.performSafeAjaxTest($button, originalHtml, {
@@ -771,24 +581,11 @@
         },
         
         /**
-         * Test SMTP configuration with email delivery verification
+         * Test SMTP configuration with email delivery verification.
+         * Comprehensive SMTP testing requiring user email input for actual
+         * delivery verification with modal-based email collection.
          * 
-         * Comprehensive SMTP testing that requires user email input for
-         * actual delivery verification. Includes modal-based email collection,
-         * extended timeout handling for slower SMTP servers, and detailed
-         * delivery status reporting.
-         * 
-         * @param {jQuery} $button - Test button element  
-         * @param {string} originalHtml - Original button HTML for restoration
-         * 
-         * Process Flow:
-         * 1. Display email input modal with validation
-         * 2. Configure extended 30-second safety timeout for SMTP delays
-         * 3. Update button state to indicate email sending in progress
-         * 4. Execute SMTP test with user-provided recipient address
-         * 5. Display comprehensive delivery results with error details
-         * 
-         * Backend Handler: test_smtp_config (includes/class-cf7-artist-submissions-emails.php)
+         * @since 2.1.0
          */
         testSmtpConfig: function($button, originalHtml) {
             // Store button reference for safety reset
@@ -848,17 +645,8 @@
         },
         
         /**
-         * Test IMAP connection and inbox access
-         * 
-         * Validates IMAP server connection, authentication credentials,
-         * and inbox accessibility for conversation management system.
-         * Tests folder access permissions and basic email retrieval.
-         * 
-         * @param {jQuery} $button - Test button element
-         * @param {string} originalHtml - Original button HTML for restoration
-         * 
-         * Backend Handler: cf7_test_imap (includes/class-cf7-artist-submissions-conversations.php)
-         * Security: Uses conversationNonce for IMAP-specific operations
+         * Test IMAP connection and inbox access for conversation management.
+         * Validates server connection, authentication, and folder permissions.
          */
         testImapConnection: function($button, originalHtml) {
             this.performSafeAjaxTest($button, originalHtml, {
@@ -870,22 +658,8 @@
         },
         
         /**
-         * Clean up processed emails from IMAP inbox
-         * 
-         * Removes processed conversation emails from the configured IMAP inbox
-         * to prevent storage accumulation. Includes user confirmation dialog
-         * and comprehensive error handling for IMAP operations.
-         * 
-         * @param {jQuery} $button - Cleanup button element
-         * @param {string} originalHtml - Original button HTML for restoration
-         * 
-         * Safety Features:
-         * • User confirmation dialog before execution
-         * • Automatic button reset on user cancellation  
-         * • Custom success/error message handling
-         * • IMAP connection validation before cleanup
-         * 
-         * Backend Handler: cf7_cleanup_inbox (includes/class-cf7-artist-submissions-conversations.php)
+         * Clean up processed emails from IMAP inbox with user confirmation.
+         * Removes processed conversation emails to prevent storage accumulation.
          */
         cleanupInbox: function($button, originalHtml) {
             if (!confirm('This will clean up processed emails from your inbox. Continue?')) {
@@ -904,28 +678,11 @@
         },
         
         /**
-         * Test email template rendering and delivery
+         * Test email template rendering and delivery to specified recipient.
+         * Validates template system with test data and modal email collection
+         * for comprehensive delivery verification.
          * 
-         * Validates email template system by rendering active template with
-         * test data and delivering to specified email address. Includes
-         * automatic template detection and comprehensive delivery verification.
-         * 
-         * @param {jQuery} $button - Test button element
-         * @param {string} originalHtml - Original button HTML for restoration
-         * 
-         * Process Flow:
-         * 1. Detect currently active template from UI state
-         * 2. Display email input modal for delivery destination
-         * 3. Configure extended timeout for template processing
-         * 4. Render template with test data and send to recipient
-         * 5. Provide detailed delivery status and template validation results
-         * 
-         * Template Detection:
-         * • Scans for active .cf7-template-section elements
-         * • Falls back to 'submission_received' default template
-         * • Supports all configured email templates in system
-         * 
-         * Backend Handler: test_template_email (includes/class-cf7-artist-submissions-emails.php)
+         * @since 2.1.0
          */
         testTemplateEmail: function($button, originalHtml) {
             // Store button reference for safety reset
@@ -969,6 +726,10 @@
             });
         },
         
+        /**
+         * Update database schema with user confirmation.
+         * Performs database structure updates and migrations with safety confirmation.
+         */
         updateDatabaseSchema: function($button, originalHtml) {
             if (!confirm('This will update the database schema. Continue?')) {
                 CF7AdminInterface.resetButton($button, originalHtml);
@@ -985,6 +746,10 @@
             });
         },
         
+        /**
+         * Migrate conversation tokens with user confirmation.
+         * Updates conversation token format and relationships for compatibility.
+         */
         migrateConversationTokens: function($button, originalHtml) {
             if (!confirm('This will migrate conversation tokens. Continue?')) {
                 CF7AdminInterface.resetButton($button, originalHtml);
@@ -1001,6 +766,10 @@
             });
         },
         
+        /**
+         * Test daily summary email with user-specified recipient.
+         * Validates daily summary generation and delivery with modal email collection.
+         */
         testDailySummary: function($button, originalHtml) {
             // Store button reference for safety reset
             const safetyResetId = setTimeout(function() {
@@ -1038,6 +807,10 @@
             });
         },
         
+        /**
+         * Setup daily summary cron job with user confirmation.
+         * Configures scheduled task for daily summary emails with status reload.
+         */
         setupDailyCron: function($button, originalHtml) {
             if (!confirm('This will setup the daily summary cron job. Continue?')) {
                 CF7AdminInterface.resetButton($button, originalHtml);
@@ -1059,7 +832,18 @@
                 CF7AdminInterface.showTestResults('Cron setup failed - please try again.', false);
             });
         },
+
+        // ============================================================================
+        // TEMPLATE HANDLERS
+        // ============================================================================
         
+        /**
+         * Handle template preview with modal display and loading states.
+         * Generates template preview with sample data and shows in modal interface
+         * with comprehensive error handling and state management.
+         * 
+         * @since 2.1.0
+         */
         handleTemplatePreview: function(e) {
             e.preventDefault();
             const $button = $(e.currentTarget);
@@ -1198,6 +982,10 @@
             });
         },
         
+        /**
+         * Reset template to default values with user confirmation.
+         * Clears template fields and restores default configuration.
+         */
         handleTemplateReset: function(e) {
             e.preventDefault();
             if (!confirm('Reset this template to default? This cannot be undone.')) {
@@ -1214,6 +1002,11 @@
             $template.find('.cf7-template-body').val('');
         },
         
+        /**
+         * Handle WooCommerce template preview with specialized styling.
+         * Generates preview showing WooCommerce email template integration
+         * and styling compatibility.
+         */
         handleWooCommercePreview: function(e) {
             e.preventDefault();
             const $button = $(e.currentTarget);
@@ -1309,7 +1102,15 @@
                 }
             });
         },
+
+        // ============================================================================
+        // UTILITY FUNCTIONS
+        // ============================================================================
         
+        /**
+         * Reset button to original state with optional delay.
+         * Restores button HTML and enabled state using globally captured original state.
+         */
         resetButton: function($button, originalHtml, delay) {
             const resetAction = function() {
                 // Get original state - prefer globally captured state over passed parameter
@@ -1355,7 +1156,8 @@
         },
         
         /**
-         * Clean up global button state when operation is truly complete
+         * Clean up global button state when operation is complete.
+         * Removes stored data and clears timeouts for memory management.
          */
         cleanupButtonState: function($button) {
             if (!$button || $button.length === 0) {
@@ -1371,43 +1173,16 @@
             // Remove all stored data
             $button.removeData('cf7-global-original-html cf7-global-original-disabled cf7-original-html cf7-original-disabled cf7-global-safety-id');
         },
-        
-        // ========================================
-        // Modal Management System
-        // ========================================
-        // User interface modal components for interactive operations requiring
-        // user input or confirmation. Provides consistent modal experience
-        // with accessibility features and comprehensive event handling.
-        //
-        // Modal Features:
-        // • Dynamic modal creation with HTML template injection
-        // • Keyboard navigation support (Enter, Escape)
-        // • Background click dismissal with event delegation
-        // • Input validation with real-time feedback
-        // • Automatic cleanup and memory management
-        //
-        // Integration Points:
-        // → Test operations requiring user email input
-        // → Configuration confirmation dialogs
-        // → Results display with user interaction options
-        // → Cross-modal state management for complex workflows
-        // ========================================
 
+        // ============================================================================
+        // MODAL MANAGEMENT
+        // ============================================================================
+        
         /**
-         * Display test results with auto-hiding notification
+         * Display test results with auto-hiding notification and user feedback.
+         * Shows standardized results in UI panel with timeout and manual dismissal.
          * 
-         * Shows standardized test results in dedicated UI panel with automatic
-         * timeout and manual dismissal options. Provides consistent feedback
-         * mechanism for all test operations.
-         * 
-         * @param {string} message - Result message to display
-         * @param {boolean} isSuccess - Success state for styling
-         * 
-         * Features:
-         * • Automatic 5-second timeout with fade-out
-         * • Manual close button with click handler
-         * • Success/error styling based on test results
-         * • DOM cleanup and event handler management
+         * @since 2.1.0
          */
         showTestResults: function(message, isSuccess) {
             const $results = $('#cf7-email-test-results');
@@ -1430,34 +1205,11 @@
         },
         
         /**
-         * Display email input modal for test operations
+         * Display email input modal for test operations with validation.
+         * Creates modal interface for email collection during SMTP and template
+         * testing with keyboard navigation and callback management.
          * 
-         * Creates dynamic modal interface for collecting email addresses
-         * during SMTP and template testing operations. Includes comprehensive
-         * input validation, keyboard navigation, and callback management.
-         * 
-         * @param {Function} onConfirm - Callback executed with validated email
-         * @param {Function} onCancel - Callback executed on user cancellation
-         * 
-         * Modal Features:
-         * • Pre-populated with admin email from WordPress configuration
-         * • Real-time email validation with user feedback
-         * • Enter key submission for improved user experience
-         * • Escape key cancellation with proper cleanup
-         * • Background click dismissal with event delegation
-         * • Automatic button state cleanup on modal closure
-         * 
-         * Accessibility Features:
-         * • Auto-focus with text selection for easy replacement
-         * • Keyboard navigation support (Enter/Escape)
-         * • Screen reader compatible markup structure
-         * • Proper ARIA labels and semantic HTML elements
-         * 
-         * Event Management:
-         * • Namespaced event handlers to prevent conflicts
-         * • Automatic cleanup of document-level listeners
-         * • Button state restoration on cancellation
-         * • Memory leak prevention through proper removal
+         * @since 2.1.0
          */
         showEmailInputModal: function(onConfirm, onCancel) {
             // Remove any existing modal
@@ -1567,52 +1319,15 @@
                 }
             });
         },
-        
-        // ========================================
-        // Settings Management System
-        // ========================================
-        // Configuration import/export functionality with comprehensive
-        // data validation and user feedback. Supports backup/restore
-        // operations and cross-environment configuration transfer.
-        //
-        // System Capabilities:
-        // • Full settings export with metadata and version tracking
-        // • Selective settings import with validation and error handling
-        // • JSON format with human-readable structure
-        // • Plugin version compatibility checking
-        // • User notification system for operation status
-        //
-        // Export Features:
-        // • Timestamp and version metadata inclusion
-        // • Complete form data serialization across all settings tabs
-        // • Structured JSON format for easy inspection and editing
-        // • Plugin version tracking for compatibility validation
-        //
-        // Import Features:
-        // • Data format validation with error reporting
-        // • Selective field application with existing value preservation
-        // • Checkbox and input field type detection
-        // • Success confirmation with save reminder
-        // ========================================
 
+        // ============================================================================
+        // SETTINGS MANAGEMENT
+        // ============================================================================
+        
         /**
-         * Collect all plugin settings for export
-         * 
-         * Serializes complete plugin configuration from all settings forms
-         * into structured JSON format with metadata and version information.
-         * Creates exportable backup suitable for transfer or archival.
-         * 
-         * @returns {Object} Complete settings object with metadata
-         * 
-         * Export Structure:
-         * • _meta: Timestamp, version, and export type information
-         * • Settings: All form field values from .cf7-settings-form elements
-         * • Compatibility: Version tracking for import validation
-         * 
-         * Data Collection:
-         * • Automatic form discovery and serialization
-         * • Field name preservation for accurate import mapping
-         * • Value normalization for consistent data structure
+         * Collect all plugin settings for export with metadata.
+         * Serializes complete configuration from settings forms into structured
+         * JSON format with version tracking for backup and transfer.
          */
         collectSettings: function() {
             const settings = {
@@ -1637,30 +1352,9 @@
         },
         
         /**
-         * Import settings from JSON configuration object
-         * 
-         * Applies imported settings to form fields with comprehensive validation
-         * and user feedback. Handles different field types and provides
-         * appropriate error handling for invalid configurations.
-         * 
-         * @param {Object} settings - Settings object from export or manual creation
-         * 
-         * Import Process:
-         * 1. Validate settings object structure and format
-         * 2. Iterate through settings excluding metadata
-         * 3. Locate corresponding form fields by name attribute
-         * 4. Apply values with field type detection (checkbox vs input)
-         * 5. Provide user feedback on import success/failure
-         * 
-         * Field Type Handling:
-         * • Checkbox fields: Boolean value conversion with prop() method
-         * • Input fields: Direct value assignment with val() method
-         * • Missing fields: Graceful skip with no error reporting
-         * 
-         * User Experience:
-         * • Success notification with save reminder
-         * • Error notification for invalid format
-         * • No disruption of existing values for missing settings
+         * Import settings from JSON configuration with validation.
+         * Applies imported data to form fields with type detection
+         * and user feedback for operation results.
          */
         importSettings: function(settings) {
             if (!settings || typeof settings !== 'object') {
@@ -1686,25 +1380,9 @@
         },
         
         /**
-         * Display user notification messages
-         * 
-         * Shows standardized notification messages with automatic dismissal
-         * and consistent styling. Provides user feedback for various
-         * operations including settings management and test results.
-         * 
-         * @param {string} message - Notification message text
-         * @param {string} type - Notification type (info, success, error)
-         * 
-         * Notification Features:
-         * • Automatic 5-second timeout with fade-out animation
-         * • Consistent styling with WordPress admin color scheme
-         * • Top-of-content positioning for maximum visibility
-         * • Memory management with automatic DOM cleanup
-         * 
-         * Supported Types:
-         * • info: General information (default)
-         * • success: Operation success confirmation
-         * • error: Error messages and validation failures
+         * Display user notification messages with auto-dismissal.
+         * Shows standardized notifications with timeout and consistent styling
+         * for user feedback across admin operations.
          */
         showNotice: function(message, type) {
             type = type || 'info';
@@ -1724,56 +1402,24 @@
             }, 5000);
         }
     };
-    
-    // ========================================
-    // Global Initialization and Export
-    // ========================================
-    // Document ready initialization and global object export for
-    // cross-component integration and external accessibility.
-    //
-    // Initialization Strategy:
-    // • Conditional initialization based on modern interface presence
-    // • Document ready event handling for reliable DOM availability
-    // • Global object export for external component integration
-    // • Namespace protection with proper jQuery wrapper
-    //
-    // Integration Points:
-    // → WordPress admin interface detection (.cf7-modern-settings)
-    // → Global window object export for external access
-    // → jQuery document ready for reliable initialization timing
-    // → Cross-component communication through window.CF7AdminInterface
-    // ========================================
+
+    // ============================================================================
+    // GLOBAL INITIALIZATION
+    // ============================================================================
     
     /**
-     * Document ready initialization
-     * 
-     * Initializes CF7AdminInterface when DOM is ready and modern
-     * settings interface is detected. Provides conditional activation
-     * to prevent unnecessary initialization on non-CF7 admin pages.
+     * Initialize admin interface when DOM is ready and settings page detected.
+     * Provides conditional activation for CF7 admin pages only.
      */
     $(document).ready(function() {
-        // Initialize modern interface if present
         if ($('.cf7-modern-settings').length) {
             CF7AdminInterface.init();
         }
     });
     
     /**
-     * Global CF7AdminInterface Export
-     * 
-     * Exports CF7AdminInterface to global window object for external
-     * component access and cross-file integration. Enables other
-     * scripts to interact with admin interface functionality.
-     * 
-     * External Usage:
-     * • window.CF7AdminInterface.showNotice(message, type)
-     * • window.CF7AdminInterface.resetButton($btn, html)
-     * • window.CF7AdminInterface.performSafeAjaxTest(...)
-     * 
-     * Integration Examples:
-     * • Custom admin scripts requiring UI feedback
-     * • Third-party plugin integration
-     * • Developer console testing and debugging
+     * Export interface to global scope for external component access.
+     * Enables cross-file integration and developer console testing.
      */
     window.CF7AdminInterface = CF7AdminInterface;
     

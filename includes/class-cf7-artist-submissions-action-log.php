@@ -20,7 +20,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage AuditLogging
  * @since 1.0.0
- * @version 2.1.0
+ * @version 1.0.0
  */
 
 /**
@@ -338,7 +338,7 @@ class CF7_Artist_Submissions_Action_Log {
      * structured audit trail for all email communications within submission
      * management workflow for compliance and debugging purposes.
      * 
-     * @since 2.0.0
+     * @since 1.0.0
      */
     public static function log_email_sent($submission_id, $template_name, $recipient, $subject) {
         $data = array(

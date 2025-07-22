@@ -1,9 +1,23 @@
 <?php
 /**
- * General Settings Tab Template
- * 
+ * CF7 Artist Submissions - General Settings Tab Template
+ *
+ * Core configuration interface template providing fundamental system settings
+ * including Contact Form 7 integration, menu customization, and file storage
+ * preferences for artist submission management workflow configuration.
+ *
+ * Features:
+ * • Contact Form 7 form selection with validation
+ * • Admin menu label customization and branding
+ * • File storage configuration with space management options
+ * • Configuration testing and validation tools
+ * • Real-time status indicators and feedback display
+ * • Responsive form interface with professional styling
+ *
  * @package CF7_Artist_Submissions
- * @since 2.1.0
+ * @subpackage Templates
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 // Prevent direct access

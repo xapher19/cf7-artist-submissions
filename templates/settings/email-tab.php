@@ -1,9 +1,23 @@
 <?php
 /**
- * Email Settings Tab Template
- * 
+ * CF7 Artist Submissions - Email Settings Tab Template
+ *
+ * Email configuration interface template providing comprehensive SMTP settings,
+ * outbound email preferences, and WooCommerce template integration for
+ * professional email communication management in artist submission workflows.
+ *
+ * Features:
+ * • From email and name configuration with validation
+ * • WooCommerce email template integration with preview functionality
+ * • Email configuration validation and SMTP testing tools
+ * • Real-time test email sending with result feedback
+ * • Professional form interface with responsive design
+ * • Modal preview system for template verification
+ *
  * @package CF7_Artist_Submissions
- * @since 2.1.0
+ * @subpackage Templates
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 // Prevent direct access

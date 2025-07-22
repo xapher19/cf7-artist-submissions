@@ -1,19 +1,23 @@
 <?php
 /**
- * Modern Admin Settings Template for CF7 Artist Submissions
- * 
- * This template renders the main plugin settings page in the WordPress admin
- * with a modern, tabbed interface design. It provides configuration options for:
- * - Email settings and SMTP configuration
- * - IMAP settings for conversation management
- * - Default assignees and workflow settings
- * - Notification preferences
- * - Export and import options
- * 
+ * CF7 Artist Submissions - Admin Settings Template
+ *
+ * Main plugin settings interface template providing comprehensive configuration
+ * management with modern tabbed navigation, card-based design, and integrated
+ * settings export/import functionality for complete system administration.
+ *
+ * Features:
+ * • Modern tabbed interface with intuitive navigation
+ * • General, email, template, IMAP, debug, and audit configuration tabs
+ * • Settings export and import functionality with validation
+ * • Real-time form validation and interactive feedback
+ * • Professional card-based design with responsive layout
+ * • Modal interfaces for enhanced user experience
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage Templates
  * @since 1.0.0
- * @since 2.0.0 Enhanced with comprehensive settings sections
- * @since 2.1.0 Modern UI overhaul with card-based design
+ * @version 1.0.0
  */
 
 // Prevent direct access

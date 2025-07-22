@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CF7 Artist Submissions
  * Description: Professional artist submission management system with modern dashboard, advanced field editing, task management, and conversation system for Contact Form 7.
- * Version: 2.0.0
+ * Version: 1.0.0
  * Author: Pup and Tiger
  * Requires at least: 5.6
  * Requires PHP: 7.4
@@ -12,7 +12,7 @@
  * Network: false
  *
  * @package CF7_Artist_Submissions
- * @version 2.0.0
+ * @version 1.0.0
  * @author Pup and Tiger
  * @copyright 2025 Pup and Tiger
  */
@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CF7_ARTIST_SUBMISSIONS_VERSION', '2.0.0');
+define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.0.0');
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
@@ -44,14 +44,12 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 /**
  * Main plugin initialization function.
  * 
- * This function is responsible for loading and initializing all plugin components
- * including the dashboard, tabbed interface, field editing system, task management,
- * conversation system, and PDF export functionality.
- *
- * @since 1.0.0
- * @since 2.0.0 Added dashboard, tabs, actions, and PDF export systems
+ * Loads and initializes all plugin components including dashboard interface,
+ * tabbed navigation system, field editing capabilities, task management,
+ * conversation tracking, and PDF export functionality with Contact Form 7
+ * dependency validation and comprehensive system integration.
  * 
- * @return void
+ * @since 1.0.0
  */
 function cf7_artist_submissions_init() {
     // Check if Contact Form 7 is active
@@ -108,14 +106,7 @@ add_action('plugins_loaded', 'cf7_artist_submissions_init');
 
 /**
  * Add custom cron schedule for email processing and action reminders.
- * 
- * Adds a 5-minute interval schedule for processing conversation emails
- * and sending action reminder notifications.
- *
- * @since 2.0.0
- * 
- * @param array $schedules Existing cron schedules
- * @return array Modified schedules array with 5-minute interval
+ * Adds 5-minute interval schedule for conversation email processing and action notifications.
  */
 add_filter('cron_schedules', 'cf7_artist_submissions_cron_schedules');
 function cf7_artist_submissions_cron_schedules($schedules) {
@@ -129,13 +120,11 @@ function cf7_artist_submissions_cron_schedules($schedules) {
 /**
  * Plugin activation hook.
  * 
- * Creates all necessary database tables, registers custom post types,
- * and sets up rewrite rules when the plugin is activated.
- *
- * @since 1.0.0
- * @since 2.0.0 Added conversations and actions table creation
+ * Creates necessary database tables, registers custom post types and taxonomies,
+ * and sets up rewrite rules during plugin activation with comprehensive
+ * system initialization for all plugin components.
  * 
- * @return void
+ * @since 1.0.0
  */
 register_activation_hook(__FILE__, 'cf7_artist_submissions_activate');
 function cf7_artist_submissions_activate() {
@@ -162,13 +151,7 @@ function cf7_artist_submissions_activate() {
 
 /**
  * Plugin deactivation hook.
- * 
- * Cleans up rewrite rules when the plugin is deactivated.
- * Does not remove data - that is handled by uninstall.php.
- *
- * @since 1.0.0
- * 
- * @return void
+ * Cleans up rewrite rules during plugin deactivation without removing user data.
  */
 register_deactivation_hook(__FILE__, 'cf7_artist_submissions_deactivate');
 function cf7_artist_submissions_deactivate() {

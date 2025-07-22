@@ -1,34 +1,29 @@
 /**
- * CF7 Artist Submissions - Common/Shared Styles
- * 
- * Shared styling components used across multiple interface sections:
- * - Button system with consistent styling and states
- * - Modal overlay and dialog system
- * - Common gradient headers and backgrounds
- * - Typography and spacing utilities
- * - Form components and input styling
- * - Loading states and animations
- * - Email interface components (sending, preview, templates)
- * 
- * This file contains the foundational design system components
- * that are used across dashboard, settings, tabs, admin, and action interfaces.
- * 
- * COMPONENT LIBRARY:
- * • Button System: Primary, secondary, ghost, icon variants
- * • Modal System: Backdrop blur, animations, responsive
- * • Gradient Headers: Consistent branding across interfaces
- * • Loading States: Spinners, fade animations, error states
- * • Email Components: Send interface, preview modals, template display
- * • Tab Navigation: Shared tab styling system
- * 
+ * CF7 Artist Submissions - Common Design System & Shared Component Library
+ *
+ * Foundational design system providing consistent styling components across
+ * all plugin interfaces including dashboard, settings, admin, and action
+ * management with modern responsive design patterns and accessibility.
+ *
+ * Features:
+ * • Comprehensive button system with primary, secondary, ghost, and icon variants
+ * • Modal overlay system with backdrop blur and smooth animations
+ * • Gradient header system for consistent branding across interfaces
+ * • Form component library with modern input styling and focus states
+ * • Email interface components for sending, preview, and template management
+ * • Loading states and animation system with smooth transitions
+ * • Navigation tab system for consistent interface organization
+ * • Responsive design patterns with mobile-first approach
+ *
  * @package CF7_Artist_Submissions
- * @since 2.1.0 Consolidated common styles for better organization
- * @since 2.2.0 Added email interface components moved from admin.css
+ * @subpackage Assets/CSS
+ * @since      1.0.0
+ * @version    1.0.0
  */
 
-/* ========================================================================
-   EMAIL INTERFACE COMPONENTS - SHARED ACROSS INTERFACES
-   ======================================================================== */
+/* ============================================================================
+   EMAIL INTERFACE COMPONENTS SECTION
+   ============================================================================ */
 
 /**
  * Email Management Interface
@@ -176,19 +171,10 @@
     margin-bottom: 10px;
 }
 
-/* ========================================================================
-   RESPONSIVE DESIGN BREAKPOINTS
-   ======================================================================== */
 
-/**min interfaces.
- * 
- * @package CF7_Artist_Submissions
- * @since 2.1.0 Consolidated common styles for better organization
- */
-
-/* ========================================================================
-   BUTTON SYSTEM - SHARED ACROSS ALL INTERFACES
-   ======================================================================== */
+/* ============================================================================
+   BUTTON SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Base Button Styling
@@ -322,9 +308,9 @@
     color: white;
 }
 
-/* ========================================================================
-   MODAL SYSTEM - SHARED ACROSS ALL INTERFACES
-   ======================================================================== */
+/* ============================================================================
+   MODAL SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Modal Overlay System
@@ -514,9 +500,9 @@
     transform: translateY(-1px);
 }
 
-/* ========================================================================
-   GRADIENT HEADERS - SHARED DESIGN SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   GRADIENT HEADERS SECTION
+   ============================================================================ */
 
 /**
  * Common Gradient Header System
@@ -564,9 +550,9 @@
     line-height: 1.4;
 }
 
-/* ========================================================================
-   FORM COMPONENTS - SHARED INPUT STYLING
-   ======================================================================== */
+/* ============================================================================
+   FORM COMPONENTS SECTION
+   ============================================================================ */
 
 /**
  * Form Input System
@@ -610,9 +596,9 @@
     min-height: 100px;
 }
 
-/* ========================================================================
-   LOADING STATES - SHARED ANIMATIONS
-   ======================================================================== */
+/* ============================================================================
+   LOADING STATES & ANIMATIONS SECTION
+   ============================================================================ */
 
 /**
  * Loading and Animation System
@@ -714,9 +700,9 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ========================================================================
-   NAVIGATION TABS - SHARED TAB SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   NAVIGATION TABS SECTION
+   ============================================================================ */
 
 /**
  * Navigation Tab System
@@ -794,9 +780,9 @@
     background-color: rgba(102, 126, 234, 0.1);
 }
 
-/* ========================================================================
-   RESPONSIVE DESIGN - SHARED BREAKPOINTS
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE DESIGN & MOBILE OPTIMIZATION SECTION
+   ============================================================================ */
 
 /**
  * Mobile Responsive Design

@@ -1,18 +1,23 @@
 <?php
 /**
- * Uninstall CF7 Artist Submissions
- * 
- * This file handles the complete removal of all plugin data when the plugin
- * is uninstalled through the WordPress admin interface. It removes:
- * - Custom database tables (conversations, action log, actions)
- * - Custom post types and their data
- * - Uploaded files and directories
- * - Plugin options and settings
- * - Custom taxonomies
- * 
+ * CF7 Artist Submissions - Plugin Uninstall Handler
+ *
+ * Complete plugin data removal system handling comprehensive cleanup when
+ * plugin is uninstalled through WordPress admin interface with database
+ * table removal, file cleanup, and settings deletion.
+ *
+ * Features:
+ * • Custom database tables removal (conversations, action log, actions)
+ * • Complete custom post type and metadata deletion
+ * • Uploaded files and directories cleanup with recursive removal
+ * • Plugin options and settings comprehensive deletion
+ * • Custom taxonomies and terms complete removal
+ * • Cache clearing and system cleanup finalization
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage Core
  * @since 1.0.0
- * @since 2.0.0 Added conversations and actions table cleanup
+ * @version 1.0.0
  */
 
 // If uninstall not called from WordPress, exit
@@ -68,9 +73,7 @@ $submissions_dir = $upload_dir['basedir'] . '/cf7-submissions';
 if (file_exists($submissions_dir)) {
     /**
      * Recursively delete directory and all contents.
-     * 
-     * @param string $dir Directory path to delete
-     * @return bool True on success, false on failure
+     * Removes directories and files with comprehensive error handling.
      */
     function delete_directory($dir) {
         if (!file_exists($dir)) {

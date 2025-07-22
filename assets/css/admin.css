@@ -1,48 +1,31 @@
 /**
- * CF7 Artist Submissions - Admin Interface Styles
- * 
- * Core styling for WordPress admin interface components including:
- * - Submission management interface and list tables
- * - Template preview modals and management
- * - Legacy compatibility for older WordPress versions
- * - Admin-specific modal dialogs and overlays
- * - Form validation and interactive elements
- * - Responsive design for mobile and tablet devices
- * 
- * DESIGN SYSTEM ORGANIZATION:
- * - Common/shared styles → common.css (728 lines) - buttons, modals, email components
- * - Dashboard interface → dashboard.css (3228 lines)
- * - Settings interface → settings.css (944 lines)
- * - Conversation system → conversations.css (1207 lines)
- * - Tab system → tabs.css (1455 lines)
- * - Action management → actions.css (598 lines)
- * - Lightbox media → lightbox.css (125 lines)
- * - Admin interface → admin.css (1350+ lines) - submissions list, email management, modals
- * 
- * NOTE: Email interface components have been moved to common.css for reusability
- * 
- * TABLE OF CONTENTS:
- * 1. Submissions List Page (WordPress admin list tables, filters, search)  
- * 2. Email Management & Templates (Template preview modals, email composition)
- * 3. Modal & Overlay System (Preview modals, dialogs, test results)
- * 4. Form Components & Input Fields (Admin-specific form styling)
- * 5. Template Preview Modal Styles (Loading states, error handling)
- * 6. Animations & Loading States (Spinner animations, loading indicators)
- * 7. Responsive Design (Mobile and tablet optimizations)
- * 
+ * CF7 Artist Submissions - Comprehensive Admin Interface System CSS
+ *
+ * Complete WordPress admin styling for submission management, email templates,
+ * modal dialogs, and responsive interface components with modern design system
+ * architecture and cross-device optimization for professional workflow.
+ *
+ * Features:
+ * • WordPress admin list table enhancements with advanced filtering
+ * • Template preview modal system with WooCommerce integration
+ * • Comprehensive form component library with responsive grids
+ * • Status badge system with priority-based color coding
+ * • Mobile-optimized card layouts with touch-friendly interactions
+ * • Loading states and animation system for smooth user experience
+ * • Email management interface with template composition tools
+ * • Cross-browser compatible responsive design patterns
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage Assets/CSS
  * @since 1.0.0
- * @since 2.0.0 Complete UI overhaul with modern design system
- * @since 2.1.0 Organized into specialized CSS files with common.css foundation
- * @since 2.2.0 Email components moved to common.css, duplicates removed
- * @since 2.3.0 Settings and conversation styles moved to specialized files
+ * @version    1.0.0
  */
 
 /* CF7 Artist Submissions - Admin Styles */
 
-/* =================================================================
-   1. SUBMISSIONS LIST PAGE
-   ================================================================= */
+/* ============================================================================
+   SUBMISSIONS LIST PAGE & ADMIN INTERFACE SECTION
+   ============================================================================ */
 
 /**
  * Note: Dashboard-specific styles (cards, statistics, recent activity)
@@ -501,9 +484,9 @@ span.status-rejected::before {
     }
 }
 
-/* =================================================================
-   2. EMAIL MANAGEMENT & TEMPLATES
-   ================================================================= */
+/* ============================================================================
+   EMAIL MANAGEMENT & TEMPLATE SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Email Sending Interface
@@ -768,9 +751,9 @@ span.status-rejected::before {
     }
 }
 
-/* ========================================================================
-   3. MODAL & OVERLAY SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   MODAL & OVERLAY SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Comprehensive modal system for email previews, template editing, and dialogs.
@@ -948,9 +931,9 @@ span.status-rejected::before {
     }
 }
 
-/* ========================================================================
-   4. FORM COMPONENTS & INPUT FIELDS
-   ======================================================================== */
+/* ============================================================================
+   FORM COMPONENTS & INPUT FIELDS SECTION
+   ============================================================================ */
 
 /**
  * Comprehensive form components for the CF7 Artist Submissions admin interface.
@@ -1069,9 +1052,9 @@ span.status-rejected::before {
     font-size: 0.75rem;
 }
 
-/* ========================================================================
-   RESPONSIVE FIELD GRID LAYOUTS
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE FIELD GRID LAYOUTS SECTION
+   ============================================================================ */
 
 /**
  * Grid-based field layouts for responsive form organization.
@@ -1111,9 +1094,9 @@ span.status-rejected::before {
     grid-template-columns: 1fr 1fr 1fr;
 }
 
-/* ========================================================================
-   FORM ACTION AREAS
-   ======================================================================== */
+/* ============================================================================
+   FORM ACTION AREAS SECTION
+   ============================================================================ */
 
 /**
  * Bottom action areas for forms with button grouping and alignment.
@@ -1163,9 +1146,9 @@ span.status-rejected::before {
     align-items: center;
 }
 
-/* ========================================================================
-   TOGGLE SWITCHES
-   ======================================================================== */
+/* ============================================================================
+   TOGGLE SWITCHES SECTION
+   ============================================================================ */
 
 /**
  * Modern toggle switch components for boolean settings.
@@ -1245,9 +1228,9 @@ span.status-rejected::before {
     transform: translateX(20px);
 }
 
-/* ========================================================================
-   STATUS INDICATORS & FEEDBACK
-   ======================================================================== */
+/* ============================================================================
+   STATUS INDICATORS & FEEDBACK SECTION
+   ============================================================================ */
 
 /**
  * Visual status indicators for form feedback and system states.
@@ -1454,9 +1437,9 @@ span.status-rejected::before {
     color: #dc3545;
 }
 
-/* ========================================================================
-   5. ANIMATIONS & LOADING STATES
-   ======================================================================== */
+/* ============================================================================
+   ANIMATIONS & LOADING STATES SECTION
+   ============================================================================ */
 
 /**
  * Animation system for loading indicators and interactive feedback.
@@ -1488,9 +1471,9 @@ span.status-rejected::before {
     color: #007cba;
 }
 
-/* ========================================================================
-   6. RESPONSIVE DESIGN & MOBILE OPTIMIZATION
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE DESIGN & MOBILE OPTIMIZATION SECTION
+   ============================================================================ */
 
 /**
  * Comprehensive responsive design system for mobile and tablet devices.
@@ -1588,42 +1571,3 @@ span.status-rejected::before {
         font-weight: bold;
     }
 }
-
-/* ========================================================================
-   END OF CF7 ARTIST SUBMISSIONS ADMIN STYLES
-   ======================================================================== */
-
-/**
- * File Summary: Complete admin interface styling for CF7 Artist Submissions
- * Total Lines: 3600+ lines of comprehensive CSS
- * 
- * Architecture Overview:
- * 1. Submissions List - Optimized table layouts with advanced filtering
- * 2. Email Management - Template previews and email composition interface
- * 3. Modal System - Overlay dialogs for previews and confirmations
- * 4. Form Components - Comprehensive input styling with responsive grids
- * 5. Animations - Loading states and interactive feedback
- * 6. Responsive Design - Mobile-first approach with progressive enhancement
- * 
- * Design System Features:
- * - WordPress admin color scheme integration
- * - Modern CSS Grid and Flexbox layouts
- * - Consistent 0.5rem border-radius throughout
- * - Smooth 0.2s transitions for interactive elements
- * - Accessible focus states with ring shadows
- * - Mobile-optimized responsive breakpoints
- * 
- * Maintenance Notes:
- * - Legacy compatibility code removed for cleaner architecture
- * - Animation classes standardized (.cf7-spin)
- * - Cross-file consistency verified with JavaScript files
- * - Documentation added for all major sections
- * - Performance optimized with minimal redundancy
- * 
- * Browser Support:
- * - Modern browsers with CSS Grid support
- * - Graceful fallbacks for older browsers
- * - WordPress admin environment compatibility
- * 
- * Last Updated: 2024 - Comprehensive cleanup and documentation enhancement
- */

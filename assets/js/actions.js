@@ -1,192 +1,62 @@
 /**
- * ============================================================================
- * CF7 ARTIST SUBMISSIONS - ACTIONS MANAGEMENT SYSTEM
- * ============================================================================
- * 
+ * CF7 Artist Submissions - Actions Management System
+ *
  * Complete JavaScript interface for managing submission actions including
  * creation, editing, completion workflow, priority-based filtering, and
  * real-time AJAX operations with comprehensive cross-tab compatibility.
- * 
+ *
  * This system provides comprehensive task management capabilities for artist
  * submissions, enabling curators and administrators to create, assign, and
- * track action items throughout the submission review process. Features
- * include priority-based workflows, due date management, user assignment,
- * and contextual action creation from conversation messages.
- * 
- * The architecture employs a dual-interface approach with both instance-based
- * management (ActionsManager class) and global access patterns (window.CF7_Actions)
- * to ensure compatibility across different tab contexts and external integrations.
- * 
- * ============================================================================
- * SYSTEM ARCHITECTURE
- * ============================================================================
- * 
- * CF7ActionManagementSystem
- * ├─ ActionsManager (primary instance-based controller)
- * │  ├─ ActionDataManager: Cache and state management for action data
- * │  ├─ UIRenderingEngine: List rendering and filtering interface
- * │  ├─ FilterSystem: Priority and status-based filtering logic
- * │  └─ EventHandlingLayer: User interaction management and delegation
- * │
- * ├─ ModalManagementSystem (dynamic form interface)
- * │  ├─ ModalInjectionEngine: HTML generation and injection system
- * │  ├─ FormValidationSystem: Input validation and error handling
- * │  ├─ UserAssignmentLoader: Assignable users dropdown management
- * │  └─ ContextualFormPrefill: Message-to-action conversion support
- * │
- * ├─ AjaxCommunicationLayer (server integration)
- * │  ├─ ActionCRUDOperations: Create, read, update, delete operations
- * │  ├─ ErrorHandlingFramework: Graceful failure management system
- * │  ├─ ResponseProcessingEngine: Data validation and caching layer
- * │  └─ SecurityNonceValidation: CSRF protection and token validation
- * │
- * ├─ CrossTabIntegrationSystem (global interface)
- * │  ├─ GlobalAccessInterface: window.CF7_Actions methods and utilities
- * │  ├─ StateIndependentOperation: Tab-agnostic functionality layer
- * │  ├─ ContextMenuIntegration: conversation.js compatibility bridge
- * │  └─ ExternalAPILayer: Third-party integration support framework
- * │
- * └─ InitializationFramework (multi-scenario startup)
- *    ├─ TabChangeEventHandler: cf7_tab_changed listener management
- *    ├─ DirectAccessInitializer: Immediate DOM ready setup system
- *    ├─ FallbackInitialization: Delayed retry mechanism for reliability
- *    └─ ConfigurationValidation: AJAX settings verification and fallback
- * 
- * ============================================================================
- * INTEGRATION POINTS
- * ============================================================================
- * 
- * • WordPress Admin Framework: Notice system, UI components, admin styles
- * • CF7 Backend Systems: Action CRUD operations, user management, submission data
- * • Tab Management System: Tab switching events, content initialization
- * • Conversation System: Context menu integration, message-to-action workflows
- * • Template System: Actions tab rendering, HTML structure integration
- * • Database Layer: Action persistence, user assignment, audit logging
- * • Email System: Action notifications, assignment alerts, due date reminders
- * • Modal UI Framework: Dynamic form generation, validation, user feedback
- * 
- * ============================================================================
- * DEPENDENCIES
- * ============================================================================
- * 
- * • jQuery 3.x: DOM manipulation, AJAX operations, event handling
- * • cf7_actions_ajax: Localized AJAX configuration (URL, nonce, endpoints)
- * • cf7ArtistSubmissions: Global plugin configuration and utilities
- * • WordPress Admin UI: Notice system, admin styles, icon fonts
- * • cf7_admin_ajax: Alternative AJAX configuration for fallback scenarios
- * • WordPress AJAX API: Server communication, security validation
- * • CF7 Tab System: Tab switching events, container management
- * • CF7 Conversation System: Context menu integration, message data
- * 
- * ============================================================================
- * ACTION MANAGEMENT FEATURES
- * ============================================================================
- * 
- * • Priority-based task organization (high, medium, low)
- * • Status tracking (pending, completed, overdue)
- * • User assignment with role-based access control
- * • Due date management with overdue detection
+ * track action items throughout the submission review process. The architecture
+ * employs a dual-interface approach with both instance-based management and
+ * global access patterns to ensure compatibility across different tab contexts
+ * and external integrations.
+ *
+ * Features:
+ * • Priority-based task organization with visual indicators (high, medium, low)
+ * • Status tracking and workflow management (pending, completed, overdue)
+ * • User assignment with role-based access control and dropdown integration
+ * • Due date management with overdue detection and visual alerts
  * • Contextual action creation from conversation messages
- * • Real-time filtering and search capabilities
- * • Bulk operations and batch processing
- * • Audit trail and activity logging
- * 
- * ============================================================================
- * MODAL INTERFACE FEATURES
- * ============================================================================
- * 
- * • Dynamic form injection with validation
- * • Assignable users dropdown with role filtering
- * • DateTime picker for due date selection
- * • Priority selection with visual indicators
- * • Description rich text support
- * • Context-aware form prefilling
- * • Error handling with user feedback
- * • Accessibility compliance (ARIA labels, keyboard navigation)
- * 
- * ============================================================================
- * CROSS-TAB COMPATIBILITY
- * ============================================================================
- * 
- * • Global interface (window.CF7_Actions) for external access
- * • State-independent modal creation and management
- * • Tab-agnostic initialization and operation
- * • Context menu integration across all tabs
- * • Fresh modal injection to prevent state conflicts
- * • Fallback AJAX configuration resolution
- * • Double-submission prevention mechanisms
- * • Error-resistant operation with graceful degradation
- * 
- * ============================================================================
- * PERFORMANCE FEATURES
- * ============================================================================
- * 
- * • Efficient action caching and state management
- * • Optimized DOM manipulation with event delegation
- * • Lazy loading of assignable users data
- * • Minimal re-rendering with targeted updates
- * • AJAX request batching and optimization
- * • Memory-efficient modal creation/destruction
- * • Debounced filter operations
- * • Optimized event handler binding
- * 
- * ============================================================================
- * ACCESSIBILITY FEATURES
- * ============================================================================
- * 
- * • ARIA labels and roles for screen readers
- * • Keyboard navigation support throughout interface
- * • High contrast mode compatibility
- * • Focus management in modal dialogs
- * • Screen reader announcements for dynamic content
- * • Semantic HTML structure with proper headings
- * • Alternative text for visual indicators
- * • Consistent tab order and navigation patterns
- * 
- * ============================================================================
- * SECURITY FEATURES
- * ============================================================================
- * 
- * • WordPress nonce validation for all AJAX requests
- * • XSS protection with HTML escaping
- * • CSRF protection through token validation
- * • Input sanitization and validation
- * • Role-based access control integration
- * • Secure user assignment verification
- * • Action ownership validation
- * • Audit logging for security monitoring
- * 
+ * • Real-time filtering and search capabilities with instant updates
+ * • Dynamic modal form interface with validation and error handling
+ * • Cross-tab compatibility with global interface (window.CF7_Actions)
+ * • Bulk operations and batch processing for efficient management
+ * • AJAX communication with comprehensive error handling and security
+ * • Accessibility compliance with ARIA labels and keyboard navigation
+ * • Performance optimization with caching and event delegation
+ *
  * @package CF7_Artist_Submissions
  * @subpackage ActionManagement
  * @since 2.0.0
  * @version 2.2.0
- * @author CF7 Artist Submissions Development Team
+ * 
  */
 
+// ============================================================================
+// ACTIONS MANAGER CLASS
+// ============================================================================
+
 /**
- * ============================================================================
- * ACTIONS MANAGER CLASS
- * ============================================================================
+ * ActionsManager
  * 
  * Primary class managing all action-related functionality including CRUD
  * operations, filtering, modal management, and user interface updates.
+ * Provides comprehensive task management capabilities with real-time AJAX
+ * operations, cross-tab compatibility, and integrated security validation.
  * 
- * Responsibilities:
- * - Action data management and caching
- * - UI rendering and event handling
- * - AJAX communication with backend
- * - Modal form management
- * - Filter and search functionality
+ * @since 2.0.0
  */
 class ActionsManager {
     /**
-     * Initialize ActionsManager instance
+     * Initialize ActionsManager with default state and bindings.
      * 
-     * Sets up default state and initializes the management system.
+     * Sets up action management system with filter state, action cache,
+     * event handlers, and initial data loading. Provides foundation for
+     * comprehensive task management workflow with performance optimization
+     * and cross-tab compatibility support.
      * 
-     * Properties:
-     * - currentFilter: Active filter state ('all', 'pending', 'completed', etc.)
-     * - actions: Cached array of action objects from server
+     * @since 2.0.0
      */
     constructor() {
         this.currentFilter = 'all';
@@ -195,10 +65,8 @@ class ActionsManager {
     }
 
     /**
-     * Initialize the actions management system
-     * 
-     * Sets up event handlers and loads initial action data.
-     * Called automatically during construction.
+     * Initialize actions management system with event binding and data loading.
+     * Sets up event handlers and loads initial action data automatically.
      */
     init() {
         this.bindEvents();
@@ -206,17 +74,14 @@ class ActionsManager {
     }
 
     /**
-     * Bind Event Handlers
+     * Bind comprehensive event handlers for action management interface.
      * 
-     * Sets up all event listeners for action management interface.
-     * Uses event delegation for dynamically created elements.
+     * Sets up all event listeners using delegation for dynamically created
+     * elements. Handles action operations, modal interactions, form submissions,
+     * and filter controls with proper event propagation management and error
+     * handling for reliable user interaction workflow.
      * 
-     * Events Handled:
-     * - Add action button clicks
-     * - Filter button interactions
-     * - Action complete/edit/delete operations
-     * - Modal open/close events
-     * - Form submissions
+     * @since 2.0.0
      */
     bindEvents() {
         // Add action button
@@ -306,20 +171,14 @@ class ActionsManager {
     }
 
     /**
-     * Load Actions from Server
+     * Load actions from server with AJAX and update local cache.
      * 
      * Retrieves all actions for the current submission via AJAX and updates
-     * the local actions cache and UI display.
+     * the local actions cache and UI display. Shows loading state during
+     * request and handles success/error responses with appropriate user
+     * feedback and cache management for optimal performance.
      * 
-     * Process:
-     * 1. Get submission ID from post meta
-     * 2. Show loading state in actions list
-     * 3. Make AJAX request to cf7_get_actions endpoint
-     * 4. Update local cache and render UI on success
-     * 5. Display error message on failure
-     * 
-     * AJAX Endpoint: cf7_get_actions
-     * Response: { success: boolean, data: { actions: Array } }
+     * @since 2.0.0
      */
     loadActions() {
         const submissionId = jQuery('#post_ID').val();
@@ -351,18 +210,14 @@ class ActionsManager {
     }
 
     /**
-     * Render Actions List
+     * Render actions list UI with filtered action data.
      * 
      * Updates the actions list UI with filtered actions from local cache.
-     * Handles empty states and generates HTML for each action item.
+     * Handles empty states and generates HTML for each action item with
+     * proper filtering, status indicators, and interactive controls for
+     * comprehensive action management interface.
      * 
-     * Process:
-     * 1. Get filtered actions based on current filter
-     * 2. Show empty state if no actions match filter
-     * 3. Generate HTML for each action using getActionItemHTML()
-     * 4. Update the actions list container
-     * 
-     * Used by: loadActions(), setActiveFilter(), and action CRUD operations
+     * @since 2.0.0
      */
     renderActions() {
         const container = jQuery('#cf7-actions-list');
@@ -381,6 +236,10 @@ class ActionsManager {
         container.html(html);
     }
 
+    /**
+     * Filter actions based on current filter state.
+     * Returns filtered array of actions based on status, priority, or date criteria.
+     */
     getFilteredActions() {
         if (this.currentFilter === 'all') {
             return this.actions;
@@ -406,6 +265,10 @@ class ActionsManager {
         });
     }
 
+    /**
+     * Generate HTML for individual action item display.
+     * Creates complete action card with priority indicators, controls, and metadata.
+     */
     getActionItemHTML(action) {
         const isOverdue = action.status === 'pending' && action.due_date && new Date(action.due_date) < new Date();
         const priority_class = 'priority-' + action.priority;
@@ -469,6 +332,10 @@ class ActionsManager {
         `;
     }
 
+    /**
+     * Generate empty state HTML for actions list.
+     * Returns placeholder content when no actions match current filter.
+     */
     getEmptyStateHTML() {
         return `
             <div class="actions-empty">
@@ -479,6 +346,10 @@ class ActionsManager {
         `;
     }
 
+    /**
+     * Set active filter and update UI display.
+     * Updates filter state, button styling, and triggers action re-rendering.
+     */
     setActiveFilter(filter) {
         this.currentFilter = filter;
         jQuery('.cf7-filter-btn').removeClass('active');
@@ -493,11 +364,19 @@ class ActionsManager {
         this.renderActions();
     }
 
+    /**
+     * Update pending actions count display.
+     * Calculates and displays count of pending actions in UI badge.
+     */
     updateActionsCount() {
         const count = this.actions.filter(action => action.status === 'pending').length;
         jQuery('.actions-count').text(count);
     }
     
+    /**
+     * Load assignable users for action assignment dropdown.
+     * Fetches user list via AJAX and populates assignment dropdown with fallback options.
+     */
     loadAssignableUsers() {
         const select = jQuery('#cf7-action-assignee');
         const loading = jQuery('.cf7-loading-users');
@@ -550,28 +429,19 @@ class ActionsManager {
         });
     }
 
-    /**
-     * ========================================================================
-     * MODAL MANAGEMENT SYSTEM
-     * ========================================================================
-     */
+    // ============================================================================
+    // MODAL MANAGEMENT SECTION
+    // ============================================================================
 
     /**
-     * Show Action Modal
+     * Display action modal with dynamic form injection and context support.
      * 
-     * Displays the action creation/editing modal with dynamic form injection.
-     * Handles modal injection if not present and supports message context.
+     * Displays the action creation/editing modal with dynamic form injection,
+     * message context integration, and assignable users loading. Handles modal
+     * injection if not present and provides seamless user experience with
+     * proper form state management and error handling.
      * 
-     * Parameters:
-     * - messageId (optional): Associates action with specific message
-     * 
-     * Process:
-     * 1. Check if modal exists in DOM
-     * 2. Inject modal HTML if missing
-     * 3. Display modal with appropriate form state
-     * 4. Load assignable users for dropdown
-     * 
-     * Used by: Add action button, edit action, context menu integration
+     * @since 2.0.0
      */
     showActionModal(messageId = null) {
         const modal = jQuery('#cf7-action-modal');
@@ -599,6 +469,10 @@ class ActionsManager {
         this.displayModal(modal, form, messageId);
     }
 
+    /**
+     * Display modal with form reset and context setup.
+     * Handles form reset, field population, and user loading for modal display.
+     */
     displayModal(modal, form, messageId = null) {
         // Reset form safely
         try {
@@ -636,10 +510,18 @@ class ActionsManager {
         modal.fadeIn(200);
     }
 
+    /**
+     * Hide action modal and restore focus.
+     * Removes modal from display and returns focus to triggering element.
+     */
     hideActionModal() {
         jQuery('#cf7-action-modal').fadeOut(200);
     }
 
+    /**
+     * Inject modal HTML into document if not already present.
+     * Creates modal structure and adds to DOM for first-time modal display.
+     */
     injectModalHTML() {
         const submissionId = jQuery('#post_ID').val() || '';
         
@@ -711,6 +593,10 @@ class ActionsManager {
         }
     }
 
+    /**
+     * Show context menu at specified coordinates.
+     * Removes existing menus and triggers context menu display for actions.
+     */
     showContextMenu(x, y, messageId) {
         // Remove any existing context menus
         jQuery('.cf7-context-menu').remove();
@@ -720,35 +606,27 @@ class ActionsManager {
         // happens in the PHP-generated JavaScript
     }
 
+    /**
+     * Hide context menu from display.
+     * Removes context menu from DOM to clear action options.
+     */
     hideContextMenu() {
         jQuery('.cf7-context-menu').remove();
     }
 
-    /**
-     * ========================================================================
-     * AJAX OPERATIONS
-     * ========================================================================
-     */
+    // ============================================================================
+    // AJAX OPERATIONS SECTION
+    // ============================================================================
 
     /**
-     * Save Action
+     * Save action form data to server with comprehensive validation.
      * 
-     * Submits action form data to server for creation or update.
-     * Handles both new actions and edits based on presence of action_id.
+     * Submits action form data to server for creation or update operations.
+     * Handles both new actions and edits based on presence of action_id,
+     * includes context message association, and provides comprehensive
+     * error handling with user feedback and UI state management.
      * 
-     * Form Data Collected:
-     * - title, description, priority, assignee_type, due_date
-     * - submission_id, action_id (for edits), message_id (for context)
-     * 
-     * Process:
-     * 1. Collect form data into structured object
-     * 2. Add optional message_id for context menu actions
-     * 3. Submit via AJAX to cf7_save_action endpoint
-     * 4. Close modal and refresh actions list on success
-     * 5. Display error messages on failure
-     * 
-     * AJAX Endpoint: cf7_save_action
-     * Response: { success: boolean, data: object|string }
+     * @since 2.0.0
      */
     saveAction() {
         const form = jQuery('#cf7-action-form');
@@ -808,23 +686,14 @@ class ActionsManager {
     }
 
     /**
-     * Edit Action
+     * Edit existing action with modal form pre-population.
      * 
-     * Opens the action modal pre-populated with existing action data.
-     * Handles date formatting for datetime-local input compatibility.
+     * Opens the action modal pre-populated with existing action data and
+     * handles date formatting for datetime-local input compatibility.
+     * Provides seamless editing experience with proper form state management
+     * and error handling for action data validation and display.
      * 
-     * Parameters:
-     * - actionId: ID of action to edit from local cache
-     * 
-     * Process:
-     * 1. Find action in local cache by ID
-     * 2. Show modal with form
-     * 3. Populate form fields with action data
-     * 4. Format due date for datetime-local input
-     * 5. Set modal title to "Edit Action"
-     * 
-     * Date Formatting: Converts server date to YYYY-MM-DDTHH:MM format
-     * Error Handling: Logs error if action not found in cache
+     * @since 2.0.0
      */
     editAction(actionId) {
         const action = this.actions.find(a => a.id == actionId);
@@ -868,6 +737,10 @@ class ActionsManager {
         }, 100);
     }
 
+    /**
+     * Mark action as completed with confirmation.
+     * Updates action status to completed via AJAX with user confirmation.
+     */
     completeAction(actionId) {
         if (!confirm('Mark this action as completed?')) return;
 
@@ -893,6 +766,10 @@ class ActionsManager {
         });
     }
 
+    /**
+     * Delete action permanently with confirmation.
+     * Removes action from system via AJAX after user confirmation.
+     */
     deleteAction(actionId) {
         if (!confirm('Are you sure you want to delete this action?')) return;
 
@@ -918,6 +795,10 @@ class ActionsManager {
         });
     }
 
+    /**
+     * Display success notification to user.
+     * Shows dismissible success message with auto-hide after 3 seconds.
+     */
     showSuccess(message) {
         // Create a simple success notification
         const notification = jQuery(`
@@ -939,6 +820,10 @@ class ActionsManager {
         });
     }
 
+    /**
+     * Display error notification to user.
+     * Shows dismissible error message with auto-hide after 5 seconds.
+     */
     showError(message) {
         // Create a simple error notification
         const notification = jQuery(`
@@ -960,6 +845,10 @@ class ActionsManager {
         });
     }
 
+    /**
+     * Format date string for display in action items.
+     * Converts date to localized format with month abbreviation.
+     */
     formatDate(dateString) {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
@@ -969,6 +858,10 @@ class ActionsManager {
         });
     }
 
+    /**
+     * Escape HTML characters to prevent XSS attacks.
+     * Uses DOM manipulation for safe HTML character escaping.
+     */
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -976,23 +869,19 @@ class ActionsManager {
     }
 }
 
+// ============================================================================
+// INITIALIZATION SECTION
+// ============================================================================
+
 /**
- * ============================================================================
- * INITIALIZATION SYSTEM
- * ============================================================================
- * 
  * Multi-layered initialization system supporting various loading scenarios.
- * Handles tab switching, direct access, and AJAX configuration fallbacks.
  * 
- * Initialization Triggers:
- * 1. Tab change events (cf7_tab_changed from tabs.js)
- * 2. Direct DOM ready for actions tab
- * 3. Delayed fallback for dynamic content
+ * Handles tab switching, direct access, and AJAX configuration fallbacks with
+ * comprehensive event binding and configuration validation. Provides reliable
+ * initialization across different WordPress admin contexts and tab states
+ * with graceful fallback mechanisms for optimal compatibility.
  * 
- * AJAX Configuration:
- * - Primary: cf7_actions_ajax from PHP localization
- * - Fallback: Global ajaxurl with warning
- * - Nonce validation for security
+ * @since 2.0.0
  */
 
 // Initialize when the actions tab is loaded
@@ -1041,27 +930,19 @@ jQuery(document).ready(function() {
     }, 500);
 });
 
+// ============================================================================
+// GLOBAL INTERFACE SECTION
+// ============================================================================
+
 /**
- * ============================================================================
- * GLOBAL INTERFACE SYSTEM
- * ============================================================================
- * 
  * Cross-tab compatible interface for external access to actions functionality.
- * Provides simplified methods for context menu integration and modal management.
  * 
- * Key Features:
- * - Standalone modal creation and display
- * - Cross-tab initialization compatibility
- * - Error-resistant operation with fallbacks
- * - Integration with conversation.js context menus
+ * Provides simplified methods for context menu integration and modal management
+ * with standalone modal creation, cross-tab initialization compatibility, and
+ * error-resistant operation with comprehensive fallbacks for reliable external
+ * integration across different WordPress admin contexts.
  * 
- * Usage Examples:
- * - window.CF7_Actions.openModal({messageId: 123, title: 'Follow up'})
- * - window.CF7_Actions.init() // Initialize if not already done
- * 
- * Integration Points:
- * - conversation.js: Context menu "Create Action" functionality
- * - tabs.js: Tab switching initialization hooks
+ * @since 2.0.0
  */
 
 // Ensure window.CF7_Actions is always available
@@ -1075,12 +956,8 @@ window.CF7_Actions = window.CF7_Actions || {};
  */
 Object.assign(window.CF7_Actions, {
     /**
-     * Initialize Actions System
-     * 
+     * Initialize actions system with container detection and error handling.
      * Simple initialization that creates ActionsManager if container exists.
-     * Safe to call multiple times - checks for existing instance.
-     * 
-     * Returns: boolean - true if successful, false if failed or not needed
      */
     init: function() {
         
@@ -1098,25 +975,14 @@ Object.assign(window.CF7_Actions, {
     },
     
     /**
-     * Open Action Modal
+     * Open action modal with cross-tab compatibility and fresh injection.
      * 
-     * Cross-tab compatible modal opening with fresh injection approach.
-     * Removes any existing modal to prevent state conflicts.
+     * Cross-tab compatible modal opening with fresh injection approach and
+     * context integration. Removes existing modal instances to prevent state
+     * conflicts and provides seamless modal experience with proper form
+     * pre-filling and user assignment loading for optimal user workflow.
      * 
-     * Parameters:
-     * - options.messageId: Associate action with specific message
-     * - options.title: Pre-fill action title
-     * - options.description: Pre-fill action description
-     * 
-     * Process:
-     * 1. Remove any existing modal instances
-     * 2. Inject fresh modal HTML with inline styles
-     * 3. Display modal with provided options
-     * 4. Load assignable users dropdown
-     * 
-     * Returns: boolean - true if modal opened successfully
-     * 
-     * Used by: Context menus, external action creation triggers
+     * @since 2.0.0
      */
     openModal: function(options) {
         
@@ -1341,24 +1207,14 @@ Object.assign(window.CF7_Actions, {
     },
     
     /**
-     * Save Action (Global Interface)
+     * Save action with cross-tab compatibility and error handling.
      * 
-     * Simplified action saving for cross-tab compatibility.
-     * Includes double-submission prevention and comprehensive error handling.
+     * Simplified action saving for cross-tab compatibility with double-submission
+     * prevention and comprehensive error handling. Includes form data collection,
+     * AJAX submission with fallback configuration, success notification display,
+     * and graceful error management for reliable action persistence.
      * 
-     * Form Data Collected:
-     * - All standard action fields (title, description, priority, etc.)
-     * - Both assignee_type (legacy) and assigned_to (new) for compatibility
-     * - Optional message_id for context integration
-     * 
-     * Process:
-     * 1. Prevent double submission with _saving flag
-     * 2. Collect form data with fallback nonce resolution
-     * 3. Submit to cf7_save_action endpoint with error handling
-     * 4. Display success notification and refresh actions
-     * 5. Handle errors gracefully with user feedback
-     * 
-     * Cross-tab Safety: Works independently of ActionsManager instance
+     * @since 2.0.0
      */
     saveAction: function() {
         
@@ -1494,13 +1350,20 @@ Object.assign(window.CF7_Actions, {
         });
     },
     
-    // Legacy compatibility methods - kept minimal for existing code
+    /**
+     * Display context menu at specified coordinates.
+     * Legacy compatibility method for existing context menu integrations.
+     */
     showContextMenu: function(x, y, messageId) {
         // Remove any existing context menus
         jQuery('.cf7-context-menu').remove();
         // Context menu creation happens in PHP-generated JavaScript
     },
 
+    /**
+     * Hide all visible context menus.
+     * Simple utility for context menu cleanup and state management.
+     */
     hideContextMenu: function() {
         jQuery('.cf7-context-menu').remove();
     }

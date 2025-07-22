@@ -1,9 +1,23 @@
 <?php
 /**
- * IMAP Settings Tab Template
- * 
+ * CF7 Artist Submissions - IMAP Settings Tab Template
+ *
+ * Email server configuration interface template providing comprehensive IMAP
+ * connection settings for two-way email conversation tracking with plus
+ * addressing support and automated inbox management capabilities.
+ *
+ * Features:
+ * • IMAP server configuration with SSL/TLS encryption support
+ * • Plus addressing email conversation tracking system
+ * • Automated inbox cleanup and message processing
+ * • Connection testing and validation tools
+ * • Security-focused password management with app-specific support
+ * • Professional form interface with real-time feedback
+ *
  * @package CF7_Artist_Submissions
- * @since 2.1.0
+ * @subpackage Templates
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 // Prevent direct access

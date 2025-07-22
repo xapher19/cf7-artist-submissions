@@ -1,356 +1,226 @@
 /**
- * CF7 Artist Submissions - Modern Settings Interface
- * 
- * Comprehensive styling system for the WordPress admin settings page featuring:
- * - Modern card-based layout with gradient headers
- * - Advanced toggle switches and form components
- * - Dynamic template management with preview modals
- * - Debug tools and system information displays
- * - Comprehensive audit log with filtering capabilities
- * - Mobile-responsive design with adaptive layouts
- * - Status indicators and user feedback systems
- * 
- * ARCHITECTURE:
- * ├── Settings Container & Layout (responsive grid system)
- * ├── Navigation & Tabs (shared with common.css)
- * ├── Toggle Switches (custom animated controls)
- * ├── Template Management (collapsible sections with previews)
- * ├── Debug Section (system diagnostics and testing tools)
- * ├── Audit Log Interface (filterable activity tracking)
- * └── Responsive Design (mobile-first breakpoints)
- * 
- * INTEGRATION POINTS:
- * - templates/admin-settings.php: Main settings page structure
- * - templates/settings/*.php: Individual tab content files
- * - assets/js/admin.js: Settings form handling and AJAX operations
- * - assets/js/conversation.js: Template preview functionality
- * 
- * DEPENDENCIES:
- * - common.css: Shared gradient headers, navigation tabs, button system,
- *   modal dialogs, form components, and responsive design foundations
- * - WordPress Dashicons: Icon system for UI elements
- * 
- * COLOR SYSTEM:
- * - Primary: #667eea (Purple gradient brand color)
- * - Success: #28a745 (Green for positive states)
- * - Warning: #ffc107 (Yellow for attention states)
- * - Error: #dc3545 (Red for error states)
- * - Info: #17a2b8 (Blue for informational states)
- * 
- * RESPONSIVE STRATEGY:
- * - Desktop: 1200px max-width with centered layout
- * - Tablet: 1024px breakpoint with adjusted spacing
- * - Mobile: 768px breakpoint with stacked layouts
- * - Small Mobile: 480px breakpoint with compact elements
- * 
+ * CF7 Artist Submissions - Modern Settings Interface System CSS
+ *
+ * Comprehensive WordPress admin settings page providing complete plugin
+ * configuration with modern card-based layout, advanced form components,
+ * and comprehensive audit logging for professional workflow management.
+ *
+ * Features:
+ * • Modern card-based layout with gradient headers and responsive design
+ * • Advanced toggle switches and dynamic form components with animations
+ * • Template management system with preview modals and merge tag helpers
+ * • Debug tools and system information displays with real-time testing
+ * • Comprehensive audit log interface with multi-criteria filtering
+ * • Mobile-responsive design with adaptive layouts and touch optimization
+ * • Status indicators and user feedback systems with color-coded states
+ * • Progressive enhancement and cross-browser compatibility support
+ *
  * @package CF7_Artist_Submissions
- * @since 2.0.0 Modern settings interface implementation
- * @since 2.1.0 Refactored to use common.css for shared components
- * @since 2.2.0 Enhanced documentation and code organization
+ * @subpackage Assets/CSS
+ * @since      1.0.0
+ * @version    1.0.0
  */
 
-/* ========================================================================
-   SETTINGS PAGE CONTAINER & LAYOUT
-   ======================================================================== */
+/* ============================================================================
+   SETTINGS PAGE CONTAINER & LAYOUT SECTION
+   ============================================================================ */
 
 /**
- * Main Settings Container
- * 
- * Central wrapper for the entire settings interface with responsive design.
- * 
- * Design Features:
- * - System font stack for cross-platform consistency
- * - Centered layout with maximum width constraint
- * - Zero padding for edge-to-edge mobile experience
- * - Auto margins for horizontal centering
- * 
- * Used in: templates/admin-settings.php
+ * Main Settings Container - responsive wrapper with system fonts
  */
 .cf7-modern-settings {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    max-width: 1200px; /* Optimal reading width */
-    margin: 0 auto; /* Center horizontally */
-    padding: 0; /* Mobile-first: full width */
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
 }
 
 /**
- * Settings Header Actions
- * 
- * Container for header-level actions like export/import buttons.
- * Integrates with shared gradient header system from common.css.
- * 
- * Layout: Horizontal flexbox with consistent spacing
- * Used in: templates/admin-settings.php (header section)
+ * Settings Header Actions - horizontal flexbox with gradient integration
  */
 
 .cf7-header-actions {
     display: flex;
-    gap: 1rem; /* 16px spacing between action buttons */
+    gap: 1rem;
     align-items: center;
 }
 
-/* ========================================================================
-   SETTINGS CONTENT & LAYOUT
-   ======================================================================== */
+/* ============================================================================
+   SETTINGS CONTENT & LAYOUT SECTION
+   ============================================================================ */
 
 /**
- * Settings Content Wrapper
- * 
- * Main content container with modern card design and subtle shadow.
- * 
- * Design Features:
- * - Pure white background for content clarity
- * - Rounded corners for modern appearance
- * - Subtle shadow for depth perception
- * - Hidden overflow for clean edges
- * 
- * Used in: templates/admin-settings.php
+ * Settings Content Wrapper - modern card with rounded corners and shadow
  */
 .cf7-settings-content {
     background: white;
-    border-radius: 0.75rem; /* 12px rounded corners */
-    box-shadow: 0 2px 8px rgb(0 0 0 / 0.04); /* Subtle depth shadow */
-    overflow: hidden; /* Clean rounded edges */
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.04);
+    overflow: hidden;
 }
 
 /**
- * Individual Settings Cards
- * 
- * Content sections within the main settings container.
- * Each tab content is rendered as a settings card.
- * 
- * Layout Features:
- * - Generous padding for readability
- * - Border separators between sections
- * - Rounded corners for modern card design
- * - Flexible spacing system
- * - Proper overflow handling for form actions
- * 
- * Used in: templates/settings/[tab-name].php files
+ * Individual Settings Cards - tab content sections with borders and positioning
  */
 .cf7-settings-card {
-    padding: 2rem; /* 32px padding for comfortable spacing */
-    border-bottom: 1px solid #f1f5f9; /* Subtle card separator */
-    border-radius: 8px; /* Rounded corners for modern card appearance */
-    background: #ffffff; /* White background for card definition */
-    overflow: hidden; /* Ensure form actions don't break card boundaries */
-    position: relative; /* Position context for form actions */
+    padding: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
 }
 
 .cf7-settings-card:last-child {
-    border-bottom: none; /* Remove border from last card */
+    border-bottom: none;
 }
 
 /**
- * Card Header Section
- * 
- * Contains card title, description, and optional header actions.
- * Provides consistent spacing and hierarchy.
+ * Card Header Section - title and description container
  */
 .cf7-card-header {
-    margin-bottom: 1.5rem; /* 24px space before card content */
+    margin-bottom: 1.5rem;
 }
 
 /**
- * Card Title with Icon Support
- * 
- * Primary heading for each settings section with optional dashicon.
- * 
- * Typography:
- * - Large, semi-bold weight for hierarchy
- * - Flexbox layout for icon alignment
- * - WordPress brand color for icons
+ * Card Title with Icon Support - primary heading with flexbox and dashicon
  */
 .cf7-card-title {
-    font-size: 1.25rem; /* 20px - prominent but not overwhelming */
-    font-weight: 600; /* Semi-bold for clear hierarchy */
-    color: #1a202c; /* Dark gray for high contrast */
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a202c;
     margin: 0 0 0.5rem 0;
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* 12px space between icon and text */
+    gap: 0.75rem;
 }
 
 .cf7-card-title .dashicons {
-    font-size: 1.25rem; /* Match text size */
+    font-size: 1.25rem;
     width: 1.25rem;
     height: 1.25rem;
     line-height: 1.25rem;
-    color: #2271b1; /* WordPress primary blue */
+    color: #2271b1;
 }
 
 /**
- * Card Description Text
- * 
- * Explanatory text below card titles providing context and guidance.
+ * Card Description Text - explanatory text with medium gray color
  */
 .cf7-card-description {
-    color: #6b7280; /* Medium gray for secondary text */
+    color: #6b7280;
     margin: 0;
-    line-height: 1.5; /* Comfortable reading line height */
+    line-height: 1.5;
 }
 
 /**
- * Card Body Content
- * 
- * Main content area with flexible grid layout for form elements.
- * Uses CSS Grid for consistent spacing between elements.
+ * Card Body Content - grid layout with consistent spacing
  */
 .cf7-card-body {
     display: grid;
-    gap: 1.5rem; /* 24px consistent spacing between elements */
+    gap: 1.5rem;
 }
 
 /**
- * Form Actions within Settings Cards
- * 
- * Positions form action bars at the bottom of settings cards with rounded corners.
- * Creates a cohesive card design with proper spacing and visual hierarchy.
- * 
- * Layout Features:
- * - Positioned at bottom of card with negative margins to reach card edge
- * - Rounded bottom corners to match card design
- * - Background contrast for visual separation
- * - Maintains standard form action functionality
- * - Higher specificity to override general form action styles
+ * Form Actions within Settings Cards - positioned at card bottom with rounded corners
  */
 .cf7-settings-card .cf7-form-actions {
-    margin: 2rem -2rem -2rem -2rem !important; /* Extend to card edges, maintain top spacing */
-    border-radius: 0 0 8px 8px !important; /* Rounded bottom corners only */
-    border-top: 1px solid #e2e8f0; /* Separator from card content */
-    background: #f8fafc; /* Light background for contrast */
-    padding: 1.5rem 2rem !important; /* Maintain proper internal padding */
+    margin: 2rem -2rem -2rem -2rem !important;
+    border-radius: 0 0 8px 8px !important;
+    border-top: 1px solid #e2e8f0;
+    background: #f8fafc;
+    padding: 1.5rem 2rem !important;
 }
 
-/* ========================================================================
-   SETTINGS NAVIGATION & TABS
-   ======================================================================== */
+/* ============================================================================
+   SETTINGS NAVIGATION & TABS SECTION
+   ============================================================================ */
 
 /**
- * Settings Navigation Container
- * 
- * Tab navigation wrapper with bottom border separator.
- * Integrates with shared tab system from common.css.
- * 
- * Note: Core tab styling (.cf7-nav-tabs, .cf7-nav-tab) is defined in common.css
- * This class provides settings-specific styling variants.
- * 
- * Used in: templates/admin-settings.php (navigation section)
+ * Settings Navigation Container - tab wrapper with bottom border
+ * Note: Core tab styling in common.css
  */
 .cf7-settings-nav {
-    margin-bottom: 2rem; /* 32px space before content */
-    border-bottom: 1px solid #e5e5e5; /* Subtle separator line */
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e5e5e5;
 }
 
 /* Note: Tab navigation styles moved to common.css for shared use across all interfaces */
-/* Use .cf7-settings-nav class to get the settings color variant */
 
-/* ========================================================================
-   TOGGLE SWITCHES
-   ======================================================================== */
+/* ============================================================================
+   TOGGLE SWITCHES SECTION
+   ============================================================================ */
 
 /**
- * Modern Toggle Switch System
- * 
- * Custom toggle switches for boolean settings with smooth animations.
- * Provides better UX than standard checkboxes for on/off states.
- * 
- * Components:
- * - .cf7-toggle: Container wrapper
- * - .cf7-toggle-slider: Visual track background
- * - .cf7-toggle-slider:before: Sliding circle indicator
- * - .cf7-toggle-label: Associated label text
- * 
- * Used in: templates/settings/general-tab.php, email-tab.php, templates-tab.php
+ * Modern Toggle Switch System - custom switches for boolean settings
+ * Components: .cf7-toggle (container), .cf7-toggle-slider (track), .cf7-toggle-label (text)
  */
 
 /**
- * Toggle Container
- * 
- * Wrapper element that positions the toggle switch.
- * Contains hidden checkbox input and visual slider.
+ * Toggle Container - positions switch elements
  */
 .cf7-toggle {
     position: relative;
     display: inline-block;
-    width: 50px; /* Total switch width */
-    height: 24px; /* Total switch height */
+    width: 50px;
+    height: 24px;
 }
 
 /**
- * Hidden Checkbox Input
- * 
- * Actual form input hidden from view but accessible to screen readers.
- * Maintains semantic meaning and keyboard navigation.
+ * Hidden Checkbox Input - semantic input for accessibility
  */
 .cf7-toggle input[type="checkbox"] {
-    opacity: 0; /* Invisible but still interactive */
+    opacity: 0;
     width: 0;
     height: 0;
-    position: absolute; /* Remove from layout flow */
+    position: absolute;
 }
 
 /**
- * Toggle Track Background
- * 
- * Visual background track that the toggle circle slides along.
- * Changes color based on checked state.
+ * Toggle Track Background - visual track with color transitions
  */
 .cf7-toggle-slider {
     position: absolute;
-    cursor: pointer; /* Interactive cursor */
+    cursor: pointer;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc; /* Default gray state */
-    transition: 0.3s; /* Smooth color transition */
-    border-radius: 24px; /* Fully rounded track */
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 24px;
 }
 
 /**
- * Toggle Circle Indicator
- * 
- * Sliding circle that moves to indicate toggle state.
- * Created using CSS pseudo-element for clean markup.
+ * Toggle Circle Indicator - sliding circle with smooth animation
  */
 .cf7-toggle-slider:before {
     position: absolute;
-    content: ""; /* Required for pseudo-element */
-    height: 18px; /* Circle size */
+    content: "";
+    height: 18px;
     width: 18px;
-    left: 3px; /* Default position (off state) */
-    bottom: 3px; /* Vertical centering */
-    background-color: white; /* White circle */
-    transition: 0.3s; /* Smooth movement animation */
-    border-radius: 50%; /* Perfect circle */
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
 }
 
 /**
- * Active Toggle State
- * 
- * Styling when toggle is checked/enabled.
- * Changes track color to brand purple.
+ * Active Toggle State - brand purple for enabled state
  */
 .cf7-toggle input:checked + .cf7-toggle-slider {
-    background-color: #667eea; /* Brand purple for active state */
+    background-color: #667eea;
 }
 
 /**
- * Active Circle Position
- * 
- * Moves circle to right side when toggle is active.
- * Transform provides smooth sliding animation.
+ * Active Circle Position - slide to right when active
  */
 .cf7-toggle input:checked + .cf7-toggle-slider:before {
-    transform: translateX(26px); /* Slide to right position */
+    transform: translateX(26px);
 }
 
 /**
- * Toggle Animation State
- * 
- * Pulse animation during state changes for visual feedback.
- * Applied via JavaScript during toggle interactions.
+ * Toggle Animation State - pulse effect during state changes
  */
 .cf7-toggle-changing {
     animation: cf7-toggle-pulse 0.2s ease-in-out;
@@ -358,956 +228,673 @@
 
 @keyframes cf7-toggle-pulse {
     0% { transform: scale(1); }
-    50% { transform: scale(1.05); } /* Slight scale increase */
+    50% { transform: scale(1.05); }
     100% { transform: scale(1); }
 }
 
 /**
- * Toggle Label Text
- * 
- * Associated label text positioned next to toggle switch.
- * Provides clear indication of what the toggle controls.
+ * Toggle Label Text - positioned text with medium weight
  */
 .cf7-toggle-label {
-    margin-left: 0.75rem; /* 12px space from toggle */
-    font-weight: 500; /* Medium weight for readability */
-    color: #333; /* Dark gray for good contrast */
+    margin-left: 0.75rem;
+    font-weight: 500;
+    color: #333;
 }
 
-/* ========================================================================
-   STATUS INDICATORS
-   ======================================================================== */
+/* ============================================================================
+   STATUS INDICATORS SECTION
+   ============================================================================ */
 
 /**
- * Status Indicator System
- * 
- * Flexible status display components for various system states.
- * Provides consistent visual feedback across the settings interface.
- * 
- * Variants:
- * - Success: Green for positive states (enabled, working)
- * - Warning: Yellow for attention states (needs configuration)
- * - Info: Blue for informational states (status updates)
- * 
- * Used in: templates/settings/general-tab.php for file storage status
+ * Status Indicator System - flexible status display with color variants
+ * Variants: Success (green), Warning (yellow), Info (blue)
  */
 
 /**
- * Base Status Indicator
- * 
- * Container for status information with icon and text.
- * Uses flexbox for consistent alignment and spacing.
+ * Base Status Indicator - flexbox container with icon and text
  */
 .cf7-status-indicator {
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* 12px space between icon and text */
-    padding: 0.75rem; /* 12px internal padding */
-    border-radius: 4px; /* Subtle rounded corners */
-    font-size: 0.875rem; /* 14px - slightly smaller than body text */
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
 }
 
 /**
- * Success Status Variant
- * 
- * Green styling for positive states and successful operations.
- * High contrast text ensures accessibility compliance.
+ * Success Status Variant - green for positive states
  */
 .cf7-status-success {
-    background: rgb(40 167 69 / 0.1); /* Light green background */
-    color: #155724; /* Dark green text for contrast */
-    border: 1px solid rgb(40 167 69 / 0.2); /* Subtle green border */
+    background: rgb(40 167 69 / 0.1);
+    color: #155724;
+    border: 1px solid rgb(40 167 69 / 0.2);
 }
 
 /**
- * Warning Status Variant
- * 
- * Yellow/orange styling for states requiring attention.
- * Used for configuration warnings or pending actions.
+ * Warning Status Variant - yellow for attention states
  */
 .cf7-status-warning {
-    background: rgb(255 193 7 / 0.1); /* Light yellow background */
-    color: #856404; /* Dark orange text for contrast */
-    border: 1px solid rgb(255 193 7 / 0.2); /* Subtle yellow border */
+    background: rgb(255 193 7 / 0.1);
+    color: #856404;
+    border: 1px solid rgb(255 193 7 / 0.2);
 }
 
 /**
- * Info Status Variant
- * 
- * Blue styling for informational states and neutral updates.
- * Provides context without implying urgency.
+ * Info Status Variant - blue for informational states
  */
 .cf7-status-info {
-    background: rgb(102 126 234 / 0.1); /* Light blue background */
-    color: #0c5460; /* Dark blue-gray text for contrast */
-    border: 1px solid rgb(102 126 234 / 0.2); /* Subtle blue border */
+    background: rgb(102 126 234 / 0.1);
+    color: #0c5460;
+    border: 1px solid rgb(102 126 234 / 0.2);
 }
 
-/* ========================================================================
+/* ============================================================================
    TEMPLATE MANAGEMENT SECTIONS
-   ======================================================================== */
+   ============================================================================ */
 
 /**
- * Template Management Interface
- * 
- * Collapsible email template editor sections for comprehensive email customization.
- * Provides organized interface for notification, approval, and rejection templates.
- * 
- * Key Features:
- * - Collapsible sections for organized template management
- * - Visual toggle states with smooth animations
- * - Template modification indicators
- * - Integrated merge tag helper system
- * 
- * Integration Points:
- * - templates/settings/email-tab.php: Main template interface
- * - admin.js: Toggle functionality and template interactions
- * - class-cf7-artist-submissions-emails.php: Backend processing
+ * Template Management Interface - collapsible email template sections
+ * Features: Collapsible sections, visual toggles, merge tag integration
  */
 
 /**
- * Template Section Container
- * 
- * Individual template section wrapper with collapsible behavior.
- * Provides clean card-like appearance with rounded borders.
+ * Template Section Container - collapsible card with rounded borders
  */
 .cf7-template-section {
-    border: 1px solid #e5e5e5; /* Subtle border for definition */
-    border-radius: 8px; /* Rounded corners for modern card appearance */
-    margin-bottom: 1.5rem; /* 24px spacing between template sections */
-    overflow: hidden; /* Ensures content doesn't break border radius */
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
 }
 
 /**
- * Template Section Header
- * 
- * Header area containing template title, description, and toggle controls.
- * Uses flexbox for responsive layout and proper alignment.
+ * Template Section Header - flexbox layout with title and toggle controls
  */
 .cf7-template-header {
     display: flex;
-    justify-content: space-between; /* Space between title and toggle */
-    align-items: center; /* Center-align header content */
-    padding: 1.25rem 1.5rem; /* 20px vertical, 24px horizontal padding */
-    background: #f8f9fa; /* Light gray background for distinction */
-    border-bottom: 1px solid #e5e5e5; /* Separator line */
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e5e5e5;
 }
 
 /**
- * Template Title Container
- * 
- * Contains template name and description text.
- * Provides hierarchical information display.
+ * Template Title Container - hierarchical title and description
  */
 .cf7-template-title h3 {
-    margin: 0 0 0.25rem 0; /* Small bottom margin for description */
-    font-size: 1.1rem; /* 17.6px - prominent but not overwhelming */
-    font-weight: 600; /* Semi-bold for emphasis */
-    color: #333; /* Dark gray for strong readability */
+    margin: 0 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
 }
 
 /**
- * Template Description Text
- * 
- * Subtitle text explaining template purpose and usage.
- * Provides context for each template type.
+ * Template Description Text - subtitle for template purpose
  */
 .cf7-template-description {
-    margin: 0; /* Reset default paragraph margins */
-    color: #666; /* Medium gray for secondary information */
-    font-size: 0.875rem; /* 14px - smaller than title for hierarchy */
+    margin: 0;
+    color: #666;
+    font-size: 0.875rem;
 }
 
 /**
- * Template Toggle Controls
- * 
- * Container for expand/collapse toggle and related controls.
- * Maintains consistent spacing and alignment.
+ * Template Toggle Controls - expand/collapse container
  */
 .cf7-template-toggle {
     display: flex;
-    align-items: center; /* Center-align toggle elements */
-    gap: 0.75rem; /* 12px spacing between toggle elements */
+    align-items: center;
+    gap: 0.75rem;
 }
 
 /**
- * Template Content Area (Collapsed State)
- * 
- * Collapsible content container with smooth height transitions.
- * Hidden by default with animated reveal behavior.
+ * Template Content Area (Collapsed) - hidden with smooth transitions
  */
 .cf7-template-content {
-    padding: 0; /* No padding when collapsed */
-    max-height: 0; /* Hidden state */
-    overflow: hidden; /* Prevents content from showing during transition */
-    transition: max-height 0.3s ease, padding 0.3s ease; /* Smooth expand/collapse */
+    padding: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
 }
 
 /**
- * Template Content Area (Active/Expanded State)
- * 
- * Expanded state for template content with full padding and visibility.
- * Provides generous space for template editing interface.
+ * Template Content Area (Active/Expanded) - full visibility with padding
  */
 .cf7-template-content.active {
-    padding: 1.5rem; /* 24px padding for comfortable editing space */
-    max-height: 1000px; /* Large enough to accommodate template content */
+    padding: 1.5rem;
+    max-height: 1000px;
 }
 
 /**
- * Template Action Controls
- * 
- * Action buttons for template operations (save, preview, reset).
- * Always visible for debugging and development purposes.
- * 
- * Note: !important declarations ensure visibility during development
+ * Template Action Controls - save/preview/reset buttons (always visible for debug)
  */
 .cf7-template-actions {
-    display: flex !important; /* Force display for debugging */
-    gap: 0.5rem; /* 8px spacing between action buttons */
-    margin-top: 0.75rem; /* 12px separation from template content */
-    visibility: visible !important; /* Ensure visibility in all states */
-    opacity: 1 !important; /* Full opacity for clear button visibility */
+    display: flex !important;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
-/* ========================================================================
-   MERGE TAG HELPER
-   ======================================================================== */
+/* ============================================================================
+   MERGE TAG HELPER SECTION
+   ============================================================================ */
 
 /**
- * Merge Tag Helper System
- * 
- * Interactive merge tag insertion interface for email templates.
- * Provides quick access to available template variables and placeholders.
- * 
- * Features:
- * - Click-to-insert merge tag functionality
- * - Monospace font for clear variable display
- * - Hover effects for interactive feedback
- * - Organized tag categories and descriptions
- * 
- * Used in: Email template editing interfaces
- * Integration: admin.js handles click-to-insert functionality
+ * Merge Tag Helper System - interactive insertion interface for template variables
+ * Features: Click-to-insert, monospace display, organized categories
  */
 
 /**
- * Merge Tag Container
- * 
- * Wrapper for merge tag helper interface.
- * Provides subtle background and organized layout.
+ * Merge Tag Container - organized layout with light background
  */
 .cf7-merge-tags {
-    margin-top: 0.75rem; /* 12px separation from template editor */
-    padding: 0.75rem; /* 12px internal padding */
-    background: #f8f9fa; /* Light gray background for distinction */
-    border-radius: 4px; /* Rounded corners for consistency */
-    border: 1px solid #e5e5e5; /* Subtle border for definition */
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e5e5e5;
 }
 
 /**
- * Merge Tag Labels
- * 
- * Descriptive text for merge tag categories.
- * Provides context for available template variables.
+ * Merge Tag Labels - descriptive text for categories
  */
 .cf7-merge-tags span {
-    font-size: 0.875rem; /* 14px - readable but secondary */
-    color: #666; /* Medium gray for label text */
-    margin-right: 0.5rem; /* 8px spacing after label */
-    font-weight: 500; /* Medium weight for subtle emphasis */
+    font-size: 0.875rem;
+    color: #666;
+    margin-right: 0.5rem;
+    font-weight: 500;
 }
 
 /**
- * Merge Tag Buttons
- * 
- * Interactive buttons for inserting merge tags into templates.
- * Uses brand color and monospace font for clear variable display.
+ * Merge Tag Buttons - interactive buttons with monospace font and brand colors
  */
 .cf7-merge-tag-btn {
-    background: #667eea; /* Brand purple background */
-    color: white; /* White text for contrast */
-    border: none; /* Remove default button border */
-    padding: 0.25rem 0.5rem; /* 4px vertical, 8px horizontal padding */
-    margin: 0.125rem; /* 2px margin between buttons */
-    border-radius: 3px; /* Small rounded corners */
-    font-size: 0.75rem; /* 12px - compact but readable */
-    cursor: pointer; /* Pointer cursor for interactivity */
-    transition: background-color 0.2s ease; /* Smooth hover transition */
-    font-family: monospace; /* Monospace font for variable clarity */
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    margin: 0.125rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-family: monospace;
 }
 
 /**
- * Merge Tag Button Hover State
- * 
- * Darker purple on hover for interactive feedback.
- * Provides clear visual response to user interaction.
+ * Merge Tag Button Hover State - darker purple for feedback
  */
 .cf7-merge-tag-btn:hover {
-    background: #5a6fd8; /* Darker purple on hover */
+    background: #5a6fd8;
 }
 
 /**
- * Template Modified Indicator
- * 
- * Visual indicator for templates with unsaved changes.
- * Purple left border highlights modified template sections.
+ * Template Modified Indicator - purple left border for unsaved changes
  */
 .cf7-template-modified {
-    border-left: 4px solid #667eea; /* Brand purple left border accent */
+    border-left: 4px solid #667eea;
 }
 
-/* ========================================================================
-   TEMPLATE PREVIEW STYLES
-   ======================================================================== */
+/* ============================================================================
+   TEMPLATE PREVIEW STYLES SECTION
+   ============================================================================ */
 
 /**
- * Template Preview Interface
- * 
- * Dedicated styling for email template preview components.
- * Provides realistic email appearance for template validation.
- * 
- * Key Features:
- * - Clean typography matching email clients
- * - Structured subject and body preview areas
- * - Integration with JavaScript preview system
- * - Shared styling with conversation interface
- * 
- * JavaScript Integration:
- * - conversation.js: Updates preview-subject and preview-body classes
- * - admin.js: Template preview functionality
- * 
- * Note: Additional preview classes (.cf7-email-preview-subject, .cf7-email-preview-body) 
- * are maintained in common.css for shared use across email interfaces
+ * Template Preview Interface - email template preview with realistic styling
+ * Features: Clean typography, subject/body areas, JavaScript integration
+ * Note: Additional classes in common.css for shared email interfaces
  */
 
 /**
- * Template Preview Container
- * 
- * Base container for email template previews.
- * Uses Arial font to match common email client defaults.
+ * Template Preview Container - Arial font matching email clients
  */
 .cf7-template-preview {
-    font-family: Arial, sans-serif; /* Standard email client font */
+    font-family: Arial, sans-serif;
 }
 
 /**
- * Preview Subject Line Display
- * 
- * Email subject preview with email client styling.
- * Used by JavaScript for dynamic subject updates.
+ * Preview Subject Line Display - email subject with light background
  */
 .preview-subject {
-    margin-bottom: 1rem; /* 16px space below subject */
-    padding: 0.75rem; /* 12px internal padding */
-    background: #f8f9fa; /* Light background to distinguish from body */
-    border-radius: 4px; /* Subtle rounded corners */
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
 }
 
 /**
- * Preview Body Content Display
- * 
- * Email body preview area with proper formatting.
- * Supports both plain text and formatted content.
+ * Preview Body Content Display - supports plain text and formatted content
  */
 .preview-body {
-    margin-bottom: 1rem; /* 16px space below body */
+    margin-bottom: 1rem;
 }
 
 /**
- * Preview Body Formatted Text
- * 
- * Preformatted text display for email body content.
- * Maintains original formatting and line breaks.
+ * Preview Body Formatted Text - preformatted with line wrapping
  */
 .preview-body pre {
-    background: #f8f9fa; /* Light background for code/formatted text */
-    padding: 1rem; /* 16px padding for comfortable reading */
-    border-radius: 4px; /* Rounded corners for consistency */
-    white-space: pre-wrap; /* Preserve formatting and wrap long lines */
-    font-family: 'Segoe UI', sans-serif; /* Readable font for email content */
-    line-height: 1.5; /* Improved readability */
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    font-family: 'Segoe UI', sans-serif;
+    line-height: 1.5;
 }
 
-/* ========================================================================
-   DEBUG SECTION & SYSTEM INFO
-   ======================================================================== */
+/* ============================================================================
+   DEBUG SECTION & SYSTEM INFO SECTION
+   ============================================================================ */
 
 /**
- * Debug Interface & System Information Display
- * 
- * Comprehensive debugging tools for troubleshooting and system monitoring.
- * Provides administrators with detailed system information and testing capabilities.
- * 
- * Key Features:
- * - System status monitoring with color-coded indicators
- * - Interactive testing buttons for email and IMAP functionality
- * - Detailed system information tables
- * - Real-time test result display with modal overlay
- * 
- * Status Indicators:
- * - Green: System operating normally
- * - Yellow: Warnings or configuration needed
- * - Red: Errors requiring attention
- * - Blue: Informational status updates
- * 
- * Used in: templates/settings/debug-tab.php
+ * Debug Interface & System Information Display - comprehensive debugging tools
+ * Features: Status monitoring, interactive testing, detailed system info, real-time results
+ * Color-coded indicators: Green (normal), Yellow (warnings), Red (errors), Blue (info)
  */
 
 /**
- * Debug Section Container
- * 
- * Main wrapper for debug interface sections.
- * Provides clean card-like appearance with adequate spacing.
+ * Debug Section Container - clean card with adequate spacing
  */
 .cf7-debug-section {
-    background: #fff; /* Clean white background */
-    border: 1px solid #e5e5e5; /* Subtle border for definition */
-    border-radius: 8px; /* Rounded corners for modern appearance */
-    padding: 1.5rem; /* 24px padding for comfortable spacing */
-    margin-bottom: 1.5rem; /* 24px space between debug sections */
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 /**
- * Debug Section Headers
- * 
- * Section titles for debug interface organization.
- * Provides clear hierarchy and visual structure.
+ * Debug Section Headers - clear hierarchy and visual structure
  */
 .cf7-debug-section h3 {
-    margin: 0 0 0.5rem 0; /* Small bottom margin for content */
-    color: #333; /* Dark text for strong readability */
-    font-size: 1.1rem; /* 17.6px - prominent section heading */
-    font-weight: 600; /* Semi-bold for emphasis */
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 /**
- * Debug Section Descriptions
- * 
- * Explanatory text for debug sections and testing procedures.
- * Provides context and usage guidance.
+ * Debug Section Descriptions - explanatory text for context
  */
 .cf7-debug-section p {
-    margin: 0 0 1rem 0; /* Bottom margin for paragraph spacing */
-    color: #666; /* Medium gray for secondary text */
-    font-size: 0.9rem; /* 14.4px - slightly smaller than body text */
+    margin: 0 0 1rem 0;
+    color: #666;
+    font-size: 0.9rem;
 }
 
 /**
- * Debug Action Controls
- * 
- * Container for debug testing buttons and controls.
- * Uses flexbox for responsive button layout.
+ * Debug Action Controls - responsive button layout for testing
  */
 .cf7-debug-actions {
     display: flex;
-    gap: 0.75rem; /* 12px spacing between action buttons */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 /**
- * Debug Test Buttons
- * 
- * Interactive buttons for running system tests and diagnostics.
- * Neutral styling to distinguish from primary actions.
+ * Debug Test Buttons - neutral styling for test operations
  */
 .cf7-debug-actions .cf7-test-btn {
-    background: #f8f9fa; /* Light gray background */
-    color: #495057; /* Dark gray text */
-    border: 1px solid #ced4da; /* Subtle border */
-    padding: 0.5rem 1rem; /* 8px vertical, 16px horizontal padding */
-    font-size: 0.875rem; /* 14px - readable button text */
+    background: #f8f9fa;
+    color: #495057;
+    border: 1px solid #ced4da;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
 }
 
 /**
- * Debug Test Button Hover State
- * 
- * Hover effect for test buttons providing visual feedback.
- * Slightly darker background on interaction.
+ * Debug Test Button Hover State - darker background for feedback
  */
 .cf7-debug-actions .cf7-test-btn:hover {
-    background: #e9ecef; /* Darker gray on hover */
-    border-color: #adb5bd; /* Darker border on hover */
+    background: #e9ecef;
+    border-color: #adb5bd;
 }
 
 /**
- * System Information Display
- * 
- * Structured table layout for system configuration details.
- * Provides administrators with key system metrics and status.
+ * System Information Display - structured table with spacing
  */
 .cf7-system-info table {
-    margin-top: 1rem; /* 16px space above system info table */
+    margin-top: 1rem;
 }
 
 /**
- * System Information Table Cells
- * 
- * Cell styling for system information tables.
- * Provides adequate spacing and proper alignment.
+ * System Information Table Cells - adequate padding and alignment
  */
 .cf7-system-info td,
 .cf7-system-info th {
-    padding: 0.75rem; /* 12px padding for comfortable cell spacing */
-    vertical-align: top; /* Align content to top of cells */
+    padding: 0.75rem;
+    vertical-align: top;
 }
 
 /**
- * System Status Indicators
- * 
- * Color-coded status indicators for system health monitoring.
- * Provides immediate visual feedback on system component status.
+ * System Status Indicators - color-coded system health monitoring
+ * Green: Working systems, Orange: Warnings, Red: Errors, Blue: Info
  */
 
 /**
- * Success Status (Green)
- * Used for: Working systems, successful operations, healthy components
+ * Success Status (Green) - working systems and successful operations
  */
 .cf7-status-ok {
-    color: #28a745; /* Bootstrap success green */
-    font-weight: 600; /* Bold for emphasis */
+    color: #28a745;
+    font-weight: 600;
 }
 
 /**
- * Warning Status (Yellow)
- * Used for: Configuration warnings, non-critical issues, attention needed
+ * Warning Status (Yellow) - configuration warnings and non-critical issues
  */
 .cf7-status-warning {
-    color: #ffc107; /* Bootstrap warning yellow */
-    font-weight: 600; /* Bold for emphasis */
+    color: #ffc107;
+    font-weight: 600;
 }
 
 /**
- * Error Status (Red)
- * Used for: Critical errors, failed operations, broken components
+ * Error Status (Red) - critical errors and failed operations
  */
 .cf7-status-error {
-    color: #dc3545; /* Bootstrap danger red */
-    font-weight: 600; /* Bold for emphasis */
+    color: #dc3545;
+    font-weight: 600;
 }
 
 /**
- * Info Status (Blue)
- * Used for: General information, neutral status, configuration details
+ * Info Status (Blue) - general information and neutral status
  */
 .cf7-status-info {
-    color: #17a2b8; /* Bootstrap info blue */
-    font-weight: 600; /* Bold for emphasis */
+    color: #17a2b8;
+    font-weight: 600;
 }
 
-/* ========================================================================
-   TEST RESULTS & MODAL OVERLAYS
-   ======================================================================== */
+/* ============================================================================
+   TEST RESULTS & MODAL OVERLAYS SECTION
+   ============================================================================ */
 
 /**
- * Debug Test Results Modal
- * 
- * Floating modal overlay for displaying real-time test results.
- * Provides immediate feedback for debug testing operations.
- * 
- * Features:
- * - Fixed positioning for persistent visibility
- * - High z-index to overlay all other content
- * - Scrollable content area for long test outputs
- * - Modern shadow and border styling
- * - Responsive sizing for mobile devices
- * 
- * Triggered by: Debug test buttons in templates/settings/debug-tab.php
+ * Debug Test Results Modal - floating overlay for real-time test results
+ * Features: Fixed positioning, scrollable content, modern shadow styling
  */
 
 /**
- * Test Results Modal Container
- * 
- * Main modal overlay for debug test results display.
- * Positioned in top-right corner for non-intrusive visibility.
+ * Test Results Modal Container - top-right positioned overlay
  */
 #cf7-debug-test-results {
-    position: fixed; /* Fixed positioning for overlay behavior */
-    top: 50px; /* Position below WordPress admin bar */
-    right: 20px; /* Right-aligned with margin from edge */
-    width: 450px; /* Fixed width for consistent layout */
-    z-index: 99999; /* High z-index to overlay all content */
-    background: white; /* Clean white background */
-    border-radius: 8px; /* Rounded corners for modern appearance */
-    box-shadow: 0 4px 20px rgb(0 0 0 / 0.15); /* Prominent shadow for elevation */
-    border: 1px solid #e5e5e5; /* Subtle border for definition */
-    max-height: 80vh; /* Limit height to 80% of viewport */
-    overflow: hidden; /* Prevent content overflow */
+    position: fixed;
+    top: 50px;
+    right: 20px;
+    width: 450px;
+    z-index: 99999;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 0.15);
+    border: 1px solid #e5e5e5;
+    max-height: 80vh;
+    overflow: hidden;
 }
 
 /**
- * Test Results Content Area
- * 
- * Scrollable content container for test result output.
- * Provides controlled scrolling for long test results.
+ * Test Results Content Area - scrollable container for test output
  */
 #cf7-debug-test-results .cf7-test-results-body {
-    max-height: 300px; /* Maximum height before scrolling */
-    overflow-y: auto; /* Vertical scrolling for overflow content */
+    max-height: 300px;
+    overflow-y: auto;
 }
 
-/* ========================================================================
-   RESPONSIVE DESIGN FOR SETTINGS
-   ======================================================================== */
+/* ============================================================================
+   RESPONSIVE DESIGN FOR SETTINGS SECTION
+   ============================================================================ */
 
 /**
- * Settings Responsive Design System
- * 
- * Mobile-first responsive design strategy for the settings interface.
- * Transforms desktop layouts into mobile-friendly experiences.
- * 
- * Breakpoint Strategy:
- * - Mobile First: Base styles for smallest screens
- * - 768px: Tablet and mobile landscape optimizations
- * - 1024px: Desktop and large tablet adjustments
- * - 1200px: Large desktop optimal width constraints
- * 
- * Key Transformations:
- * - Horizontal layouts become vertical stacks
- * - Tab navigation converts to mobile-friendly format
- * - Debug tools adapt for touch interaction
- * - Modal overlays adjust for mobile constraints
- * 
- * Design Philosophy: Progressive enhancement from mobile to desktop
+ * Settings Responsive Design System - mobile-first progressive enhancement
+ * Breakpoints: Mobile first → 768px (tablet) → 1024px (desktop) → 1200px (large)
+ * Transforms: Horizontal → vertical, tabs → mobile nav, modal → full-screen
  */
 
 /**
- * Mobile Layout (768px and below)
- * 
- * Primary mobile breakpoint handling core layout transformations.
- * Converts desktop-oriented layouts to mobile-friendly formats.
+ * Mobile Layout (768px and below) - core mobile transformations
  */
 @media (max-width: 768px) {
     /**
-     * Settings Header Mobile Layout
-     * 
-     * Transform horizontal header layout to vertical stack.
-     * Provides better touch targets and content organization.
+     * Settings Header Mobile Layout - vertical stack with touch targets
      */
     .cf7-settings-header {
-        flex-direction: column; /* Stack header elements vertically */
-        align-items: flex-start; /* Left-align content for mobile */
-        gap: 1rem; /* 16px spacing between stacked elements */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
     
     /**
-     * Header Actions Mobile Layout
-     * 
-     * Full-width action container with left alignment.
-     * Improves touch accessibility and visual hierarchy.
+     * Header Actions Mobile Layout - full-width with left alignment
      */
     .cf7-header-actions {
-        width: 100%; /* Full width for mobile */
-        justify-content: flex-start; /* Left-align actions */
+        width: 100%;
+        justify-content: flex-start;
     }
     
     /**
      * Settings Container Mobile Spacing
-     * 
-     * Add horizontal padding for mobile content breathing room.
-     * Prevents content from touching screen edges.
      */
     .cf7-modern-settings {
-        padding: 0 1rem; /* 16px horizontal padding for mobile */
+        padding: 0 1rem;
     }
     
     /**
      * Settings Header Mobile Margins
-     * 
-     * Adjust header margins for full-width mobile display.
-     * Compensates for container padding changes.
      */
     .cf7-settings-header {
-        margin: 0 -1rem 2rem -1rem; /* Negative margins to extend full width */
-        padding: 1.5rem 1rem; /* 24px vertical, 16px horizontal padding */
+        margin: 0 -1rem 2rem -1rem;
+        padding: 1.5rem 1rem;
     }
     
     /**
      * Tab Navigation Mobile Layout
-     * 
-     * Convert horizontal tabs to vertical mobile navigation.
-     * Provides better touch targets and scrolling experience.
      */
     .cf7-nav-tabs {
-        flex-direction: column; /* Stack tabs vertically */
+        flex-direction: column;
     }
     
     /**
      * Individual Tab Mobile Styling
-     * 
-     * Enhanced tab styling for mobile interaction.
-     * Left border replaces bottom border for vertical layout.
      */
     .cf7-nav-tab {
-        padding: 0.75rem 1rem; /* 12px vertical, 16px horizontal padding */
-        border-bottom: none; /* Remove horizontal tab border */
-        border-left: 3px solid transparent; /* Left border for active state */
+        padding: 0.75rem 1rem;
+        border-bottom: none;
+        border-left: 3px solid transparent;
     }
     
     /**
      * Active Tab Mobile Indicator
-     * 
-     * Purple left border indicates active tab in mobile layout.
-     * Provides clear visual feedback for current section.
      */
     .cf7-nav-tab.active {
-        border-left-color: #667eea; /* Brand purple left border */
-        border-bottom-color: transparent; /* Remove bottom border */
+        border-left-color: #667eea;
+        border-bottom-color: transparent;
     }
     
     /**
      * Template Header Mobile Layout
-     * 
-     * Stack template headers vertically for mobile screens.
-     * Improves readability and touch interaction.
      */
     .cf7-template-header {
-        flex-direction: column; /* Stack template header elements */
-        align-items: flex-start; /* Left-align for mobile */
-        gap: 1rem; /* 16px spacing between elements */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
     }
     
     /**
      * Debug Actions Mobile Layout
-     * 
-     * Vertical debug action layout for better mobile experience.
-     * Full-width buttons improve touch targets.
      */
     .cf7-debug-actions {
-        flex-direction: column; /* Stack debug buttons vertically */
+        flex-direction: column;
     }
     
     /**
      * Debug Button Mobile Styling
-     * 
-     * Full-width debug buttons with centered text.
-     * Optimized for mobile touch interaction.
      */
     .cf7-debug-actions .cf7-test-btn {
-        width: 100%; /* Full-width buttons for mobile */
-        text-align: center; /* Center button text */
+        width: 100%;
+        text-align: center;
     }
     
     /**
      * Debug Results Modal Mobile Layout
-     * 
-     * Full-screen modal layout for mobile debug results.
-     * Maximizes content visibility on small screens.
      */
     #cf7-debug-test-results {
-        position: fixed; /* Fixed positioning for mobile overlay */
-        top: 10px; /* Small top margin */
-        left: 10px; /* Small left margin */
-        right: 10px; /* Small right margin */
-        width: auto; /* Auto width to fill available space */
-        max-height: 70vh; /* 70% viewport height maximum */
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        width: auto;
+        max-height: 70vh;
     }
 }
 
-/* ========================================================================
-   AUDIT LOG INTERFACE
-   ======================================================================== */
+/* ============================================================================
+   AUDIT LOG INTERFACE SECTION
+   ============================================================================ */
 
 /**
- * Comprehensive Audit Log Interface
- * 
- * Advanced activity tracking system for monitoring all plugin operations.
- * Provides administrators with detailed logs of user actions, system events,
- * and automated processes for compliance and troubleshooting.
- * 
- * Key Features:
- * - Multi-criteria filtering interface (date, action type, user, submission)
- * - Color-coded action types for instant visual categorization
- * - Responsive table design with mobile card transformation
- * - Combined submission and artist information display
- * - Pagination support for large datasets
- * - Export functionality for compliance reporting
- * 
- * Action Type Categories:
- * - Email Communications: Sent notifications, reminders, status updates
- * - Status Management: Approval, rejection, pending state changes
- * - Content Operations: Form submissions, file uploads, data modifications
- * - System Events: Setting changes, automated processes, maintenance
- * - User Interactions: Conversation management, manual interventions
- * 
- * Mobile Design Strategy:
- * - Tables transform into card layouts for mobile devices
- * - Touch-friendly filtering controls with larger targets
- * - Stacked information display for improved readability
- * - Collapsible details for space optimization
- * 
- * Integration Points:
- * - class-cf7-artist-submissions-action-log.php: Backend logging system
- * - templates/settings/audit-tab.php: Frontend interface
- * - admin.js: Filter functionality and AJAX operations
+ * Comprehensive Audit Log Interface - activity tracking with filtering and export
+ * Features: Multi-criteria filters, color-coded actions, responsive tables, pagination
+ * Action categories: Email, Status, Content, System, User interactions
+ * Mobile: Table → card layout with touch-friendly controls
  */
 
 /**
- * Audit Log Main Container
- * 
- * Primary wrapper for the complete audit log interface.
- * Provides structural foundation for all audit components.
+ * Audit Log Main Container - structural foundation
  */
 .cf7-audit-log-container {
-    margin-top: 20px; /* Separation from other settings content */
+    margin-top: 20px;
 }
 
 /**
- * Audit Filtering Interface
- * 
- * Advanced filtering controls for audit log customization.
- * Provides multiple criteria for precise log analysis.
+ * Audit Filtering Interface - advanced controls for log customization
  */
 .cf7-audit-filters {
-    background: #f9f9f9; /* Light background for filter distinction */
-    padding: 15px; /* Comfortable internal spacing */
-    border: 1px solid #e0e0e0; /* Subtle border for definition */
-    border-radius: 8px; /* Rounded corners for modern appearance */
-    margin-bottom: 20px; /* Space before log results */
+    background: #f9f9f9;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 20px;
 }
 
 /**
- * Filter Control Row
- * 
- * Horizontal layout for filter inputs with responsive wrapping.
- * Clean, modern layout with consistent spacing.
+ * Filter Control Row - horizontal layout with responsive wrapping
  */
 .filter-row {
     display: flex;
-    gap: 20px; /* Generous spacing between filter controls */
-    align-items: flex-end; /* Align all controls to bottom baseline */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
-    padding: 5px 0; /* Small vertical padding for breathing room */
+    gap: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    padding: 5px 0;
 }
 
 /**
- * Individual Filter Group
- * 
- * Container for each filter control with label and input.
- * Provides consistent structure for all filter types.
+ * Individual Filter Group - container with label and input structure
  */
 .filter-group {
     display: flex;
-    flex-direction: column; /* Stack label above input */
-    min-width: 120px; /* Minimum width for usability */
-    gap: 5px; /* Space between label and input */
+    flex-direction: column;
+    min-width: 120px;
+    gap: 5px;
 }
 
 /**
- * Filter Group for Button Actions
- * 
- * Special container for filter action buttons.
- * Uses horizontal layout with modern button styling.
+ * Filter Group for Button Actions - horizontal layout with modern styling
  */
 .filter-buttons {
     display: flex;
-    flex-direction: row; /* Horizontal button layout */
-    align-items: center; /* Center-align buttons */
-    gap: 12px; /* Space between action buttons */
-    margin-top: 20px; /* Push buttons down to align with inputs */
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
 }
 
 /**
- * Filter Labels
- * 
- * Descriptive labels for filter controls.
- * Clean, readable styling with proper hierarchy.
+ * Filter Labels - descriptive labels with proper hierarchy
  */
 .filter-group label {
-    font-weight: 600; /* Bold for clear hierarchy */
-    color: #374151; /* Dark gray for readability */
-    font-size: 0.875rem; /* 14px standard label size */
-    margin: 0; /* Remove default margins */
-    white-space: nowrap; /* Prevent label wrapping */
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
+    margin: 0;
+    white-space: nowrap;
 }
 
 /**
- * Filter Input Controls
- * 
- * Modern, consistent styling for all filter inputs.
- * Matches contemporary form design patterns.
+ * Filter Input Controls - modern styling for contemporary design
  */
 .filter-group input,
 .filter-group select {
-    padding: 10px 14px; /* Comfortable padding */
-    border: 2px solid #e5e7eb; /* Clean, modern border */
-    border-radius: 8px; /* Rounded corners for modern look */
-    font-size: 0.875rem; /* 14px readable text */
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.875rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #ffffff; /* Pure white background */
-    transition: border-color 0.2s ease, box-shadow 0.2s ease; /* Smooth focus transitions */
-    min-height: 44px; /* Touch-friendly minimum height */
-    box-sizing: border-box; /* Include padding in height calculation */
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-height: 44px;
+    box-sizing: border-box;
 }
 
 .filter-group input:focus,
 .filter-group select:focus {
-    outline: none; /* Remove default outline */
-    border-color: #3b82f6; /* Blue focus border */
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); /* Subtle focus glow */
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /**
- * Modern Filter Action Buttons
- * 
- * Complete redesign of filter buttons with modern styling.
- * Clean, accessible, and visually consistent.
+ * Modern Filter Action Buttons - clean, accessible, visually consistent
  */
 .filter-buttons .filter-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px; /* Space between icon and text */
-    padding: 12px 20px; /* Generous padding for touch targets */
+    gap: 8px;
+    padding: 12px 20px;
     border: none;
-    border-radius: 8px; /* Modern rounded corners */
-    font-size: 0.875rem; /* 14px readable text */
-    font-weight: 600; /* Semi-bold for emphasis */
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     cursor: pointer;
-    transition: all 0.2s ease; /* Smooth transitions */
-    text-decoration: none; /* Remove link underlines */
-    min-height: 44px; /* Consistent height with inputs */
-    white-space: nowrap; /* Prevent text wrapping */
+    transition: all 0.2s ease;
+    text-decoration: none;
+    min-height: 44px;
+    white-space: nowrap;
     box-sizing: border-box;
 }
 
 /**
- * Primary Filter Button (Filter/Apply)
- * 
- * Main action button with prominent blue styling.
+ * Primary Filter Button (Filter/Apply) - prominent blue styling
  */
 .filter-buttons .filter-btn-primary {
-    background: #3b82f6; /* Modern blue */
-    color: #ffffff; /* White text */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    background: #3b82f6;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .filter-buttons .filter-btn-primary:hover {
-    background: #2563eb; /* Darker blue on hover */
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); /* Enhanced shadow */
-    transform: translateY(-1px); /* Subtle lift effect */
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
 }
 
 .filter-buttons .filter-btn-primary:active {
-    transform: translateY(0); /* Reset on click */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Original shadow */
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /**
- * Secondary Filter Button (Clear/Reset)
- * 
- * Secondary action button with subtle gray styling.
+ * Secondary Filter Button (Clear/Reset) - subtle gray styling
  */
 .filter-buttons .filter-btn-secondary {
-    background: #f9fafb; /* Light gray background */
-    color: #374151; /* Dark gray text */
-    border: 2px solid #e5e7eb; /* Subtle border */
+    background: #f9fafb;
+    color: #374151;
+    border: 2px solid #e5e7eb;
 }
 
 .filter-buttons .filter-btn-secondary:hover {
-    background: #f3f4f6; /* Slightly darker gray */
-    border-color: #d1d5db; /* Darker border */
-    transform: translateY(-1px); /* Subtle lift effect */
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
 }
 
 .filter-buttons .filter-btn-secondary:active {
@@ -1316,9 +903,7 @@
 }
 
 /**
- * Filter Button Icons
- * 
- * Consistent icon styling for filter buttons.
+ * Filter Button Icons - consistent icon styling
  */
 .filter-buttons .filter-btn .dashicons {
     font-size: 16px;
@@ -1328,400 +913,304 @@
 }
 
 /**
- * Responsive Filter Design
- * 
- * Mobile-friendly adaptations for filter interface.
+ * Responsive Filter Design - mobile-friendly adaptations
  */
 @media (max-width: 768px) {
     .filter-row {
-        flex-direction: column; /* Stack filters vertically on mobile */
-        gap: 15px; /* Consistent spacing */
-        align-items: stretch; /* Full-width elements */
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
     }
     
     .filter-group {
-        min-width: 100%; /* Full-width filter groups on mobile */
+        min-width: 100%;
     }
     
     .filter-buttons {
-        flex-direction: row; /* Keep buttons horizontal even on mobile */
-        justify-content: center; /* Center buttons on mobile */
-        margin-top: 10px; /* Reduce top margin on mobile */
-        gap: 15px; /* Slightly larger gap on mobile for touch targets */
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 10px;
+        gap: 15px;
     }
     
     .filter-buttons .filter-btn {
-        flex: 1; /* Equal width buttons on mobile */
-        max-width: 140px; /* Limit maximum button width */
+        flex: 1;
+        max-width: 140px;
     }
 }
 
 /**
- * Audit Summary Information
- * 
- * Summary row showing filtered results count and quick actions.
- * Provides context and tools for the current log view.
+ * Audit Summary Information - filtered results count and quick actions
  */
 .cf7-audit-summary {
-    margin-bottom: 15px; /* Space before log table */
+    margin-bottom: 15px;
     display: flex;
-    justify-content: space-between; /* Space between summary and actions */
-    align-items: center; /* Center-align summary content */
-    flex-wrap: wrap; /* Allow wrapping on mobile */
-    gap: 15px; /* Increased spacing between wrapped elements */
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 /**
- * Audit Summary Text
- * 
- * Descriptive text showing current filter results and status.
- * Provides users with context about the displayed data.
+ * Audit Summary Text - descriptive text for current filter results
  */
 .cf7-audit-summary p {
-    margin: 0; /* Remove default paragraph margins */
-    color: #666; /* Medium gray for secondary text */
-    font-style: italic; /* Italics for summary information */
-    font-size: 14px; /* Slightly larger for better readability */
+    margin: 0;
+    color: #666;
+    font-style: italic;
+    font-size: 14px;
 }
 
 /**
- * Action Type Color Coding System
- * 
- * Comprehensive color-coded system for audit log action categorization.
- * Provides immediate visual recognition of different activity types.
- * 
- * Color Strategy:
- * - Blue tones: Communication and information actions
- * - Orange/Red tones: Status changes and critical actions
- * - Green tones: Positive actions and completions
- * - Purple tones: Content and file operations
- * - Cyan tones: System actions and automation
- * 
- * Each action type includes:
- * - Distinctive background color for quick identification
- * - High-contrast text color for accessibility
- * - Consistent padding and typography
- * - Uppercase text for emphasis and uniformity
+ * Action Type Color Coding System - visual categorization for activity types
+ * Blue: Communication, Orange/Red: Status changes, Green: Positive actions
+ * Purple: Content operations, Cyan: System actions
+ * Features: Distinctive colors, high contrast, consistent typography
  */
 
 /**
- * Base Action Type Badge
- * 
- * Common styling for all action type indicators.
- * Enhanced to prevent overflow and ensure consistent display.
+ * Base Action Type Badge - common styling with overflow prevention
  */
 .audit-type {
-    padding: 6px 10px; /* Increased padding for better appearance */
-    border-radius: 6px; /* Slightly larger rounded corners */
-    font-size: 11px; /* Small text for compact display */
-    font-weight: 600; /* Bold text for emphasis */
-    text-transform: uppercase; /* Uppercase for consistency */
-    white-space: nowrap; /* Prevent text wrapping and line breaks */
-    display: inline-block; /* Ensure proper block behavior */
-    line-height: 1.1; /* Tight line height for compact badges */
-    min-width: fit-content; /* Ensure content fits properly */
-    max-width: 100%; /* Prevent overflow beyond container */
-    overflow: hidden; /* Hide any overflow text */
-    text-overflow: ellipsis; /* Show ellipsis for overflow */
-    vertical-align: middle; /* Center-align with surrounding content */
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    display: inline-block;
+    line-height: 1.1;
+    min-width: fit-content;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
 /**
- * Email Sent Actions (Blue)
- * 
- * Communication-related actions including notifications,
- * reminders, and automated email responses.
+ * Email Sent Actions (Blue) - communication and notifications
  */
 .audit-type-email_sent {
-    background: #e7f3ff; /* Light blue background */
-    color: #0073aa; /* WordPress blue for text */
+    background: #e7f3ff;
+    color: #0073aa;
 }
 
 /**
- * Status Change Actions (Orange/Red)
- * 
- * Critical workflow actions including approvals,
- * rejections, and submission status modifications.
+ * Status Change Actions (Orange/Red) - critical workflow actions
  */
 .audit-type-status_change {
-    background: #fff2e7; /* Light orange background */
-    color: #d63638; /* Red text for critical actions */
+    background: #fff2e7;
+    color: #d63638;
 }
 
 /**
- * Form Submission Actions (Green)
- * 
- * Positive actions including new submissions,
- * successful form processing, and data creation.
+ * Form Submission Actions (Green) - positive actions and data creation
  */
 .audit-type-form_submission {
-    background: #e7ffe7; /* Light green background */
-    color: #00a32a; /* Green text for positive actions */
+    background: #e7ffe7;
+    color: #00a32a;
 }
 
 /**
- * File Upload Actions (Purple)
- * 
- * Content-related actions including artwork uploads,
- * file attachments, and media management.
+ * File Upload Actions (Purple) - content operations and media management
  */
 .audit-type-file_upload {
-    background: #f0e7ff; /* Light purple background */
-    color: #6c2eb9; /* Purple text for content actions */
+    background: #f0e7ff;
+    color: #6c2eb9;
 }
 
 /**
- * Action Created Events (Cyan)
- * 
- * System-generated actions including automated
- * task creation and workflow initiation.
+ * Action Created Events (Cyan) - system-generated task creation
  */
 .audit-type-action_created {
-    background: #e0f7fa; /* Light cyan background */
-    color: #006064; /* Dark cyan text for system actions */
+    background: #e0f7fa;
+    color: #006064;
 }
 
 /**
- * Action Completed Events (Dark Green)
- * 
- * Completion of tasks, workflows, and
- * successful process finalization.
+ * Action Completed Events (Dark Green) - task and workflow completion
  */
 .audit-type-action_completed {
-    background: #e8f5e8; /* Light green background */
-    color: #2e7d32; /* Dark green text for completions */
+    background: #e8f5e8;
+    color: #2e7d32;
 }
 
 /**
- * Conversation Management (Orange)
- * 
- * Communication management actions including
- * conversation clearing and message handling.
+ * Conversation Management (Orange) - communication management actions
  */
 .audit-type-conversation_cleared {
-    background: #fff3e0; /* Light orange background */
-    color: #e65100; /* Orange text for conversation actions */
+    background: #fff3e0;
+    color: #e65100;
 }
 
 /**
- * Setting Changes (Purple)
- * 
- * Administrative actions including configuration
- * changes and system setting modifications.
+ * Setting Changes (Purple) - administrative configuration changes
  */
 .audit-type-setting_changed {
-    background: #f3e5f5; /* Light purple background */
-    color: #7b1fa2; /* Purple text for admin actions */
+    background: #f3e5f5;
+    color: #7b1fa2;
 }
 
 /**
- * Audit Detail Information
- * 
- * Detailed information display for individual audit entries.
- * Provides structured layout for complex audit data.
+ * Audit Detail Information - structured layout for individual entries
  */
 .audit-details div {
-    margin-bottom: 3px; /* Small spacing between detail lines */
-    font-size: 12px; /* Compact text for detail information */
+    margin-bottom: 3px;
+    font-size: 12px;
 }
 
 /**
- * System Action Indicators
- * 
- * Special styling for automated system actions and
- * entries where artist information is not available.
+ * System Action Indicators - styling for automated system actions
  */
 .system-action,
 .no-artist {
-    color: #666; /* Medium gray for system information */
-    font-style: italic; /* Italics to indicate system-generated content */
+    color: #666;
+    font-style: italic;
 }
 
 /**
- * Audit Pagination Controls
- * 
- * Pagination interface for large audit log datasets.
- * Provides navigation through multiple pages of results.
+ * Audit Pagination Controls - navigation for large datasets
  */
 .cf7-audit-pagination {
-    margin-top: 20px; /* Space above pagination controls */
-    text-align: center; /* Center-align pagination elements */
+    margin-top: 20px;
+    text-align: center;
 }
 
 /**
- * Audit Table Container
- * 
- * Responsive wrapper for audit log table display.
- * Enables horizontal scrolling on smaller screens.
+ * Audit Table Container - responsive wrapper with horizontal scrolling
  */
 .cf7-audit-table-container {
-    overflow-x: auto; /* Horizontal scrolling for wide tables */
+    overflow-x: auto;
 }
 
 /**
- * Audit Table Layout Optimization
- * 
- * Improved table layout for better content display.
- * Prevents breaking of action type tags and improves readability.
- * Uses high specificity and important declarations to override WordPress styles.
+ * Audit Table Layout Optimization - improved content display with fixed layout
+ * Uses high specificity to override WordPress styles
  */
 .cf7-audit-table-container table {
-    table-layout: fixed !important; /* Force fixed table layout for consistent column widths */
-    width: 100% !important; /* Full container width */
+    table-layout: fixed !important;
+    width: 100% !important;
 }
 
 .cf7-audit-table-container table th:nth-child(1),
 .cf7-audit-table-container table td:nth-child(1) {
-    width: 120px !important; /* Fixed width for Date & Time column */
+    width: 120px !important;
     min-width: 120px !important;
     max-width: 120px !important;
 }
 
 .cf7-audit-table-container table th:nth-child(2),
 .cf7-audit-table-container table td:nth-child(2) {
-    width: 150px !important; /* Optimized width for Action Type column to prevent overflow */
+    width: 150px !important;
     min-width: 150px !important;
     max-width: 150px !important;
 }
 
 .cf7-audit-table-container table th:nth-child(3),
 .cf7-audit-table-container table td:nth-child(3) {
-    width: 160px !important; /* Fixed width for Submission & Artist column */
+    width: 160px !important;
     min-width: 160px !important;
     max-width: 160px !important;
 }
 
 .cf7-audit-table-container table th:nth-child(4),
 .cf7-audit-table-container table td:nth-child(4) {
-    width: 100px !important; /* Fixed width for User column */
+    width: 100px !important;
     min-width: 100px !important;
     max-width: 100px !important;
 }
 
 .cf7-audit-table-container table th:nth-child(5),
 .cf7-audit-table-container table td:nth-child(5) {
-    width: auto !important; /* Flexible width for Details column */
+    width: auto !important;
     min-width: 180px !important;
 }
 
 /**
- * Submission & Artist Information Display
- * 
- * Combined display system for submission and artist data.
- * Provides comprehensive context for each audit entry.
+ * Submission & Artist Information Display - combined display system for context
  */
 
 /**
- * Submission-Artist Info Container
- * 
- * Main container for combined submission and artist information.
- * Optimized line height for compact information display.
+ * Submission-Artist Info Container - compact information display
  */
 .submission-artist-info {
-    line-height: 1.4; /* Tight line height for compact display */
+    line-height: 1.4;
 }
 
 /**
- * Submission Information Section
- * 
- * Upper section containing submission details and links.
- * Separated from artist info with subtle border.
+ * Submission Information Section - details and links with separator
  */
 .submission-info {
-    margin-bottom: 8px; /* Space below submission info */
-    padding-bottom: 6px; /* Padding before separator */
-    border-bottom: 1px solid #f0f0f0; /* Subtle separator line */
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 /**
- * Submission Links
- * 
- * Interactive links to submission details.
- * WordPress-style link coloring for consistency.
+ * Submission Links - interactive WordPress-style link coloring
  */
 .submission-link {
-    text-decoration: none; /* Remove default underline */
-    color: #0073aa; /* WordPress link blue */
-    font-weight: 600; /* Bold for emphasis */
+    text-decoration: none;
+    color: #0073aa;
+    font-weight: 600;
 }
 
 /**
- * Submission Link Hover State
- * 
- * Darker blue on hover for interactive feedback.
- * Maintains WordPress color scheme consistency.
+ * Submission Link Hover State - darker blue for interactive feedback
  */
 .submission-link:hover {
-    color: #005177; /* Darker blue on hover */
+    color: #005177;
 }
 
 /**
- * Deleted Submission Indicator
- * 
- * Special styling for submissions that have been deleted.
- * Red text indicates unavailable or removed content.
+ * Deleted Submission Indicator - red text for unavailable content
  */
 .submission-deleted {
-    color: #d63638; /* Red text for deleted items */
-    font-size: 11px; /* Small text for status indicator */
+    color: #d63638;
+    font-size: 11px;
 }
 
 /**
- * Artist Information Layout
- * 
- * Vertical layout for artist name and email display.
- * Provides clear hierarchy for contact information.
+ * Artist Information Layout - vertical display for contact hierarchy
  */
 .artist-info {
     display: flex;
-    flex-direction: column; /* Stack artist information vertically */
-    gap: 2px; /* Small gap between name and email */
+    flex-direction: column;
+    gap: 2px;
 }
 
 /**
- * Artist Name Display
- * 
- * Primary artist identification with emphasis styling.
- * Bold weight distinguishes from email address.
+ * Artist Name Display - primary identification with emphasis
  */
 .artist-name {
-    font-weight: 600; /* Bold for primary identification */
-    color: #333; /* Dark gray for strong readability */
+    font-weight: 600;
+    color: #333;
 }
 
 /**
- * Artist Email Display
- * 
- * Secondary contact information with smaller text.
- * Provides contact context without overwhelming layout.
+ * Artist Email Display - secondary contact information
  */
 .artist-email {
-    font-size: 11px; /* Small text for secondary information */
-    color: #666; /* Medium gray for contact details */
+    font-size: 11px;
+    color: #666;
 }
 
 /**
- * System Action Information
- * 
- * Special display for automated system actions.
- * Distinguishes automated entries from user actions.
+ * System Action Information - distinguishes automated entries
  */
 .system-action-info {
-    color: #666; /* Medium gray for system information */
-    font-style: italic; /* Italics for system-generated content */
+    color: #666;
+    font-style: italic;
 }
 
 /**
- * Audit Tools Interface
- * 
- * Administrative tools for audit log management.
- * Provides quick access to maintenance functions.
+ * Audit Tools Interface - administrative tools for log management
  */
 .cf7-audit-tools {
     display: flex;
-    gap: 12px; /* Increased spacing between tool buttons */
-    align-items: center; /* Center-align tools vertically */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 /**
@@ -1732,276 +1221,191 @@
  */
 #update-missing-artist-info {
     display: inline-flex;
-    align-items: center; /* Center-align icon and text */
-    gap: 8px; /* Proper space between icon and text */
-    padding: 0.5rem 1rem; /* Standard button padding */
-    font-size: 0.875rem; /* Standard button text size */
-    line-height: 1.2; /* Controlled line height */
-    white-space: nowrap; /* Prevent text wrapping */
-    min-height: 36px; /* Consistent button height */
-    border-radius: 0.375rem; /* Rounded corners */
-    transition: all 0.2s ease; /* Smooth hover transitions */
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    min-height: 36px;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
 }
 
 #update-missing-artist-info .dashicons {
-    font-size: 16px; /* Standard icon size */
+    font-size: 16px;
     width: 16px;
     height: 16px;
     line-height: 16px;
-    flex-shrink: 0; /* Prevent icon from shrinking */
+    flex-shrink: 0;
 }
 
 #update-missing-artist-info:hover {
-    transform: translateY(-1px); /* Subtle hover lift effect */
+    transform: translateY(-1px);
 }
 
-/* ========================================================================
-   SETTINGS RESPONSIVE DESIGN
-   ======================================================================== */
+/* ============================================================================
+   SETTINGS RESPONSIVE DESIGN SECTION
+   ============================================================================ */
 
 /**
- * Desktop and Large Tablet Responsive Design
- * 
- * Responsive adjustments for larger screens and desktop environments.
- * Optimizes layout and spacing for enhanced desktop experience.
+ * Desktop and Large Tablet Responsive Design - enhanced layout for larger screens
  */
 
 /**
- * Large Tablet Layout (1024px and below)
- * 
- * Intermediate breakpoint for tablets and smaller desktop screens.
- * Adjusts layout density and navigation patterns.
+ * Large Tablet Layout (1024px and below) - intermediate breakpoint adjustments
  */
 @media (max-width: 1024px) {
     /**
-     * Settings Header Desktop Layout
-     * 
-     * Center-aligned header layout for medium screens.
-     * Provides balanced appearance on tablet devices.
+     * Settings Header Desktop Layout - center-aligned for medium screens
      */
     .cf7-settings-header {
-        flex-direction: column; /* Stack header elements */
-        text-align: center; /* Center-align header content */
-        gap: 1.5rem; /* 24px spacing between elements */
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
     }
     
     /**
-     * Header Actions Desktop Layout
-     * 
-     * Horizontal action layout with center justification.
-     * Maintains desktop-style button grouping.
+     * Header Actions Desktop Layout - horizontal with center justification
      */
     .cf7-header-actions {
-        flex-direction: row; /* Keep horizontal layout */
-        justify-content: center; /* Center-align action buttons */
+        flex-direction: row;
+        justify-content: center;
     }
 }
 
 /**
- * Tablet and Mobile Layout (768px and below)
- * 
- * Comprehensive mobile optimizations for touch interfaces.
- * Transforms desktop layouts for mobile-first experience.
+ * Tablet and Mobile Layout (768px and below) - comprehensive mobile optimizations
  */
 @media (max-width: 768px) {
     /**
      * Settings Container Edge-to-Edge Layout
-     * 
-     * Full-width container for mobile screens.
-     * Removes WordPress admin padding constraints.
      */
     .cf7-modern-settings {
-        margin: 0 -20px; /* Negative margins for full-width */
+        margin: 0 -20px;
     }
     
     /**
      * Settings Header Full-Width Mobile
-     * 
-     * Edge-to-edge header for mobile screens.
-     * Removes border radius for seamless mobile experience.
      */
     .cf7-settings-header {
-        margin: 0 0 2rem 0; /* Reset margins for mobile */
-        border-radius: 0; /* Remove rounded corners */
+        margin: 0 0 2rem 0;
+        border-radius: 0;
     }
     
     /**
      * Settings Content Full-Width Mobile
-     * 
-     * Content area with full-width mobile layout.
-     * Provides maximum content area on small screens.
      */
     .cf7-settings-content {
-        border-radius: 0; /* Remove rounded corners for mobile */
+        border-radius: 0;
     }
     
     /**
      * Settings Card Mobile Padding
-     * 
-     * Reduced padding for mobile content cards.
-     * Optimizes content density for small screens.
      */
     .cf7-settings-card {
-        padding: 1.5rem; /* 24px reduced from 32px desktop padding */
+        padding: 1.5rem;
     }
     
     /**
      * Form Actions Mobile Layout
-     * 
-     * Vertical form action layout for mobile interaction.
-     * Full-width buttons improve touch accessibility.
      */
     .cf7-form-actions {
-        flex-direction: column; /* Stack form actions vertically */
-        align-items: stretch; /* Full-width button stretching */
-        gap: 1rem; /* 16px spacing between action groups */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
     }
     
     /**
      * Form Action Groups Mobile Layout
-     * 
-     * Center-aligned action groups with full width.
-     * Consistent mobile button presentation.
      */
     .cf7-form-actions-left,
     .cf7-form-actions-right {
-        justify-content: center; /* Center-align action buttons */
-        width: 100%; /* Full-width action containers */
+        justify-content: center;
+        width: 100%;
     }
     
     /**
      * Tab Label Mobile Optimization
-     * 
-     * Hide tab labels on mobile for space optimization.
-     * Relies on icons for navigation identification.
      */
     .cf7-nav-tab .tab-label {
-        display: none; /* Hide text labels on mobile */
+        display: none;
     }
     
     /**
      * Tab Mobile Touch Targets
-     * 
-     * Enhanced touch targets for mobile tab navigation.
-     * Larger padding improves touch accessibility.
      */
     .cf7-nav-tab {
-        padding: 1rem; /* 16px padding for larger touch targets */
+        padding: 1rem;
     }
 }
 
 /**
- * Small Mobile Layout (480px and below)
- * 
- * Ultra-compact layout for small mobile devices.
- * Further optimizations for space-constrained screens.
+ * Small Mobile Layout (480px and below) - ultra-compact for constrained screens
  */
 @media (max-width: 480px) {
     /**
      * Settings Card Compact Mobile
-     * 
-     * Minimal padding for very small screens.
-     * Maximizes content area on constrained devices.
      */
     .cf7-settings-card {
-        padding: 1rem; /* 16px minimal padding for small screens */
+        padding: 1rem;
     }
     
     /**
      * Settings Title Small Mobile
-     * 
-     * Reduced title size for small screen optimization.
-     * Maintains hierarchy while conserving space.
      */
     .cf7-settings-title {
-        font-size: 1.5rem; /* 24px reduced from larger screen sizes */
+        font-size: 1.5rem;
     }
     
     /**
      * Tab Navigation Small Mobile
-     * 
-     * Centered tab navigation for small screens.
-     * Optimizes limited horizontal space.
      */
     .cf7-nav-tabs {
-        justify-content: center; /* Center-align tabs on small screens */
+        justify-content: center;
     }
 }
 
-/* ========================================================================
-   AUDIT LOG RESPONSIVE DESIGN
-   ======================================================================== */
+/* ============================================================================
+   AUDIT LOG RESPONSIVE DESIGN SECTION
+   ============================================================================ */
 
 /**
- * Audit Log Mobile Transformation System
- * 
- * Advanced responsive design for audit log interface transformation.
- * Converts complex tabular data into mobile-friendly card layouts.
- * 
- * Transformation Strategy:
- * - Tables become card-based layouts on mobile devices
- * - Each table row transforms into an individual card
- * - Table headers become data labels within each card
- * - Touch-friendly filtering controls with larger targets
- * - Stacked information display for improved mobile readability
- * 
- * Technical Implementation:
- * - CSS display property manipulation for table transformation
- * - Pseudo-element content generation for data labels
- * - Absolute positioning for mobile data presentation
- * - Responsive breakpoints for progressive enhancement
- * 
- * Accessibility Considerations:
- * - Maintains semantic table structure in HTML
- * - Screen readers can still parse table relationships
- * - Visual transformation doesn't affect assistive technology
- * - Touch targets meet minimum size requirements
+ * Audit Log Mobile Transformation System - table to card layout conversion
+ * Strategy: Tables → cards, headers → labels, touch-friendly controls
+ * Technical: Display manipulation, pseudo-elements, responsive breakpoints
+ * Accessibility: Maintains semantic structure for screen readers
  */
 
 /**
- * Tablet Breakpoint (768px) - Audit Log Mobile Layout
- * 
- * Primary mobile transformation breakpoint for audit log interface.
- * Handles conversion from desktop table to mobile card layout.
+ * Tablet Breakpoint (768px) - primary mobile transformation
  */
 @media (max-width: 768px) {
     /**
      * Filter Interface Mobile Layout
-     * 
-     * Transform horizontal filter layout to vertical stacking.
-     * Improves touch interaction and content organization.
      */
     .filter-row {
-        flex-direction: column; /* Stack filter controls vertically */
-        align-items: stretch; /* Full-width filter controls */
+        flex-direction: column;
+        align-items: stretch;
     }
     
     /**
      * Filter Group Mobile Layout
-     * 
-     * Full-width filter groups for better mobile interaction.
-     * Larger touch targets improve usability.
      */
     .filter-group {
-        min-width: 100%; /* Full-width filter inputs */
+        min-width: 100%;
     }
     
     /**
      * Audit Summary Mobile Layout
-     * 
-     * Vertical summary layout for mobile screens.
-     * Prevents content overflow and improves readability.
      */
     .cf7-audit-summary {
-        flex-direction: column; /* Stack summary elements vertically */
-        align-items: flex-start; /* Left-align summary content */
+        flex-direction: column;
+        align-items: flex-start;
     }
     
     /**
-     * Table to Card Transformation
-     * 
-     * Core transformation that converts table structure to block layout.
-     * Enables card-based mobile presentation of tabular data.
+     * Table to Card Transformation - convert table structure to block layout
      */
     .cf7-audit-table-container table,
     .cf7-audit-table-container thead,
@@ -2009,89 +1413,68 @@
     .cf7-audit-table-container th,
     .cf7-audit-table-container td,
     .cf7-audit-table-container tr {
-        display: block; /* Convert all table elements to block display */
+        display: block;
     }
     
     /**
-     * Hide Table Headers on Mobile
-     * 
-     * Remove visual table headers while preserving accessibility.
-     * Headers are replaced by pseudo-element labels in each card.
+     * Hide Table Headers on Mobile - replace with pseudo-element labels
      */
     .cf7-audit-table-container thead tr {
-        position: absolute; /* Remove from visual flow */
-        top: -9999px; /* Move off-screen */
-        left: -9999px; /* Completely hidden positioning */
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
     }
     
     /**
-     * Mobile Card Styling
-     * 
-     * Transform table rows into individual cards.
-     * Each row becomes a self-contained information card.
+     * Mobile Card Styling - transform rows into individual cards
      */
     .cf7-audit-table-container tr {
-        border: 1px solid #ccc; /* Card border for definition */
-        margin-bottom: 10px; /* Space between cards */
-        border-radius: 8px; /* Rounded corners for modern appearance */
-        overflow: hidden; /* Clean edges for card content */
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        overflow: hidden;
     }
     
     /**
-     * Mobile Cell Layout
-     * 
-     * Transform table cells for mobile card presentation.
-     * Creates two-column layout within each card.
+     * Mobile Cell Layout - two-column layout within cards
      */
     .cf7-audit-table-container td {
-        border: none; /* Remove table cell borders */
-        border-bottom: 1px solid #eee; /* Subtle separators between fields */
-        position: relative; /* Enable pseudo-element positioning */
-        padding-left: 50% !important; /* Reserve space for data labels */
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50% !important;
     }
     
     /**
-     * Data Labels for Mobile Cards
-     * 
-     * Generate data labels using CSS pseudo-elements.
-     * Provides context for each data field in card layout.
+     * Data Labels for Mobile Cards - pseudo-element labels for context
      */
     .cf7-audit-table-container td:before {
-        content: attr(data-label); /* Use data-label attribute for labels */
-        position: absolute; /* Absolute positioning for label placement */
-        left: 6px; /* Left margin for label positioning */
-        width: 45%; /* Label width constraint */
-        padding-right: 10px; /* Space between label and content */
-        white-space: nowrap; /* Prevent label text wrapping */
-        font-weight: bold; /* Bold labels for emphasis */
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
     }
 }
 
 /**
- * Tablet Layout Adjustments (1024px and below)
- * 
- * Medium screen optimizations for tablet devices.
- * Balances desktop functionality with mobile-friendly spacing.
+ * Tablet Layout Adjustments (1024px and below) - medium screen optimizations
  */
 @media (max-width: 1024px) {
     /**
-     * Settings Container Tablet Layout
-     * 
-     * Full-width container for tablet screens.
-     * Horizontal padding for content breathing room.
+     * Settings Container Tablet Layout - full-width with horizontal padding
      */
     .cf7-modern-settings {
-        max-width: 100%; /* Full-width for tablet screens */
-        padding: 0 1rem; /* 16px horizontal padding */
+        max-width: 100%;
+        padding: 0 1rem;
     }
     
     /**
-     * Settings Header Tablet Layout
-     * 
-     * Adjusted header margins for tablet presentation.
-     * Compensates for container padding changes.
+     * Settings Header Tablet Layout - compensate for container padding changes
      */
     .cf7-settings-header {
-        margin: 0 -1rem 2rem -1rem; /* Negative margins for full-width header */
+        margin: 0 -1rem 2rem -1rem;
     }
 }

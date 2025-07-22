@@ -1,57 +1,35 @@
 /**
- * CF7 Artist Submissions - Lightbox Media Viewer
- * 
- * Modern lightbox implementation for displaying submission artwork and media files.
- * Features a full-screen overlay with gallery navigation, keyboard controls, and 
- * mobile-optimized touch interactions.
- * 
- * CORE FEATURES:
- * ✓ Full-screen modal overlay with backdrop blur
- * ✓ Gallery navigation with previous/next controls
- * ✓ Keyboard shortcuts (Escape, Arrow keys)
- * ✓ Touch/swipe gesture support
- * ✓ Mobile-responsive button positioning
- * ✓ Smooth CSS transitions and hover effects
- * ✓ High z-index overlay (99999) for proper stacking
- * ✓ Flexible image sizing with object-fit contain
- * 
- * INTEGRATION:
- * - JavaScript: assets/js/lightbox.js (event handlers, gallery logic)
- * - PHP: class-cf7-artist-submissions-tabs.php (HTML structure)
- * - Trigger: Elements with .lightbox-preview class
- * - Gallery: Groups images within .submission-files containers
- * 
- * ACCESSIBILITY:
- * - Keyboard navigation support
- * - ARIA-compliant focus management
- * - High contrast close/navigation buttons
- * - Mobile-optimized touch targets (44px minimum)
- * 
- * BROWSER SUPPORT:
- * - Modern browsers with CSS Grid and Flexbox
- * - Progressive enhancement for older browsers
- * - Responsive design with mobile-first approach
- * 
- * @package CF7_Artist_Submissions
- * @since 1.0.0 Initial lightbox implementation
- * @since 2.0.0 Enhanced with touch support and improved accessibility
- * @since 2.1.0 Modernized color syntax and improved documentation
+ * CF7 Artist Submissions - Modern Lightbox Media Viewer System CSS
+ *
+ * Professional full-screen media viewer providing gallery navigation,
+ * keyboard controls, and touch interactions for submission artwork display
+ * with modern responsive design and comprehensive accessibility features.
+ *
+ * Features:
+ * • Full-screen modal overlay with backdrop blur and high z-index stacking
+ * • Gallery navigation system with previous/next controls and keyboard shortcuts
+ * • Touch and swipe gesture support for mobile device interaction
+ * • Mobile-responsive button positioning with optimized touch targets
+ * • Smooth CSS transitions and hover effects for professional presentation
+ * • Flexible image sizing with object-fit contain for aspect ratio preservation
+ * • ARIA-compliant focus management and accessibility standards compliance
+ * • Progressive enhancement for cross-browser compatibility and modern features
+ *
+ * @package    CF7_Artist_Submissions
+ * @subpackage Assets/CSS
+ * @since      1.0.0
+ * @version    1.0.0
  */
 
-/* ========================================================================
-   LIGHTBOX OVERLAY SYSTEM
-   ======================================================================== */
+/* ============================================================================
+   LIGHTBOX OVERLAY SYSTEM SECTION
+   ============================================================================ */
 
 /**
  * Main Lightbox Overlay
  * 
- * Full-screen fixed overlay that serves as the backdrop for the lightbox.
- * Uses high z-index (99999) to appear above all other content including
- * WordPress admin bars and other modals.
- * 
- * States:
- * - Default: display: none (hidden)
- * - Active: display: flex (visible with fade-in)
+ * Full-screen fixed overlay with high z-index (99999) for backdrop.
+ * Hidden by default, shown with .active class via JavaScript.
  */
 .cf7-lightbox-overlay {
     position: fixed;
@@ -59,9 +37,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgb(0 0 0 / 0.85); /* Semi-transparent black backdrop */
-    z-index: 99999; /* Above WordPress admin bar (99999) */
-    display: none; /* Hidden by default */
+    background-color: rgb(0 0 0 / 0.85);
+    z-index: 99999;
+    display: none;
     justify-content: center;
     align-items: center;
 }
@@ -69,32 +47,25 @@
 /**
  * Active Overlay State
  * 
- * When lightbox is triggered, JavaScript adds .active class to show overlay.
- * Uses flexbox for perfect centering of content.
+ * Shows overlay with flexbox centering when triggered.
  */
 .cf7-lightbox-overlay.active {
     display: flex;
 }
 
-/* ========================================================================
-   LIGHTBOX CONTENT CONTAINER
-   ======================================================================== */
+/* ============================================================================
+   LIGHTBOX CONTENT CONTAINER SECTION
+   ============================================================================ */
 
 /**
  * Content Container
  * 
- * Wraps the image and navigation controls. Provides responsive sizing
- * constraints while maintaining aspect ratio.
- * 
- * Sizing Strategy:
- * - max-width: 90% (10% margin on each side)
- * - max-height: 90% (10% margin top/bottom)
- * - Flexbox centering for perfect positioning
+ * Responsive wrapper with 90% max-width/height and flexbox centering.
  */
 .cf7-lightbox-content {
     position: relative;
-    max-width: 90%; /* Responsive width with 5% margins */
-    max-height: 90%; /* Responsive height with 5% margins */
+    max-width: 90%;
+    max-height: 90%;
     margin: auto;
     display: flex;
     justify-content: center;
@@ -104,166 +75,108 @@
 /**
  * Image Display
  * 
- * Responsive image sizing with object-fit contain to preserve aspect ratio.
- * Includes subtle styling for professional presentation.
- * 
- * Key Features:
- * - object-fit: contain (preserves aspect ratio)
- * - max-height: 90vh (viewport height constraint)
- * - Border radius and shadow for visual polish
+ * Responsive image with object-fit contain and 90vh max-height.
  */
 .cf7-lightbox-content img {
     max-width: 100%;
-    max-height: 90vh; /* 90% of viewport height */
+    max-height: 90vh;
     height: auto;
-    object-fit: contain; /* Preserve aspect ratio */
+    object-fit: contain;
     display: block;
-    border-radius: 4px; /* Subtle rounded corners */
-    box-shadow: 0 4px 20px rgb(0 0 0 / 0.25); /* Depth shadow */
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 0.25);
 }
 
-/* ========================================================================
-   NAVIGATION CONTROLS
-   ======================================================================== */
+/* ============================================================================
+   NAVIGATION CONTROLS SECTION
+   ============================================================================ */
 
 /**
  * Close Button
  * 
- * Positioned outside the image area for easy access. Uses circular design
- * with high contrast for visibility against various image backgrounds.
- * 
- * Positioning:
- * - Desktop: 40px outside top-right corner
- * - Mobile: Adjusted to 35px outside, aligned to right edge
+ * Circular button positioned outside top-right corner with 40px touch target.
  */
 .cf7-lightbox-close {
     position: absolute;
-    top: -40px; /* Above image content */
-    right: -40px; /* Outside right edge */
+    top: -40px;
+    right: -40px;
     color: #fff;
-    font-size: 32px; /* Large, easy-to-click target */
+    font-size: 32px;
     cursor: pointer;
-    width: 40px; /* 40px minimum touch target */
+    width: 40px;
     height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgb(0 0 0 / 0.5); /* Semi-transparent background */
-    border-radius: 50%; /* Circular button */
-    transition: background-color 0.2s ease; /* Smooth hover effect */
+    background-color: rgb(0 0 0 / 0.5);
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
 }
 
-/**
- * Close Button Hover State
- * 
- * Increases opacity on hover for better visual feedback.
- */
 .cf7-lightbox-close:hover {
-    background-color: rgb(0 0 0 / 0.8); /* Darker on hover */
+    background-color: rgb(0 0 0 / 0.8);
 }
 
 /**
- * Navigation Arrows (Previous/Next)
+ * Navigation Arrows
  * 
- * Positioned on left and right sides of the image for gallery navigation.
- * Only visible when multiple images are available in the gallery.
- * 
- * Design Features:
- * - Vertically centered relative to image
- * - Semi-transparent background for visibility
- * - Large font size for easy clicking
- * - Positioned outside image area to avoid interference
+ * Previous/next buttons positioned outside image area with 50x80px targets.
  */
 .cf7-lightbox-nav {
     position: absolute;
-    top: 50%; /* Vertically centered */
-    transform: translateY(-50%); /* Perfect vertical centering */
+    top: 50%;
+    transform: translateY(-50%);
     color: #fff;
-    font-size: 48px; /* Large, readable arrows */
+    font-size: 48px;
     cursor: pointer;
-    width: 50px; /* Adequate touch target */
-    height: 80px; /* Tall target for easy clicking */
+    width: 50px;
+    height: 80px;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgb(0 0 0 / 0.3); /* Subtle background */
-    border-radius: 4px; /* Rounded corners */
-    transition: background-color 0.2s ease; /* Smooth hover effect */
+    background-color: rgb(0 0 0 / 0.3);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
 }
 
-/**
- * Navigation Button Positioning
- * 
- * Specific positioning for previous and next buttons.
- * Positioned outside the image area to avoid blocking content.
- */
 .cf7-lightbox-prev {
-    left: -60px; /* Outside left edge */
+    left: -60px;
 }
 
 .cf7-lightbox-next {
-    right: -60px; /* Outside right edge */
+    right: -60px;
 }
 
-/**
- * Navigation Hover State
- * 
- * Increases background opacity on hover for better visual feedback.
- */
 .cf7-lightbox-nav:hover {
-    background-color: rgb(0 0 0 / 0.5); /* Darker on hover */
+    background-color: rgb(0 0 0 / 0.5);
 }
 
-/* ========================================================================
-   MOBILE RESPONSIVE DESIGN
-   ======================================================================== */
+/* ============================================================================
+   MOBILE RESPONSIVE DESIGN SECTION
+   ============================================================================ */
 
 /**
- * Mobile Optimizations (768px and below)
+ * Mobile Optimizations
  * 
- * Adjusts button positioning and sizing for mobile devices:
- * - Moves controls inside the viewport for easier access
- * - Reduces button sizes for space constraints
- * - Ensures minimum 44px touch targets for accessibility
- * 
- * Changes:
- * - Close button: Moved to top-right corner (was outside)
- * - Navigation: Moved inside image area with smaller size
- * - Font sizes: Reduced for mobile screens
+ * Repositions controls inside viewport with smaller sizes for mobile devices.
  */
 @media (width <= 768px) {
-    /**
-     * Mobile Close Button
-     * 
-     * Repositioned to top-right corner for easier thumb access.
-     */
     .cf7-lightbox-close {
-        top: -35px; /* Slightly closer to image */
-        right: 0; /* Aligned to right edge */
+        top: -35px;
+        right: 0;
     }
     
-    /**
-     * Mobile Navigation Buttons
-     * 
-     * Smaller size and moved inside the viewport for accessibility.
-     * Maintains minimum 44px touch target requirements.
-     */
     .cf7-lightbox-nav {
-        width: 40px; /* Smaller but still accessible */
-        height: 60px; /* Reduced height for mobile */
-        font-size: 36px; /* Smaller arrow symbols */
+        width: 40px;
+        height: 60px;
+        font-size: 36px;
     }
     
-    /**
-     * Mobile Navigation Positioning
-     * 
-     * Moved inside the viewport with padding from edges.
-     */
     .cf7-lightbox-prev {
-        left: 10px; /* Inside viewport with padding */
+        left: 10px;
     }
     
     .cf7-lightbox-next {
-        right: 10px; /* Inside viewport with padding */
+        right: 10px;
     }
 }

@@ -16,8 +16,8 @@
  *
  * @package CF7_Artist_Submissions
  * @subpackage ConversationManagement
- * @since 1.5.0
- * @version 2.1.0
+ * @since 1.0.0
+ * @version 1.0.0
  */
 
 /**
