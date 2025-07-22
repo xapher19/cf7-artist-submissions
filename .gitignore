@@ -1,4 +1,10 @@
 .DS_Store
 
+# Update system documentation (contains sensitive information)
+UPDATE-SYSTEM.md
+
 # Stylelint configuration
 .stylelintrc.json
+
+# Standard Document Format documentation (development reference)
+SDF.md

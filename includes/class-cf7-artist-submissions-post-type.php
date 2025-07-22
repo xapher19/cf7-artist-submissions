@@ -16,8 +16,8 @@
  *
  * @package CF7_Artist_Submissions
  * @subpackage PostTypeManagement
- * @since 1.0.0
- * @version 1.0.0
+ * @since 1.0.1
+ * @version 1.0.1
  */
 
 /**
@@ -209,7 +209,7 @@ class CF7_Artist_Submissions_Post_Type {
      * interface. Implements complete artistic categorization system with visual
      * organization and professional presentation capabilities.
      * 
-     * @since 1.0.0
+     * @since 1.0.1
      */
     public function register_mediums_taxonomy() {
         $labels = array(
@@ -236,7 +236,7 @@ class CF7_Artist_Submissions_Post_Type {
             'labels'                => $labels,
             'show_ui'               => true,
             'show_admin_column'     => true,
-            'show_in_menu'          => 'edit.php?post_type=cf7_submission',
+            'show_in_menu'          => false, // Hide from admin navigation menu
             'query_var'             => true,
             'rewrite'               => array('slug' => 'artistic-medium'),
             'show_tagcloud'         => true,

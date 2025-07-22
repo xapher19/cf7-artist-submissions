@@ -24,7 +24,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage Templates
  * @since 1.0.0
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 // Prevent direct access

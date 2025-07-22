@@ -17,7 +17,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage Core
  * @since 1.0.0
- * @version 1.0.0
+ * @version 1.0.1
  */
 
 // If uninstall not called from WordPress, exit

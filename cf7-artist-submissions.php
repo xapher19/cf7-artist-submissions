@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CF7 Artist Submissions
  * Description: Professional artist submission management system with modern dashboard, advanced field editing, task management, and conversation system for Contact Form 7.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Pup and Tiger
  * Requires at least: 5.6
  * Requires PHP: 7.4
@@ -12,7 +12,7 @@
  * Network: false
  *
  * @package CF7_Artist_Submissions
- * @version 1.0.0
+ * @version 1.0.1
  * @author Pup and Tiger
  * @copyright 2025 Pup and Tiger
  */
@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.0.0');
+define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.0.1');
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
@@ -41,6 +41,7 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-actions.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-pdf-export.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-updater.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-add-submission.php';
 
 /**
  * Main plugin initialization function.
@@ -106,6 +107,11 @@ function cf7_artist_submissions_init() {
     if (is_admin()) {
         $pdf_export = new CF7_Artist_Submissions_PDF_Export();
         $pdf_export->init();
+    }
+    
+    // Initialize Add Submission Interface
+    if (is_admin()) {
+        CF7_Artist_Submissions_Add_Submission::init();
     }
 }
 
