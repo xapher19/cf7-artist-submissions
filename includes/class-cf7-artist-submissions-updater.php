@@ -110,6 +110,10 @@ class CF7_Artist_Submissions_Updater {
         add_filter('plugins_api', array($this, 'plugin_info'), 20, 3);
         add_filter('upgrader_pre_download', array($this, 'download_package'), 10, 3);
         add_action('admin_notices', array($this, 'update_notice'));
+        
+        // AJAX handlers for updates tab
+        add_action('wp_ajax_cf7_force_update_check', array($this, 'ajax_force_update_check'));
+        add_action('wp_ajax_cf7_check_updates', array($this, 'ajax_check_updates'));
     }
 
     /**
@@ -393,5 +397,65 @@ class CF7_Artist_Submissions_Updater {
             'api_url' => $this->github_api_url,
             'download_url' => "https://github.com/{$this->github_repo}/releases/latest"
         );
+    }
+
+    // ============================================================================
+    // AJAX HANDLERS SECTION
+    // ============================================================================
+
+    /**
+     * AJAX handler for manual update check
+     * 
+     * Handles AJAX requests to force update checking from the updates tab.
+     * Provides secure endpoint for manual update checks with proper validation.
+     * 
+     * @since 1.0.0
+     */
+    public function ajax_force_update_check() {
+        // Check nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => __('Security check failed', 'cf7-artist-submissions')));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('update_plugins')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'cf7-artist-submissions')));
+        }
+
+        // Force update check
+        $this->force_update_check();
+
+        wp_send_json_success(array(
+            'message' => __('Update check completed. The page will refresh to show results.', 'cf7-artist-submissions')
+        ));
+    }
+
+    /**
+     * AJAX handler for checking update status
+     * 
+     * Handles AJAX requests to check current update status for monitoring.
+     * Used by automatic status monitoring in the updates tab.
+     * 
+     * @since 1.0.0
+     */
+    public function ajax_check_updates() {
+        // Check nonce
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => __('Security check failed', 'cf7-artist-submissions')));
+        }
+
+        // Check user capabilities
+        if (!current_user_can('update_plugins')) {
+            wp_send_json_error(array('message' => __('Permission denied', 'cf7-artist-submissions')));
+        }
+
+        // Check for available updates
+        $update_transient = get_site_transient('update_plugins');
+        $has_update = isset($update_transient->response[$this->plugin_basename]);
+
+        wp_send_json_success(array(
+            'has_update' => $has_update,
+            'current_version' => $this->version
+        ));
     }
 }

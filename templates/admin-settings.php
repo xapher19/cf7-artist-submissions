@@ -3,16 +3,23 @@
  * CF7 Artist Submissions - Admin Settings Template
  *
  * Main plugin settings interface template providing comprehensive configuration
- * management with modern tabbed navigation, card-based design, and integrated
+ * management with modern unified header/navigation card design, and integrated
  * settings export/import functionality for complete system administration.
  *
  * Features:
- * • Modern tabbed interface with intuitive navigation
+ * • Modern unified header card with integrated navigation tabs
+ * • Glass morphism design with gradient header and seamless tab integration
  * • General, email, template, IMAP, debug, and audit configuration tabs
  * • Settings export and import functionality with validation
  * • Real-time form validation and interactive feedback
  * • Professional card-based design with responsive layout
  * • Modal interfaces for enhanced user experience
+ *
+ * Design System:
+ * • .cf7-settings-header-card: Unified container for header and navigation
+ * • .cf7-settings-header: Gradient header section with title and actions
+ * • .cf7-settings-nav: Integrated navigation with glass morphism effects
+ * • .cf7-settings-content: Main content area with seamless connection to header
  *
  * @package CF7_Artist_Submissions
  * @subpackage Templates
@@ -30,67 +37,70 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
 ?>
 
 <div class="cf7-modern-settings">
-    <!-- Settings Header -->
-    <div class="cf7-gradient-header cf7-header-context cf7-settings-nav">
-        <div class="cf7-header-content">
-            <h1 class="cf7-header-title">
-                <span class="dashicons dashicons-admin-settings"></span>
-                <?php echo esc_html(get_admin_page_title()); ?>
-            </h1>
-            <p class="cf7-header-subtitle">Configure your artist submissions system</p>
+    <!-- Unified Settings Header Card -->
+    <div class="cf7-settings-header-card">
+        <!-- Header Section -->
+        <div class="cf7-settings-header">
+            <div class="cf7-header-content">
+                <h1 class="cf7-settings-title">
+                    <span class="dashicons dashicons-admin-settings"></span>
+                    <?php echo esc_html(get_admin_page_title()); ?>
+                </h1>
+                <p class="cf7-settings-subtitle">Configure your artist submissions system</p>
+            </div>
+            <div class="cf7-header-actions">
+                <button class="cf7-btn cf7-btn-primary" id="cf7-export-settings">
+                    <span class="dashicons dashicons-download"></span>
+                    Export Settings
+                </button>
+                <button class="cf7-btn cf7-btn-secondary" id="cf7-import-settings">
+                    <span class="dashicons dashicons-upload"></span>
+                    Import Settings
+                </button>
+            </div>
         </div>
-        <div class="cf7-header-actions">
-            <button class="cf7-btn cf7-btn-primary" id="cf7-export-settings">
-                <span class="dashicons dashicons-download"></span>
-                Export Settings
-            </button>
-            <button class="cf7-btn cf7-btn-secondary" id="cf7-import-settings">
-                <span class="dashicons dashicons-upload"></span>
-                Import Settings
-            </button>
-        </div>
-    </div>
 
-    <!-- Tab Navigation -->
-    <nav class="cf7-settings-nav">
-        <div class="cf7-nav-tabs">
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=general" 
-               class="cf7-nav-tab <?php echo $current_tab === 'general' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-admin-generic"></span>
-                <span class="tab-label"><?php _e('General', 'cf7-artist-submissions'); ?></span>
-            </a>
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=email" 
-               class="cf7-nav-tab <?php echo $current_tab === 'email' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-email-alt"></span>
-                <span class="tab-label"><?php _e('Email', 'cf7-artist-submissions'); ?></span>
-            </a>
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=templates" 
-               class="cf7-nav-tab <?php echo $current_tab === 'templates' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-editor-code"></span>
-                <span class="tab-label"><?php _e('Templates', 'cf7-artist-submissions'); ?></span>
-            </a>
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=imap" 
-               class="cf7-nav-tab <?php echo $current_tab === 'imap' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-networking"></span>
-                <span class="tab-label"><?php _e('IMAP', 'cf7-artist-submissions'); ?></span>
-            </a>
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=debug" 
-               class="cf7-nav-tab <?php echo $current_tab === 'debug' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-admin-tools"></span>
-                <span class="tab-label"><?php _e('Debug', 'cf7-artist-submissions'); ?></span>
-            </a>
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" 
-               class="cf7-nav-tab <?php echo $current_tab === 'audit' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-chart-line"></span>
-                <span class="tab-label"><?php _e('Audit Log', 'cf7-artist-submissions'); ?></span>
-            </a>
-            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=updates" 
-               class="cf7-nav-tab <?php echo $current_tab === 'updates' ? 'active' : ''; ?>">
-                <span class="dashicons dashicons-update"></span>
-                <span class="tab-label"><?php _e('Updates', 'cf7-artist-submissions'); ?></span>
-            </a>
-        </div>
-    </nav>
+        <!-- Integrated Tab Navigation -->
+        <nav class="cf7-settings-nav">
+            <div class="cf7-nav-tabs">
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=general" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'general' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-admin-generic"></span>
+                    <span class="tab-label"><?php _e('General', 'cf7-artist-submissions'); ?></span>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=email" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'email' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-email-alt"></span>
+                    <span class="tab-label"><?php _e('Email', 'cf7-artist-submissions'); ?></span>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=templates" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'templates' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-editor-code"></span>
+                    <span class="tab-label"><?php _e('Templates', 'cf7-artist-submissions'); ?></span>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=imap" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'imap' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-networking"></span>
+                    <span class="tab-label"><?php _e('IMAP', 'cf7-artist-submissions'); ?></span>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=debug" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'debug' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-admin-tools"></span>
+                    <span class="tab-label"><?php _e('Debug', 'cf7-artist-submissions'); ?></span>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=audit" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'audit' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-chart-line"></span>
+                    <span class="tab-label"><?php _e('Audit Log', 'cf7-artist-submissions'); ?></span>
+                </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=updates" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'updates' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-update"></span>
+                    <span class="tab-label"><?php _e('Updates', 'cf7-artist-submissions'); ?></span>
+                </a>
+            </div>
+        </nav>
+    </div>
 
     <!-- Settings Content -->
     <div class="cf7-settings-content">

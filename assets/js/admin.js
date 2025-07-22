@@ -1404,6 +1404,145 @@
     };
 
     // ============================================================================
+    // UPDATES TAB FUNCTIONALITY
+    // ============================================================================
+    
+    /**
+     * Updates tab controller for plugin update management.
+     * Handles manual update checking, status monitoring, and user feedback.
+     * 
+     * @since 1.0.0
+     */
+    const CF7UpdatesTab = {
+        
+        /**
+         * Initialize updates tab functionality.
+         * Sets up manual update checking and status monitoring.
+         * 
+         * @since 1.0.0
+         */
+        init: function() {
+            this.bindUpdateCheck();
+            this.initStatusMonitoring();
+            this.initStatusAnimations();
+        },
+        
+        /**
+         * Bind manual update check functionality.
+         * Handles AJAX update checking with loading states and feedback.
+         * 
+         * @since 1.0.0
+         */
+        bindUpdateCheck: function() {
+            $('#cf7-force-update-check').on('click', function(e) {
+                e.preventDefault();
+                
+                const $btn = $(this);
+                const originalText = $btn.text();
+                
+                // Show loading state
+                $btn.prop('disabled', true)
+                    .html('<span class="dashicons dashicons-update cf7-spin"></span> ' + 
+                          cf7_admin_vars.checking_text);
+                
+                // Make AJAX request
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'cf7_force_update_check',
+                        nonce: cf7_admin_vars.nonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Show success message
+                            CF7UpdatesTab.showNotice('success', response.data.message);
+                            
+                            // Refresh page after short delay to show updated status
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 2000);
+                        } else {
+                            // Show error message
+                            CF7UpdatesTab.showNotice('error', response.data.message);
+                        }
+                    },
+                    error: function() {
+                        // Show generic error
+                        CF7UpdatesTab.showNotice('error', cf7_admin_vars.update_check_failed_text);
+                    },
+                    complete: function() {
+                        // Restore button
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+        },
+        
+        /**
+         * Initialize status monitoring for available updates.
+         * Auto-refreshes status when updates are available.
+         * 
+         * @since 1.0.0
+         */
+        initStatusMonitoring: function() {
+            // Check if update is available and start monitoring
+            if (typeof cf7_admin_vars !== 'undefined' && cf7_admin_vars.has_update) {
+                setInterval(function() {
+                    // Check if update status has changed
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'cf7_check_updates',
+                            nonce: cf7_admin_vars.nonce
+                        },
+                        success: function(response) {
+                            if (response.success && !response.data.has_update) {
+                                // Update was completed, reload page
+                                window.location.reload();
+                            }
+                        }
+                    });
+                }, 30000); // Check every 30 seconds
+            }
+        },
+        
+        /**
+         * Initialize status indicator animations.
+         * Adds pulse animation to active status indicators.
+         * 
+         * @since 1.0.0
+         */
+        initStatusAnimations: function() {
+            $('.cf7-status-enabled, .cf7-status-connected').each(function() {
+                $(this).addClass('cf7-status-pulse');
+            });
+        },
+        
+        /**
+         * Show notification message in updates tab.
+         * Creates dismissible notices with proper styling.
+         * 
+         * @since 1.0.0
+         * @param {string} type    - Notice type (success, error, warning)
+         * @param {string} message - Notice message text
+         */
+        showNotice: function(type, message) {
+            const $notice = $('<div class="notice notice-' + type + ' is-dismissible"><p>' + message + '</p></div>');
+            
+            // Insert notice
+            $notice.insertBefore('.cf7-settings-card');
+            
+            // Auto-dismiss after delay
+            const delay = type === 'error' ? 8000 : 5000;
+            setTimeout(function() {
+                $notice.fadeOut();
+            }, delay);
+        }
+    };
+
+    // ============================================================================
     // GLOBAL INITIALIZATION
     // ============================================================================
     
@@ -1414,6 +1553,11 @@
     $(document).ready(function() {
         if ($('.cf7-modern-settings').length) {
             CF7AdminInterface.init();
+        }
+        
+        // Initialize updates tab if present
+        if ($('#updates-tab').length || $('.cf7-settings-card').length) {
+            CF7UpdatesTab.init();
         }
     });
     

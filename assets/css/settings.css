@@ -6,7 +6,9 @@
  * and comprehensive audit logging for professional workflow management.
  *
  * Features:
+ * • Unified header/navigation card with modern glass morphism design
  * • Modern card-based layout with gradient headers and responsive design
+ * • Seamlessly connected header and content cards with rounded corners
  * • Advanced toggle switches and dynamic form components with animations
  * • Template management system with preview modals and merge tag helpers
  * • Debug tools and system information displays with real-time testing
@@ -35,14 +37,256 @@
     padding: 0;
 }
 
-/**
- * Settings Header Actions - horizontal flexbox with gradient integration
- */
+/* ============================================================================
+   UNIFIED HEADER & NAVIGATION CARD SECTION
+   ============================================================================ */
 
+/**
+ * Unified Header Card - combines header and navigation into a cohesive design
+ * Features: Modern card styling, gradient background, integrated tabs, rounded corners
+ */
+.cf7-settings-header-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 0.75rem 0.75rem 0 0;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    margin-bottom: 0;
+    position: relative;
+    z-index: 2;
+}
+
+/**
+ * Header Section with Modern Gradient - top portion with title and actions
+ */
+.cf7-settings-header {
+    background: transparent;
+    padding: 2rem 2.5rem 1.5rem 2.5rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    position: relative;
+}
+
+/**
+ * Header Content Container - title and subtitle wrapper
+ */
+.cf7-header-content {
+    flex: 1;
+}
+
+/**
+ * Settings Title - primary heading with modern typography
+ */
+.cf7-settings-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: white;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+}
+
+/**
+ * Settings Subtitle - descriptive text with proper contrast
+ */
+.cf7-settings-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/**
+ * Header Actions Container - right-aligned action buttons
+ */
 .cf7-header-actions {
     display: flex;
     gap: 1rem;
     align-items: center;
+    flex-shrink: 0;
+}
+
+/**
+ * Navigation Tabs Container - seamlessly integrated with header
+ */
+.cf7-settings-nav {
+    background: transparent;
+    backdrop-filter: blur(10px);
+    margin: 0;
+    padding: 0 2.5rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.cf7-settings-nav::-webkit-scrollbar {
+    display: none;
+}
+
+/**
+ * Enhanced Tab Navigation - modern tab design within the header card
+ */
+.cf7-settings-nav .cf7-nav-tabs {
+    display: flex;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    min-height: 60px;
+}
+
+/**
+ * Individual Tab Styling - glass morphism effect with improved interaction
+ */
+.cf7-settings-nav .cf7-nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+    min-width: max-content;
+    position: relative;
+    font-size: 0.9rem;
+    border-radius: 8px 8px 0 0;
+    margin: 0 2px;
+}
+
+/**
+ * Tab Hover State - subtle glow effect with backdrop blur
+ */
+.cf7-settings-nav .cf7-nav-tab:hover {
+    color: rgba(255, 255, 255, 1);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/**
+ * Active Tab State - prominent active indicator with bright accent
+ */
+.cf7-settings-nav .cf7-nav-tab.active {
+    color: #ffffff;
+    border-bottom-color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+/**
+ * Tab Icons - consistent sizing and alignment
+ */
+.cf7-settings-nav .cf7-nav-tab .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    opacity: 0.9;
+}
+
+.cf7-settings-nav .cf7-nav-tab.active .dashicons {
+    opacity: 1;
+}
+
+/**
+ * Tab Label Text - proper typography and responsive behavior
+ */
+.cf7-settings-nav .cf7-nav-tab .tab-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/**
+ * Modern Interactions & Animations for Header Card
+ */
+
+/**
+ * Smooth Page Load Animation - header card slides in from top
+ */
+.cf7-settings-header-card {
+    animation: cf7-header-slide-in 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes cf7-header-slide-in {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/**
+ * Tab Switch Animation - smooth content transition
+ */
+.cf7-settings-nav .cf7-nav-tab.switching {
+    animation: cf7-tab-switch 0.3s ease;
+}
+
+@keyframes cf7-tab-switch {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.98); }
+    100% { transform: scale(1); }
+}
+
+/**
+ * Enhanced Focus States for Accessibility
+ */
+.cf7-settings-nav .cf7-nav-tab:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/**
+ * Header Actions Button Enhancements within Header Card Context
+ */
+.cf7-header-actions .cf7-btn {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.cf7-header-actions .cf7-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/**
+ * Content Loading Animation - smooth appearance of settings content
+ */
+.cf7-settings-content {
+    animation: cf7-content-fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
+@keyframes cf7-content-fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ============================================================================
@@ -50,13 +294,18 @@
    ============================================================================ */
 
 /**
- * Settings Content Wrapper - modern card with rounded corners and shadow
+ * Settings Content Wrapper - modern card connected to header
+ * Updated to visually connect with the unified header card above
  */
 .cf7-settings-content {
-    background: white;
-    border-radius: 0.75rem;
-    box-shadow: 0 2px 8px rgb(0 0 0 / 0.04);
+    background: #ffffff;
+    border-radius: 0 0 0.75rem 0.75rem;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
     overflow: hidden;
+    min-height: 200px;
+    position: relative;
+    z-index: 1;
+    margin-top: 0; /* Seamless connection with header card */
 }
 
 /**
@@ -69,6 +318,7 @@
     background: #ffffff;
     overflow: hidden;
     position: relative;
+    z-index: 2;
 }
 
 .cf7-settings-card:last-child {
@@ -132,19 +382,65 @@
 }
 
 /* ============================================================================
-   SETTINGS NAVIGATION & TABS SECTION
+   LEGACY NAVIGATION SECTION (DEPRECATED)
    ============================================================================ */
 
 /**
- * Settings Navigation Container - tab wrapper with bottom border
- * Note: Core tab styling in common.css
+ * Legacy Settings Navigation Container - replaced by unified header card
+ * Note: Kept for backwards compatibility, but styles moved to header integration above
+ * Remove this section once all templates are updated to use .cf7-settings-header-card
  */
-.cf7-settings-nav {
+.cf7-settings-nav.legacy {
     margin-bottom: 2rem;
     border-bottom: 1px solid #e5e5e5;
 }
 
-/* Note: Tab navigation styles moved to common.css for shared use across all interfaces */
+/**
+ * Backwards Compatibility for Existing Header Structure
+ * Maintains functionality for dashboard and other interfaces still using old structure
+ */
+
+/* Legacy gradient header that's NOT part of the new unified card */
+.cf7-gradient-header:not(.cf7-settings-header) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem;
+    margin: 0 -20px 2rem -20px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+    gap: 2rem;
+    position: relative;
+}
+
+/* Legacy header title styling for old structure */
+.cf7-gradient-header .cf7-header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    color: white;
+    line-height: 1.2;
+}
+
+/* Legacy header subtitle for old structure */
+.cf7-gradient-header .cf7-header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* Legacy standalone navigation (not part of unified card) */
+nav.cf7-settings-nav:not(.cf7-settings-header-card .cf7-settings-nav) {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e5e5e5;
+    background: transparent;
+    padding: 0;
+}
+
+/* Note: Tab navigation styles moved to unified header card section above */
 
 /* ============================================================================
    TOGGLE SWITCHES SECTION
@@ -653,12 +949,28 @@
  */
 @media (max-width: 768px) {
     /**
+     * Unified Header Card Mobile Layout - adaptive design for small screens
+     */
+    .cf7-settings-header-card {
+        border-radius: 0;
+        margin: 0 -1rem 0 -1rem;
+    }
+    
+    /**
      * Settings Header Mobile Layout - vertical stack with touch targets
      */
     .cf7-settings-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
+        padding: 1.5rem 1rem;
+    }
+    
+    /**
+     * Settings Title Mobile Size
+     */
+    .cf7-settings-title {
+        font-size: 1.75rem;
     }
     
     /**
@@ -667,6 +979,7 @@
     .cf7-header-actions {
         width: 100%;
         justify-content: flex-start;
+        flex-wrap: wrap;
     }
     
     /**
@@ -677,35 +990,56 @@
     }
     
     /**
-     * Settings Header Mobile Margins
+     * Settings Content Mobile Layout
      */
-    .cf7-settings-header {
-        margin: 0 -1rem 2rem -1rem;
-        padding: 1.5rem 1rem;
+    .cf7-settings-content {
+        border-radius: 0;
+        margin: 0 -1rem 0 -1rem;
     }
     
     /**
-     * Tab Navigation Mobile Layout
+     * Navigation Container Mobile Layout
      */
-    .cf7-nav-tabs {
-        flex-direction: column;
+    .cf7-settings-nav {
+        padding: 0 1rem;
     }
     
     /**
-     * Individual Tab Mobile Styling
+     * Tab Navigation Mobile Layout - horizontal scroll with better touch targets
      */
-    .cf7-nav-tab {
-        padding: 0.75rem 1rem;
+    .cf7-settings-nav .cf7-nav-tabs {
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+    }
+    
+    /**
+     * Individual Tab Mobile Styling - vertical layout alternative
+     */
+    .cf7-settings-nav .cf7-nav-tab {
+        padding: 0.875rem 1rem;
+        min-width: auto;
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+        border-radius: 0.5rem;
         border-bottom: none;
-        border-left: 3px solid transparent;
+        margin-bottom: 0.5rem;
     }
     
     /**
-     * Active Tab Mobile Indicator
+     * Active Tab Mobile Indicator - background highlight instead of border
      */
-    .cf7-nav-tab.active {
-        border-left-color: #667eea;
+    .cf7-settings-nav .cf7-nav-tab.active {
+        background: rgba(255, 255, 255, 0.25);
         border-bottom-color: transparent;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+    
+    /**
+     * Tab Label Mobile - hide text on very small screens, show only icons
+     */
+    .cf7-settings-nav .cf7-nav-tab .tab-label {
+        font-size: 0.8rem;
     }
     
     /**
@@ -742,6 +1076,68 @@
         right: 10px;
         width: auto;
         max-height: 70vh;
+    }
+}
+
+/**
+ * Small Mobile Layout (480px and below) - ultra-compact for constrained screens
+ */
+@media (max-width: 480px) {
+    /**
+     * Settings Title Extra Small Mobile
+     */
+    .cf7-settings-title {
+        font-size: 1.5rem;
+        line-height: 1.1;
+    }
+    
+    /**
+     * Settings Subtitle Extra Small Mobile
+     */
+    .cf7-settings-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    /**
+     * Header Actions Extra Small Mobile
+     */
+    .cf7-header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    /**
+     * Settings Card Compact Mobile
+     */
+    .cf7-settings-card {
+        padding: 1rem;
+    }
+    
+    /**
+     * Tab Navigation Extra Small Mobile - icon-only mode
+     */
+    .cf7-settings-nav .cf7-nav-tab .tab-label {
+        display: none;
+    }
+    
+    /**
+     * Tab Icon Only Mode
+     */
+    .cf7-settings-nav .cf7-nav-tab {
+        padding: 1rem 0.75rem;
+        min-width: 48px;
+        justify-content: center;
+    }
+    
+    /**
+     * Tab Icon Extra Small Mobile
+     */
+    .cf7-settings-nav .cf7-nav-tab .dashicons {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
     }
 }
 
@@ -1257,20 +1653,58 @@
  */
 @media (max-width: 1024px) {
     /**
-     * Settings Header Desktop Layout - center-aligned for medium screens
+     * Settings Container Medium Screen Layout
+     */
+    .cf7-modern-settings {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    
+    /**
+     * Unified Header Card Medium Screen
+     */
+    .cf7-settings-header-card {
+        margin: 0 -1rem 0 -1rem;
+    }
+    
+    /**
+     * Settings Header Medium Screen Layout - center-aligned for medium screens
      */
     .cf7-settings-header {
         flex-direction: column;
         text-align: center;
         gap: 1.5rem;
+        padding: 2rem 1.5rem 1.5rem 1.5rem;
     }
     
     /**
-     * Header Actions Desktop Layout - horizontal with center justification
+     * Settings Title Medium Screen
+     */
+    .cf7-settings-title {
+        font-size: 2rem;
+    }
+    
+    /**
+     * Header Actions Medium Screen Layout - horizontal with center justification
      */
     .cf7-header-actions {
         flex-direction: row;
         justify-content: center;
+        width: auto;
+    }
+    
+    /**
+     * Navigation Container Medium Screen
+     */
+    .cf7-settings-nav {
+        padding: 0 1.5rem;
+    }
+    
+    /**
+     * Settings Content Medium Screen
+     */
+    .cf7-settings-content {
+        margin: 0 -1rem 0 -1rem;
     }
 }
 
@@ -1288,7 +1722,7 @@
     /**
      * Settings Header Full-Width Mobile
      */
-    .cf7-settings-header {
+    .cf7-settings-header-card {
         margin: 0 0 2rem 0;
         border-radius: 0;
     }
@@ -1459,6 +1893,161 @@
     }
 }
 
+/* ============================================================================
+   UPDATES TAB SECTION
+   ============================================================================ */
+
+/**
+ * Updates Tab - Plugin update management interface styles
+ */
+
+/* Version Information Display */
+.cf7-version-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.cf7-version-current {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e4e8;
+}
+
+.cf7-version-label {
+    font-weight: 600;
+    color: #555;
+}
+
+.cf7-version-number {
+    background: #007cba;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.cf7-version-highlight {
+    background: #46b450;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* Update Status Display */
+.cf7-update-available {
+    border: 2px solid #46b450;
+    border-radius: 8px;
+    padding: 20px;
+    background: #f7fff7;
+}
+
+.cf7-update-current {
+    border: 2px solid #007cba;
+    border-radius: 8px;
+    padding: 20px;
+    background: #f0f8ff;
+}
+
+.cf7-update-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.cf7-update-notice .dashicons {
+    color: #46b450;
+}
+
+.cf7-update-current-notice .dashicons {
+    color: #007cba;
+}
+
+.cf7-update-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* Manual Update Check */
+.cf7-manual-check {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e4e8;
+}
+
+/* Repository Information */
+.cf7-repo-links {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* System Status Indicators */
+.cf7-status-enabled,
+.cf7-status-cached,
+.cf7-status-connected {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.cf7-status-fresh {
+    color: #007cba;
+    font-weight: 600;
+}
+
+.cf7-status-pulse {
+    animation: cf7-pulse 2s infinite;
+}
+
+@keyframes cf7-pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* System Notes and Help */
+.cf7-system-notes {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e4e8;
+}
+
+.cf7-system-notes h4 {
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.cf7-help-list {
+    margin-left: 20px;
+}
+
+.cf7-help-list li {
+    margin: 8px 0;
+    color: #666;
+}
+
+/* Spinning Animation for Loading States */
+.cf7-spin {
+    animation: cf7-spin 1s linear infinite;
+}
+
+@keyframes cf7-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 /**
  * Tablet Layout Adjustments (1024px and below) - medium screen optimizations
  */
@@ -1476,5 +2065,19 @@
      */
     .cf7-settings-header {
         margin: 0 -1rem 2rem -1rem;
+    }
+    
+    /**
+     * Updates Tab Tablet Layout - responsive button and action groups
+     */
+    .cf7-update-actions,
+    .cf7-repo-links {
+        flex-direction: column;
+    }
+    
+    .cf7-version-current {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
 }

@@ -131,6 +131,18 @@ class CF7_Artist_Submissions_Settings {
             )
         ));
         
+        // Add Updates Tab AJAX data (for admin.js updates functionality)
+        $update_transient = get_site_transient('update_plugins');
+        $plugin_basename = plugin_basename(CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE);
+        $has_update = isset($update_transient->response[$plugin_basename]);
+        
+        wp_localize_script('cf7-admin-js', 'cf7_admin_vars', array(
+            'nonce' => wp_create_nonce('cf7_admin_nonce'),
+            'has_update' => $has_update,
+            'checking_text' => __('Checking...', 'cf7-artist-submissions'),
+            'update_check_failed_text' => __('Update check failed. Please try again.', 'cf7-artist-submissions')
+        ));
+        
         // Also provide backward compatibility
         wp_localize_script('cf7-admin-js', 'cf7ArtistSubmissions', array(
             'nonce' => wp_create_nonce('cf7_admin_nonce'),
