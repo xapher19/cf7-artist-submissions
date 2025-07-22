@@ -191,6 +191,14 @@ This plugin is licensed under the GPL v2 or later.
 
 ## 📅 Changelog
 
+### 1.0.1 - Enhancement Release
+- **New:** Custom add submission interface replacing artist view-based implementation
+- **Improved:** Hidden mediums taxonomy from WordPress admin navigation for cleaner interface
+- **Enhanced:** JavaScript SDF (Standard Document Format) compliance across all components
+- **Fixed:** Add submission functionality now works independently without existing submission data
+- **Optimized:** AJAX-powered submission creation with file upload management
+- **Updated:** Form validation and user feedback systems for improved UX
+
 ### 1.0.0 - Initial Release
 - Contact Form 7 integration with custom post type creation
 - Modern interactive dashboard with real-time statistics
