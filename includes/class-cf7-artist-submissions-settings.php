@@ -68,6 +68,10 @@ class CF7_Artist_Submissions_Settings {
         // AJAX handlers for IMAP and other tests
         add_action('wp_ajax_cf7_test_imap', array($this, 'ajax_test_imap_connection'));
         add_action('wp_ajax_cf7_cleanup_inbox', array($this, 'ajax_cleanup_inbox'));
+        
+        // AJAX handlers for update management
+        add_action('wp_ajax_cf7_check_updates', array($this, 'ajax_check_updates'));
+        add_action('wp_ajax_cf7_force_update_check', array($this, 'ajax_force_update_check'));
         add_action('wp_ajax_cf7_test_template', array($this, 'ajax_test_template_email'));
         add_action('wp_ajax_cf7_preview_template', array($this, 'ajax_preview_template_email'));
         
@@ -1433,4 +1437,170 @@ class CF7_Artist_Submissions_Settings {
         }
     }
     
+    // ============================================================================
+    // UPDATE MANAGEMENT AJAX HANDLERS SECTION
+    // ============================================================================
+    
+    /**
+     * AJAX handler for checking plugin updates
+     * 
+     * Triggers a manual update check and returns current status information
+     * including available updates and version comparison data.
+     * 
+     * @since 1.0.0
+     */
+    public function ajax_check_updates() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => __('Security check failed.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        // Check capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Insufficient permissions.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        global $cf7_artist_submissions_updater;
+        
+        if (!$cf7_artist_submissions_updater) {
+            wp_send_json_error(array('message' => __('Update system not available.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        try {
+            // Force update check
+            $cf7_artist_submissions_updater->force_update_check();
+            
+            // Get current and remote versions
+            $current_version = $cf7_artist_submissions_updater->get_version();
+            $remote_version = $this->get_remote_version_info();
+            
+            $has_update = version_compare($current_version, $remote_version['version'], '<');
+            
+            wp_send_json_success(array(
+                'message' => __('Update check completed successfully.', 'cf7-artist-submissions'),
+                'current_version' => $current_version,
+                'remote_version' => $remote_version['version'],
+                'has_update' => $has_update,
+                'update_url' => $has_update ? $this->get_update_url() : null,
+                'repository_info' => $cf7_artist_submissions_updater->get_repository_info()
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Update check failed: %s', 'cf7-artist-submissions'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler for forcing an update check
+     * 
+     * Clears update cache and forces an immediate check for new versions
+     * from the GitHub repository.
+     * 
+     * @since 1.0.0
+     */
+    public function ajax_force_update_check() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => __('Security check failed.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        // Check capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => __('Insufficient permissions.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        global $cf7_artist_submissions_updater;
+        
+        if (!$cf7_artist_submissions_updater) {
+            wp_send_json_error(array('message' => __('Update system not available.', 'cf7-artist-submissions')));
+            return;
+        }
+        
+        try {
+            // Clear cache and force immediate check
+            delete_transient('cf7_artist_submissions_update_check');
+            delete_site_transient('update_plugins');
+            
+            $cf7_artist_submissions_updater->force_update_check();
+            
+            wp_send_json_success(array(
+                'message' => __('Update cache cleared and fresh check completed.', 'cf7-artist-submissions'),
+                'timestamp' => current_time('mysql')
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => sprintf(__('Force update check failed: %s', 'cf7-artist-submissions'), $e->getMessage())
+            ));
+        }
+    }
+    
+    /**
+     * Get remote version information from GitHub
+     * 
+     * Retrieves the latest version information from the GitHub repository
+     * for comparison with the current installed version.
+     * 
+     * @since 1.0.0
+     * 
+     * @return array Version information
+     */
+    private function get_remote_version_info() {
+        $response = wp_remote_get('https://api.github.com/repos/xapher19/cf7-artist-submissions/releases/latest', array(
+            'timeout' => 15,
+            'headers' => array(
+                'Accept' => 'application/vnd.github.v3+json',
+                'User-Agent' => 'CF7-Artist-Submissions-Settings'
+            )
+        ));
+        
+        if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
+            return array(
+                'version' => CF7_ARTIST_SUBMISSIONS_VERSION,
+                'error' => 'Unable to fetch remote version information'
+            );
+        }
+        
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        if (!isset($data['tag_name'])) {
+            return array(
+                'version' => CF7_ARTIST_SUBMISSIONS_VERSION,
+                'error' => 'Invalid response from GitHub API'
+            );
+        }
+        
+        return array(
+            'version' => ltrim($data['tag_name'], 'v'),
+            'release_notes' => isset($data['body']) ? $data['body'] : '',
+            'release_date' => isset($data['published_at']) ? $data['published_at'] : '',
+            'download_url' => isset($data['zipball_url']) ? $data['zipball_url'] : ''
+        );
+    }
+    
+    /**
+     * Get WordPress update URL for the plugin
+     * 
+     * Generates the proper WordPress update URL with nonce for secure updates.
+     * 
+     * @since 1.0.0
+     * 
+     * @return string Update URL
+     */
+    private function get_update_url() {
+        $plugin_basename = plugin_basename(CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE);
+        
+        return wp_nonce_url(
+            self_admin_url('update.php?action=upgrade-plugin&plugin=' . $plugin_basename),
+            'upgrade-plugin_' . $plugin_basename
+        );
+    }
 }

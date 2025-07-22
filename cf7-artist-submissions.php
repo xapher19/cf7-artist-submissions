@@ -40,6 +40,7 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-dashboard.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-actions.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-pdf-export.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-updater.php';
 
 /**
  * Main plugin initialization function.
@@ -77,6 +78,12 @@ function cf7_artist_submissions_init() {
     
     // Update action log table schema if needed (for existing installations)
     CF7_Artist_Submissions_Action_Log::update_table_schema();
+    
+    // Initialize automatic updater
+    if (is_admin()) {
+        global $cf7_artist_submissions_updater;
+        $cf7_artist_submissions_updater = new CF7_Artist_Submissions_Updater(__FILE__, CF7_ARTIST_SUBMISSIONS_VERSION);
+    }
     
     // Initialize Email System
     $emails = new CF7_Artist_Submissions_Emails();

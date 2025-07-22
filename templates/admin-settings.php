@@ -84,6 +84,11 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
                 <span class="dashicons dashicons-chart-line"></span>
                 <span class="tab-label"><?php _e('Audit Log', 'cf7-artist-submissions'); ?></span>
             </a>
+            <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=updates" 
+               class="cf7-nav-tab <?php echo $current_tab === 'updates' ? 'active' : ''; ?>">
+                <span class="dashicons dashicons-update"></span>
+                <span class="tab-label"><?php _e('Updates', 'cf7-artist-submissions'); ?></span>
+            </a>
         </div>
     </nav>
 
@@ -109,6 +114,9 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
                 break;
             case 'audit':
                 include 'settings/audit-tab.php';
+                break;
+            case 'updates':
+                include 'settings/updates-tab.php';
                 break;
             default:
                 include 'settings/general-tab.php';
