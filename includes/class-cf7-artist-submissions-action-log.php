@@ -1,32 +1,36 @@
 <?php
 /**
- * Action Logging for CF7 Artist Submissions
- * 
- * This class provides comprehensive audit logging functionality for the plugin,
- * tracking all significant user actions and system events including:
- * - Email sending activities with template and recipient details
- * - Status changes on submissions with before/after values
- * - Form submissions and file uploads
- * - Administrative actions and system events
- * - User authentication and permission changes
- * 
- * The audit log provides a complete trail for compliance, debugging,
- * and administrative oversight purposes.
- * 
+ * CF7 Artist Submissions - Action Logging System
+ *
+ * Advanced audit logging and activity tracking system providing complete
+ * oversight of all plugin operations, user interactions, and system events.
+ * Designed for compliance, debugging, administrative oversight, and security
+ * monitoring with comprehensive data retention and retrieval capabilities.
+ *
+ * Features:
+ * • Comprehensive event capture with structured data storage
+ * • User attribution and permission-based audit trails
+ * • Specialized logging modules for emails, files, and system events
+ * • Advanced filtering and search capabilities for audit review
+ * • Automated cleanup and data retention management
+ * • Security-focused logging with privacy compliance support
+ * • Performance optimization with strategic database indexing
+ * • WordPress standards compliance with internationalization support
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage AuditLogging
  * @since 1.0.0
- * @since 2.0.0 Enhanced with audit trail interface and advanced filtering
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions Action Log Class
  * 
- * Manages the audit logging system including:
- * - Database table creation and maintenance
- * - Action logging with structured data storage
- * - Log retrieval with filtering and pagination
- * - Test functionality for system validation
- * - Cleanup and maintenance operations
+ * Comprehensive audit logging and activity tracking system providing complete
+ * oversight of all plugin operations, user interactions, and system events.
+ * Serves as the central controller for database operations, structured data
+ * storage, log retrieval with advanced filtering, and specialized logging
+ * modules for different event types.
  * 
  * @since 1.0.0
  */
@@ -35,35 +39,31 @@ class CF7_Artist_Submissions_Action_Log {
     /**
      * Initialize the action log system.
      * 
-     * Sets up any necessary hooks and initialization procedures.
-     * Currently used for future extensibility.
+     * Sets up necessary hooks and initialization procedures for the audit
+     * logging system. Maintains consistent initialization pattern across
+     * plugin architecture and provides entry point for system setup.
      * 
      * @since 1.0.0
-     * 
-     * @return void
      */
     public static function init() {
         // No specific hooks needed for initialization
+        // Reserved for future extensibility and system setup
     }
     
+    // ============================================================================
+    // DATABASE MANAGEMENT SECTION
+    // ============================================================================
+    
     /**
-     * Create action log database table.
+     * Create action log database table with comprehensive schema design.
      * 
-     * Creates the cf7_action_log table with the following structure:
-     * - id: Auto-incrementing primary key
-     * - submission_id: Links to submission posts (0 for system-wide actions)
-     * - user_id: WordPress user who performed the action
-     * - action_type: Type of action (email_sent, status_change, etc.)
-     * - artist_name: Name of the artist for easy identification
-     * - artist_email: Email of the artist for easy identification
-     * - data: JSON data containing action details
-     * - date_created: Timestamp of when action occurred
+     * Creates the cf7_action_log table with performance-optimized structure,
+     * strategic indexing for query optimization, and data integrity constraints.
+     * Implements auto-incrementing primary keys, foreign key relationships through
+     * application logic, and comprehensive audit trail functionality with rich
+     * metadata storage capabilities.
      * 
      * @since 1.0.0
-     * @since 2.0.0 Enhanced table structure for better audit capabilities
-     * @since 2.1.0 Added artist columns and enhanced tracking
-     * 
-     * @return bool True on success, false on failure
      */
     public static function create_log_table() {
         global $wpdb;
@@ -101,14 +101,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Update existing table to add new columns.
-     * 
-     * Adds artist_name and artist_email columns to existing tables
-     * for better audit trail functionality.
-     * 
-     * @since 2.1.0
-     * 
-     * @return bool True on success, false on failure
+     * Update existing table schema for version compatibility.
+     * Adds artist information columns and enhanced indexing for better performance.
      */
     public static function update_table_schema() {
         global $wpdb;
@@ -154,22 +148,20 @@ class CF7_Artist_Submissions_Action_Log {
         return true;
     }
     
+    // ============================================================================
+    // AUDIT LOGGING SECTION
+    // ============================================================================
+    
     /**
-     * Log an action to the audit trail.
+     * Log action to comprehensive audit trail with structured data storage.
      * 
-     * Records an action in the audit log with structured data storage.
-     * Automatically captures the current user and timestamp.
+     * Records actions in the audit log with automatic user identification, precise
+     * timestamp tracking, artist information detection, and flexible metadata
+     * storage. Serves as the central entry point for all audit logging activities
+     * with comprehensive error handling and data validation for reliable audit
+     * trail functionality throughout the plugin ecosystem.
      * 
      * @since 1.0.0
-     * @since 2.0.0 Enhanced with better error handling and data validation
-     * @since 2.1.0 Added artist information and enhanced tracking
-     * 
-     * @param int    $submission_id ID of the submission the action relates to (0 for system-wide actions)
-     * @param string $action_type   Type of action being logged (e.g., 'email_sent', 'status_change')
-     * @param mixed  $data         Action data - string or array (will be JSON encoded if array)
-     * @param string $artist_name  Optional artist name (will be auto-detected if not provided)
-     * @param string $artist_email Optional artist email (will be auto-detected if not provided)
-     * @return int|false           The log entry ID on success, false on failure
      */
     public static function log_action($submission_id, $action_type, $data = '', $artist_name = '', $artist_email = '') {
         global $wpdb;
@@ -229,18 +221,19 @@ class CF7_Artist_Submissions_Action_Log {
         return $wpdb->insert_id;
     }
     
+    // ============================================================================
+    // LOG RETRIEVAL SECTION
+    // ============================================================================
+    
     /**
-     * Get logs for a specific submission.
+     * Get audit logs for specific submission with filtering capabilities.
      * 
-     * Retrieves all audit log entries for a given submission,
-     * optionally filtered by action type.
+     * Retrieves all audit log entries for a given submission with optional
+     * action type filtering. Provides optimized query performance with indexed
+     * columns and chronological ordering for effective audit trail review
+     * and compliance reporting functionality.
      * 
      * @since 1.0.0
-     * @since 2.0.0 Enhanced with better error handling
-     * 
-     * @param int    $submission_id ID of the submission to get logs for
-     * @param string $action_type   Optional action type filter
-     * @return array               Array of log objects, empty array if none found
      */
     public static function get_logs_for_submission($submission_id, $action_type = '') {
         global $wpdb;
@@ -268,17 +261,13 @@ class CF7_Artist_Submissions_Action_Log {
         return $logs;
     }
     
+    // ============================================================================
+    // DATA MAINTENANCE SECTION
+    // ============================================================================
+    
     /**
-     * Delete logs for a specific submission.
-     * 
-     * Removes all audit log entries for a given submission.
-     * Used during submission deletion to maintain data consistency.
-     * 
-     * @since 1.0.0
-     * @since 2.0.0 Enhanced with better error handling
-     * 
-     * @param int $submission_id ID of the submission to delete logs for
-     * @return bool              True on success, false on failure
+     * Delete audit logs for specific submission.
+     * Removes all audit log entries for submission cleanup and data integrity.
      */
     public static function delete_logs_for_submission($submission_id) {
         global $wpdb;
@@ -287,16 +276,13 @@ class CF7_Artist_Submissions_Action_Log {
         return $wpdb->delete($table_name, array('submission_id' => $submission_id), array('%d'));
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Get action type label for display.
-     * 
-     * Converts internal action type codes to human-readable labels
-     * for display in the audit log interface.
-     * 
-     * @since 2.0.0
-     * 
-     * @param string $action_type The action type code
-     * @return string            Human-readable label
+     * Get action type label for display with internationalization support.
+     * Converts internal action codes to human-readable labels for admin interface.
      */
     public static function get_action_type_label($action_type) {
         $labels = array(
@@ -313,15 +299,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Test if logging is working properly.
-     * 
-     * Creates a test log entry, verifies it can be retrieved,
-     * then cleans it up. Used for system diagnostics.
-     * 
-     * @since 1.0.0
-     * @since 2.0.0 Enhanced with better error reporting
-     * 
-     * @return bool|WP_Error True on success, WP_Error on failure
+     * Test audit logging system functionality for diagnostics.
+     * Creates test entry, verifies retrieval, and cleans up for system validation.
      */
     public static function test_logging() {
         $test_id = 999999; // Use a dummy submission ID
@@ -347,18 +326,19 @@ class CF7_Artist_Submissions_Action_Log {
         return true;
     }
     
+    // ============================================================================
+    // SPECIALIZED LOGGING SECTION
+    // ============================================================================
+    
     /**
-     * Log an email sent action.
+     * Log email sent action with comprehensive metadata capture.
      * 
-     * Convenience method for logging email activities with structured data.
+     * Specialized logging method for email communication activities with
+     * template information, recipient details, and sending context. Provides
+     * structured audit trail for all email communications within submission
+     * management workflow for compliance and debugging purposes.
      * 
      * @since 2.0.0
-     * 
-     * @param int    $submission_id ID of the submission
-     * @param string $template_name Name of the email template used
-     * @param string $recipient     Email recipient
-     * @param string $subject       Email subject
-     * @return int|false           The log entry ID on success, false on failure
      */
     public static function log_email_sent($submission_id, $template_name, $recipient, $subject) {
         $data = array(
@@ -372,17 +352,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Log a file upload action.
-     * 
-     * Convenience method for logging file uploads with structured data.
-     * 
-     * @since 2.0.0
-     * 
-     * @param int    $submission_id ID of the submission
-     * @param string $filename      Name of the uploaded file
-     * @param string $file_type     MIME type of the file
-     * @param int    $file_size     Size of the file in bytes
-     * @return int|false           The log entry ID on success, false on failure
+     * Log file upload action with structured metadata.
+     * Records file operations with comprehensive details for audit compliance.
      */
     public static function log_file_upload($submission_id, $filename, $file_type, $file_size) {
         $data = array(
@@ -396,14 +367,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Get artist information from a submission.
-     * 
-     * Retrieves the artist name and email from a submission post.
-     * 
-     * @since 2.1.0
-     * 
-     * @param int $submission_id ID of the submission
-     * @return array|null Array with 'name' and 'email' keys, or null if not found
+     * Get artist information from submission metadata.
+     * Extracts artist name and email from submission post meta fields.
      */
     public static function get_artist_info($submission_id) {
         if (!$submission_id) {
@@ -447,17 +412,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Log an action creation.
-     * 
-     * Logs when a new action is created in the actions system.
-     * 
-     * @since 2.1.0
-     * 
-     * @param int    $action_id     ID of the action
-     * @param int    $submission_id ID of the submission
-     * @param string $action_title  Title of the action
-     * @param int    $assigned_to   User ID assigned to
-     * @return int|false           The log entry ID on success, false on failure
+     * Log action creation in task management system.
+     * Records when new actions are created with assignment details.
      */
     public static function log_action_created($action_id, $submission_id, $action_title, $assigned_to = null) {
         $assigned_user = $assigned_to ? get_userdata($assigned_to) : null;
@@ -474,17 +430,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Log an action completion.
-     * 
-     * Logs when an action is marked as completed.
-     * 
-     * @since 2.1.0
-     * 
-     * @param int    $action_id     ID of the action
-     * @param int    $submission_id ID of the submission
-     * @param string $action_title  Title of the action
-     * @param int    $completed_by  User ID who completed it
-     * @return int|false           The log entry ID on success, false on failure
+     * Log action completion in task management system.
+     * Records when actions are marked as completed with user attribution.
      */
     public static function log_action_completed($action_id, $submission_id, $action_title, $completed_by = null) {
         $completed_user = $completed_by ? get_userdata($completed_by) : get_userdata(get_current_user_id());
@@ -500,16 +447,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Log conversation clearing.
-     * 
-     * Logs when conversations are cleared for an artist.
-     * 
-     * @since 2.1.0
-     * 
-     * @param int    $submission_id   ID of the submission
-     * @param int    $messages_count  Number of messages cleared
-     * @param string $reason         Reason for clearing (optional)
-     * @return int|false             The log entry ID on success, false on failure
+     * Log conversation clearing for privacy compliance.
+     * Records when conversation messages are cleared with metadata.
      */
     public static function log_conversation_cleared($submission_id, $messages_count, $reason = '') {
         $data = array(
@@ -522,17 +461,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Log settings changes.
-     * 
-     * Logs when plugin settings are modified.
-     * 
-     * @since 2.1.0
-     * 
-     * @param string $setting_name  Name of the setting changed
-     * @param mixed  $old_value     Previous value
-     * @param mixed  $new_value     New value
-     * @param string $tab          Settings tab (optional)
-     * @return int|false           The log entry ID on success, false on failure
+     * Log settings changes for configuration audit trail.
+     * Records when plugin settings are modified with before/after values.
      */
     public static function log_setting_changed($setting_name, $old_value, $new_value, $tab = '') {
         $data = array(
@@ -547,17 +477,8 @@ class CF7_Artist_Submissions_Action_Log {
     }
     
     /**
-     * Enhanced log status change with user tracking.
-     * 
-     * Updates the original method to include better user tracking.
-     * 
-     * @since 2.1.0
-     * 
-     * @param int    $submission_id ID of the submission
-     * @param string $old_status    Previous status
-     * @param string $new_status    New status
-     * @param int    $user_id       User who made the change (optional, defaults to current user)
-     * @return int|false           The log entry ID on success, false on failure
+     * Log status changes with enhanced user tracking.
+     * Records submission status transitions with user attribution and metadata.
      */
     public static function log_status_change($submission_id, $old_status, $new_status, $user_id = null) {
         $user_id = $user_id ?: get_current_user_id();
@@ -575,13 +496,7 @@ class CF7_Artist_Submissions_Action_Log {
     
     /**
      * Update existing audit log entries with missing artist information.
-     * 
-     * This method can be called to retroactively populate artist names
-     * for existing audit log entries that have empty artist_name fields.
-     * 
-     * @since 2.1.0
-     * 
-     * @return int Number of entries updated
+     * Retroactively populates artist data for existing log entries.
      */
     public static function update_missing_artist_info() {
         global $wpdb;

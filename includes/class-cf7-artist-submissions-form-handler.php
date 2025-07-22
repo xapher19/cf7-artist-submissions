@@ -1,55 +1,68 @@
 <?php
 /**
- * Contact Form 7 Submission Handler
- * 
- * This class intercepts Contact Form 7 submissions for the configured
- * form and stores them as custom post type entries with file uploads,
- * metadata, and initial status assignment.
- * 
+ * CF7 Artist Submissions - Contact Form 7 Submission Handler
+ *
+ * Comprehensive form processing system for Contact Form 7 submissions with
+ * custom post type integration, secure file upload handling, metadata storage,
+ * and automated workflow triggers for artist submission management.
+ *
+ * Features:
+ * • Contact Form 7 submission interception and processing
+ * • Custom post type creation with metadata storage
+ * • Secure file upload handling with validation and storage
+ * • Artistic medium taxonomy processing and assignment
+ * • Initial status assignment and workflow automation
+ * • Action hooks for email triggers and logging integration
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage FormProcessing
  * @since 1.0.0
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions Form Handler Class
  * 
- * Handles the capture and processing of Contact Form 7 submissions:
- * - Intercepts submissions for the configured form ID
- * - Creates custom post type entries
- * - Processes and securely stores file uploads
- * - Saves form data as post metadata
- * - Sets initial submission status
- * - Triggers submission created actions
+ * Comprehensive Contact Form 7 submission processing system with custom post
+ * type integration, secure file handling, and automated workflow triggers.
+ * Provides complete form-to-database pipeline with validation, security,
+ * and integration hooks for seamless artist submission management.
  * 
  * @since 1.0.0
  */
 class CF7_Artist_Submissions_Form_Handler {
     
+    // ============================================================================
+    // INITIALIZATION SECTION
+    // ============================================================================
+    
     /**
-     * Initialize the form handler hooks.
+     * Initialize Contact Form 7 submission processing system with hook registration.
      * 
-     * Sets up the Contact Form 7 submission hook to capture
-     * submissions for processing.
+     * Establishes Contact Form 7 integration by registering submission interception
+     * hooks for configured form processing. Provides foundation for automated
+     * submission capture, custom post type creation, and workflow trigger activation
+     * within the artist submission management system.
      * 
      * @since 1.0.0
-     * 
-     * @return void
      */
     public function init() {
         add_action('wpcf7_before_send_mail', array($this, 'capture_submission'));
     }
     
+    // ============================================================================
+    // FORM PROCESSING SECTION
+    // ============================================================================
+    
     /**
-     * Capture and process Contact Form 7 submissions.
+     * Capture and process Contact Form 7 submissions with comprehensive data handling.
      * 
-     * Processes submissions from the configured form ID, creates
-     * custom post type entries, handles file uploads with security
-     * validation, and saves all form data as metadata.
+     * Intercepts submissions from configured Contact Form 7 forms and processes them
+     * into custom post type entries with complete metadata storage, secure file upload
+     * handling, taxonomy assignment, and workflow trigger activation. Implements
+     * validation, security measures, and integration hooks for submission management.
      * 
      * @since 1.0.0
-     * 
-     * @param WPCF7_ContactForm $contact_form The Contact Form 7 instance
-     * @return void
      */
     public function capture_submission($contact_form) {
         $options = get_option('cf7_artist_submissions_options', array());
@@ -203,18 +216,13 @@ class CF7_Artist_Submissions_Form_Handler {
         do_action('cf7_artist_submission_created', $post_id);
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Process artistic medium tags from form submission.
-     * 
-     * Looks for medium-related fields in the submitted data and assigns
-     * appropriate taxonomies to the submission post.
-     * 
-     * @since 2.1.0
-     * 
-     * @param int   $post_id     The submission post ID
-     * @param array $posted_data The form submission data
-     * 
-     * @return void
+     * Process artistic medium tags from form submission data.
+     * Extracts medium information from multiple field patterns and assigns taxonomies.
      */
     private function process_medium_tags($post_id, $posted_data) {
         // Look for fields that might contain medium information

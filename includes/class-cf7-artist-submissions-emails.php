@@ -1,29 +1,36 @@
 <?php
 /**
- * Email Management for CF7 Artist Submissions
- * 
- * This class manages the comprehensive email system including template
- * management, trigger-based notifications, email configuration, and
- * integration with the conversation system. Features automated
- * notifications, custom templates, and email validation.
- * 
+ * CF7 Artist Submissions - Email Management System
+ *
+ * Comprehensive email management infrastructure providing automated notifications,
+ * template-driven communications, and conversation system integration. Designed
+ * for artist submission workflows with trigger-based notifications, customizable
+ * templates, and seamless SMTP integration for reliable email delivery.
+ *
+ * Features:
+ * • Template-driven email system with merge tag support
+ * • Automated trigger-based notifications for submission events
+ * • Status change notifications with customizable messaging
+ * • WooCommerce email template integration for consistent branding
+ * • SMTP configuration support with delivery tracking
+ * • Conversation system integration with reply threading
+ * • Email delivery logging and audit trail functionality
+ * • IMAP integration for inbound message processing
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage EmailManagement
  * @since 1.0.0
- * @since 2.0.0 Enhanced with conversation system integration
+ * @version 2.1.0
  */
 
 /**
- * CF7 Artist Submissions Emails Class
+ * CF7 Artist Submissions Email Management Class
  * 
- * Manages the complete email system including:
- * - Email template management and customization
- * - Trigger-based automated notifications
- * - Status change notifications to artists
- * - Email configuration and validation
- * - Integration with conversation system
- * - SMTP configuration support
- * - Email delivery tracking and logging
- * - Template variable substitution
+ * Comprehensive email management system providing template-driven communications,
+ * automated notifications, and conversation system integration. Serves as the
+ * central controller for all email operations including template management,
+ * trigger-based notifications, status change communications, and email delivery
+ * tracking with seamless SMTP and IMAP integration.
  * 
  * @since 1.0.0
  */
@@ -45,15 +52,27 @@ class CF7_Artist_Submissions_Emails {
     private $temp_from_email = '';
     private $temp_from_name = '';
     
+    // ============================================================================
+    // INITIALIZATION SECTION
+    // ============================================================================
+    
     /**
-     * Get available email triggers
+     * Get available email triggers for template configuration.
+     * Returns array of trigger definitions with names and descriptions.
      */
     public function get_triggers() {
         return $this->triggers;
     }
     
     /**
-     * Initialize the email system
+     * Initialize comprehensive email management system with hooks and configuration.
+     * 
+     * Establishes complete email infrastructure including template loading, trigger
+     * configuration, AJAX handlers for manual email operations, and event hooks for
+     * automated notifications. Provides integration with conversation system and
+     * comprehensive email delivery tracking for submission management workflow.
+     * 
+     * @since 1.0.0
      */
     public function init() {
         // Load templates from database
@@ -110,8 +129,19 @@ class CF7_Artist_Submissions_Emails {
         // add_action('admin_init', array($this, 'register_email_settings'));
     }
     
+    // ============================================================================
+    // SETTINGS REGISTRATION SECTION
+    // ============================================================================
+    
     /**
-     * Register email templates settings
+     * Register email settings and template configuration fields.
+     * 
+     * Establishes WordPress settings API integration for email configuration
+     * including SMTP settings, template management, and WooCommerce template
+     * integration. Provides comprehensive settings interface for email
+     * system configuration and template customization.
+     * 
+     * @since 1.0.0
      */
     public function register_email_settings() {
         register_setting('cf7_artist_submissions_email_options', 'cf7_artist_submissions_email_options');
@@ -162,8 +192,13 @@ class CF7_Artist_Submissions_Emails {
         }
     }
     
+    // ============================================================================
+    // ADMIN INTERFACE SECTION
+    // ============================================================================
+    
     /**
-     * Add email settings page
+     * Add email settings page to WordPress admin menu.
+     * Creates submenu page for email configuration and template management.
      */
     public function add_email_settings_page() {
         add_submenu_page(
@@ -177,7 +212,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render email settings page
+     * Render email settings page with tabbed interface.
+     * Displays settings and templates tabs for email configuration.
      */
     public function render_email_settings_page() {
         if (!current_user_can('manage_options')) {
@@ -257,7 +293,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render email settings section
+     * Render email settings section with SMTP detection and recommendations.
+     * Displays configuration overview and WP Mail SMTP plugin recommendations.
      */
     public function render_email_settings_section() {
         echo '<p>' . __('Configure the default settings for all emails sent from the submissions system.', 'cf7-artist-submissions') . '</p>';
@@ -271,7 +308,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render template section
+     * Render template section for trigger-specific email configuration.
+     * Generates form fields for email template customization and settings.
      */
     public function render_template_section($args) {
         $section_id = $args['id'];
@@ -355,7 +393,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render from email field
+     * Render from email configuration field with validation notes.
+     * Displays email address input with SMTP authorization recommendations.
      */
     public function render_from_email_field() {
         $options = get_option('cf7_artist_submissions_email_options', array());
@@ -366,7 +405,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render from name field
+     * Render from name configuration field with default handling.
+     * Displays sender name input with site name fallback option.
      */
     public function render_from_name_field() {
         $options = get_option('cf7_artist_submissions_email_options', array());
@@ -377,7 +417,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render WooCommerce template field
+     * Render WooCommerce template field with preview functionality.
+     * Displays checkbox for WooCommerce template integration with preview modal.
      */
     public function render_wc_template_field() {
         $options = get_option('cf7_artist_submissions_email_options', array());
@@ -444,7 +485,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Add email-related meta boxes to the submission editor
+     * Add email meta boxes to submission editor interface.
+     * Registers email management meta box for submission post type.
      */
     public function add_email_meta_boxes() {
         add_meta_box(
@@ -458,7 +500,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Render the email meta box
+     * Render email meta box interface for submission management.
+     * Displays email sending interface with template selection and logs.
      */
     public function render_email_meta_box($post) {
         // Get submission email data
@@ -563,7 +606,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Add scripts for email handling
+     * Add JavaScript for email preview and sending functionality.
+     * Provides AJAX handlers for email interface interactions.
      */
     private function add_email_scripts() {
         ?>
@@ -701,8 +745,19 @@ class CF7_Artist_Submissions_Emails {
         <?php
     }
     
+    // ============================================================================
+    // AJAX HANDLERS SECTION
+    // ============================================================================
+    
     /**
-     * Handle AJAX request to preview an email
+     * AJAX handler for email preview functionality with template processing.
+     * 
+     * Processes email template preview requests with merge tag substitution,
+     * WooCommerce template integration, and formatted output generation.
+     * Provides comprehensive preview functionality for email template
+     * validation and content verification before sending.
+     * 
+     * @since 1.0.0
      */
     public function ajax_preview_email() {
         // Check nonce
@@ -768,7 +823,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Format email content using WooCommerce template
+     * Format email content using WooCommerce template system.
+     * Applies WooCommerce email styling and formatting to content.
      */
     public function format_woocommerce_email($content, $heading, $email) {
         // Get the email template content
@@ -793,7 +849,14 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Handle AJAX request to preview WooCommerce template
+     * AJAX handler for WooCommerce template preview generation.
+     * 
+     * Generates preview of WooCommerce email template styling with sample
+     * content for template configuration evaluation. Provides visual
+     * representation of WooCommerce email formatting for integration
+     * decision making and template customization.
+     * 
+     * @since 2.0.0
      */
     public function ajax_preview_wc_template() {
         // Check nonce
@@ -836,7 +899,14 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Handle AJAX request to send manual email
+     * AJAX handler for manual email sending with comprehensive validation.
+     * 
+     * Processes manual email sending requests with template processing,
+     * security validation, and comprehensive error handling. Provides
+     * administrative email sending functionality with audit logging
+     * and conversation system integration.
+     * 
+     * @since 1.0.0
      */
     public function ajax_send_manual_email() {
         // Check nonce
@@ -878,8 +948,13 @@ class CF7_Artist_Submissions_Emails {
         }
     }
     
+    // ============================================================================
+    // EMAIL SENDING SECTION
+    // ============================================================================
+    
     /**
-     * Trigger 'submission received' email
+     * Trigger submission received email notification.
+     * Sends automated notification when new submission is received.
      */
     public function trigger_submission_received($submission_id) {
         // Get template
@@ -906,7 +981,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Handle status change
+     * Handle submission status change events for email notifications.
+     * Provides manual email sending capability for status-based communications.
      */
     public function handle_status_change($submission_id, $new_status, $old_status) {
         // For status changes, we don't auto-send emails
@@ -916,7 +992,14 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Send an email using a template
+     * Send email using template with comprehensive processing and integration.
+     * 
+     * Core email sending functionality with template processing, merge tag
+     * substitution, WooCommerce template integration, conversation system
+     * integration, and comprehensive audit logging. Provides complete email
+     * delivery pipeline with error handling and delivery tracking.
+     * 
+     * @since 1.0.0
      */
     public function send_email($template_id, $submission_id, $to_email) {
         // Get template
@@ -1055,8 +1138,13 @@ class CF7_Artist_Submissions_Emails {
         }
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Process merge tags in content
+     * Process merge tags in email content with submission data substitution.
+     * Replaces template variables with actual submission and system data.
      */
     public function process_merge_tags($content, $submission_id) {
         // Get submission data
@@ -1110,7 +1198,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Get submission email
+     * Get submission email address from metadata fields.
+     * Searches multiple field patterns to locate artist email address.
      */
     public function get_submission_email($submission_id) {
         // Try to get email from meta fields
@@ -1140,21 +1229,24 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Temporarily override wp_mail from email
+     * Override wp_mail from email address for delivery.
+     * Temporarily sets custom from email during email sending.
      */
     public function override_from_email($from_email) {
         return $this->temp_from_email;
     }
     
     /**
-     * Temporarily override wp_mail from name
+     * Override wp_mail from name for delivery.
+     * Temporarily sets custom from name during email sending.
      */
     public function override_from_name($from_name) {
         return $this->temp_from_name;
     }
     
     /**
-     * Override PHPMailer from settings directly (for plugins that bypass wp_mail filters)
+     * Override PHPMailer from settings for plugin compatibility.
+     * Sets sender information directly on PHPMailer instance.
      */
     public function override_phpmailer_from($phpmailer) {
         if (!empty($this->temp_from_email)) {
@@ -1167,7 +1259,8 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * Override WP Mail SMTP specific options
+     * Override WP Mail SMTP specific configuration options.
+     * Provides WP Mail SMTP plugin compatibility for sender settings.
      */
     public function override_wp_mail_smtp_options($options) {
         if (!empty($this->temp_from_email)) {
@@ -1178,7 +1271,14 @@ class CF7_Artist_Submissions_Emails {
     }
     
     /**
-     * AJAX handler for testing IMAP connection
+     * AJAX handler for IMAP connection testing and validation.
+     * 
+     * Tests IMAP server connectivity with configuration validation,
+     * authentication verification, and mailbox status reporting.
+     * Provides diagnostic functionality for IMAP setup and
+     * troubleshooting with comprehensive error reporting.
+     * 
+     * @since 2.0.0
      */
     public function ajax_test_imap() {
         // Verify nonce

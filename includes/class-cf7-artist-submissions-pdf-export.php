@@ -1,42 +1,51 @@
 <?php
 /**
- * PDF Export functionality for CF7 Artist Submissions
- * 
- * This class provides professional PDF export capabilities for artist
- * submissions, generating beautifully formatted HTML documents optimized
- * for browser printing to PDF. Features include two-column artwork layouts,
- * configurable content sections, and professional styling.
- * 
+ * CF7 Artist Submissions - Professional PDF Export System
+ *
+ * Comprehensive PDF export functionality for artist submissions with browser-based
+ * PDF generation, professional formatting, configurable content sections, and
+ * optimized print layouts for streamlined submission presentation and archival.
+ *
+ * Features:
+ * • Professional PDF-ready HTML document generation
+ * • Browser-based print-to-PDF optimization with cost-effective solution
+ * • Two-column artwork grid layout for professional presentation
+ * • Configurable content sections (personal info, works, curator notes)
+ * • Confidential watermarks for sensitive document handling
+ * • Responsive design with print-optimized styling and branding
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage PDFExport
  * @since 2.0.0
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions PDF Export Class
  * 
- * Handles the generation of professional PDF-ready documents for artist
- * submissions including:
- * - Configurable content sections (personal info, works, notes)
- * - Two-column artwork grid layout for professional presentation
- * - Confidential watermarks for sensitive documents
- * - Responsive design optimized for print
- * - Browser-based PDF generation for cost-effective solution
- * - Professional styling with site branding
+ * Professional PDF export system for artist submissions with browser-based
+ * PDF generation, configurable content sections, and optimized print layouts.
+ * Provides comprehensive document generation with professional styling,
+ * watermark support, and seamless integration with submission workflow.
  * 
  * @since 2.0.0
  */
 
 class CF7_Artist_Submissions_PDF_Export {
     
+    // ============================================================================
+    // INITIALIZATION SECTION
+    // ============================================================================
+    
     /**
-     * Initialize the PDF export system.
+     * Initialize professional PDF export system with comprehensive functionality.
      * 
-     * Sets up AJAX handlers for PDF generation and enqueues
-     * necessary scripts for the export interface.
+     * Establishes AJAX handlers for PDF generation, script enqueuing for export
+     * interface, and integration hooks for submission workflow. Provides complete
+     * PDF export infrastructure including browser-based generation, configurable
+     * content sections, and professional document formatting capabilities.
      * 
      * @since 2.0.0
-     * 
-     * @return void
      */
     public function init() {
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'handle_pdf_export'));
@@ -46,15 +55,8 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Enqueue scripts and styles for PDF export functionality.
-     * 
-     * Loads the PDF export JavaScript and localizes necessary data
-     * for AJAX communication and user interface feedback.
-     * 
-     * @since 2.0.0
-     * 
-     * @param string $hook Current admin page hook
-     * @return void
+     * Enqueue JavaScript and localization for PDF export interface.
+     * Loads export scripts with AJAX configuration and user feedback text.
      */
     public function enqueue_scripts($hook) {
         global $post;
@@ -78,8 +80,13 @@ class CF7_Artist_Submissions_PDF_Export {
         }
     }
     
+    // ============================================================================
+    // ADMIN INTERFACE SECTION
+    // ============================================================================
+    
     /**
-     * Add PDF export meta box
+     * Add PDF export meta box to submission editor.
+     * Registers meta box for export options and functionality.
      */
     public function add_pdf_export_meta_box() {
         add_meta_box(
@@ -93,7 +100,8 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Render PDF export meta box
+     * Render PDF export meta box interface with configuration options.
+     * Displays export controls, content selection checkboxes, and styling.
      */
     public function render_pdf_export_meta_box($post) {
         ?>
@@ -198,16 +206,19 @@ class CF7_Artist_Submissions_PDF_Export {
         <?php
     }
     
+    // ============================================================================
+    // AJAX HANDLERS SECTION
+    // ============================================================================
+    
     /**
-     * Handle AJAX PDF export request.
+     * AJAX handler for PDF export request processing with security validation.
      * 
-     * Processes the PDF export request with security validation,
-     * capability checks, and option parsing. Returns JSON response
-     * with download URL or error message.
+     * Processes PDF export requests with comprehensive security validation,
+     * capability checks, and option parsing. Handles export configuration,
+     * document generation coordination, and JSON response formatting for
+     * seamless user interface integration and feedback.
      * 
      * @since 2.0.0
-     * 
-     * @return void Outputs JSON response
      */
     public function handle_pdf_export() {
         // Verify nonce
@@ -237,17 +248,19 @@ class CF7_Artist_Submissions_PDF_Export {
         }
     }
     
+    // ============================================================================
+    // PDF GENERATION SECTION
+    // ============================================================================
+    
     /**
-     * Generate PDF-ready HTML document for submission.
+     * Generate professional PDF-ready HTML document with comprehensive formatting.
      * 
-     * Creates a complete HTML document optimized for browser printing
-     * to PDF, including validation, content generation, and file handling.
+     * Creates complete HTML document optimized for browser printing to PDF with
+     * validation, content generation, professional styling, and file handling.
+     * Implements configurable content sections, responsive design, and error
+     * handling for seamless PDF generation workflow integration.
      * 
      * @since 2.0.0
-     * 
-     * @param int   $post_id ID of the submission post
-     * @param array $options Export configuration options
-     * @return array Success status, message, and download URL
      */
     private function generate_pdf($post_id, $options = array()) {
         // Check if post exists
@@ -291,8 +304,13 @@ class CF7_Artist_Submissions_PDF_Export {
         }
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Wrap HTML content in complete document
+     * Wrap generated content in complete HTML document structure.
+     * Creates full HTML document with styling, headers, and print optimization.
      */
     private function wrap_html_document($content, $post_id, $options) {
         $artist_name = $this->get_artist_name($post_id);
@@ -664,7 +682,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Generate HTML content for PDF
+     * Generate structured HTML content for PDF document sections.
+     * Creates formatted content sections with debug information and data display.
      */
     private function generate_pdf_content($post_id, $options) {
         $post = get_post($post_id);
@@ -791,7 +810,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Get file fields from submission
+     * Extract file fields from submission metadata with multiple approach scanning.
+     * Searches various metadata patterns to locate uploaded files and URLs.
      */
     private function get_file_fields($post_id) {
         // Start with an empty array of file URLs to display
@@ -849,7 +869,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Format work item for PDF
+     * Format individual work item HTML for PDF display.
+     * Creates formatted work sections with images, titles, and file links.
      */
     private function format_work_item($file_url, $field_name) {
         $html = '<div class="work-item">';
@@ -882,7 +903,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Check if file is an image
+     * Check if filename represents an image file type.
+     * Validates file extension against supported image formats.
      */
     private function is_image_file($filename) {
         $image_extensions = array('jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp');
@@ -891,7 +913,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Get artist name from submission
+     * Extract artist name from submission metadata fields.
+     * Searches multiple field patterns with post title fallback.
      */
     private function get_artist_name($post_id) {
         // Try common field names for artist name
@@ -909,7 +932,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Get site logo URL for PDF header
+     * Retrieve site logo URL for PDF header branding.
+     * Extracts custom logo from theme settings with fallback handling.
      */
     private function get_site_logo_url() {
         // Try to get custom logo
@@ -925,7 +949,8 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     /**
-     * Get site logo path for PDF header
+     * Retrieve site logo file path for PDF header integration.
+     * Converts logo URL to local file path for PDF processing compatibility.
      */
     private function get_site_logo_path() {
         // Try to get custom logo

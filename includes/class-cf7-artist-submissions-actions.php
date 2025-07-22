@@ -1,42 +1,47 @@
 <?php
 /**
- * CF7 Artist Submissions - Actions/Task Management System
- * 
- * This class provides a comprehensive task management system for artist
- * submissions including action creation, assignment, tracking, completion,
- * and automated email summaries. Features database management, user
- * assignment, due dates, and audit trails.
- * 
+ * CF7 Artist Submissions - Actions Management System
+ *
+ * Comprehensive task and action management system providing complete workflow
+ * orchestration for artist submissions with assignment tracking, priority
+ * management, due date monitoring, and automated notification systems.
+ *
+ * Features:
+ * • Task creation and assignment with role-based access control
+ * • Priority-based workflow organization and deadline management
+ * • AJAX communication framework for real-time action management
+ * • Automated daily email summaries with SMTP integration
+ * • Comprehensive database schema with performance optimization
+ * • User assignment system with capability-based filtering
+ * • Audit trail integration for complete action lifecycle tracking
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage ActionsManagement
  * @since 2.0.0
+ * @version 2.2.0
  */
 
 /**
  * CF7 Artist Submissions Actions Class
  * 
- * Manages the complete actions/task system including:
- * - Action creation and assignment to users
- * - Task tracking with due dates and priorities
- * - Action completion and status management
- * - Daily email summaries for outstanding actions
- * - Database schema management and updates
- * - AJAX handlers for frontend interaction
- * - User management and assignment capabilities
- * - Audit trail and action logging
+ * Primary controller class for the CF7 Artist Submissions actions and task
+ * management system. Provides comprehensive workflow orchestration, assignment
+ * management, notification systems, and database operations for action tracking
+ * throughout the submission review lifecycle.
  * 
  * @since 2.0.0
  */
 class CF7_Artist_Submissions_Actions {
     
     /**
-     * Initialize the actions system.
+     * Initialize the comprehensive actions management system.
      * 
-     * Sets up AJAX handlers, cron jobs for daily summaries,
-     * database schema management, and activation hooks.
+     * Establishes complete system integration including AJAX communication
+     * endpoints, automated cron scheduling for daily summaries, database
+     * schema management with version control, and plugin lifecycle hooks
+     * for proper activation and deactivation handling.
      * 
      * @since 2.0.0
-     * 
-     * @return void
      */
     public static function init() {
         // AJAX handlers - matching JavaScript expectations
@@ -62,8 +67,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Enqueue scripts and styles for actions
-     * Note: Actions scripts are now managed by the Tabs system for consistency
+     * Coordinate script and style enqueuing for actions system.
+     * 
+     * Actions scripts are now managed by the global Tabs system for
+     * consistency and conflict prevention. This method maintains
+     * compatibility while delegating to the unified script management.
+     * 
+     * @since 2.0.0
      */
     public static function enqueue_scripts($hook) {
         // Actions scripts are now globally enqueued by the Tabs system
@@ -71,8 +81,18 @@ class CF7_Artist_Submissions_Actions {
         // No additional enqueuing needed here
     }
     
+    // ============================================================================
+    // DATABASE SCHEMA MANAGEMENT SECTION
+    // ============================================================================
+    
     /**
-     * Create actions table
+     * Create comprehensive actions table with optimized schema.
+     * 
+     * Establishes the primary actions table with performance-optimized
+     * structure including strategic indexing, appropriate data types,
+     * and referential integrity support for robust action management.
+     * 
+     * @since 2.0.0
      */
     public static function create_table() {
         global $wpdb;
@@ -112,7 +132,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Check if actions table exists
+     * Verify actions table existence in database.
+     * 
+     * Performs database introspection to confirm the actions table
+     * exists and is accessible for operations. Used for conditional
+     * table creation and schema validation processes.
+     * 
+     * @since 2.0.0
      */
     public static function table_exists() {
         global $wpdb;
@@ -124,7 +150,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Update table schema if needed
+     * Update actions table schema for version compatibility.
+     * 
+     * Handles incremental schema updates for existing installations,
+     * ensuring backward compatibility while adding new functionality.
+     * Performs version-aware column additions and index optimization.
+     * 
+     * @since 2.0.0
      */
     public static function update_table_schema() {
         global $wpdb;
@@ -148,7 +180,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Check and update database schema on admin init
+     * Automated schema validation and update system.
+     * 
+     * Performs comprehensive database schema validation and updates
+     * during admin initialization. Uses transient caching to prevent
+     * repeated database introspection and ensure optimal performance.
+     * 
+     * @since 2.0.0
      */
     public static function check_and_update_schema() {
         // Only run once per admin session to avoid repeated checks
@@ -167,8 +205,18 @@ class CF7_Artist_Submissions_Actions {
         }
     }
     
+    // ============================================================================
+    // USER MANAGEMENT AND ASSIGNMENT SYSTEM SECTION
+    // ============================================================================
+    
     /**
-     * Get WordPress users for assignment dropdown
+     * Retrieve assignable users with capability-based filtering.
+     * 
+     * Discovers WordPress users eligible for action assignment based on
+     * capability requirements and role permissions. Provides structured
+     * user data optimized for frontend assignment interfaces.
+     * 
+     * @since 2.0.0
      */
     public static function get_assignable_users() {
         $users = get_users(array(
@@ -191,7 +239,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Get assignable users
+     * AJAX endpoint for retrieving assignable users.
+     * 
+     * Secure AJAX handler providing real-time access to assignable user
+     * data for frontend assignment interfaces. Includes comprehensive
+     * security validation and structured response formatting.
+     * 
+     * @since 2.0.0
      */
     public static function ajax_get_assignable_users() {
         // Verify nonce
@@ -210,8 +264,19 @@ class CF7_Artist_Submissions_Actions {
         wp_send_json_success(array('users' => $users));
     }
     
+    // ============================================================================
+    // CORE ACTION MANAGEMENT SECTION
+    // ============================================================================
+    
     /**
-     * Add an action
+     * Create new action with comprehensive metadata and assignment.
+     * 
+     * Primary action creation method providing full-featured action
+     * initialization with metadata, assignment, scheduling, and audit
+     * trail integration. Handles database schema validation and
+     * automatic table creation for seamless operation.
+     * 
+     * @since 2.0.0
      */
     public static function add_action($submission_id, $title, $description = '', $options = array()) {
         global $wpdb;
@@ -280,8 +345,19 @@ class CF7_Artist_Submissions_Actions {
         return $action_id;
     }
     
+    // ============================================================================
+    // ACTION RETRIEVAL AND QUERYING SECTION
+    // ============================================================================
+    
     /**
-     * Get actions for a submission
+     * Retrieve actions for submission with advanced filtering and sorting.
+     * 
+     * Comprehensive action retrieval system providing filtered access to
+     * submission-specific actions with user assignment data and optimized
+     * sorting for workflow efficiency. Features intelligent priority-based
+     * organization and due date management.
+     * 
+     * @since 2.0.0
      */
     public static function get_actions($submission_id, $status = '') {
         global $wpdb;
@@ -316,7 +392,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Get outstanding actions across all submissions
+     * Retrieve outstanding actions across all submissions with priority sorting.
+     * 
+     * Global action retrieval system providing cross-submission visibility
+     * of pending actions for administrative oversight and workload management.
+     * Features intelligent priority organization and artist name integration.
+     * 
+     * @since 2.0.0
      */
     public static function get_outstanding_actions($limit = 50) {
         global $wpdb;
@@ -342,7 +424,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Get imminent actions (due soon or overdue)
+     * Retrieve imminent actions requiring immediate attention.
+     * 
+     * Time-sensitive action retrieval system identifying actions due soon
+     * or overdue for immediate attention and escalation. Provides critical
+     * deadline management and workflow prioritization support.
+     * 
+     * @since 2.0.0
      */
     public static function get_imminent_actions($days_ahead = 3) {
         global $wpdb;
@@ -360,8 +448,19 @@ class CF7_Artist_Submissions_Actions {
         return $wpdb->get_results($wpdb->prepare($query, $cutoff_date));
     }
     
+    // ============================================================================
+    // ACTION LIFECYCLE MANAGEMENT SECTION
+    // ============================================================================
+    
     /**
-     * Complete an action
+     * Complete action with comprehensive audit trail and status update.
+     * 
+     * Action completion system providing comprehensive status lifecycle
+     * management with audit trail integration, user attribution, and
+     * completion documentation. Features error handling and rollback
+     * capabilities for data integrity.
+     * 
+     * @since 2.0.0
      */
     public static function complete_action($action_id, $notes = '') {
         global $wpdb;
@@ -398,7 +497,14 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Update an action
+     * Update existing action with comprehensive field validation.
+     * 
+     * Flexible action update system supporting partial updates with
+     * comprehensive field validation, security controls, and audit
+     * trail integration. Features whitelist-based field filtering
+     * for security and data integrity.
+     * 
+     * @since 2.0.0
      */
     public static function update_action($action_id, $data) {
         global $wpdb;
@@ -437,7 +543,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Delete an action
+     * Delete action with comprehensive validation and cleanup.
+     * 
+     * Secure action deletion system with comprehensive validation
+     * and cleanup procedures. Features audit trail preservation
+     * and error handling for safe data removal.
+     * 
+     * @since 2.0.0
      */
     public static function delete_action($action_id) {
         global $wpdb;
@@ -453,8 +565,19 @@ class CF7_Artist_Submissions_Actions {
         return $result !== false;
     }
     
+    // ============================================================================
+    // REPORTING AND ANALYTICS SECTION
+    // ============================================================================
+    
     /**
-     * Get actions count by submission
+     * Generate comprehensive action statistics by submission.
+     * 
+     * Advanced analytics system providing detailed action metrics
+     * and performance statistics organized by submission for workflow
+     * analysis and optimization. Features multi-dimensional counting
+     * with status classification and overdue detection.
+     * 
+     * @since 2.0.0
      */
     public static function get_actions_count_by_submission() {
         global $wpdb;
@@ -482,8 +605,18 @@ class CF7_Artist_Submissions_Actions {
         return $counts;
     }
     
+    // ============================================================================
+    // AJAX API ENDPOINTS SECTION
+    // ============================================================================
+    
     /**
-     * AJAX: Get actions for a submission
+     * AJAX endpoint for retrieving submission actions with filtering.
+     * 
+     * Secure AJAX handler providing real-time access to submission-specific
+     * actions with optional status filtering for dynamic frontend interfaces.
+     * Features comprehensive security validation and structured responses.
+     * 
+     * @since 2.0.0
      */
     public static function ajax_get_actions() {
         // Verify nonce
@@ -507,7 +640,14 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Add a new action
+     * AJAX endpoint for adding new actions (legacy method).
+     * 
+     * Legacy AJAX handler for action creation maintained for backward
+     * compatibility. Redirects to the unified save action method for
+     * consistent processing and reduced code duplication.
+     * 
+     * @since 2.0.0
+     * @deprecated 2.1.0 Use ajax_save_action instead
      */
     public static function ajax_add_action() {
         // Verify nonce
@@ -561,7 +701,14 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Update an action
+     * AJAX endpoint for updating existing actions (legacy method).
+     * 
+     * Legacy AJAX handler for action updates maintained for backward
+     * compatibility. Features comprehensive field validation and
+     * security controls for safe action modification.
+     * 
+     * @since 2.0.0
+     * @deprecated 2.1.0 Use ajax_save_action instead
      */
     public static function ajax_update_action() {
         // Verify nonce
@@ -603,7 +750,14 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Save action (combined add/update)
+     * Unified AJAX endpoint for action creation and updates.
+     * 
+     * Primary AJAX handler providing unified action creation and update
+     * functionality with comprehensive security validation, input sanitization,
+     * and structured error handling. Features intelligent action ID detection
+     * for automatic create/update routing.
+     * 
+     * @since 2.0.0
      */
     public static function ajax_save_action() {
         // Verify nonce
@@ -695,7 +849,14 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Complete an action
+     * AJAX endpoint for action completion with documentation.
+     * 
+     * Specialized AJAX handler for action completion operations with
+     * comprehensive validation, audit trail integration, and completion
+     * documentation support. Features secure completion processing
+     * and structured response formatting.
+     * 
+     * @since 2.0.0
      */
     public static function ajax_complete_action() {
         // Verify nonce
@@ -723,7 +884,13 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Delete an action
+     * AJAX endpoint for secure action deletion.
+     * 
+     * Secure AJAX handler for action deletion operations with comprehensive
+     * validation, permission checking, and error handling. Features safe
+     * deletion processing with audit trail considerations.
+     * 
+     * @since 2.0.0
      */
     public static function ajax_delete_action() {
         // Verify nonce
@@ -750,7 +917,14 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * AJAX: Get outstanding actions for dashboard
+     * AJAX endpoint for dashboard outstanding actions retrieval.
+     * 
+     * Specialized AJAX handler providing dashboard-specific action data
+     * including imminent actions requiring immediate attention and
+     * general outstanding actions for workflow overview. Features
+     * optimized queries for dashboard performance.
+     * 
+     * @since 2.0.0
      */
     public static function ajax_get_outstanding_actions() {
         // Verify nonce
@@ -774,8 +948,19 @@ class CF7_Artist_Submissions_Actions {
         ));
     }
     
+    // ============================================================================
+    // FRONTEND INTERFACE RENDERING SECTION
+    // ============================================================================
+    
     /**
-     * Render actions tab content
+     * Render comprehensive actions tab interface for submission management.
+     * 
+     * Complete frontend interface rendering system providing full-featured
+     * action management capabilities within submission detail views. Features
+     * responsive design, real-time interaction, and comprehensive modal
+     * interfaces for action creation and management.
+     * 
+     * @since 2.0.0
      */
     public static function render_actions_tab($post) {
         $submission_id = $post->ID;
@@ -881,8 +1066,19 @@ class CF7_Artist_Submissions_Actions {
         <?php
     }
     
+    // ============================================================================
+    // EMAIL NOTIFICATION SYSTEM SECTION
+    // ============================================================================
+    
     /**
-     * Get actions summary for daily emails
+     * Generate comprehensive actions summary for email notifications.
+     * 
+     * Advanced summary generation system providing categorized action data
+     * for email notifications with intelligent prioritization, due date
+     * analysis, and user-specific filtering. Features multi-dimensional
+     * action classification for comprehensive workflow reporting.
+     * 
+     * @since 2.0.0
      */
     public static function get_actions_summary($user_id = null, $days_ahead = 7) {
         global $wpdb;
@@ -960,8 +1156,18 @@ class CF7_Artist_Submissions_Actions {
         return $summaries;
     }
     
+    // ============================================================================
+    // EMAIL CONFIGURATION AND SMTP MANAGEMENT SECTION
+    // ============================================================================
+    
     /**
-     * Get SMTP configuration info for debugging
+     * Retrieve SMTP configuration information for diagnostics.
+     * 
+     * SMTP configuration detection system providing information about email
+     * delivery capabilities, plugin compatibility, and configuration status
+     * for email system diagnostics and troubleshooting.
+     * 
+     * @since 2.0.0
      */
     public static function get_smtp_config_info() {
         $config_info = array(
@@ -1000,7 +1206,13 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
-     * Validate email configuration to prevent SMTP errors
+     * Validate email configuration for reliable delivery.
+     * 
+     * Email configuration validation system ensuring email configuration
+     * integrity for reliable delivery of daily summary notifications with
+     * comprehensive field validation and error reporting.
+     * 
+     * @since 2.0.0
      */
     public static function validate_email_config() {
         $email_options = get_option('cf7_artist_submissions_email_options', array());
@@ -1041,7 +1253,13 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
-     * Check if WP Mail SMTP is active and configured
+     * Detect SMTP plugin configuration status.
+     * 
+     * SMTP configuration detection system identifying popular WordPress
+     * email plugins and their activation status for optimal email delivery
+     * configuration and compatibility assessment.
+     * 
+     * @since 2.0.0
      */
     public static function is_wp_mail_smtp_configured() {
         // Check for WP Mail SMTP plugin
@@ -1065,8 +1283,19 @@ class CF7_Artist_Submissions_Actions {
         return false;
     }
 
+    // ============================================================================
+    // EMAIL DELIVERY SYSTEM SECTION
+    // ============================================================================
+    
     /**
-     * Send daily summary email to a user
+     * Send daily summary email to specified user.
+     * 
+     * Email delivery system providing personalized daily action summaries
+     * with comprehensive validation, SMTP integration, and detailed error
+     * handling. Features intelligent content generation, template support,
+     * and delivery optimization for reliable notification delivery.
+     * 
+     * @since 2.0.0
      */
     public static function send_daily_summary_email($user_id) {
         $user = get_user_by('id', $user_id);
@@ -1166,8 +1395,19 @@ class CF7_Artist_Submissions_Actions {
         return $mail_sent;
     }
     
+    // ============================================================================
+    // EMAIL TESTING AND DIAGNOSTICS SECTION
+    // ============================================================================
+    
     /**
-     * Test SMTP configuration by sending a test email
+     * Test SMTP configuration with diagnostic reporting.
+     * 
+     * SMTP testing system providing configuration validation and diagnostic
+     * email delivery for troubleshooting email delivery issues. Features
+     * configuration analysis, test email generation, and detailed reporting
+     * for email system optimization.
+     * 
+     * @since 2.0.0
      */
     public static function test_smtp_configuration($test_email = null) {
         if (!$test_email) {
@@ -1242,7 +1482,13 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
-     * Manual test method for debugging daily summary emails
+     * Debug daily summary email delivery system.
+     * 
+     * Debugging utility for daily summary email delivery featuring manual
+     * test execution, user override capabilities, and detailed diagnostic
+     * reporting for troubleshooting email delivery issues.
+     * 
+     * @since 2.0.0
      */
     public static function debug_daily_summary_email($user_id = null, $test_email = null) {
         // Use admin user if no user specified
@@ -1292,14 +1538,30 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
-     * Log email errors for debugging
+     * Log email delivery errors for debugging.
+     * 
+     * Email error logging utility for WordPress email delivery failures
+     * providing detailed error information and debugging context for
+     * troubleshooting email delivery issues.
+     * 
+     * @since 2.0.0
      */
     public static function log_mail_error($wp_error) {
         error_log('CF7 Actions: wp_mail failed - ' . $wp_error->get_error_message());
     }
 
+    // ============================================================================
+    // EMAIL TESTING DATA GENERATION SECTION
+    // ============================================================================
+    
     /**
-     * Generate sample actions data for testing daily summary emails
+     * Generate sample action data for email testing.
+     * 
+     * Sample data generation system creating realistic action objects for
+     * daily summary email testing and template validation. Features
+     * comprehensive action categorization and realistic metadata.
+     * 
+     * @since 2.0.0
      */
     public static function generate_sample_actions_summary() {
         // Create sample action objects with the same structure as real data
@@ -1414,7 +1676,14 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
-     * Send test daily summary email with sample data to specified email address
+     * Send test daily summary email with sample action data.
+     * 
+     * Test email system delivering sample daily summary emails with realistic
+     * action data for template validation, delivery testing, and user experience
+     * verification. Features complete email generation pipeline with sample data
+     * integration and delivery confirmation.
+     * 
+     * @since 2.0.0
      */
     public static function send_test_daily_summary_email($test_email) {
         // Validate email format
@@ -1504,8 +1773,19 @@ class CF7_Artist_Submissions_Actions {
         );
     }
 
+    // ============================================================================
+    // AUTOMATION AND BATCH PROCESSING SECTION
+    // ============================================================================
+    
     /**
-     * Send daily summary email to all users with pending actions
+     * Send daily summary emails to all users with pending actions.
+     * 
+     * Batch email processing system for automated daily summary delivery
+     * to all users with assigned pending actions. Features intelligent
+     * user discovery, personalized content generation, and efficient
+     * batch processing for reliable notification automation.
+     * 
+     * @since 2.0.0
      */
     public static function send_daily_summary_to_all() {
         global $wpdb;
@@ -1538,8 +1818,19 @@ class CF7_Artist_Submissions_Actions {
         );
     }
     
+    // ============================================================================
+    // EMAIL TEMPLATE GENERATION SECTION
+    // ============================================================================
+    
     /**
-     * Generate HTML content for summary email
+     * Generate HTML email content for action summary delivery.
+     * 
+     * Email template generation system creating rich HTML content for daily
+     * action summaries with professional presentation, responsive design,
+     * and optional WooCommerce styling integration. Features comprehensive
+     * action categorization and contextual formatting.
+     * 
+     * @since 2.0.0
      */
     private static function generate_summary_email_content($summaries, $user, $use_wc_template = false) {
         $site_name = get_bloginfo('name');
@@ -1712,8 +2003,14 @@ class CF7_Artist_Submissions_Actions {
         return $email_content;
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+
     /**
-     * Format daily summary email content using WooCommerce email template
+     * Format daily summary email using WooCommerce template.
+     *
+     * @since 2.0.0
      */
     private static function format_woocommerce_daily_summary_email($content, $heading) {
         // Use the existing, working WooCommerce template method from the conversations system
@@ -1727,7 +2024,9 @@ class CF7_Artist_Submissions_Actions {
     }
 
     /**
-     * Setup WordPress cron for daily summary emails
+     * Setup WordPress cron for daily summary emails.
+     *
+     * @since 2.0.0
      */
     public static function setup_daily_summary_cron() {
         if (!wp_next_scheduled('cf7_daily_summary_cron')) {
@@ -1736,14 +2035,18 @@ class CF7_Artist_Submissions_Actions {
     }
     
     /**
-     * Clear WordPress cron for daily summary emails
+     * Clear WordPress cron for daily summary emails.
+     *
+     * @since 2.0.0
      */
     public static function clear_daily_summary_cron() {
         wp_clear_scheduled_hook('cf7_daily_summary_cron');
     }
     
     /**
-     * Render individual action item
+     * Render individual action item.
+     *
+     * @since 2.0.0
      */
     private static function render_action_item($action) {
         $priority_class = 'priority-' . $action->priority;
@@ -1830,8 +2133,4 @@ class CF7_Artist_Submissions_Actions {
         </div>
         <?php
     }
-    
-    /**
-     * Add context menu script for conversation messages
-     */
 }

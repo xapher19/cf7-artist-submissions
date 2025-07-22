@@ -1,37 +1,46 @@
 <?php
 /**
- * CF7 Artist Submissions - Conversation System
- * 
- * This class provides a complete two-way email conversation system for
- * communicating with artists. Features include IMAP integration, plus
- * addressing for unique tracking, template system, message threading,
- * and real-time updates with comprehensive admin interface.
- * 
+ * CF7 Artist Submissions - Conversation Management System
+ *
+ * Two-way email conversation system for artist submissions with IMAP automation,
+ * message threading via plus addressing, template integration, and real-time
+ * administrative interface for streamlined artist communication.
+ *
+ * Features:
+ * • IMAP automation for reply detection and processing
+ * • Plus addressing conversation threading (email+token@domain.com)
+ * • Template-based and custom message composition
+ * • Real-time conversation interface with read status tracking
+ * • Secure token generation and WordPress standards compliance
+ * • WooCommerce template integration for professional styling
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage ConversationManagement
  * @since 1.5.0
- * @since 2.0.0 Enhanced with real-time updates and admin interface
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions Conversations Class
  * 
- * Manages the complete conversation system including:
- * - Two-way email communication with artists
- * - IMAP integration for automatic reply detection
- * - Plus addressing for unique conversation tracking
- * - Email template system for common responses
- * - Message threading and organization
- * - Real-time message updates and notifications
- * - Admin interface for conversation management
- * - Database management for message storage
- * - Security and validation for all communications
+ * Comprehensive two-way email conversation management system for artist submissions.
+ * Provides IMAP automation for reply detection, plus addressing for conversation 
+ * threading, template integration, real-time administrative interface, and secure
+ * token-based conversation tracking for seamless artist communication workflows.
  * 
  * @since 1.5.0
  */
 class CF7_Artist_Submissions_Conversations {
     
     /**
-     * Initialize the conversation system
+     * Initialize comprehensive conversation management system.
+     * 
+     * Registers WordPress hooks for meta boxes, AJAX endpoints, email checking
+     * automation, and database schema management. Establishes complete conversation
+     * infrastructure including real-time messaging, IMAP reply detection, template
+     * integration, and administrative interface for seamless artist communication.
+     * 
+     * @since 1.5.0
      */
     public static function init() {
         add_action('add_meta_boxes', array(__CLASS__, 'add_conversation_meta_box'));
@@ -65,7 +74,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Maybe update the conversations table
+     * Checks and updates conversation table schema for version compatibility.
+     * Ensures database structure matches current plugin requirements.
      */
     public static function maybe_update_table() {
         $version_option = 'cf7_conversations_table_version';
@@ -79,7 +89,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Add custom cron schedules
+     * Registers custom 5-minute cron interval for automated email checking.
+     * Enables frequent IMAP polling for timely reply detection.
      */
     public static function add_cron_schedules($schedules) {
         $schedules['every_5_minutes'] = array(
@@ -90,7 +101,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Create conversations table
+     * Creates optimized conversation database table with comprehensive schema.
+     * Includes message threading, template tracking, and performance indexing.
      */
     public static function create_conversations_table() {
         global $wpdb;
@@ -141,7 +153,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Update conversations table to add template columns and notification tracking
+     * Upgrades existing conversation table schema for backward compatibility.
+     * Adds template support columns, notification tracking, and optimized indexing.
      */
     public static function update_conversations_table() {
         global $wpdb;
@@ -180,7 +193,14 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Generate or retrieve consistent reply token for a submission
+     * Generates or retrieves secure conversation threading token for submissions.
+     * 
+     * Creates consistent reply tokens for email conversation threading using WordPress
+     * cryptographic functions. Ensures same submission always receives identical token
+     * for conversation continuity. Implements plus addressing format for automated
+     * reply detection and processing through IMAP integration.
+     * 
+     * @since 1.5.0
      */
     public static function generate_reply_token($submission_id) {
         // Check if this submission already has a token
@@ -224,7 +244,14 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Migrate existing submissions to use consistent tokens
+     * Migrates existing conversation tokens to ensure threading consistency.
+     * 
+     * Processes legacy conversations with multiple tokens per submission and 
+     * standardizes them to single consistent tokens. Maintains conversation
+     * threading integrity while ensuring backward compatibility with existing
+     * message history. Critical for conversation continuity after system updates.
+     * 
+     * @since 2.0.0
      */
     public static function migrate_to_consistent_tokens() {
         global $wpdb;
@@ -283,7 +310,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Add conversation meta box to submission edit page
+     * Registers conversation meta box for submission edit screens.
+     * Integrates conversation interface into WordPress admin post editor.
      */
     public static function add_conversation_meta_box() {
         add_meta_box(
@@ -297,7 +325,14 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Render conversation meta box
+     * Renders comprehensive conversation management interface for submissions.
+     * 
+     * Generates complete conversation meta box including message history display,
+     * template selection, custom message composition, real-time status indicators,
+     * and administrative controls. Provides full conversation lifecycle management
+     * with read status tracking, message threading, and privacy compliance features.
+     * 
+     * @since 1.5.0
      */
     public static function render_conversation_meta_box($post) {
         $submission_id = $post->ID;
@@ -535,8 +570,13 @@ class CF7_Artist_Submissions_Conversations {
         <?php
     }
     
+    // ============================================================================
+    // CONVERSATION DATA RETRIEVAL SECTION
+    // ============================================================================
+    
     /**
-     * Get conversation messages for a submission
+     * Retrieves chronological conversation message history for submissions.
+     * Returns ordered message objects with metadata and debug logging.
      */
     public static function get_conversation_messages($submission_id) {
         global $wpdb;
@@ -599,7 +639,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Get artist email from submission
+     * Extracts valid artist email from submission metadata fields.
+     * Uses priority field matching with comprehensive fallback scanning.
      */
     public static function get_artist_email($submission_id) {
         // Try common email field names
@@ -629,18 +670,27 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Enqueue scripts for conversation interface
-     * Note: Assets are now centrally managed by the Tabs system to prevent conflicts.
-     * The Tabs system loads conversation.js, conversations.css, and provides
-     * cf7Conversations localization data for all single submission edit pages.
+     * Script enqueuing is handled by Tabs system.
+     * Prevents conflicts by centralizing asset management.
      */
     public static function enqueue_scripts($hook) {
         // Assets are handled by the Tabs system for single submission pages
         // This prevents script/style conflicts and ensures consistent loading
     }
     
+    // ============================================================================
+    // AJAX COMMUNICATION HANDLERS SECTION
+    // ============================================================================
+    
     /**
-     * AJAX handler for sending messages
+     * AJAX handler for real-time message composition and delivery system.
+     * 
+     * Processes secure message sending with comprehensive validation, template
+     * integration, and custom message support. Handles both template-based emails
+     * through the email system and custom message composition with automatic
+     * subject generation. Implements security validation and error handling.
+     * 
+     * @since 1.5.0
      */
     public static function ajax_send_message() {
         // Verify nonce
@@ -719,7 +769,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for fetching messages
+     * AJAX handler for retrieving formatted conversation messages.
+     * Returns HTML-formatted message display for real-time interface updates.
      */
     public static function ajax_fetch_messages() {
         // Verify nonce
@@ -775,7 +826,14 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Send a message to the artist
+     * Comprehensive email delivery system with conversation tracking integration.
+     * 
+     * Handles complete message delivery workflow including email composition,
+     * plus addressing for reply threading, WooCommerce template integration,
+     * conversation database logging, and error handling. Implements secure
+     * reply token generation and IMAP-compatible threading for automated processing.
+     * 
+     * @since 1.5.0
      */
     public static function send_message($submission_id, $to_email, $subject, $message_body) {
         global $wpdb;
@@ -912,7 +970,13 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Check email replies with timeout protection
+     * Executes IMAP email checking with timeout protection and resource management.
+     * 
+     * Prevents server timeout issues during intensive email processing operations
+     * by implementing execution time limits and proper resource cleanup. Provides
+     * safe wrapper around core email checking functionality for AJAX endpoints.
+     * 
+     * @since 1.6.0
      */
     public static function check_email_replies_with_timeout($timeout_seconds = 30) {
         // Set a timeout for the operation
@@ -942,7 +1006,14 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Check for email replies via IMAP
+     * Automated IMAP email reply detection and processing system.
+     * 
+     * Establishes secure IMAP connections, scans multiple folders for conversation
+     * replies, processes plus-addressed messages for submission identification,
+     * and integrates with conversation threading system. Handles complex email
+     * server configurations including Migadu plus addressing and folder structures.
+     * 
+     * @since 1.5.0
      */
     public static function check_email_replies() {
         $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
@@ -1057,7 +1128,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Process emails in a specific folder
+     * Processes emails within specific IMAP folder for conversation replies.
+     * Handles unseen message detection with recent email fallback scanning.
      */
     public static function process_folder_emails($connection, $folder_name) {
         // Get total message count
@@ -1106,7 +1178,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Process an incoming email
+     * Processes individual email messages for conversation threading.
+     * Extracts submission tokens from plus addressing and validates against database.
      */
     public static function process_incoming_email($connection, $email_number) {
         $header = imap_headerinfo($connection, $email_number);
@@ -1215,7 +1288,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Debug method to check database status
+     * Provides comprehensive conversation database diagnostic information.
+     * Returns table status, message counts, and recent activity for troubleshooting.
      */
     public static function debug_database_status() {
         global $wpdb;
@@ -1250,7 +1324,8 @@ class CF7_Artist_Submissions_Conversations {
     }
 
     /**
-     * Verify reply token is valid
+     * Validates conversation reply tokens against database records.
+     * Ensures secure conversation threading and prevents unauthorized access.
      */
     public static function verify_reply_token($submission_id, $token) {
         global $wpdb;
@@ -1324,7 +1399,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Store conversation message
+     * Stores conversation message in conversation database table.
+     * Records complete message metadata with reply tokens for threading.
      */
     public static function store_conversation_message($submission_id, $direction, $from_email, $from_name, $to_email, $to_name, $subject, $message_body, $is_template = false, $template_id = null) {
         global $wpdb;
@@ -1367,7 +1443,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Store incoming message
+     * Processes and stores incoming email messages as conversation entries.
+     * Handles duplicate detection, content cleaning, and database storage.
      */
     public static function store_incoming_message($submission_id, $header, $body, $reply_token) {
         global $wpdb;
@@ -1548,8 +1625,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Strip previous message content from email replies
-     * This removes quoted text, forwarded content, and email signatures
+     * Intelligently removes quoted text and signatures from email replies.
+     * Preserves original message content while cleaning conversation threading artifacts.
      */
     public static function strip_previous_message_content($body) {
         // Remove carriage returns first
@@ -1638,7 +1715,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for clearing debug messages
+     * AJAX handler for administrative debug message log clearing.
+     * Provides administrative control over conversation debugging data.
      */
     public static function ajax_clear_debug_messages() {
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
@@ -1656,7 +1734,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for migrating tokens
+     * AJAX handler for executing conversation token migration process.
+     * Updates legacy conversation tokens to ensure threading consistency.
      */
     public static function ajax_migrate_tokens() {
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
@@ -1677,7 +1756,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for testing IMAP connection
+     * AJAX handler for testing IMAP server connectivity and configuration.
+     * Validates connection parameters and provides diagnostic feedback.
      */
     public static function ajax_test_imap() {
         // Verify nonce
@@ -1749,7 +1829,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for manual email reply checking
+     * AJAX handler for manual email reply checking triggered by user action.
+     * Provides on-demand IMAP scanning for immediate conversation updates.
      */
     public static function ajax_check_replies_manual() {
         error_log('CF7 Artist Submissions: ajax_check_replies_manual called');
@@ -1816,7 +1897,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for debugging inbox contents
+     * AJAX handler for comprehensive IMAP inbox debugging and diagnostics.
+     * Provides detailed inbox analysis for troubleshooting email processing issues.
      */
     public static function ajax_debug_inbox() {
         // Verify nonce
@@ -2017,7 +2099,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Format message content using WooCommerce email template
+     * Applies WooCommerce email template styling to conversation messages.
+     * Provides professional email formatting with header, footer, and branding.
      */
     public static function format_woocommerce_conversation_email($content, $heading) {
         if (!class_exists('WooCommerce')) {
@@ -2109,7 +2192,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Get total unviewed messages across all submissions
+     * Calculates total unread message count across all submissions.
+     * Provides system-wide notification badge data for administrative overview.
      */
     public static function get_total_unviewed_count() {
         global $wpdb;
@@ -2126,7 +2210,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Get submissions with unviewed messages
+     * Retrieves submission IDs with pending unread messages.
+     * Returns conversation summary data for priority notification displays.
      */
     public static function get_submissions_with_unviewed_messages() {
         global $wpdb;
@@ -2147,7 +2232,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for marking messages as viewed
+     * Updates message read status for conversation interface management.
+     * Handles message viewing state for UI indicators and notifications.
      */
     public static function ajax_mark_messages_viewed() {
         // Verify nonce
@@ -2182,7 +2268,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for getting unviewed message count
+     * Retrieves count of unread messages for notification badges.
+     * Provides real-time message count for interface elements.
      */
     public static function ajax_get_unviewed_count() {
         // Verify nonce
@@ -2211,7 +2298,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler to check for new messages
+     * Scans for new messages in conversation threads.
+     * Enables real-time message updates for dynamic interface refresh.
      */
     public static function ajax_check_new_messages() {
         // Verify nonce
@@ -2242,7 +2330,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler to toggle message read/unread status
+     * Toggles individual message read status for conversation management.
+     * Provides granular message state control for administrative workflow.
      */
     public static function ajax_toggle_message_read() {
         check_ajax_referer('cf7_conversation_nonce', 'nonce');
@@ -2283,7 +2372,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler to clear all messages for a submission
+     * Removes all conversation messages for specific submission.
+     * Provides complete message history reset for administrative cleanup.
      */
     public static function ajax_clear_messages() {
         check_ajax_referer('cf7_conversation_nonce', 'nonce');
@@ -2371,7 +2461,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for cleaning up IMAP inbox - removes processed emails from server
+     * Removes processed emails from IMAP server for mailbox maintenance.
+     * Provides server-side cleanup to prevent inbox overflow and optimize performance.
      */
     public static function ajax_cleanup_imap_inbox() {
         // Verify nonce
@@ -2426,8 +2517,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Clean up processed emails from IMAP server
-     * Scans all emails and deletes those that have been successfully processed and stored in database
+     * Removes emails from IMAP server after successful database storage.
+     * Scans all emails and deletes those successfully processed to maintain server space.
      */
     public static function cleanup_processed_emails_from_imap() {
         $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
@@ -2752,7 +2843,8 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Add context menu script for conversation messages
+     * Adds right-click context menu functionality to conversation messages.
+     * Provides quick access to message actions like mark as read, copy, etc.
      */
     public static function add_context_menu_script() {
         $screen = get_current_screen();

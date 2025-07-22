@@ -1,34 +1,53 @@
 <?php
 /**
- * Settings Page for CF7 Artist Submissions
- * 
- * This class manages the comprehensive settings interface for the plugin
- * including Contact Form 7 integration, email configuration, conversation
- * system setup, action management, and system diagnostics. Features
- * validation, testing tools, and real-time configuration updates.
- * 
+ * CF7 Artist Submissions - Comprehensive Settings Management System
+ *
+ * Complete administrative interface for plugin configuration with Contact Form 7
+ * integration, email system setup, conversation management, action logging, and
+ * real-time testing tools for streamlined administrative workflow.
+ *
+ * Features:
+ * • Contact Form 7 form selection and field validation
+ * • Comprehensive email system configuration (SMTP, IMAP, plus addressing)
+ * • Conversation system setup with token migration tools
+ * • Action logging system with cron management and daily summaries
+ * • File storage configuration with security validation
+ * • Real-time diagnostic testing for all system components
+ * • Template email testing and preview functionality
+ * • Database schema management and migration tools
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage SettingsManagement
  * @since 1.0.0
- * @since 2.0.0 Enhanced with action system and email diagnostics
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions Settings Class
  * 
- * Manages the complete settings system including:
- * - Contact Form 7 form selection and configuration
- * - Email system setup (SMTP, IMAP, plus addressing)
- * - Conversation system configuration and testing
- * - Action system settings and cron management
- * - File storage and security settings
- * - System diagnostics and validation tools
- * - Real-time configuration testing
- * - Admin interface and user experience
+ * Comprehensive settings management system providing complete administrative
+ * interface for plugin configuration, testing, and validation. Handles Contact
+ * Form 7 integration, email system setup, conversation management, action logging,
+ * and real-time diagnostic tools for optimal system administration and workflow.
  * 
  * @since 1.0.0
  */
 class CF7_Artist_Submissions_Settings {
     
+    // ============================================================================
+    // INITIALIZATION SECTION
+    // ============================================================================
+    
+    /**
+     * Initialize comprehensive settings management system with complete functionality.
+     * 
+     * Establishes administrative interface, registers AJAX handlers for real-time
+     * testing, configuration validation, email diagnostics, and system management.
+     * Sets up complete settings workflow with validation, testing tools, and
+     * database management for optimal administrative experience and system control.
+     * 
+     * @since 1.0.0
+     */
     public function init() {
         add_action('admin_menu', array($this, 'add_settings_page'));
         add_action('admin_init', array($this, 'register_settings'));
@@ -56,6 +75,14 @@ class CF7_Artist_Submissions_Settings {
         add_action('wp_ajax_update_missing_artist_info', array($this, 'ajax_update_missing_artist_info'));
     }
     
+    // ============================================================================
+    // ADMIN INTERFACE SECTION
+    // ============================================================================
+    
+    /**
+     * Register settings page in WordPress admin with proper menu positioning.
+     * Creates submenu under CF7 Submissions with asset loading and integration.
+     */
     public function add_settings_page() {
         // Add as submenu under Submissions instead of under Settings
         $page_hook = add_submenu_page(
@@ -72,7 +99,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * Enqueue assets specifically for the settings page
+     * Enqueue specialized assets for settings page interface.
+     * Loads CSS dependencies and JavaScript with localization for AJAX functionality.
      */
     public function enqueue_settings_assets() {
         // Enqueue common styles first (foundation for all other styles)
@@ -108,6 +136,10 @@ class CF7_Artist_Submissions_Settings {
         ));
     }
     
+    /**
+     * Display admin notices for unconfigured plugin settings.
+     * Shows warning when no Contact Form 7 form has been selected.
+     */
     public function settings_notice() {
         $screen = get_current_screen();
         
@@ -131,12 +163,20 @@ class CF7_Artist_Submissions_Settings {
         }
     }
     
+    /**
+     * Register WordPress settings groups with validation callbacks.
+     * Establishes options, email, and IMAP configuration groups.
+     */
     public function register_settings() {
         register_setting('cf7_artist_submissions_options', 'cf7_artist_submissions_options', array($this, 'validate_options'));
         register_setting('cf7_artist_submissions_email_options', 'cf7_artist_submissions_email_options', array($this, 'validate_email_options'));
         register_setting('cf7_artist_submissions_imap_options', 'cf7_artist_submissions_imap_options', array($this, 'validate_imap_options'));
     }
     
+    /**
+     * Render comprehensive settings page interface with template integration.
+     * Handles form submissions, permission checks, and loads modern template.
+     */
     public function render_settings_page() {
         if (!current_user_can('manage_options')) {
             return;
@@ -164,12 +204,14 @@ class CF7_Artist_Submissions_Settings {
         include CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'templates/admin-settings.php';
     }
 
-
+    // ============================================================================
+    // SETTINGS VALIDATION SECTION
+    // ============================================================================
     
-
-    
-
-    
+    /**
+     * Validate general plugin options with comprehensive field validation.
+     * Processes form ID, menu label, file storage settings with change logging.
+     */
     public function validate_options($input) {
         $valid = array();
         $old_options = get_option('cf7_artist_submissions_options', array());
@@ -187,7 +229,8 @@ class CF7_Artist_Submissions_Settings {
 
     
     /**
-     * Validate email options
+     * Validate comprehensive email configuration options.
+     * Processes from email, name, and WooCommerce template settings with logging.
      */
     public function validate_email_options($input) {
         $valid = array();
@@ -218,6 +261,10 @@ class CF7_Artist_Submissions_Settings {
         return $valid;
     }
 
+    /**
+     * Validate IMAP connection settings with secure credential handling.
+     * Processes server, port, encryption, and authentication with audit logging.
+     */
     public function validate_imap_options($input) {
         $valid = array();
         $old_options = get_option('cf7_artist_submissions_imap_options', array());
@@ -253,20 +300,20 @@ class CF7_Artist_Submissions_Settings {
         return $valid;
     }
     
-
     
-
-    
-
-    
-
-    
-
-    
-
+    // ============================================================================
+    // AJAX TESTING HANDLERS SECTION
+    // ============================================================================
     
     /**
-     * AJAX handler to test daily summary emails
+     * AJAX handler for comprehensive daily summary email testing.
+     * 
+     * Validates permissions, processes test email requests, and generates sample
+     * summary reports with actions data. Provides complete testing workflow for
+     * daily notification system with error handling and detailed feedback for
+     * administrative configuration validation and system verification.
+     * 
+     * @since 2.0.0
      */
     public function ajax_test_daily_summary() {
         // Check nonce
@@ -328,7 +375,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to setup daily cron
+     * AJAX handler for daily cron schedule management.
+     * Sets up automated daily summary email delivery scheduling.
      */
     public function ajax_setup_daily_cron() {
         // Check nonce
@@ -368,7 +416,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to clear daily cron
+     * AJAX handler for clearing daily cron schedules.
+     * Removes automated email delivery scheduling from WordPress cron.
      */
     public function ajax_clear_daily_cron() {
         // Check nonce
@@ -399,7 +448,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to update actions schema
+     * AJAX handler for database schema updates and management.
+     * Forces actions table schema updates with assigned_to column addition.
      */
     public function ajax_update_actions_schema() {
         // Check nonce
@@ -433,7 +483,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to migrate conversation tokens
+     * AJAX handler for conversation token migration and standardization.
+     * Migrates legacy conversation tokens to ensure threading consistency.
      */
     public function ajax_migrate_conversation_tokens() {
         // Check nonce
@@ -506,8 +557,19 @@ class CF7_Artist_Submissions_Settings {
         }
     }
     
+    // ============================================================================
+    // CONFIGURATION TESTING SECTION
+    // ============================================================================
+    
     /**
-     * AJAX handler to test form configuration
+     * AJAX handler for comprehensive Contact Form 7 configuration testing.
+     * 
+     * Validates complete plugin setup including form selection, field validation,
+     * database schema verification, and file storage configuration. Provides
+     * detailed diagnostic information with field analysis, database status,
+     * and comprehensive troubleshooting feedback for optimal system configuration.
+     * 
+     * @since 2.0.0
      */
     public function ajax_test_form_config() {
         // Check nonce
@@ -727,7 +789,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to validate email configuration
+     * AJAX handler for email configuration validation and diagnostics.
+     * Validates email setup with SMTP detection and configuration analysis.
      */
     public function ajax_validate_email_config() {
         // Check permissions
@@ -776,7 +839,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to test SMTP configuration
+     * AJAX handler for SMTP configuration testing with live email delivery.
+     * Tests email delivery system with diagnostic information and feedback.
      */
     public function ajax_test_smtp_config() {
         // Check permissions
@@ -825,16 +889,13 @@ class CF7_Artist_Submissions_Settings {
         }
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Log settings changes to audit trail.
-     * 
-     * Compares old and new settings and logs any changes.
-     * 
-     * @since 2.1.0
-     * 
-     * @param array  $old_values Old setting values
-     * @param array  $new_values New setting values
-     * @param string $tab        Settings tab name
+     * Log configuration changes to audit trail system.
+     * Compares old and new settings with comprehensive change tracking.
      */
     private function log_settings_changes($old_values, $new_values, $tab = '') {
         if (!class_exists('CF7_Artist_Submissions_Action_Log')) {
@@ -870,7 +931,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to test IMAP connection
+     * AJAX handler for IMAP connection testing and validation.
+     * Tests server connectivity with detailed diagnostic information.
      */
     public function ajax_test_imap_connection() {
         // Check nonce
@@ -993,7 +1055,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to cleanup inbox
+     * AJAX handler for IMAP inbox cleanup and maintenance.
+     * Removes old and deleted messages from email server.
      */
     public function ajax_cleanup_inbox() {
         // Check nonce
@@ -1091,7 +1154,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to test template email
+     * AJAX handler for email template testing with sample data.
+     * Sends test emails using configured templates and placeholders.
      */
     public function ajax_test_template_email() {
         // Check nonce
@@ -1178,7 +1242,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler to preview template email
+     * AJAX handler for email template preview generation.
+     * Creates formatted preview with sample data and WooCommerce styling.
      */
     public function ajax_preview_template_email() {
         // Check nonce
@@ -1252,7 +1317,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * Apply WooCommerce email template styling
+     * Apply WooCommerce email template styling to content.
+     * Wraps content with WooCommerce email header and footer templates.
      */
     private function apply_woocommerce_template($content, $subject) {
         if (!class_exists('WooCommerce')) {
@@ -1297,7 +1363,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * Process merge tags with provided data
+     * Process merge tags with provided sample data for previews.
+     * Replaces placeholders with supplied data values for testing.
      */
     private function process_merge_tags_with_data($content, $data) {
         $merge_tags = array(
@@ -1314,7 +1381,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * Get human-readable template name
+     * Get human-readable template names for display purposes.
+     * Provides friendly names for template identification in interfaces.
      */
     private function get_template_name($template_id) {
         $names = array(
@@ -1329,9 +1397,8 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
-     * AJAX handler for updating missing artist info in audit logs
-     * 
-     * @since 2.1.0
+     * AJAX handler for missing artist information updates in audit logs.
+     * Updates audit log entries with artist data from submissions.
      */
     public function ajax_update_missing_artist_info() {
         // Verify nonce

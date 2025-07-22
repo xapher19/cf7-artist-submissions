@@ -1,43 +1,50 @@
 <?php
 /**
- * Modern Interactive Dashboard for CF7 Artist Submissions
- * 
- * This class provides a comprehensive, modern dashboard interface featuring
- * real-time statistics, interactive widgets, advanced filtering, bulk actions,
- * and seamless AJAX integration. It serves as the central hub for managing
- * artist submissions with professional UX and performance optimization.
- * 
+ * CF7 Artist Submissions - Dashboard Management System
+ *
+ * Modern interactive dashboard interface providing comprehensive submission
+ * management capabilities with real-time statistics, advanced filtering,
+ * bulk operations, and seamless AJAX integration for efficient workflow
+ * management and administrative oversight.
+ *
+ * Features:
+ * • Real-time statistics and activity metrics with trend analysis
+ * • Interactive submission table with advanced filtering and search
+ * • Bulk actions for efficient status management and data export
+ * • Live message tracking with unread notification system
+ * • Outstanding actions monitoring with priority indicators
+ * • Professional responsive design with mobile optimization
+ * • Performance-optimized AJAX loading with smart pagination
+ * • Comprehensive CSV export functionality with filtering support
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage Dashboard
  * @since 2.0.0
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions Dashboard Class
  * 
- * Creates and manages the modern interactive dashboard including:
- * - Real-time statistics and activity metrics
- * - Interactive widgets (unread messages, outstanding actions)
- * - Advanced submission filtering and search
- * - Bulk actions and status management
- * - CSV export with filtering options
- * - Smart pagination with AJAX loading
- * - Responsive design with mobile optimization
- * - Professional admin menu integration
+ * Comprehensive dashboard management system providing modern interface for
+ * artist submission administration. Integrates real-time statistics, interactive
+ * widgets, advanced filtering capabilities, and bulk operations with seamless
+ * AJAX functionality for efficient submission workflow management.
  * 
  * @since 2.0.0
  */
 class CF7_Artist_Submissions_Dashboard {
     
     /**
-     * Initialize the dashboard system.
+     * Initialize comprehensive dashboard system with admin integration.
      * 
-     * Sets up admin menu integration, asset loading, and comprehensive
-     * AJAX handlers for all dashboard functionality including submissions
-     * loading, bulk actions, status updates, messaging, and statistics.
+     * Establishes complete dashboard infrastructure including admin menu
+     * integration, asset management, and comprehensive AJAX handlers for
+     * submissions loading, bulk actions, status updates, messaging, and
+     * real-time statistics. Provides foundation for modern submission
+     * management workflow with performance optimization.
      * 
      * @since 2.0.0
-     * 
-     * @return void
      */
     public function init() {
         add_action('admin_menu', array($this, 'add_dashboard_page'), 999); // Run late to modify menu
@@ -60,6 +67,10 @@ class CF7_Artist_Submissions_Dashboard {
         add_action('wp_ajax_cf7_dashboard_get_weekly_activity', array($this, 'ajax_get_weekly_activity'));
     }
 
+    /**
+     * Add dashboard page to WordPress admin menu system.
+     * Integrates dashboard as primary submenu item with menu reorganization.
+     */
     public function add_dashboard_page() {
         global $submenu;
         
@@ -107,6 +118,10 @@ class CF7_Artist_Submissions_Dashboard {
         add_action('admin_init', array($this, 'redirect_main_menu_to_dashboard'));
     }
     
+    /**
+     * Redirect main menu access to dashboard for seamless user experience.
+     * Automatically redirects standard post listing to dashboard interface.
+     */
     public function redirect_main_menu_to_dashboard() {
         global $pagenow;
         
@@ -116,6 +131,10 @@ class CF7_Artist_Submissions_Dashboard {
         }
     }
     
+    /**
+     * Enqueue dashboard assets with dependency management and localization.
+     * Loads CSS and JavaScript files with proper version control and translations.
+     */
     public function enqueue_scripts($hook) {
         if (strpos($hook, 'cf7-dashboard') === false) {
             return;
@@ -144,6 +163,17 @@ class CF7_Artist_Submissions_Dashboard {
         wp_localize_script('cf7-dashboard-js', 'ajaxurl', admin_url('admin-ajax.php'));
     }
     
+    /**
+     * Render comprehensive dashboard interface with real-time statistics.
+     * 
+     * Generates complete dashboard HTML including metrics overview, activity
+     * indicators, submission management table, recent messages panel, and
+     * outstanding actions tracking. Provides server-side rendered statistics
+     * for immediate display with AJAX enhancement for dynamic updates and
+     * seamless user interaction experience.
+     * 
+     * @since 2.0.0
+     */
     public function render_dashboard_page() {
         // Get initial stats for server-side rendering
         global $wpdb;
@@ -526,6 +556,20 @@ class CF7_Artist_Submissions_Dashboard {
         <?php
     }
     
+    // ============================================================================
+    // AJAX HANDLERS SECTION
+    // ============================================================================
+    
+    /**
+     * AJAX handler for loading submissions with advanced filtering capabilities.
+     * 
+     * Processes submission retrieval requests with comprehensive filtering options
+     * including search, status, date range, and pagination. Supports specialized
+     * filters for unread messages and outstanding actions with optimized database
+     * queries and formatted response data for frontend display.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_load_submissions() {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
@@ -639,6 +683,10 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * Format submission data for frontend display with notification counts.
+     * Structures submission information with status, artist details, and activity indicators.
+     */
     private function format_submission_data($post) {
         $status_terms = wp_get_object_terms($post->ID, 'submission_status');
         $status = !empty($status_terms) ? $status_terms[0]->name : 'New';
@@ -681,6 +729,12 @@ class CF7_Artist_Submissions_Dashboard {
         );
     }
     
+    /**
+     * AJAX handler for bulk actions with comprehensive validation.
+     * Processes batch operations including export, delete, and status changes.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_bulk_action() {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
@@ -710,6 +764,10 @@ class CF7_Artist_Submissions_Dashboard {
         }
     }
     
+    /**
+     * Handle CSV export generation for selected submissions.
+     * Creates downloadable CSV file with submission data for selected entries.
+     */
     private function handle_export($post_ids) {
         $filename = 'submissions-' . date('Y-m-d-H-i-s') . '.csv';
         $file_path = wp_upload_dir()['path'] . '/' . $filename;
@@ -745,6 +803,10 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * Handle bulk deletion of selected submissions.
+     * Removes submissions with cache cleanup and audit trail.
+     */
     private function handle_delete($post_ids) {
         $deleted = 0;
         foreach ($post_ids as $post_id) {
@@ -761,6 +823,10 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * Handle bulk status changes for selected submissions.
+     * Updates submission status with validation and audit logging.
+     */
     private function handle_status_change($post_ids, $status) {
         $updated = 0;
         
@@ -798,6 +864,12 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * AJAX handler for loading unread messages with submission context.
+     * Retrieves unviewed messages grouped by submission for activity panel.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_load_recent_messages() {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
@@ -845,6 +917,12 @@ class CF7_Artist_Submissions_Dashboard {
         wp_send_json_success($messages);
     }
     
+    /**
+     * AJAX handler for status updates with validation and logging.
+     * Updates submission status via dashboard interface with audit trail.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_update_status() {
         check_ajax_referer('cf7_dashboard_nonce', 'nonce');
         
@@ -880,6 +958,12 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * AJAX handler for dashboard statistics with percentage calculations.
+     * Provides real-time submission counts and trends for dashboard widgets.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_get_stats() {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
@@ -937,6 +1021,12 @@ class CF7_Artist_Submissions_Dashboard {
         }
     }
     
+    /**
+     * AJAX handler for CSV export generation with security validation.
+     * Creates downloadable CSV files of filtered submission data.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_export() {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
@@ -1005,6 +1095,12 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * AJAX handler for CSV download with security validation.
+     * Serves generated CSV files with proper headers and cleanup.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_download_csv() {
         // Check nonce
         if (!wp_verify_nonce($_GET['nonce'], 'cf7_dashboard_nonce')) {
@@ -1045,6 +1141,12 @@ class CF7_Artist_Submissions_Dashboard {
         exit;
     }
     
+    /**
+     * AJAX handler for outstanding actions with priority sorting.
+     * Retrieves pending actions ordered by priority and due date.
+     * 
+     * @since 2.0.0
+     */
     public function ajax_get_outstanding_actions() {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
@@ -1148,6 +1250,14 @@ class CF7_Artist_Submissions_Dashboard {
         }
     }
     
+    // =====================================================================
+    // UTILITY FUNCTIONS SECTION
+    // =====================================================================
+
+    /**
+     * Get submission counts by status with taxonomy validation.
+     * Returns count of submissions for specified status with error handling.
+     */
     private function get_submissions_count_by_status($status) {
         // Check if taxonomy exists
         if (!taxonomy_exists('submission_status')) {
@@ -1178,6 +1288,10 @@ class CF7_Artist_Submissions_Dashboard {
         return $query->found_posts;
     }
     
+    /**
+     * Calculate percentage changes for dashboard trend indicators.
+     * Compares current statistics with cached historical data for trend analysis.
+     */
     private function calculate_percentage_changes($current_stats) {
         // Get cached stats from 7 days ago for comparison
         $previous_stats = $this->get_cached_daily_stats(7);
@@ -1205,6 +1319,10 @@ class CF7_Artist_Submissions_Dashboard {
         return $changes;
     }
     
+    /**
+     * Cache daily statistics for trend calculations and performance.
+     * Stores current statistics for historical comparison and reporting.
+     */
     private function cache_daily_stats($stats) {
         $today = date('Y-m-d');
         $cache_key = 'cf7_daily_stats_' . $today;
@@ -1225,12 +1343,20 @@ class CF7_Artist_Submissions_Dashboard {
         }
     }
     
+    /**
+     * Clear daily statistics cache to force data refresh.
+     * Removes cached statistics to ensure fresh data retrieval.
+     */
     private function clear_daily_stats_cache() {
         $today = date('Y-m-d');
         $cache_key = 'cf7_daily_stats_' . $today;
         delete_transient($cache_key);
     }
     
+    /**
+     * Retrieve cached daily statistics from specified date.
+     * Attempts multiple cache sources with fallback to historical calculation.
+     */
     private function get_cached_daily_stats($days_ago) {
         $target_date = date('Y-m-d', strtotime("-{$days_ago} days"));
         $cache_key = 'cf7_daily_stats_' . $target_date;
@@ -1251,6 +1377,10 @@ class CF7_Artist_Submissions_Dashboard {
         return $this->get_historical_stats($days_ago);
     }
     
+    /**
+     * Store daily statistics in permanent history for trend analysis.
+     * Maintains rolling 30-day history of dashboard statistics.
+     */
     private function store_daily_stats_history($date, $stats) {
         $history_key = 'cf7_daily_stats_history';
         $history = get_option($history_key, array());
@@ -1272,6 +1402,10 @@ class CF7_Artist_Submissions_Dashboard {
         update_option($history_key, $history);
     }
     
+    /**
+     * Get daily statistics from permanent history storage.
+     * Retrieves stored historical statistics for specified date.
+     */
     private function get_daily_stats_from_history($date) {
         $history_key = 'cf7_daily_stats_history';
         $history = get_option($history_key, array());
@@ -1279,6 +1413,10 @@ class CF7_Artist_Submissions_Dashboard {
         return isset($history[$date]) ? $history[$date] : null;
     }
     
+    /**
+     * Calculate historical statistics for trend comparison.
+     * Generates statistics from specified date threshold for percentage calculations.
+     */
     private function get_historical_stats($days_ago) {
         $date_threshold = date('Y-m-d H:i:s', strtotime("-{$days_ago} days"));
         
@@ -1312,6 +1450,10 @@ class CF7_Artist_Submissions_Dashboard {
         return $historical_stats;
     }
     
+    /**
+     * Get submission counts by status before specified date.
+     * Returns historical counts for trend percentage calculations.
+     */
     private function get_submissions_count_by_status_before_date($status, $date_threshold) {
         // Check if taxonomy exists
         if (!taxonomy_exists('submission_status')) {
@@ -1348,14 +1490,21 @@ class CF7_Artist_Submissions_Dashboard {
     }
     
     /**
-     * Get count of unread messages
+     * Get total count of unread messages across all submissions.
+     * Delegates to conversations class for centralized message counting.
      */
     private function get_unread_messages_count() {
         return CF7_Artist_Submissions_Conversations::get_total_unviewed_count();
     }
     
     /**
-     * Mark a message as read
+     * AJAX handler for marking individual messages as read.
+     * 
+     * Updates specific message read status in conversations table with
+     * timestamp tracking and validation. Provides granular message
+     * management for dashboard message activity panel.
+     * 
+     * @since 2.0.0
      */
     public function ajax_mark_message_read() {
         // Check nonce
@@ -1398,7 +1547,13 @@ class CF7_Artist_Submissions_Dashboard {
     }
     
     /**
-     * Mark all messages as read for a specific submission
+     * AJAX handler for marking all submission messages as read.
+     * 
+     * Marks all unread messages for specific submission using conversations
+     * class delegation. Provides batch message management functionality
+     * for submission-specific message clearing operations.
+     * 
+     * @since 2.0.0
      */
     public function ajax_mark_submission_read() {
         // Check nonce
@@ -1422,7 +1577,14 @@ class CF7_Artist_Submissions_Dashboard {
     }
     
     /**
-     * Mark all messages as read for a submission
+     * AJAX handler for bulk message read operations.
+     * 
+     * Supports both submission-specific and global message read operations
+     * based on submission ID parameter. Provides comprehensive message
+     * management with conditional logic for targeted or system-wide
+     * message status updates.
+     * 
+     * @since 2.0.0
      */
     public function ajax_mark_all_read() {
         // Check nonce
@@ -1458,7 +1620,13 @@ class CF7_Artist_Submissions_Dashboard {
     }
 
     /**
-     * Get today's activity for the activity card
+     * AJAX handler for retrieving today's activity statistics.
+     * 
+     * Provides daily submission count for dashboard activity indicators
+     * with date filtering and validation. Supports real-time activity
+     * tracking for current day submission management.
+     * 
+     * @since 2.0.0
      */
     public function ajax_get_today_activity() {
         // Check nonce
@@ -1490,7 +1658,13 @@ class CF7_Artist_Submissions_Dashboard {
     }
     
     /**
-     * Get weekly activity for the activity card
+     * AJAX handler for weekly activity statistics and trends.
+     * 
+     * Calculates submission counts for specified date ranges with flexible
+     * date parameters. Provides weekly trend analysis for dashboard activity
+     * monitoring and submission volume tracking functionality.
+     * 
+     * @since 2.0.0
      */
     public function ajax_get_weekly_activity() {
         // Check nonce
@@ -1536,7 +1710,8 @@ class CF7_Artist_Submissions_Dashboard {
     }
     
     /**
-     * Get artist name from submission
+     * Get artist name from submission metadata with fallback options.
+     * Attempts multiple field patterns and provides intelligent email parsing.
      */
     private function get_artist_name($submission_id) {
         // Try common artist name field patterns
@@ -1576,12 +1751,13 @@ class CF7_Artist_Submissions_Dashboard {
     }
     
     /**
-     * Get artistic mediums for a submission.
+     * Get artistic mediums for submission with color metadata.
+     * 
+     * Retrieves medium taxonomy terms with associated color styling
+     * for dashboard display and submission categorization. Provides
+     * comprehensive medium information with visual presentation data.
      * 
      * @since 2.1.0
-     * 
-     * @param int $post_id The submission post ID
-     * @return array Array of medium names
      */
     private function get_submission_mediums($post_id) {
         $terms = get_the_terms($post_id, 'artistic_medium');

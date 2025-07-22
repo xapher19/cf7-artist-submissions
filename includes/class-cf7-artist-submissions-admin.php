@@ -1,40 +1,47 @@
 <?php
 /**
- * Admin Interface for CF7 Artist Submissions
- * 
- * This class handles the admin interface components including meta boxes,
- * AJAX status updates, field saving, and asset management coordination
- * with other system components.
- * 
+ * CF7 Artist Submissions - Administrative Interface Management System
+ *
+ * Comprehensive WordPress admin interface system for artist submission management
+ * with real-time status updates, dynamic field editing, AJAX communication, and
+ * seamless integration with the CF7 Artist Submissions workflow ecosystem.
+ *
+ * Features:
+ * • Real-time submission status management with instant feedback
+ * • Dynamic field editing with type-specific validation and sanitization
+ * • AJAX communication framework for responsive administrative workflows
+ * • Security validation with WordPress nonce and capability systems
+ * • Field saving and validation with comprehensive audit trail integration
+ * • Asset coordination delegation to tabs system for unified management
+ * • Administrative workflow optimization and user experience enhancement
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage AdminInterface
  * @since 1.0.0
- * @since 2.0.0 Enhanced with tabbed interface coordination
+ * @version 2.2.0
  */
 
 /**
  * CF7 Artist Submissions Admin Class
  * 
- * Manages the WordPress admin interface for artist submissions:
- * - Meta boxes for submission details, files, and notes
- * - AJAX handlers for status updates
- * - Field saving and validation
- * - Asset management coordination with tabs system
- * - Status change logging and notifications
+ * Primary administrative interface management system for CF7 Artist Submissions
+ * providing comprehensive submission administration capabilities within the
+ * WordPress admin environment. Features real-time status updates, dynamic
+ * field management, AJAX communication, and seamless asset coordination.
  * 
  * @since 1.0.0
  */
 class CF7_Artist_Submissions_Admin {
     
     /**
-     * Initialize the admin interface.
+     * Initialize comprehensive admin interface management system.
      * 
-     * Sets up hooks for asset management, meta boxes, AJAX handlers,
-     * and post saving functionality.
+     * Establishes complete administrative interface coordination including
+     * AJAX communication endpoints, field management systems, asset
+     * coordination with tabs system, and WordPress hook integration
+     * for seamless submission administration workflows.
      * 
      * @since 1.0.0
-     * @since 2.0.0 Enhanced asset coordination with tabs system
-     * 
-     * @return void
      */
     public function init() {
         // Asset management is handled by the tabs system for submission pages
@@ -45,6 +52,20 @@ class CF7_Artist_Submissions_Admin {
         add_action('save_post_cf7_submission', array($this, 'save_fields'), 10, 2);
     }
     
+    // ============================================================================
+    // AJAX COMMUNICATION HANDLERS SECTION
+    // ============================================================================
+    
+    /**
+     * Real-time submission status update handler with comprehensive validation.
+     * 
+     * Advanced AJAX endpoint providing secure, real-time submission status
+     * updates with comprehensive security validation, permission checking,
+     * audit trail integration, and structured response formatting for
+     * optimal administrative workflow efficiency.
+     * 
+     * @since 1.0.0
+     */
     public function ajax_update_status() {
         // Check nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_artist_submissions_nonce')) {
@@ -87,8 +108,19 @@ class CF7_Artist_Submissions_Admin {
         ));
     }
     
+    // ============================================================================
+    // FIELD MANAGEMENT SYSTEM SECTION
+    // ============================================================================
+    
     /**
-     * Save the edited fields when the post is updated
+     * Comprehensive field saving and validation system for submission management.
+     * 
+     * Advanced field management system providing secure field saving, type-specific
+     * validation, change detection, audit trail integration, and post synchronization
+     * for comprehensive submission field management within the WordPress admin
+     * environment.
+     * 
+     * @since 1.0.0
      */
     public function save_fields($post_id, $post) {
         // Skip autosaves
@@ -161,4 +193,5 @@ class CF7_Artist_Submissions_Admin {
             }
         }
     }
+
 }

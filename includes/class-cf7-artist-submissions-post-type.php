@@ -1,40 +1,50 @@
 <?php
 /**
- * Custom Post Type for CF7 Artist Submissions
- * 
- * This class handles the registration and management of the custom post type
- * for artist submissions, including the status taxonomy, admin columns,
- * bulk actions, and integration with the modern dashboard system.
- * 
+ * CF7 Artist Submissions - Custom Post Type Management System
+ *
+ * Comprehensive custom post type and taxonomy management for artist submissions
+ * with advanced admin interface features, status management, artistic medium
+ * categorization, and modern dashboard integration for streamlined workflow.
+ *
+ * Features:
+ * • Custom post type registration with configurable menu labels
+ * • Hierarchical status taxonomy with radio button interface
+ * • Artistic mediums taxonomy with color-coded visualization
+ * • Advanced admin columns with sortable submission data
+ * • Bulk CSV export functionality with comprehensive data extraction
+ * • Modern dashboard integration with real-time statistics display
+ *
  * @package CF7_Artist_Submissions
+ * @subpackage PostTypeManagement
  * @since 1.0.0
- * @since 2.0.0 Added dashboard integration and enhanced admin interface
+ * @version 2.1.0
  */
 
 /**
  * CF7 Artist Submissions Post Type Class
  * 
- * Manages the custom post type for artist submissions including:
- * - Post type and taxonomy registration
- * - Custom admin columns with status badges
- * - Bulk export functionality
- * - Sortable columns
- * - Dashboard integration
+ * Comprehensive custom post type and taxonomy management system for artist
+ * submissions with advanced admin interface features, status workflow management,
+ * and modern dashboard integration. Provides complete content type infrastructure
+ * with enhanced user experience and administrative workflow optimization.
  * 
  * @since 1.0.0
  */
 class CF7_Artist_Submissions_Post_Type {
     
+    // ============================================================================
+    // INITIALIZATION SECTION
+    // ============================================================================
+    
     /**
-     * Initialize the post type and related functionality.
+     * Initialize comprehensive post type management system with complete functionality.
      * 
-     * Sets up hooks for post type registration, custom columns,
-     * bulk actions, sorting, and dashboard integration.
+     * Establishes custom post type registration, taxonomy creation, admin interface
+     * enhancements, and dashboard integration. Sets up advanced admin columns, bulk
+     * actions, sorting capabilities, and modern statistics display for optimized
+     * submission management workflow and enhanced user experience.
      * 
      * @since 1.0.0
-     * @since 2.0.0 Added dashboard integration hooks
-     * 
-     * @return void
      */
     public function init() {
         add_action('init', array($this, 'register_post_type'));
@@ -63,15 +73,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Enqueue admin scripts and styles for submission pages.
-     * 
-     * Loads admin CSS for submission list page and lets the Tabs system
-     * handle assets for individual submission edit pages.
-     * 
-     * @since 2.0.0
-     * 
-     * @param string $hook Current admin page hook
-     * @return void
+     * Enqueue administrative assets for submission management interfaces.
+     * Loads CSS and JavaScript for list pages with Tabs system coordination.
      */
     public function enqueue_admin_scripts($hook) {
         $screen = get_current_screen();
@@ -94,15 +97,19 @@ class CF7_Artist_Submissions_Post_Type {
         // For single submission edit pages, the Tabs system handles all assets
     }
     
+    // ============================================================================
+    // REGISTRATION SECTION
+    // ============================================================================
+    
     /**
-     * Register the artist submission custom post type.
+     * Register artist submission custom post type with comprehensive configuration.
      * 
-     * Creates a custom post type for storing artist submissions with
-     * configurable menu label and appropriate capabilities.
+     * Creates custom post type for storing artist submissions with configurable
+     * menu labels, appropriate capabilities, and optimized admin interface settings.
+     * Implements WordPress best practices for custom content types with enhanced
+     * administrative workflow integration and user experience optimization.
      * 
      * @since 1.0.0
-     * 
-     * @return void
      */
     public function register_post_type() {
         $options = get_option('cf7_artist_submissions_options', array());
@@ -145,16 +152,14 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Register the submission status taxonomy.
+     * Register submission status taxonomy with comprehensive workflow management.
      * 
-     * Creates a hierarchical taxonomy for submission statuses with
-     * predefined terms (New, Reviewed, Awaiting Information, etc.)
-     * and custom meta box for radio button selection.
+     * Creates hierarchical taxonomy for submission status tracking with predefined
+     * workflow terms, custom radio button interface, and enhanced admin integration.
+     * Implements complete submission lifecycle management with status progression
+     * tracking and administrative workflow optimization capabilities.
      * 
      * @since 1.0.0
-     * @since 2.0.0 Enhanced with custom meta box and predefined terms
-     * 
-     * @return void
      */
     public function register_taxonomy() {
         $labels = array(
@@ -197,14 +202,14 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Register the artistic mediums taxonomy.
+     * Register artistic mediums taxonomy with comprehensive categorization system.
      * 
-     * Creates a non-hierarchical taxonomy for tagging submissions with
-     * artistic mediums and techniques used by the artist.
+     * Creates non-hierarchical taxonomy for artistic medium tagging with predefined
+     * comprehensive medium categories, color-coded visualization, and enhanced admin
+     * interface. Implements complete artistic categorization system with visual
+     * organization and professional presentation capabilities.
      * 
      * @since 2.1.0
-     * 
-     * @return void
      */
     public function register_mediums_taxonomy() {
         $labels = array(
@@ -287,8 +292,13 @@ class CF7_Artist_Submissions_Post_Type {
         }
     }
     
+    // ============================================================================
+    // ADMIN INTERFACE SECTION
+    // ============================================================================
+    
     /**
-     * Custom meta box for status as radio buttons
+     * Custom meta box interface for status selection with radio buttons.
+     * Provides user-friendly status selection interface for submission workflow.
      */
     public function status_meta_box($post, $box) {
         $taxonomy = $box['args']['taxonomy'];
@@ -324,7 +334,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Define the columns for the submissions list
+     * Define custom admin columns for enhanced submission list display.
+     * Configures optimized column layout for submission management interface.
      */
     public function set_custom_columns($columns) {
         $columns = array(
@@ -339,7 +350,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Make columns sortable
+     * Configure sortable columns for enhanced list navigation.
+     * Enables sorting by title, submission date, and status for improved workflow.
      */
     public function set_sortable_columns($columns) {
         $columns['title'] = 'title';
@@ -349,7 +361,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Handle the sorting of columns
+     * Handle query sorting for custom submission columns.
+     * Implements sorting logic for submission date and status columns.
      */
     public function sort_submissions($query) {
         if (!is_admin() || !$query->is_main_query() || $query->get('post_type') !== 'cf7_submission') {
@@ -382,7 +395,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Display the content for our custom columns
+     * Display formatted content for custom admin columns.
+     * Renders submission data with enhanced formatting and visual elements.
      */
     public function custom_column_content($column, $post_id) {
         switch ($column) {
@@ -463,8 +477,13 @@ class CF7_Artist_Submissions_Post_Type {
         }
     }
     
+    // ============================================================================
+    // BULK ACTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Register bulk actions for CSV export
+     * Register CSV export bulk action for comprehensive data extraction.
+     * Adds export functionality to submission list bulk actions menu.
      */
     public function register_bulk_actions($bulk_actions) {
         $bulk_actions['export_csv'] = __('Export to CSV', 'cf7-artist-submissions');
@@ -472,7 +491,14 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Handle the CSV export bulk action
+     * Process CSV export bulk action with comprehensive data extraction.
+     * 
+     * Handles bulk export requests with security validation, data processing,
+     * and file generation. Implements complete submission data extraction with
+     * metadata organization, status information, and curator notes integration
+     * for comprehensive reporting and administrative workflow support.
+     * 
+     * @since 2.0.0
      */
     public function handle_bulk_actions($redirect_to, $action, $post_ids) {
         if ($action !== 'export_csv') {
@@ -502,7 +528,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Admin notice for export actions
+     * Display admin notices for bulk action results.
+     * Shows success messages and export confirmation feedback.
      */
     public function bulk_action_admin_notice() {
         if (!empty($_REQUEST['export_csv']) && (int) $_REQUEST['export_csv'] === 1) {
@@ -515,7 +542,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Generate and serve the CSV export
+     * Generate and serve CSV file with submission data.
+     * Creates formatted export with metadata and custom fields.
      */
     private function generate_csv_export($post_ids) {
         // Validate post IDs
@@ -615,7 +643,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Get all meta fields from the selected submissions
+     * Get all meta field keys from selected submissions.
+     * Filters and returns relevant CF7 metadata fields for export.
      */
     private function get_all_meta_fields($post_ids) {
         global $wpdb;
@@ -648,7 +677,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Order meta fields in a logical manner
+     * Order meta fields in logical sequence for CSV export.
+     * Prioritizes key fields and organizes remaining metadata.
      */
     private function order_meta_fields($fields) {
         $ordered = array();
@@ -679,8 +709,15 @@ class CF7_Artist_Submissions_Post_Type {
         return $ordered;
     }
     
+    // ============================================================================
+    // DASHBOARD INTEGRATION SECTION  
+    // ============================================================================
+    
     /**
-     * Add dashboard via admin notice (better positioning)
+     * Display modern dashboard via admin notice positioning.
+     * Renders submission statistics and overview cards in admin list view.
+     *
+     * @since 1.0.0
      */
     public function add_submissions_dashboard_notice() {
         $screen = get_current_screen();
@@ -756,7 +793,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * JavaScript to move dashboard to the correct position
+     * JavaScript positioning for dashboard elements.
+     * Moves dashboard HTML from admin notice to proper location.
      */
     public function move_dashboard_script() {
         $screen = get_current_screen();
@@ -793,15 +831,21 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Old dashboard method - now unused but keeping for compatibility
+     * Legacy dashboard method for backward compatibility.
+     * Maintained for existing integrations but no longer active.
      */
     public function add_submissions_dashboard($which) {
         // This method is no longer used but kept to avoid breaking existing code
         return;
     }
     
+    // ============================================================================
+    // UTILITY FUNCTIONS SECTION
+    // ============================================================================
+    
     /**
-     * Get submission statistics
+     * Get submission statistics by status.
+     * Returns counts for dashboard display and reporting.
      */
     private function get_submission_statistics() {
         $total = wp_count_posts('cf7_submission');
@@ -853,7 +897,8 @@ class CF7_Artist_Submissions_Post_Type {
     }
     
     /**
-     * Get count of submissions in the last 24 hours
+     * Get recent submissions count for dashboard display.
+     * Returns 24-hour submission activity count.
      */
     private function get_recent_submissions_count() {
         $yesterday = date('Y-m-d H:i:s', strtotime('-24 hours'));
