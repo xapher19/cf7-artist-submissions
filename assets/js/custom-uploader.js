@@ -207,11 +207,11 @@
             this.modal.hide();
             $('body').removeClass('cf7as-modal-open');
             
-            // Collapse drag area and clean up
-            this.collapseDragArea();
+            // Collapse drag area immediately and clean up
+            this.collapseDragAreaImmediate();
             
-            // Remove modal-specific drag event handlers
-            this.modal.off('dragenter.cf7as-modal dragleave.cf7as-modal drop.cf7as-modal');
+            // Remove document-level drag event handlers
+            $(document).off('dragenter.cf7as-modal dragover.cf7as-modal dragleave.cf7as-modal drop.cf7as-modal');
             
             // Restore body scrolling
             $('html, body').css({
@@ -245,12 +245,27 @@
                 clearTimeout(this.dragTimeout);
             }
             
-            // Add a small delay to prevent flickering during rapid mouse movements
+            // Add a small delay to prevent flickering during rapid events
             this.dragTimeout = setTimeout(() => {
                 this.dragExpanded = false;
                 this.uploadArea.removeClass('cf7as-drag-expanded');
                 this.dragTimeout = null;
-            }, 100);
+            }, 200); // Increased to 200ms for more stability
+        }
+        
+        // Immediately collapse without delay - for definitive actions like drops
+        collapseDragAreaImmediate() {
+            if (!this.dragExpanded) return; // Already collapsed
+            
+            // Clear any pending timeout
+            if (this.dragTimeout) {
+                clearTimeout(this.dragTimeout);
+                this.dragTimeout = null;
+            }
+            
+            // Collapse immediately
+            this.dragExpanded = false;
+            this.uploadArea.removeClass('cf7as-drag-expanded');
         }
         
         createUI() {
@@ -442,7 +457,7 @@
                 
                 // Collapse drag area immediately after drop
                 if (self.files.length > 0) {
-                    self.collapseDragArea();
+                    self.collapseDragAreaImmediate();
                 }
                 
                 const files = e.originalEvent.dataTransfer.files;
@@ -450,10 +465,10 @@
             });
             
             // Global drag events to handle drag expansion when files are present
-            // Use a single dragenter on the modal to avoid flickering
-            this.modal.on('dragenter.cf7as-modal', function(e) {
-                // Only expand if dragging over areas outside the upload area itself
-                if (self.files.length > 0 && !$(e.target).closest('.cf7as-upload-area').length) {
+            // Use document-level events for more reliable drag detection
+            $(document).on('dragenter.cf7as-modal', function(e) {
+                // Only handle when modal is open and has files
+                if (self.modal.is(':visible') && self.files.length > 0) {
                     // Check if we're dragging files
                     const dt = e.originalEvent.dataTransfer;
                     if (dt && dt.types && dt.types.indexOf('Files') !== -1) {
@@ -462,19 +477,34 @@
                 }
             });
             
-            this.modal.on('dragleave.cf7as-modal', function(e) {
-                if (self.files.length > 0) {
-                    // Only collapse if leaving the modal entirely
-                    if (!$.contains(self.modal[0], e.relatedTarget)) {
+            $(document).on('dragover.cf7as-modal', function(e) {
+                // Maintain expansion during dragover
+                if (self.modal.is(':visible') && self.files.length > 0 && self.dragExpanded) {
+                    e.preventDefault(); // Prevent default to allow drop
+                    // Keep the area expanded - don't collapse during dragover
+                    if (self.dragTimeout) {
+                        clearTimeout(self.dragTimeout);
+                        self.dragTimeout = null;
+                    }
+                }
+            });
+            
+            $(document).on('dragleave.cf7as-modal', function(e) {
+                // Only collapse if we've left the entire window
+                if (self.modal.is(':visible') && self.files.length > 0) {
+                    // Check if cursor is leaving the window entirely
+                    if (e.originalEvent.clientX <= 0 || e.originalEvent.clientY <= 0 || 
+                        e.originalEvent.clientX >= window.innerWidth || 
+                        e.originalEvent.clientY >= window.innerHeight) {
                         self.collapseDragArea();
                     }
                 }
             });
             
             // Global drop event to ensure collapse happens
-            this.modal.on('drop.cf7as-modal', function(e) {
-                if (self.files.length > 0) {
-                    self.collapseDragArea();
+            $(document).on('drop.cf7as-modal', function(e) {
+                if (self.modal.is(':visible') && self.files.length > 0) {
+                    self.collapseDragAreaImmediate();
                 }
             });
             
@@ -482,6 +512,16 @@
             this.browseBtn.on('click', function(e) {
                 e.preventDefault();
                 self.fileInput.click();
+            });
+            
+            // Upload area click - when compact, clicking the area opens file browser
+            this.uploadArea.on('click', function(e) {
+                e.preventDefault();
+                // Only handle clicks when in compact mode (has files) 
+                // and not during drag operations
+                if (self.files.length > 0 && !self.dragExpanded) {
+                    self.fileInput.click();
+                }
             });
             
             // File input change

@@ -310,23 +310,23 @@ class CF7_Artist_Submissions_Tabs {
                 </div>
                 
                 <div id="cf7-tab-works" class="cf7-tab-content">
-                    <?php self::render_works_tab($post); ?>
+                    <!-- Content loaded via AJAX -->
                 </div>
                 
                 <div id="cf7-tab-conversations" class="cf7-tab-content">
-                    <?php self::render_conversations_tab($post); ?>
+                    <!-- Content loaded via AJAX -->
                 </div>
                 
                 <div id="cf7-tab-actions" class="cf7-tab-content">
-                    <?php self::render_actions_tab($post); ?>
+                    <!-- Content loaded via AJAX -->
                 </div>
                 
                 <div id="cf7-tab-notes" class="cf7-tab-content">
-                    <?php self::render_notes_tab($post); ?>
+                    <!-- Content loaded via AJAX -->
                 </div>
                 
                 <div id="cf7-tab-export" class="cf7-tab-content">
-                    <?php self::render_export_tab($post); ?>
+                    <!-- Content loaded via AJAX -->
                 </div>
             </div>
         </div>
@@ -849,6 +849,21 @@ class CF7_Artist_Submissions_Tabs {
         error_log('CF7AS Tabs Debug - Querying files for submission_id: ' . $post->ID . ' (type: ' . gettype($post->ID) . ')');
         error_log('CF7AS Tabs Debug - Table name: ' . $table_name);
         
+        // Check if table exists, create if it doesn't
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        error_log('CF7AS Tabs Debug - Table exists: ' . ($table_exists ? 'Yes' : 'No'));
+        
+        if (!$table_exists && class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+            error_log('CF7AS Tabs Debug - Creating missing files table...');
+            CF7_Artist_Submissions_Metadata_Manager::create_files_table();
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+            error_log('CF7AS Tabs Debug - Table created successfully: ' . ($table_exists ? 'Yes' : 'No'));
+        }
+        
+        // Get total count of files in table
+        $total_files = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+        error_log('CF7AS Tabs Debug - Total files in table: ' . $total_files);
+        
         // Check both string and integer versions
         $files = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$table_name} WHERE submission_id = %s OR submission_id = %d ORDER BY created_at ASC",
@@ -858,12 +873,31 @@ class CF7_Artist_Submissions_Tabs {
         error_log('CF7AS Tabs Debug - Found ' . count($files) . ' files for submission ' . $post->ID);
         error_log('CF7AS Tabs Debug - Files data: ' . print_r($files, true));
         
+        // Additional debug: Check what submission_ids are actually in the table
+        $all_submission_ids = $wpdb->get_col("SELECT DISTINCT submission_id FROM {$table_name}");
+        error_log('CF7AS Tabs Debug - All submission_ids in table: ' . print_r($all_submission_ids, true));
+        
         if (empty($files)) {
             echo '<div class="cf7as-file-preview-container">';
             echo '<div class="cf7as-no-files">';
             echo '<div class="cf7as-empty-icon"><span class="dashicons dashicons-images-alt2"></span></div>';
             echo '<h3>' . __('No files submitted', 'cf7-artist-submissions') . '</h3>';
             echo '<p>' . __('This artist has not uploaded any works yet.', 'cf7-artist-submissions') . '</p>';
+            
+            // Add debugging info for administrators
+            if (current_user_can('manage_options')) {
+                echo '<div style="margin-top: 20px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px;">';
+                echo '<strong>Debug Info (Administrators only):</strong><br>';
+                echo 'Submission ID: ' . $post->ID . '<br>';
+                echo 'Table exists: ' . ($table_exists ? 'Yes' : 'No') . '<br>';
+                echo 'Total files in database: ' . $total_files . '<br>';
+                echo 'All submission IDs: ' . implode(', ', $all_submission_ids) . '<br>';
+                if (!$table_exists) {
+                    echo '<br><strong style="color: #d63638;">Solution:</strong> The files table is missing. <a href="' . admin_url('plugins.php') . '" style="color: #2271b1;">Deactivate and reactivate the plugin</a> to create the missing database table.';
+                }
+                echo '</div>';
+            }
+            
             echo '</div>';
             echo '</div>';
             return;
@@ -886,7 +920,7 @@ class CF7_Artist_Submissions_Tabs {
             $mime_type = $file->mime_type;
             $file_size = self::format_file_size($file->file_size);
             
-            // Get work metadata for this file
+            // Get work metadata for this file (fetch once)
             $work_title = get_post_meta($post->ID, 'cf7_work_title_' . sanitize_key($file->original_name), true);
             $work_statement = get_post_meta($post->ID, 'cf7_work_statement_' . sanitize_key($file->original_name), true);
             
@@ -929,10 +963,6 @@ class CF7_Artist_Submissions_Tabs {
             
             // File information
             echo '<div class="cf7as-file-info">';
-            
-            // Get work metadata for this file
-            $work_title = get_post_meta($post->ID, 'cf7_work_title_' . sanitize_key($file->original_name), true);
-            $work_statement = get_post_meta($post->ID, 'cf7_work_statement_' . sanitize_key($file->original_name), true);
             
             // Display work title if available, otherwise show filename
             if (!empty($work_title)) {

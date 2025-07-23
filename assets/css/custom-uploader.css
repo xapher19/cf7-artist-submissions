@@ -59,12 +59,13 @@
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 280px;
-    height: 280px;
-    padding: 20px;
+    width: 60px; /* Much smaller - just for the icon */
+    height: 60px; /* Square compact size */
+    padding: 10px; /* Minimal padding */
     margin: 0;
     z-index: 10;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px; /* Smaller border radius */
 }
 
 .cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-prompt {
@@ -76,22 +77,16 @@
 }
 
 .cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-icon {
-    margin-bottom: 8px;
+    margin-bottom: 0; /* Remove margin for compact layout */
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-text h3 {
-    font-size: 14px;
-    margin-bottom: 4px;
+.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-icon svg {
+    width: 24px; /* Smaller icon */
+    height: 24px;
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-text p {
-    font-size: 12px;
-    margin-bottom: 4px;
-}
-
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-text small {
-    font-size: 10px;
-    line-height: 1.2;
+.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-text {
+    display: none; /* Hide text in compact mode */
 }
 
 .cf7as-upload-area:hover {
@@ -201,7 +196,7 @@
 .cf7as-work-grid-container {
     flex: 1;
     padding: 20px;
-    padding-right: 320px; /* Space for upload area and editing panel */
+    padding-right: 320px; /* Space for compact upload area and editing panel */
     overflow-y: auto;
 }
 
@@ -360,11 +355,11 @@
 
 /* Work editing panel */
 .cf7as-work-editor {
-    position: fixed;
-    top: 320px; /* Below the upload area */
+    position: absolute; /* Changed from fixed to absolute */
+    top: 100px; /* Just below the compact upload area (20px + 60px + 20px margin) */
     right: 20px;
     width: 280px;
-    bottom: 20px;
+    bottom: 20px; /* Small margin from bottom */
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -372,6 +367,7 @@
     display: none; /* Hidden by default */
     flex-direction: column;
     overflow: hidden;
+    z-index: 5; /* Ensure it's below the upload area but above content */
 }
 
 .cf7as-modal-body.has-files .cf7as-work-editor {
@@ -383,7 +379,7 @@
 }
 
 .cf7as-editor-header {
-    padding: 15px;
+    padding: 12px 15px; /* Reduced vertical padding for more space */
     background: #f8f9fa;
     border-bottom: 1px solid #e0e0e0;
     flex-shrink: 0;
@@ -404,12 +400,14 @@
 
 .cf7as-editor-body {
     flex: 1;
-    padding: 20px 15px;
+    padding: 15px; /* Reduced padding for more content space */
     overflow-y: auto;
+    /* Let it use all available space between header and actions */
+    flex-basis: 0;
 }
 
 .cf7as-editor-field {
-    margin-bottom: 20px;
+    margin-bottom: 15px; /* Reduced from 20px for more compact layout */
 }
 
 .cf7as-editor-field:last-child {
@@ -468,7 +466,7 @@
 }
 
 .cf7as-editor-actions {
-    padding: 15px;
+    padding: 12px 15px; /* Reduced vertical padding for more space */
     border-top: 1px solid #e0e0e0;
     background: #f8f9fa;
     flex-shrink: 0;
@@ -1057,6 +1055,7 @@
     overflow: hidden;
     position: relative;
     height: calc(100% - 80px); /* Account for modal footer height */
+    /* Ensure this is the positioning context for absolute elements */
 }
 
 .cf7as-modal-body.has-files {
@@ -1081,6 +1080,9 @@
     padding: 20px 30px;
     border-top: 1px solid #e0e0e0;
     background: #f8f9fa;
+    position: relative;
+    z-index: 10; /* Ensure footer stays above content but below modals */
+    flex-shrink: 0; /* Prevent footer from shrinking */
 }
 
 /* Enhanced file item styles for modal */
@@ -1455,5 +1457,64 @@ button.cf7as-upload-all-btn:disabled:hover {
     
     .cf7as-file-actions {
         align-self: flex-end;
+    }
+}
+
+/* Optimize for shorter viewports - make editor more compact */
+@media (max-height: 700px) {
+    .cf7as-work-editor {
+        top: 90px; /* Closer to compact upload area */
+        bottom: 20px; /* Keep consistent bottom margin */
+    }
+    
+    .cf7as-editor-header {
+        padding: 8px 15px; /* More compact header */
+    }
+    
+    .cf7as-editor-body {
+        padding: 10px 15px; /* More compact body */
+    }
+    
+    .cf7as-editor-actions {
+        padding: 8px 15px; /* More compact actions */
+    }
+    
+    .cf7as-editor-field {
+        margin-bottom: 10px; /* Tighter field spacing */
+    }
+    
+    .cf7as-editor-title {
+        font-size: 14px; /* Smaller title */
+    }
+    
+    .cf7as-editor-subtitle {
+        font-size: 11px; /* Smaller subtitle */
+    }
+}
+
+/* Extra compact layout for very short screens */
+@media (max-height: 600px) {
+    .cf7as-work-editor {
+        top: 90px; /* Keep consistent with compact upload area */
+        bottom: 20px; /* Keep consistent bottom margin */
+    }
+    
+    .cf7as-editor-header {
+        padding: 6px 15px; /* Very compact header */
+    }
+    
+    .cf7as-editor-body {
+        padding: 8px 15px; /* Very compact body */
+    }
+    
+    .cf7as-editor-actions {
+        padding: 6px 15px; /* Very compact actions */
+    }
+    
+    .cf7as-upload-single-btn,
+    .cf7as-remove-single-btn {
+        padding: 6px 10px; /* Smaller buttons */
+        font-size: 12px; /* Smaller text */
+        margin-bottom: 6px; /* Tighter spacing */
     }
 }

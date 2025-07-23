@@ -243,12 +243,14 @@ class CF7_Artist_Submissions_Form_Handler {
 
         $found_file_fields = 0;
         $processed_files = 0;
+        $processed_fields = array(); // Track which fields we've already processed
 
         // Look for the custom uploader file data fields ending with '_data'
         foreach ($posted_data as $field_name => $field_value) {
             // Check if this is a file data field (ends with '_data') and has content
             if (substr($field_name, -5) === '_data' && !empty($field_value)) {
                 $found_file_fields++;
+                $processed_fields[] = $field_name; // Mark this field as processed
                 error_log('CF7AS Form Handler Debug - Found uploader data field: ' . $field_name . ' with value: ' . $field_value);
                 
                 // Parse the JSON data
@@ -263,9 +265,15 @@ class CF7_Artist_Submissions_Form_Handler {
             }
         }
 
-        // Also check for traditional file upload fields (fallback)
+        // Also check for traditional file upload fields (fallback) - but skip already processed fields
         $file_data_fields = array();
         foreach ($posted_data as $field_name => $field_value) {
+            // Skip fields we've already processed in the first pass
+            if (in_array($field_name, $processed_fields)) {
+                error_log('CF7AS Form Handler Debug - Skipping already processed field: ' . $field_name);
+                continue;
+            }
+            
             if (strpos($field_name, 'file') !== false || strpos($field_name, 'upload') !== false || strpos($field_name, 'artwork') !== false) {
                 if (!in_array($field_name, $file_data_fields)) {
                     $file_data_fields[] = $field_name;
@@ -273,7 +281,7 @@ class CF7_Artist_Submissions_Form_Handler {
             }
         }
 
-        error_log('CF7AS Form Handler Debug - Found traditional file fields: ' . print_r($file_data_fields, true));
+        error_log('CF7AS Form Handler Debug - Found traditional file fields (after deduplication): ' . print_r($file_data_fields, true));
 
         foreach ($file_data_fields as $field) {
             if (!empty($posted_data[$field]) && is_string($posted_data[$field])) {
@@ -326,6 +334,18 @@ class CF7_Artist_Submissions_Form_Handler {
             if (!$s3_key || !$original_name) {
                 error_log('CF7AS File Storage Debug - Skipping file due to missing s3_key or original_name');
                 continue; // Skip invalid file data
+            }
+            
+            // Check if this S3 key already exists for this submission to prevent duplicates
+            $existing_file = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM {$table_name} WHERE submission_id = %s AND s3_key = %s",
+                (string) $post_id,
+                $s3_key
+            ));
+            
+            if ($existing_file) {
+                error_log('CF7AS File Storage Debug - Skipping duplicate file with S3 key: ' . $s3_key . ' (existing ID: ' . $existing_file . ')');
+                continue; // Skip duplicate file
             }
             
             $insert_data = array(
