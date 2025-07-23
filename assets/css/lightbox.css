@@ -1,25 +1,256 @@
 /**
- * CF7 Artist Submissions - Modern Lightbox Media Viewer System CSS
+ * CF7 Artist Submissions - Modern File Preview & Lightbox System CSS
  *
- * Professional full-screen media viewer providing gallery navigation,
- * keyboard controls, and touch interactions for submission artwork display
- * with modern responsive design and comprehensive accessibility features.
+ * Professional file preview and lightbox system for artist submissions with
+ * support for images, videos, documents, and modern Uppy file upload interface.
+ * Includes responsive design and accessibility features.
  *
  * Features:
- * • Full-screen modal overlay with backdrop blur and high z-index stacking
- * • Gallery navigation system with previous/next controls and keyboard shortcuts
- * • Touch and swipe gesture support for mobile device interaction
- * • Mobile-responsive button positioning with optimized touch targets
- * • Smooth CSS transitions and hover effects for professional presentation
- * • Flexible image sizing with object-fit contain for aspect ratio preservation
- * • ARIA-compliant focus management and accessibility standards compliance
- * • Progressive enhancement for cross-browser compatibility and modern features
+ * • File preview grid with thumbnails and metadata display
+ * • Lightbox modal for full-screen image and video viewing
+ * • Modern Uppy uploader styling integration
+ * • Responsive design for mobile and desktop
+ * • File type icons and download controls
+ * • ZIP download functionality styling
  *
  * @package    CF7_Artist_Submissions
  * @subpackage Assets/CSS
- * @since      1.0.0
- * @version    1.0.0
+ * @since      1.1.0
+ * @version    1.1.0
  */
+
+/* ============================================================================
+   FILE PREVIEW GRID SECTION
+   ============================================================================ */
+
+/**
+ * File Preview Container
+ */
+.cf7as-file-preview-container {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.cf7as-file-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.cf7as-file-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.cf7as-file-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.cf7as-file-thumbnail {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+.cf7as-file-thumbnail:hover {
+    opacity: 0.8;
+}
+
+.cf7as-file-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #666;
+}
+
+.cf7as-file-info {
+    margin-top: 10px;
+}
+
+.cf7as-file-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 5px;
+    word-break: break-word;
+    line-height: 1.3;
+}
+
+.cf7as-file-meta {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.cf7as-file-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cf7as-file-actions .button {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-height: auto;
+}
+
+/* Video Preview Styling */
+.cf7as-video-preview {
+    width: 100%;
+    height: 120px;
+    background: #000;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+/* ZIP Download Button */
+.cf7as-zip-download-container {
+    text-align: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f0f8ff;
+    border: 1px solid #b0d4f1;
+    border-radius: 6px;
+}
+
+.cf7as-zip-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0073aa;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.cf7as-zip-download:hover {
+    background: #005a87;
+    color: white;
+}
+
+.cf7as-zip-download:before {
+    content: "\f316";
+    font-family: dashicons;
+    font-size: 16px;
+}
+
+/* ============================================================================
+   UPPY UPLOADER STYLING
+   ============================================================================ */
+
+.cf7as-uppy-uploader {
+    margin: 15px 0;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.uppy-Dashboard {
+    font-family: inherit;
+}
+
+.uppy-Dashboard-inner {
+    border-radius: 8px;
+}
+
+.uppy-Dashboard-dropFilesHere {
+    border-radius: 8px;
+}
+
+/* Fix for tall drop files hint area */
+.uppy-Dashboard-dropFilesHereHint {
+    height: auto !important;
+    max-height: 120px !important;
+    min-height: 60px !important;
+    padding: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    /* Override theme interference */
+    position: static !important;
+    margin: 0 !important;
+    /* Ensure background SVG loads properly - Simple upload arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath fill='%23666' d='M16 4l8 8h-5v12h-6V12H8l8-8z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: center top 20px !important;
+    background-size: 32px 32px !important;
+    padding-top: 60px !important;
+}
+
+/* Additional theme override for Uppy elements within CF7 forms */
+.wpcf7-form .uppy-Dashboard-dropFilesHereHint,
+.qodef-qi-contact-form-7 .uppy-Dashboard-dropFilesHereHint {
+    position: static !important;
+    margin: 0 !important;
+    /* Ensure background SVG loads in theme contexts - Simple upload arrow */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath fill='%23666' d='M16 4l8 8h-5v12h-6V12H8l8-8z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: center top 20px !important;
+    background-size: 32px 32px !important;
+    padding-top: 60px !important;
+}
+
+/* Override theme CSS that affects all divs in CF7 forms */
+.wpcf7-form .uppy-Dashboard div,
+.qodef-qi-contact-form-7 .uppy-Dashboard div {
+    position: initial !important;
+    margin: initial !important;
+}
+
+/* Specific overrides for Uppy Dashboard components */
+.wpcf7-form .uppy-Dashboard-inner,
+.qodef-qi-contact-form-7 .uppy-Dashboard-inner,
+.wpcf7-form .uppy-Dashboard-AddFiles,
+.qodef-qi-contact-form-7 .uppy-Dashboard-AddFiles,
+.wpcf7-form .uppy-Dashboard-dropFilesHere,
+.qodef-qi-contact-form-7 .uppy-Dashboard-dropFilesHere {
+    position: relative !important;
+    margin: 0 !important;
+}
+
+/* Ensure drop area doesn't expand excessively */
+.uppy-Dashboard-AddFiles {
+    min-height: 200px !important;
+    max-height: 400px !important;
+}
+
+/* Control the overall dashboard height */
+.uppy-Dashboard-files {
+    max-height: 300px !important;
+    overflow-y: auto !important;
+}
+
+/* Fix for when files are present */
+.uppy-Dashboard-AddFiles--withFiles .uppy-Dashboard-dropFilesHereHint {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 60px !important;
+    padding: 8px 15px !important;
+    font-size: 14px !important;
+}
 
 /* ============================================================================
    LIGHTBOX OVERLAY SYSTEM SECTION
@@ -27,9 +258,6 @@
 
 /**
  * Main Lightbox Overlay
- * 
- * Full-screen fixed overlay with high z-index (99999) for backdrop.
- * Hidden by default, shown with .active class via JavaScript.
  */
 .cf7-lightbox-overlay {
     position: fixed;
@@ -37,7 +265,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgb(0 0 0 / 0.85);
+    background-color: rgba(0, 0, 0, 0.9);
     z-index: 99999;
     display: none;
     justify-content: center;
@@ -46,8 +274,6 @@
 
 /**
  * Active Overlay State
- * 
- * Shows overlay with flexbox centering when triggered.
  */
 .cf7-lightbox-overlay.active {
     display: flex;
@@ -179,4 +405,44 @@
     .cf7-lightbox-next {
         right: 10px;
     }
+}
+
+/* Work Metadata Styling for File Gallery */
+.cf7as-work-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: #1d2327;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+
+.cf7as-work-statement {
+    font-size: 13px;
+    color: #646970;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    font-style: italic;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cf7as-file-info .cf7as-file-name {
+    font-size: 12px;
+    color: #8c8f94;
+    margin-bottom: 4px;
+}
+
+.cf7as-work-statement:hover {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow: visible;
+    background: #f0f0f1;
+    padding: 6px;
+    border-radius: 4px;
+    position: relative;
+    z-index: 10;
 }

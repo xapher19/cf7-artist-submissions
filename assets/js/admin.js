@@ -22,7 +22,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage AdminInterface
  * @since 1.0.0
- * @version 1.0.0
+ * @version 1.1.0
  */
 (function($) {
     'use strict';
@@ -402,6 +402,9 @@
                 case 'setup-cron':
                     this.setupDailyCron($button, originalHtml);
                     break;
+                case 'test-s3-connection':
+                    this.testS3Connection($button, originalHtml);
+                    break;
                 default:
                     this.resetButton($button, originalHtml);
             }
@@ -654,6 +657,55 @@
                 nonce: cf7ArtistSubmissions.conversationNonce
             }, null, function(xhr, status, error) {
                 CF7AdminInterface.showTestResults('AJAX request failed: ' + error + ' (Status: ' + status + ')', false);
+            });
+        },
+        
+        /**
+         * Test S3 connection with provided AWS credentials and bucket access.
+         * Validates AWS credentials, region configuration, and bucket permissions.
+         */
+        testS3Connection: function($button, originalHtml) {
+            console.log('CF7 S3 Test - Starting S3 connection test');
+            
+            // Get S3 configuration values from form
+            const awsKey = $('#aws_access_key').val();
+            const awsSecret = $('#aws_secret_key').val();
+            const awsRegion = $('#aws_region').val();
+            const s3Bucket = $('#s3_bucket').val();
+            
+            console.log('CF7 S3 Test - Form values:', {
+                awsKey: awsKey ? awsKey.substring(0, 6) + '***' : 'EMPTY',
+                awsSecret: awsSecret ? '***PROVIDED***' : 'EMPTY',
+                awsRegion: awsRegion,
+                s3Bucket: s3Bucket
+            });
+            
+            if (!awsKey || !awsSecret || !awsRegion || !s3Bucket) {
+                console.log('CF7 S3 Test - Missing required fields');
+                this.resetButton($button, originalHtml);
+                this.showTestResults('Please fill in all S3 configuration fields before testing.', false);
+                return;
+            }
+            
+            console.log('CF7 S3 Test - Making AJAX request with action: cf7_bypass_s3_test');
+            
+            this.performSafeAjaxTest($button, originalHtml, {
+                action: 'cf7_bypass_s3_test',
+                nonce: cf7ArtistSubmissions.nonce,
+                aws_access_key: awsKey,
+                aws_secret_key: awsSecret,
+                aws_region: awsRegion,
+                s3_bucket: s3Bucket
+            }, function(response) {
+                console.log('CF7 S3 Test - AJAX Success Response:', response);
+                CF7AdminInterface.showTestResults(response.data.message, response.success);
+                if (response.success && response.data.details) {
+                    $('#s3-test-result').html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>').show();
+                }
+            }, function(xhr, status, error) {
+                console.log('CF7 S3 Test - AJAX Error:', {xhr, status, error});
+                console.log('CF7 S3 Test - XHR Response Text:', xhr.responseText);
+                CF7AdminInterface.showTestResults('S3 connection test failed: ' + error, false);
             });
         },
         

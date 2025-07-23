@@ -19,7 +19,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage SettingsManagement
  * @since 1.0.0
- * @version 1.0.1
+ * @version 1.1.0
  */
 
 /**
@@ -77,6 +77,216 @@ class CF7_Artist_Submissions_Settings {
         
         // AJAX handlers for audit log functionality
         add_action('wp_ajax_update_missing_artist_info', array($this, 'ajax_update_missing_artist_info'));
+        
+        // AJAX handlers for S3 configuration
+        add_action('wp_ajax_test_s3_connection', array($this, 'ajax_test_s3_connection'));
+        
+        // AJAX handlers for settings management
+        add_action('wp_ajax_cf7_save_artist_settings', array($this, 'ajax_save_settings'));
+        add_action('wp_ajax_nopriv_cf7_save_artist_settings', array($this, 'ajax_save_settings'));
+        
+        // Bypass handler for settings save (working solution)
+        add_action('wp_ajax_cf7_bypass_save', array($this, 'ajax_bypass_save_settings'));
+        
+        // Bypass handler for S3 test (working solution)
+        add_action('wp_ajax_cf7_bypass_s3_test', array($this, 'ajax_bypass_test_s3_connection'));
+        
+        // Test handler to verify AJAX routing
+        add_action('wp_ajax_cf7_test_ajax', array($this, 'ajax_test_handler'));
+    }
+    
+    /**
+     * Working bypass AJAX save handler
+     */
+    public function ajax_bypass_save_settings() {
+        // Basic security check
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Basic nonce check
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Get existing options
+        $existing_options = get_option('cf7_artist_submissions_options', array());
+        
+        // Update with new values
+        $updated = false;
+        if (isset($_POST['form_id'])) {
+            $existing_options['form_id'] = sanitize_text_field($_POST['form_id']);
+            $updated = true;
+        }
+        if (isset($_POST['menu_label'])) {
+            $existing_options['menu_label'] = sanitize_text_field($_POST['menu_label']);
+            $updated = true;
+        }
+        if (isset($_POST['store_files'])) {
+            $existing_options['store_files'] = sanitize_text_field($_POST['store_files']);
+            $updated = true;
+        }
+        if (isset($_POST['aws_access_key'])) {
+            $existing_options['aws_access_key'] = sanitize_text_field($_POST['aws_access_key']);
+            $updated = true;
+        }
+        if (isset($_POST['aws_secret_key'])) {
+            $secret_raw = $_POST['aws_secret_key'];
+            
+            // Fix common URL encoding issues with + character
+            // AWS secret keys can start with + which gets corrupted during URL encoding
+            if (strlen($secret_raw) === 41) {
+                // Check if it starts with "=+" (equals plus)
+                if (substr($secret_raw, 0, 2) === '=+') {
+                    $secret_raw = substr($secret_raw, 1); // Remove the leading =
+                }
+                // Check if it starts with space (space decoded from +)
+                elseif (substr($secret_raw, 0, 1) === ' ') {
+                    $secret_raw = '+' . substr($secret_raw, 1);
+                }
+            }
+            
+            $existing_options['aws_secret_key'] = sanitize_text_field($secret_raw);
+            $updated = true;
+        }
+        if (isset($_POST['aws_region'])) {
+            $existing_options['aws_region'] = sanitize_text_field($_POST['aws_region']);
+            $updated = true;
+        }
+        if (isset($_POST['s3_bucket'])) {
+            $existing_options['s3_bucket'] = sanitize_text_field($_POST['s3_bucket']);
+            $updated = true;
+        }
+        
+        if ($updated) {
+            $result = update_option('cf7_artist_submissions_options', $existing_options);
+            
+            if ($result !== false) {
+                wp_send_json_success(array('message' => 'Settings saved successfully!'));
+            } else {
+                // Check if values are already the same
+                $current = get_option('cf7_artist_submissions_options', array());
+                if ($current === $existing_options) {
+                    wp_send_json_success(array('message' => 'Settings are already up to date.'));
+                } else {
+                    wp_send_json_error(array('message' => 'Failed to save settings'));
+                }
+            }
+        } else {
+            wp_send_json_error(array('message' => 'No settings to update'));
+        }
+    }
+    
+    /**
+     * Working bypass AJAX S3 test handler
+     */
+    public function ajax_bypass_test_s3_connection() {
+        // Basic security check
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Basic nonce check
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        $aws_key = sanitize_text_field($_POST['aws_access_key'] ?? '');
+        $aws_secret_raw = $_POST['aws_secret_key'] ?? '';
+        
+        // Fix common URL encoding issues with + character
+        // AWS secret keys can start with + which gets corrupted during URL encoding
+        if (strlen($aws_secret_raw) === 41) {
+            // Check if it starts with "=+" (equals plus)
+            if (substr($aws_secret_raw, 0, 2) === '=+') {
+                $aws_secret_raw = substr($aws_secret_raw, 1); // Remove the leading =
+            }
+            // Check if it starts with space (space decoded from +)
+            elseif (substr($aws_secret_raw, 0, 1) === ' ') {
+                $aws_secret_raw = '+' . substr($aws_secret_raw, 1);
+            }
+        }
+        
+        $aws_secret = sanitize_text_field($aws_secret_raw);
+        $aws_region = sanitize_text_field($_POST['aws_region'] ?? '');
+        $s3_bucket = sanitize_text_field($_POST['s3_bucket'] ?? '');
+        
+        if (empty($aws_key) || empty($aws_secret) || empty($aws_region) || empty($s3_bucket)) {
+            wp_send_json_error(array('message' => 'All S3 fields are required'));
+            return;
+        }
+        
+        try {
+            // Initialize our S3 handler with the provided credentials
+            $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+            
+            // Get existing options to backup
+            $existing_options = get_option('cf7_artist_submissions_options', array());
+            $backup_options = $existing_options; // Full backup
+            
+            // Update options with test credentials (the format S3 handler expects)
+            $existing_options['aws_access_key'] = $aws_key;
+            $existing_options['aws_secret_key'] = $aws_secret;
+            $existing_options['aws_region'] = $aws_region;
+            $existing_options['s3_bucket'] = $s3_bucket;
+            
+            // Set test credentials in the format the S3 handler reads
+            update_option('cf7_artist_submissions_options', $existing_options);
+            
+            // Test the connection by trying to list bucket contents (limited)
+            $test_result = $s3_handler->test_connection();
+            
+            // Always restore original credentials after test
+            update_option('cf7_artist_submissions_options', $backup_options);
+            
+            if (!$test_result['success']) {
+                // Enhanced error response for 403 debugging
+                $error_message = $test_result['message'];
+                if (isset($test_result['details'])) {
+                    $error_message .= '<br><br><div style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #f59e0b; margin-top: 10px; text-align: left; white-space: pre-line; font-family: monospace; font-size: 12px;">';
+                    $error_message .= '<strong>Detailed Error Information:</strong><br><br>' . esc_html($test_result['details']);
+                    $error_message .= '</div>';
+                }
+                
+                wp_send_json_error(array(
+                    'message' => $error_message,
+                    'details' => $test_result['details'] ?? 'Connection test failed'
+                ));
+                return;
+            }
+            
+            wp_send_json_success(array(
+                'message' => 'S3 connection successful! Bucket is accessible.',
+                'details' => array(
+                    'region' => $aws_region,
+                    'bucket' => $s3_bucket,
+                    'status' => 'Connected',
+                    'test_details' => $test_result['details'] ?? 'Connection verified'
+                )
+            ));
+            
+        } catch (Exception $e) {
+            // Restore original credentials on error
+            if (isset($backup_options)) {
+                update_option('cf7_artist_submissions_options', $backup_options);
+            }
+            
+            wp_send_json_error(array(
+                'message' => 'S3 connection test failed: ' . $e->getMessage(),
+                'details' => $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Test AJAX handler to verify routing
+     */
+    public function ajax_test_handler() {
+        wp_send_json_success(array('message' => 'AJAX routing works!'));
     }
     
     // ============================================================================
@@ -235,6 +445,37 @@ class CF7_Artist_Submissions_Settings {
         $valid['form_id'] = isset($input['form_id']) ? sanitize_text_field($input['form_id']) : '';
         $valid['menu_label'] = isset($input['menu_label']) ? sanitize_text_field($input['menu_label']) : 'Submissions';
         $valid['store_files'] = isset($input['store_files']) ? 'yes' : 'no';
+        
+        // Add AWS S3 configuration fields
+        $valid['aws_access_key'] = isset($input['aws_access_key']) ? sanitize_text_field($input['aws_access_key']) : '';
+        
+        // Debug secret key processing in validation
+        if (isset($input['aws_secret_key'])) {
+            error_log('CF7 Validation - RAW input aws_secret_key: "' . $input['aws_secret_key'] . '"');
+            error_log('CF7 Validation - RAW input length: ' . strlen($input['aws_secret_key']));
+            
+            $secret_raw = $input['aws_secret_key'];
+            
+            // Fix common URL encoding issues with + character
+            // AWS secret keys can start with + which gets corrupted during URL encoding
+            if (strlen($secret_raw) === 41) {
+                // Check if it starts with "=+" (equals plus)
+                if (substr($secret_raw, 0, 2) === '=+') {
+                    $secret_raw = substr($secret_raw, 1); // Remove the leading =
+                }
+                // Check if it starts with space (space decoded from +)
+                elseif (substr($secret_raw, 0, 1) === ' ') {
+                    $secret_raw = '+' . substr($secret_raw, 1);
+                }
+            }
+            
+            $valid['aws_secret_key'] = sanitize_text_field($secret_raw);
+        } else {
+            $valid['aws_secret_key'] = '';
+        }
+        
+        $valid['aws_region'] = isset($input['aws_region']) ? sanitize_text_field($input['aws_region']) : 'us-east-1';
+        $valid['s3_bucket'] = isset($input['s3_bucket']) ? sanitize_text_field($input['s3_bucket']) : '';
         
         // Log setting changes
         $this->log_settings_changes($old_options, $valid, 'general');
@@ -1614,5 +1855,298 @@ class CF7_Artist_Submissions_Settings {
             self_admin_url('update.php?action=upgrade-plugin&plugin=' . $plugin_basename),
             'upgrade-plugin_' . $plugin_basename
         );
+    }
+    
+    /**
+     * AJAX handler for saving plugin settings
+     * Saves all plugin configuration options
+     */
+    public function ajax_save_settings() {
+        // Debug: Log that the function was called
+        error_log('CF7 Settings Save - AJAX handler called - METHOD EXISTS AND REACHED');
+        error_log('CF7 Settings Save - REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
+        error_log('CF7 Settings Save - DOING_AJAX defined: ' . (defined('DOING_AJAX') ? 'YES' : 'NO'));
+        error_log('CF7 Settings Save - DOING_AJAX value: ' . (defined('DOING_AJAX') && DOING_AJAX ? 'TRUE' : 'FALSE'));
+        error_log('CF7 Settings Save - POST data: ' . print_r($_POST, true));
+        error_log('CF7 Settings Save - REQUEST data: ' . print_r($_REQUEST, true));
+        
+        // Basic error checking with debugging
+        if (!isset($_POST) || empty($_POST)) {
+            error_log('CF7 Settings Save - No POST data received');
+            wp_send_json_error(array('message' => 'No POST data received'));
+            return;
+        }
+        
+        if (!isset($_POST['nonce'])) {
+            wp_send_json_error(array('message' => 'No nonce provided'));
+            return;
+        }
+        
+        // Verify nonce - prioritize cf7_admin_nonce since that's what we're sending
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce') && 
+            !wp_verify_nonce($_POST['nonce'], 'cf7_artist_submissions_settings')) {
+            error_log('CF7 Settings Save - Nonce verification failed. Expected: cf7_admin_nonce or cf7_artist_submissions_settings, Got: ' . $_POST['nonce']);
+            wp_send_json_error(array('message' => 'Security check failed - nonce mismatch'));
+            return;
+        }
+        
+        // Debug: Log received data
+        error_log('CF7 Settings Save - POST data keys: ' . implode(', ', array_keys($_POST)));
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        try {
+            // Process each settings section
+            $settings = array();
+            
+            // General settings
+            if (isset($_POST['form_id'])) {
+                $settings['form_id'] = intval($_POST['form_id']);
+            }
+            if (isset($_POST['menu_label'])) {
+                $settings['menu_label'] = sanitize_text_field($_POST['menu_label']);
+            }
+            if (isset($_POST['submissions_per_page'])) {
+                $settings['submissions_per_page'] = intval($_POST['submissions_per_page']);
+            }
+            if (isset($_POST['enable_file_uploads'])) {
+                $settings['enable_file_uploads'] = (bool) $_POST['enable_file_uploads'];
+            }
+            if (isset($_POST['max_file_size'])) {
+                $settings['max_file_size'] = intval($_POST['max_file_size']);
+            }
+            if (isset($_POST['allowed_file_types'])) {
+                $settings['allowed_file_types'] = sanitize_text_field($_POST['allowed_file_types']);
+            }
+            if (isset($_POST['store_files'])) {
+                $settings['store_files'] = sanitize_text_field($_POST['store_files']);
+            }
+            
+            // Email settings
+            if (isset($_POST['enable_email_notifications'])) {
+                $settings['enable_email_notifications'] = (bool) $_POST['enable_email_notifications'];
+            }
+            if (isset($_POST['admin_email'])) {
+                $settings['admin_email'] = sanitize_email($_POST['admin_email']);
+            }
+            if (isset($_POST['from_email'])) {
+                $settings['from_email'] = sanitize_email($_POST['from_email']);
+            }
+            if (isset($_POST['from_name'])) {
+                $settings['from_name'] = sanitize_text_field($_POST['from_name']);
+            }
+            
+            // SMTP settings
+            if (isset($_POST['smtp_host'])) {
+                $settings['smtp_host'] = sanitize_text_field($_POST['smtp_host']);
+            }
+            if (isset($_POST['smtp_port'])) {
+                $settings['smtp_port'] = intval($_POST['smtp_port']);
+            }
+            if (isset($_POST['smtp_username'])) {
+                $settings['smtp_username'] = sanitize_text_field($_POST['smtp_username']);
+            }
+            if (isset($_POST['smtp_password'])) {
+                $settings['smtp_password'] = sanitize_text_field($_POST['smtp_password']);
+            }
+            if (isset($_POST['smtp_encryption'])) {
+                $settings['smtp_encryption'] = sanitize_text_field($_POST['smtp_encryption']);
+            }
+            
+            // S3 settings
+            if (isset($_POST['aws_access_key'])) {
+                $settings['aws_access_key'] = sanitize_text_field($_POST['aws_access_key']);
+            }
+            if (isset($_POST['aws_secret_key'])) {
+                $secret_raw = $_POST['aws_secret_key'];
+                
+                // Fix common URL encoding issues with + character
+                if (strlen($secret_raw) === 41) {
+                    // Check if it starts with "=+" (equals plus)
+                    if (substr($secret_raw, 0, 2) === '=+') {
+                        $secret_raw = substr($secret_raw, 1); // Remove the leading =
+                    }
+                    // Check if it starts with space (space decoded from +)
+                    elseif (substr($secret_raw, 0, 1) === ' ') {
+                        $secret_raw = '+' . substr($secret_raw, 1);
+                    }
+                }
+                
+                $settings['aws_secret_key'] = sanitize_text_field($secret_raw);
+            }
+            if (isset($_POST['aws_region'])) {
+                $settings['aws_region'] = sanitize_text_field($_POST['aws_region']);
+            }
+            if (isset($_POST['s3_bucket'])) {
+                $settings['s3_bucket'] = sanitize_text_field($_POST['s3_bucket']);
+            }
+            
+            if (empty($settings)) {
+                wp_send_json_error(array(
+                    'message' => 'No valid settings found to save. Please check the form data.'
+                ));
+                return;
+            }
+            
+            // Get existing options array
+            $existing_options = get_option('cf7_artist_submissions_options', array());
+            
+            // Update the existing options array with new values
+            foreach ($settings as $key => $value) {
+                $existing_options[$key] = $value;
+            }
+            
+            // Debug: Log what we're trying to save
+            error_log('CF7 Settings Save - Attempting to save: ' . json_encode($settings));
+            error_log('CF7 Settings Save - Final options array: ' . json_encode($existing_options));
+            
+            // Save the entire options array
+            $result = update_option('cf7_artist_submissions_options', $existing_options);
+            
+            // Debug: Log the result
+            error_log('CF7 Settings Save - update_option result: ' . ($result ? 'true' : 'false'));
+            
+            if ($result === false) {
+                // Check if the option already exists with the same values
+                $current_options = get_option('cf7_artist_submissions_options', array());
+                if ($current_options === $existing_options) {
+                    // Values are the same, so no update was needed
+                    wp_send_json_success(array(
+                        'message' => 'Settings are already up to date (no changes detected).',
+                        'saved_count' => count($settings)
+                    ));
+                } else {
+                    wp_send_json_error(array(
+                        'message' => 'Failed to save settings to database'
+                    ));
+                }
+                return;
+            }
+
+            wp_send_json_success(array(
+                'message' => 'Settings saved successfully! Updated ' . count($settings) . ' settings.',
+                'saved_count' => count($settings)
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => 'Failed to save settings: ' . $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * AJAX handler for testing S3 connection
+     * Tests AWS credentials and S3 bucket access using WordPress HTTP API
+     */
+    public function ajax_test_s3_connection() {
+        
+        // Verify nonce - accept both cf7_admin_nonce and cf7_artist_submissions_settings
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce') && !wp_verify_nonce($_POST['nonce'], 'cf7_artist_submissions_settings')) {
+            error_log('CF7 S3 Test - Nonce verification failed');
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        $aws_key = sanitize_text_field($_POST['aws_access_key']);
+        
+        $aws_secret_raw = $_POST['aws_secret_key'];
+        // Fix common URL encoding issues with + character being converted to space
+        if (strlen($aws_secret_raw) === 40 && substr($aws_secret_raw, 0, 1) === ' ') {
+            $aws_secret_raw = '+' . substr($aws_secret_raw, 1);
+        }
+        $aws_secret = sanitize_text_field($aws_secret_raw);
+        
+        $aws_region = sanitize_text_field($_POST['aws_region']);
+        $s3_bucket = sanitize_text_field($_POST['s3_bucket']);
+        error_log('CF7 S3 Test - AWS Secret: ' . (empty($aws_secret) ? 'EMPTY' : '***PROVIDED*** (length: ' . strlen($aws_secret) . ')'));
+        error_log('CF7 S3 Test - AWS Region: ' . $aws_region);
+        error_log('CF7 S3 Test - S3 Bucket: ' . $s3_bucket);
+        
+        if (empty($aws_key) || empty($aws_secret) || empty($aws_region) || empty($s3_bucket)) {
+            wp_send_json_error(array('message' => 'All S3 fields are required'));
+            return;
+        }
+        
+        try {
+            // Initialize our S3 handler with the provided credentials
+            $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+            
+            // Get existing options to backup
+            $existing_options = get_option('cf7_artist_submissions_options', array());
+            $backup_options = $existing_options; // Full backup
+            
+            // Update options with test credentials (the format S3 handler expects)
+            $existing_options['aws_access_key'] = $aws_key;
+            $existing_options['aws_secret_key'] = $aws_secret;
+            $existing_options['aws_region'] = $aws_region;
+            $existing_options['s3_bucket'] = $s3_bucket;
+            
+            // Set test credentials in the format the S3 handler reads
+            update_option('cf7_artist_submissions_options', $existing_options);
+            
+            // Debug: Log what we set in options
+            error_log('CF7 S3 Test - Set test options: ' . json_encode(array(
+                'aws_access_key' => substr($aws_key, 0, 6) . '***',
+                'aws_secret_key' => '***PROVIDED***',
+                'aws_region' => $aws_region,
+                's3_bucket' => $s3_bucket
+            )));
+            
+            // Test the connection by trying to list bucket contents (limited)
+            $test_result = $s3_handler->test_connection();
+            
+            // Always restore original credentials after test
+            update_option('cf7_artist_submissions_options', $backup_options);
+            
+            if (!$test_result['success']) {
+                
+                // Enhanced error response for 403 debugging
+                $error_message = $test_result['message'];
+                if (isset($test_result['details'])) {
+                    $error_message .= '<br><br><div style="background: #fff3cd; padding: 15px; border-radius: 4px; border-left: 4px solid #f59e0b; margin-top: 10px; text-align: left; white-space: pre-line; font-family: monospace; font-size: 12px;">';
+                    $error_message .= '<strong>Detailed Error Information:</strong><br><br>' . esc_html($test_result['details']);
+                    $error_message .= '</div>';
+                }
+                
+                wp_send_json_error(array(
+                    'message' => $error_message,
+                    'details' => $test_result['details'] ?? 'Connection test failed',
+                    'raw_response' => $test_result['raw_response'] ?? null
+                ));
+                return;
+            }
+            
+            wp_send_json_success(array(
+                'message' => 'S3 connection successful! Bucket is accessible.',
+                'details' => array(
+                    'region' => $aws_region,
+                    'bucket' => $s3_bucket,
+                    'status' => 'Connected',
+                    'test_details' => $test_result['details'] ?? 'Connection verified'
+                )
+            ));
+            
+        } catch (Exception $e) {
+            // Restore original credentials on error
+            if (isset($backup_options)) {
+                update_option('cf7_artist_submissions_options', $backup_options);
+            }
+            
+            wp_send_json_error(array(
+                'message' => 'S3 connection test failed',
+                'details' => $e->getMessage()
+            ));
+        }
     }
 }

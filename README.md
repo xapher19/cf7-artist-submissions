@@ -45,6 +45,10 @@ Transform your Contact Form 7 submissions into a powerful artist management plat
 
 ### 📁 **File Management & Export**
 - Secure file storage with lightbox preview
+- **Modern S3 Integration**: Uppy file uploads with drag-and-drop interface
+- **Cloud Storage**: Amazon S3 integration with presigned URLs for security
+- **File Previews**: Lightbox galleries for images, embedded video players
+- **ZIP Downloads**: Bulk download original files per submission
 - Professional PDF export with custom layouts
 - Comprehensive audit logging
 - Bulk operations and filtering
@@ -64,6 +68,33 @@ Transform your Contact Form 7 submissions into a powerful artist management plat
 2. Activate through **Plugins > Installed Plugins**
 3. Navigate to **Artist Submissions** in WordPress admin
 4. Follow the setup wizard to configure your first form
+5. **For S3 file storage**: See detailed setup guide in `S3-SETUP-GUIDE.md`
+6. **For self-hosted Uppy files**: See setup guide in `UPPY-SETUP.md` (eliminates CORS issues)
+
+### 🔧 Development Setup
+
+If you're developing locally and need to update Uppy files:
+
+```bash
+# Run the build script to download latest Uppy files
+php build-uppy.php
+
+# Upload the generated assets/vendor/uppy/ folder to your webserver
+```
+
+The plugin automatically detects local Uppy files and falls back to CDN if they're not available.
+
+---
+
+### 📁 File Upload System
+This plugin uses **self-hosted Uppy** for modern drag-and-drop file uploads, eliminating CORS issues:
+
+- ✅ **Self-hosted**: Uppy files served from your domain (no CDN dependencies)
+- ✅ **No CORS issues**: All files loaded from your server
+- ✅ **Automatic fallback**: Falls back to CDN if local files aren't found
+- ✅ **Easy updates**: Run `php build-uppy.php` to update Uppy version
+
+**For developers**: See `UPPY-SETUP.md` for details on updating Uppy versions.
 
 ---
 
@@ -82,10 +113,17 @@ Create a form with these field names:
 - `artistic-statement`, `medium`, `availability`
 - `submission-comments`
 
-**File Upload Fields:**
+**File Upload Fields** (choose one format):
+
+**Standard File Upload:**
 - `artist-headshot` - Profile photo
-- `artwork-1`, `artwork-2`, `artwork-3` - Artwork images
+- `artwork-1`, `artwork-2`, `artwork-3` - Artwork images  
 - `cv` - Curriculum Vitae (PDF)
+
+**Modern S3 Upload (Recommended):**
+- `[uppy* your-work max_files:20 max_size:5120]` - Multi-file drag-and-drop upload (5GB max)
+- `[uppy artist-headshot max_files:1 max_size:100]` - Single profile photo
+- Parameters: `max_files` (default: 20), `max_size` in MB (default: 5120MB = 5GB)
 
 ### 2. Email Configuration
 
@@ -190,6 +228,20 @@ This plugin is licensed under the GPL v2 or later.
 ---
 
 ## 📅 Changelog
+
+### 1.1.0 - S3 Integration & Modernization (July 2025)
+- **NEW:** Complete Amazon S3 integration with secure file storage
+- **NEW:** Modern Uppy file upload interface with drag-and-drop
+- **NEW:** Chunked upload support for large files up to 5GB per file
+- **NEW:** Presigned URLs for secure S3 file access
+- **NEW:** File metadata database with `cf7as_files` table
+- **NEW:** ZIP download functionality for bulk file retrieval
+- **NEW:** REST API endpoints for file operations
+- **NEW:** Automatic GitHub update system
+- **IMPROVED:** Standalone operation - no external dependencies required
+- **ENHANCED:** File preview system with lightbox galleries
+- **ENHANCED:** Progress tracking with detailed upload status
+- **OPTIMIZED:** Removed AWS SDK dependency for shared hosting compatibility
 
 ### 1.0.1 - Enhancement Release
 - **New:** Custom add submission interface replacing artist view-based implementation

@@ -17,7 +17,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage FormProcessing
  * @since 1.0.0
- * @version 1.0.1
+ * @version 1.1.0
  */
 
 /**
@@ -65,23 +65,42 @@ class CF7_Artist_Submissions_Form_Handler {
      * @since 1.0.0
      */
     public function capture_submission($contact_form) {
+        error_log('CF7AS Form Handler Debug - capture_submission triggered');
+        error_log('CF7AS Form Handler Debug - Form ID received: ' . $contact_form->id());
+        
         $options = get_option('cf7_artist_submissions_options', array());
         $form_id = !empty($options['form_id']) ? $options['form_id'] : '';
         
+        error_log('CF7AS Form Handler Debug - Configured form ID: ' . $form_id);
+        
         // Only process the selected form
         if ($contact_form->id() != $form_id) {
+            error_log('CF7AS Form Handler Debug - Form ID mismatch, skipping processing');
+            return;
+        }
+        
+        error_log('CF7AS Form Handler Debug - Form ID matches, proceeding with processing');
+        
+        if (!class_exists('WPCF7_Submission')) {
+            error_log('CF7AS Form Handler Debug - WPCF7_Submission class not found');
             return;
         }
         
         $submission = WPCF7_Submission::get_instance();
         if (!$submission) {
+            error_log('CF7AS Form Handler Debug - No submission instance available');
             return;
         }
         
+        error_log('CF7AS Form Handler Debug - Submission instance obtained successfully');
+        
         $posted_data = $submission->get_posted_data();
         if (empty($posted_data)) {
+            error_log('CF7AS Form Handler Debug - No posted data available');
             return;
         }
+        
+        error_log('CF7AS Form Handler Debug - Posted data retrieved successfully');
         
         // Prepare title from artist-name field or use a default
         $title = '';
@@ -97,6 +116,8 @@ class CF7_Artist_Submissions_Form_Handler {
             $title = 'Submission ' . date('Y-m-d H:i:s');
         }
         
+        error_log('CF7AS Form Handler Debug - Creating post with title: ' . $title);
+        
         // Create post
         $post_id = wp_insert_post(array(
             'post_title'   => sanitize_text_field($title),
@@ -105,13 +126,18 @@ class CF7_Artist_Submissions_Form_Handler {
         ));
         
         if (is_wp_error($post_id)) {
+            error_log('CF7AS Form Handler Debug - Failed to create post: ' . $post_id->get_error_message());
             return;
         }
         
+        error_log('CF7AS Form Handler Debug - Post created successfully with ID: ' . $post_id);
+        
         // Set initial status
         wp_set_object_terms($post_id, 'New', 'submission_status');
+        error_log('CF7AS Form Handler Debug - Set initial status to New');
         
         // Save form data as post meta
+        $meta_count = 0;
         foreach ($posted_data as $key => $value) {
             if (empty($value)) {
                 continue;
@@ -127,93 +153,28 @@ class CF7_Artist_Submissions_Form_Handler {
             }
             
             update_post_meta($post_id, 'cf7_' . sanitize_key($key), sanitize_text_field($value));
+            $meta_count++;
         }
+        
+        error_log('CF7AS Form Handler Debug - Saved ' . $meta_count . ' meta fields for post ' . $post_id);
         
         // Handle artistic medium tags
+        error_log('CF7AS Form Handler Debug - Processing medium tags');
         $this->process_medium_tags($post_id, $posted_data);
         
-        // Store uploaded files
-        if (!empty($options['store_files']) && $options['store_files'] === 'yes') {
-            $files = $submission->uploaded_files();
-            if (!empty($files)) {
-                $upload_dir = wp_upload_dir();
-                $submission_dir = $upload_dir['basedir'] . '/cf7-submissions/' . $post_id;
-                
-                if (!file_exists($submission_dir)) {
-                    wp_mkdir_p($submission_dir);
-                }
-                
-                // Process regular file uploads
-                foreach ($files as $field_name => $tmp_paths) {
-                    // Skip empty uploads
-                    if (empty($tmp_paths)) {
-                        continue;
-                    }
-                    
-                    // Handle both single and multiple file uploads
-                    $file_urls = array();
-                    
-                    // Convert to array if it's a single file
-                    if (!is_array($tmp_paths)) {
-                        $tmp_paths = array($tmp_paths);
-                    }
-                    
-                    foreach ($tmp_paths as $tmp_path) {
-                        // Skip invalid paths
-                        if (empty($tmp_path) || !file_exists($tmp_path)) {
-                            continue;
-                        }
-                        
-                        // Get filename and validate it
-                        $filename = basename($tmp_path);
-                        
-                        // Validate file type for security
-                        $allowed_types = array('jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt', 'zip');
-                        $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-                        
-                        if (!in_array($file_extension, $allowed_types)) {
-                            continue; // Skip disallowed file types
-                        }
-                        
-                        // Additional security: Check file MIME type
-                        $file_info = wp_check_filetype($filename);
-                        if (!$file_info['type']) {
-                            continue; // Skip files with no valid MIME type
-                        }
-                        
-                        // Create a unique filename
-                        $unique_filename = wp_unique_filename($submission_dir, $filename);
-                        
-                        // Copy file to our directory
-                        $new_path = $submission_dir . '/' . $unique_filename;
-                        
-                        if (@copy($tmp_path, $new_path)) {
-                            // Set proper file permissions
-                            @chmod($new_path, 0644);
-                            
-                            // Create and store file URL
-                            $file_url = $upload_dir['baseurl'] . '/cf7-submissions/' . $post_id . '/' . $unique_filename;
-                            $file_urls[] = esc_url_raw($file_url);
-                        }
-                    }
-                    
-                    // Save file URLs as post meta
-                    if (!empty($file_urls)) {
-                        if (count($file_urls) === 1) {
-                            update_post_meta($post_id, 'cf7_file_' . sanitize_key($field_name), $file_urls[0]);
-                        } else {
-                            update_post_meta($post_id, 'cf7_file_' . sanitize_key($field_name), $file_urls);
-                        }
-                    }
-                }
-            }
-        }
+        // Process S3 uploaded files data (from custom uploader)
+        error_log('CF7AS Form Handler Debug - About to process S3 uploaded files');
+        $this->process_s3_uploaded_files($posted_data, $post_id);
         
         // Save submission date
         update_post_meta($post_id, 'cf7_submission_date', current_time('mysql'));
+        error_log('CF7AS Form Handler Debug - Saved submission date');
         
         // Fire submission created action for logging and email triggers
+        error_log('CF7AS Form Handler Debug - Firing submission created action');
         do_action('cf7_artist_submission_created', $post_id);
+        
+        error_log('CF7AS Form Handler Debug - Submission processing completed for post ID: ' . $post_id);
     }
     
     // ============================================================================
@@ -265,5 +226,146 @@ class CF7_Artist_Submissions_Form_Handler {
             // Also store as post meta for backwards compatibility
             update_post_meta($post_id, 'cf7_artistic_mediums', implode(', ', $medium_terms));
         }
+    }
+    
+    /**
+     * Process uploaded files from S3 and store metadata in database
+     */
+    private function process_s3_uploaded_files($posted_data, $post_id) {
+        if (empty($posted_data)) {
+            error_log('CF7AS Form Handler Debug - No posted data received');
+            return;
+        }
+
+        // Log the full posted data for debugging
+        error_log('CF7AS Form Handler Debug - Full posted data: ' . print_r($posted_data, true));
+        error_log('CF7AS Form Handler Debug - Processing files for post ID: ' . $post_id);
+
+        $found_file_fields = 0;
+        $processed_files = 0;
+
+        // Look for the custom uploader file data fields ending with '_data'
+        foreach ($posted_data as $field_name => $field_value) {
+            // Check if this is a file data field (ends with '_data') and has content
+            if (substr($field_name, -5) === '_data' && !empty($field_value)) {
+                $found_file_fields++;
+                error_log('CF7AS Form Handler Debug - Found uploader data field: ' . $field_name . ' with value: ' . $field_value);
+                
+                // Parse the JSON data
+                $file_data = json_decode($field_value, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($file_data)) {
+                    error_log('CF7AS Form Handler Debug - Successfully parsed JSON data: ' . print_r($file_data, true));
+                    $files_stored = $this->store_s3_files_in_database($file_data, $post_id, $field_name);
+                    $processed_files += $files_stored;
+                } else {
+                    error_log('CF7AS Form Handler Debug - Failed to parse JSON for field ' . $field_name . '. JSON Error: ' . json_last_error_msg());
+                }
+            }
+        }
+
+        // Also check for traditional file upload fields (fallback)
+        $file_data_fields = array();
+        foreach ($posted_data as $field_name => $field_value) {
+            if (strpos($field_name, 'file') !== false || strpos($field_name, 'upload') !== false || strpos($field_name, 'artwork') !== false) {
+                if (!in_array($field_name, $file_data_fields)) {
+                    $file_data_fields[] = $field_name;
+                }
+            }
+        }
+
+        error_log('CF7AS Form Handler Debug - Found traditional file fields: ' . print_r($file_data_fields, true));
+
+        foreach ($file_data_fields as $field) {
+            if (!empty($posted_data[$field]) && is_string($posted_data[$field])) {
+                $found_file_fields++;
+                error_log('CF7AS Form Handler Debug - Processing traditional field: ' . $field);
+                $file_data = json_decode($posted_data[$field], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($file_data)) {
+                    $files_stored = $this->store_s3_files_in_database($file_data, $post_id, $field);
+                    $processed_files += $files_stored;
+                } else {
+                    error_log('CF7AS Form Handler Debug - Traditional field ' . $field . ' is not valid JSON: ' . $posted_data[$field]);
+                }
+            }
+        }
+
+        error_log('CF7AS Form Handler Debug - Summary: Found ' . $found_file_fields . ' file fields, processed ' . $processed_files . ' files');
+    }
+    
+    /**
+     * Store S3 file metadata in the database.
+     */
+    private function store_s3_files_in_database($file_data, $post_id, $field_name) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cf7as_files';
+        $stored_count = 0;
+        
+        error_log('CF7AS File Storage Debug - Attempting to store files for post ID: ' . $post_id . ' from field: ' . $field_name);
+        error_log('CF7AS File Storage Debug - Table name: ' . $table_name);
+        error_log('CF7AS File Storage Debug - Files to process: ' . print_r($file_data, true));
+        
+        if (!is_array($file_data)) {
+            error_log('CF7AS File Storage Debug - File data is not an array for field: ' . $field_name);
+            return $stored_count;
+        }
+        
+        foreach ($file_data as $file) {
+            // Handle both old and new field formats
+            $s3_key = isset($file['s3_key']) ? $file['s3_key'] : (isset($file['s3Key']) ? $file['s3Key'] : null);
+            $original_name = isset($file['filename']) ? $file['filename'] :
+                            (isset($file['original_filename']) ? $file['original_filename'] : 
+                            (isset($file['original_name']) ? $file['original_name'] : 
+                            (isset($file['name']) ? $file['name'] : null)));
+            $mime_type = isset($file['type']) ? $file['type'] :
+                        (isset($file['file_type']) ? $file['file_type'] :
+                        (isset($file['mime_type']) ? $file['mime_type'] : 'application/octet-stream'));
+            
+            error_log('CF7AS File Storage Debug - Processing file: ' . print_r($file, true));
+            error_log('CF7AS File Storage Debug - Extracted values - s3_key: ' . $s3_key . ', name: ' . $original_name . ', type: ' . $mime_type);
+            
+            if (!$s3_key || !$original_name) {
+                error_log('CF7AS File Storage Debug - Skipping file due to missing s3_key or original_name');
+                continue; // Skip invalid file data
+            }
+            
+            $insert_data = array(
+                'submission_id' => (string) $post_id,
+                'original_name' => sanitize_text_field($original_name),
+                's3_key' => sanitize_text_field($s3_key),
+                'mime_type' => sanitize_text_field($mime_type),
+                'file_size' => isset($file['size']) ? intval($file['size']) : 0,
+                'thumbnail_url' => isset($file['thumbnail_url']) ? esc_url_raw($file['thumbnail_url']) : '',
+                'created_at' => current_time('mysql')
+            );
+            
+            // Store work metadata as post meta linked to the file
+            if (!empty($file['work_title'])) {
+                update_post_meta($post_id, 'cf7_work_title_' . sanitize_key($original_name), sanitize_text_field($file['work_title']));
+            }
+            if (!empty($file['work_statement'])) {
+                update_post_meta($post_id, 'cf7_work_statement_' . sanitize_key($original_name), sanitize_textarea_field($file['work_statement']));
+            }
+            
+            error_log('CF7AS File Storage Debug - Insert data: ' . print_r($insert_data, true));
+            
+            $result = $wpdb->insert($table_name, $insert_data);
+            
+            if ($result === false) {
+                error_log('CF7AS File Storage Debug - Failed to insert file record: ' . $wpdb->last_error);
+                error_log('CF7AS File Storage Debug - Last query: ' . $wpdb->last_query);
+            } else {
+                $stored_count++;
+                error_log('CF7AS File Storage Debug - Successfully inserted file record with ID: ' . $wpdb->insert_id);
+            }
+        }
+        
+        // Verify files were stored
+        $verification_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE submission_id = %s",
+            (string) $post_id
+        ));
+        error_log('CF7AS File Storage Debug - Total files now stored for submission ' . $post_id . ': ' . $verification_count);
+        
+        return $stored_count;
     }
 }
