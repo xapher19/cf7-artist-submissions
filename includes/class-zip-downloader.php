@@ -95,6 +95,18 @@ class CF7_Artist_Submissions_ZIP_Downloader {
             wp_die('Submission not found');
         }
         
+        // Get artist name for filename
+        $artist_name = get_post_meta($post->ID, 'cf7_artist-name', true);
+        if (empty($artist_name)) {
+            $artist_name = get_post_meta($post->ID, 'cf7_your-name', true);
+        }
+        if (empty($artist_name)) {
+            $artist_name = $post->post_title;
+        }
+        if (empty($artist_name)) {
+            $artist_name = 'Unknown Artist';
+        }
+        
         // Get files for this submission
         $files = $this->metadata_manager->get_submission_files($submission_id);
         
@@ -118,7 +130,7 @@ class CF7_Artist_Submissions_ZIP_Downloader {
             }
             
             // Create ZIP file
-            $zip_path = $this->create_zip_archive($downloaded_files, $temp_dir, $submission_id);
+            $zip_path = $this->create_zip_archive($downloaded_files, $temp_dir, $submission_id, $artist_name);
             
             if (!$zip_path) {
                 $this->cleanup_temp_directory($temp_dir);
@@ -126,7 +138,7 @@ class CF7_Artist_Submissions_ZIP_Downloader {
             }
             
             // Stream ZIP file to user
-            $this->stream_zip_file($zip_path, $submission_id);
+            $this->stream_zip_file($zip_path, $submission_id, $artist_name);
             
             // Cleanup
             $this->cleanup_temp_directory($temp_dir);
@@ -171,9 +183,9 @@ class CF7_Artist_Submissions_ZIP_Downloader {
         $downloaded_files = array();
         
         foreach ($files as $file) {
-            $file_stream = $this->s3_handler->get_file_stream($file['s3_key']);
+            $file_content = $this->s3_handler->get_file_content($file['s3_key']);
             
-            if (!$file_stream) {
+            if (!$file_content) {
                 continue;
             }
             
@@ -181,21 +193,16 @@ class CF7_Artist_Submissions_ZIP_Downloader {
             $safe_filename = $this->sanitize_filename($file['original_name']);
             $local_path = $temp_dir . '/' . $safe_filename;
             
-            // Write stream to local file
-            $local_file = fopen($local_path, 'wb');
-            if ($local_file) {
-                stream_copy_to_stream($file_stream, $local_file);
-                fclose($local_file);
-                fclose($file_stream);
-                
+            // Write content to local file
+            $bytes_written = file_put_contents($local_path, $file_content);
+            
+            if ($bytes_written !== false) {
                 $downloaded_files[] = array(
                     'local_path' => $local_path,
                     'original_name' => $file['original_name']
                 );
             } else {
-                if (is_resource($file_stream)) {
-                    fclose($file_stream);
-                }
+                error_log('CF7AS ZIP Error: Failed to write file to ' . $local_path);
             }
         }
         
@@ -208,15 +215,22 @@ class CF7_Artist_Submissions_ZIP_Downloader {
      * @param array $files Downloaded files array
      * @param string $temp_dir Temporary directory path
      * @param string $submission_id Submission ID
+     * @param string $artist_name Artist name for filename
      * @return string|false ZIP file path or false on failure
      */
-    private function create_zip_archive($files, $temp_dir, $submission_id) {
+    private function create_zip_archive($files, $temp_dir, $submission_id, $artist_name = '') {
         if (!class_exists('ZipArchive')) {
             return false;
         }
         
         $zip = new ZipArchive();
-        $zip_filename = 'submission_' . $submission_id . '_files.zip';
+        
+        // Create descriptive filename with artist name and submission ID
+        $safe_artist_name = $this->sanitize_filename($artist_name);
+        if (empty($safe_artist_name)) {
+            $safe_artist_name = 'Unknown_Artist';
+        }
+        $zip_filename = $safe_artist_name . '_' . $submission_id . '_submission.zip';
         $zip_path = $temp_dir . '/' . $zip_filename;
         
         if ($zip->open($zip_path, ZipArchive::CREATE) !== TRUE) {
@@ -243,9 +257,15 @@ class CF7_Artist_Submissions_ZIP_Downloader {
      * 
      * @param string $zip_path ZIP file path
      * @param string $submission_id Submission ID
+     * @param string $artist_name Artist name for filename
      */
-    private function stream_zip_file($zip_path, $submission_id) {
-        $zip_filename = 'submission_' . $submission_id . '_files.zip';
+    private function stream_zip_file($zip_path, $submission_id, $artist_name = '') {
+        // Create descriptive filename with artist name and submission ID
+        $safe_artist_name = $this->sanitize_filename($artist_name);
+        if (empty($safe_artist_name)) {
+            $safe_artist_name = 'Unknown_Artist';
+        }
+        $zip_filename = $safe_artist_name . '_' . $submission_id . '_submission.zip';
         
         // Set headers for download
         header('Content-Type: application/zip');

@@ -39,47 +39,131 @@
     const $lightboxNext = $('<div class="cf7-lightbox-nav cf7-lightbox-next">›</div>');
     
     $lightboxContent.append($lightboxClose);
+    $lightboxContent.append($lightboxPrev);
+    $lightboxContent.append($lightboxNext);
     $lightboxOverlay.append($lightboxContent);
     $('body').append($lightboxOverlay);
+    
+    // Add some basic styling to ensure visibility
+    $lightboxOverlay.css({
+        'position': 'fixed',
+        'top': '0',
+        'left': '0',
+        'width': '100%',
+        'height': '100%',
+        'background-color': 'rgba(0, 0, 0, 0.9)',
+        'z-index': '99999',
+        'display': 'none',
+        'justify-content': 'center',
+        'align-items': 'center'
+    });
+    
+    $lightboxContent.css({
+        'position': 'relative',
+        'max-width': '90%',
+        'max-height': '90%',
+        'background': 'white',
+        'border-radius': '8px',
+        'padding': '20px'
+    });
+    
+    $lightboxClose.css({
+        'position': 'absolute',
+        'top': '10px',
+        'right': '15px',
+        'font-size': '24px',
+        'cursor': 'pointer',
+        'color': '#666'
+    });
     
     // Current gallery state
     let galleryImages = [];
     let currentIndex = 0;
+    let currentLightboxGroup = null;
     
     // ============================================================================
     // LIGHTBOX ACTIVATION
     // ============================================================================
     
     /**
-     * Initialize lightbox on image click with gallery detection and navigation setup.
-     * Automatically detects all images in the same gallery container and enables
-     * sequential navigation with wraparound support.
+     * Initialize lightbox event handlers for dynamically loaded content.
+     * Sets up event delegation to handle lightbox triggers added via AJAX.
      * 
      * @since 1.0.0
      */
-    $(document).on('click', '.lightbox-preview', function(e) {
-        e.preventDefault();
+    function initializeLightboxEvents() {
+        // Remove any existing event handlers to prevent duplicates
+        $(document).off('click.cf7lightbox', '[data-lightbox]');
+        $(document).off('click.cf7lightbox', '.lightbox-preview');
         
-        // Get all images in the same gallery
-        const $gallery = $(this).closest('.submission-files');
-        galleryImages = $gallery.find('.lightbox-preview').map(function() {
-            return $(this).attr('href');
-        }).get();
+        // Handle data-lightbox attribute clicks
+        $(document).on('click.cf7lightbox', '[data-lightbox]', function(e) {
+            e.preventDefault();
+            const $this = $(this);
+            const imageSrc = $this.attr('href') || $this.data('src');
+            
+            if (!imageSrc) {
+                return;
+            }
+            
+            // Set current lightbox group and images
+            currentLightboxGroup = $this.data('lightbox');
+            galleryImages = $('[data-lightbox="' + currentLightboxGroup + '"]').map(function() {
+                return $(this).attr('href') || $(this).data('src');
+            }).get();
+            currentIndex = galleryImages.indexOf(imageSrc);
+            
+            // Show lightbox with the selected image
+            showLightbox(imageSrc);
+        });
         
-        // Find current image index
-        currentIndex = galleryImages.indexOf($(this).attr('href'));
+        // Handle .lightbox-preview class clicks
+        $(document).on('click.cf7lightbox', '.lightbox-preview', function(e) {
+            e.preventDefault();
+            const $this = $(this);
+            const imageSrc = $this.attr('href') || $this.data('src');
+            
+            if (!imageSrc) {
+                return;
+            }
+            
+            // For .lightbox-preview, treat as single image (no gallery)
+            currentLightboxGroup = 'single';
+            galleryImages = [imageSrc];
+            currentIndex = 0;
+            
+            // Show lightbox with the selected image
+            showLightbox(imageSrc);
+        });
+    }
+
+    /**
+     * Show the lightbox with specified image.
+     * Creates modal overlay and displays the image with navigation controls.
+     * 
+     * @since 1.0.0
+     */
+    function showLightbox(imageSrc) {
+        // Show the lightbox with flex display
+        $lightboxOverlay.css('display', 'flex').addClass('active');
+        $('body').addClass('cf7-lightbox-open');
         
-        // Show the image
-        showImage(galleryImages[currentIndex]);
-        
-        // Show navigation if needed
-        if (galleryImages.length > 1) {
-            $lightboxContent.append($lightboxPrev);
-            $lightboxContent.append($lightboxNext);
-        }
-        
-        // Show lightbox
-        $lightboxOverlay.addClass('active');
+        // Load and show the image
+        showImage(imageSrc);
+    }
+
+    /**
+     * Public initialization function for re-initializing lightbox after AJAX loads
+     * 
+     * @since 1.0.0
+     */
+    window.initLightbox = function() {
+        initializeLightboxEvents();
+    };
+    
+    // Initialize on document ready
+    $(document).ready(function() {
+        initializeLightboxEvents();
     });
     
     // ============================================================================
@@ -88,10 +172,11 @@
     
     // Close lightbox and cleanup
     $lightboxClose.on('click', function() {
-        $lightboxOverlay.removeClass('active');
+        $lightboxOverlay.css('display', 'none').removeClass('active');
+        $('body').removeClass('cf7-lightbox-open');
         $lightboxContent.find('img').remove();
-        $lightboxPrev.detach();
-        $lightboxNext.detach();
+        $lightboxContent.find('.cf7-lightbox-loading').remove();
+        $lightboxContent.find('.cf7-lightbox-error').remove();
     });
     
     // Close on overlay click (but not content)
@@ -145,7 +230,7 @@
     // ============================================================================
     
     /**
-     * Load and display image with loading states and comprehensive error handling.
+     * Load and display image with loading states and error handling.
      * Provides smooth transitions and user feedback during image loading process.
      * 
      * @since 1.0.0

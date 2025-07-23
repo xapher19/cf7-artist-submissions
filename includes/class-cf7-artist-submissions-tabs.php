@@ -927,7 +927,7 @@ class CF7_Artist_Submissions_Tabs {
             // Use work title for display if available, otherwise use filename
             $display_title = !empty($work_title) ? $work_title : $file->original_name;
             
-            // Get S3 presigned URL for download
+            // Get S3 presigned URL for download (works reliably)
             if (!class_exists('CF7_Artist_Submissions_S3_Handler')) {
                 continue;
             }
@@ -943,12 +943,15 @@ class CF7_Artist_Submissions_Tabs {
             
             // File preview/thumbnail
             if (self::is_image_file($file_ext)) {
-                // Use thumbnail if available, otherwise use original
-                $preview_url = !empty($file->thumbnail_url) ? $file->thumbnail_url : $download_url;
-                echo '<img src="' . esc_url($preview_url) . '" alt="' . esc_attr($display_title) . '" class="cf7as-file-thumbnail" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                // Use thumbnail if available for display, but use download URL for lightbox since that's working
+                $thumbnail_url = !empty($file->thumbnail_url) ? $file->thumbnail_url : $download_url;
+                
+                echo '<a href="' . esc_url($download_url) . '" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                echo '<img src="' . esc_url($thumbnail_url) . '" alt="' . esc_attr($display_title) . '" class="cf7as-file-thumbnail">';
+                echo '</a>';
                 
             } elseif (self::is_video_file($file_ext)) {
-                // Inline video player for videos
+                // Inline video player for videos - use download URL since that's working
                 echo '<video class="cf7as-video-preview" controls preload="metadata">';
                 echo '<source src="' . esc_url($download_url) . '" type="' . esc_attr($mime_type) . '">';
                 echo __('Your browser does not support the video tag.', 'cf7-artist-submissions');

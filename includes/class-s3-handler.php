@@ -183,11 +183,41 @@ class CF7_Artist_Submissions_S3_Handler {
      * @return string|false The presigned URL or false on failure
      */
     public function get_presigned_download_url($s3_key, $expires_in = 3600) {
+        error_log("CF7AS Debug: get_presigned_download_url called with S3 key: " . $s3_key);
+        
         if (!$this->init_s3_client()) {
+            error_log("CF7AS Debug: S3 client init failed for key: " . $s3_key);
             return false;
         }
         
         $signature_data = $this->create_signature_v4('GET', $s3_key, '', $expires_in, array(), array(), true);
+        
+        $url = "https://{$signature_data['host']}/{$s3_key}?{$signature_data['canonical_query']}";
+        
+        error_log("CF7AS Debug: Generated download URL: " . $url);
+        
+        return $url;
+    }
+    
+    /**
+     * Generate S3 presigned URL optimized for image preview/lightbox display
+     * Creates a URL with inline content disposition for better browser compatibility
+     * 
+     * @param string $s3_key The S3 object key
+     * @param int $expires_in Expiration time in seconds (default: 1 hour)
+     * @return string|false The presigned preview URL or false on failure
+     */
+    public function get_presigned_preview_url($s3_key, $expires_in = 3600) {
+        if (!$this->init_s3_client()) {
+            return false;
+        }
+        
+        // Use inline content disposition for better lightbox compatibility
+        $query_params = array(
+            'response-content-disposition' => 'inline'
+        );
+        
+        $signature_data = $this->create_signature_v4('GET', $s3_key, '', $expires_in, array(), $query_params, true);
         
         $url = "https://{$signature_data['host']}/{$s3_key}?{$signature_data['canonical_query']}";
         
@@ -260,12 +290,12 @@ class CF7_Artist_Submissions_S3_Handler {
     }
     
     /**
-     * Get file contents from S3 using WordPress HTTP API
+     * Get file content from S3 using presigned URL
      * 
      * @param string $s3_key The S3 object key
      * @return string|false The file contents or false on failure
      */
-    public function get_file_stream($s3_key) {
+    public function get_file_content($s3_key) {
         if (!$this->init_s3_client()) {
             return false;
         }
@@ -292,6 +322,17 @@ class CF7_Artist_Submissions_S3_Handler {
         }
         
         return wp_remote_retrieve_body($response);
+    }
+    
+    /**
+     * Legacy method name for backwards compatibility
+     * 
+     * @deprecated Use get_file_content() instead
+     * @param string $s3_key The S3 object key
+     * @return string|false The file contents or false on failure
+     */
+    public function get_file_stream($s3_key) {
+        return $this->get_file_content($s3_key);
     }
     
     /**
