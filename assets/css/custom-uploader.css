@@ -1518,3 +1518,507 @@ button.cf7as-upload-all-btn:disabled:hover {
         margin-bottom: 6px; /* Tighter spacing */
     }
 }
+
+/* === FORM TAKEOVER & SUBMISSION MODAL STYLES === */
+
+/* Form takeover initial interface */
+.cf7as-form-takeover {
+    text-align: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.cf7as-submission-intro h2 {
+    color: #2c3e50;
+    font-size: 28px;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.cf7as-submission-intro p {
+    color: #5a6c7d;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    max-width: 500px;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+}
+
+.cf7as-submit-work-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 18px 36px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.cf7as-submit-work-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+
+.cf7as-submit-work-btn:active {
+    transform: translateY(0);
+}
+
+.cf7as-btn-icon svg {
+    transition: transform 0.3s ease;
+}
+
+.cf7as-submit-work-btn:hover .cf7as-btn-icon svg {
+    transform: translateY(-2px);
+}
+
+/* Submission Modal */
+.cf7as-submission-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483647;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    margin: 0;
+    padding: 0;
+}
+
+.cf7as-submission-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: -1;
+}
+
+.cf7as-submission-content {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    background: white;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: none;
+}
+
+.cf7as-submission-header {
+    padding: 24px 32px;
+    border-bottom: 1px solid #e1e5e9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.cf7as-submission-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: white !important;
+}
+
+.cf7as-submission-close {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: white;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.cf7as-submission-close:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+.cf7as-submission-steps {
+    display: flex;
+    padding: 24px 32px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e5e9;
+    justify-content: center;
+    gap: 60px;
+}
+
+.cf7as-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.cf7as-step.active {
+    opacity: 1;
+}
+
+.cf7as-step.completed {
+    opacity: 0.8;
+}
+
+.cf7as-step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #dee2e6;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.cf7as-step.active .cf7as-step-number {
+    background: #667eea;
+    color: white;
+}
+
+.cf7as-step.completed .cf7as-step-number {
+    background: #27ae60;
+    color: white;
+}
+
+.cf7as-step-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.cf7as-step.active .cf7as-step-label {
+    color: #495057;
+}
+
+.cf7as-submission-body {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+}
+
+.cf7as-submission-step {
+    padding: 48px 32px 32px 32px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 768px) {
+    .cf7as-submission-step {
+        padding: 32px 16px 24px 16px;
+    }
+}
+
+.cf7as-submission-step h3 {
+    margin: 0 0 24px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.cf7as-form-fields {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 32px;
+    margin-bottom: 32px;
+    padding: 0 16px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (max-width: 768px) {
+    .cf7as-form-fields {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 0 8px;
+    }
+}
+
+.cf7as-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f8f9fa;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.cf7as-field-group-full-width {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+    .cf7as-field-group-full-width {
+        grid-column: 1;
+    }
+}
+
+.cf7as-field-group:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.cf7as-field-group:focus-within {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    background: #ffffff;
+}
+
+.cf7as-field-group label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 12px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cf7as-field-group input,
+.cf7as-field-group textarea,
+.cf7as-field-group select {
+    padding: 16px 20px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    font-size: 16px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.cf7as-field-group textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.6;
+    font-family: inherit;
+}
+
+.cf7as-textarea-large {
+    min-height: 180px !important;
+}
+
+.cf7as-field-group input:focus,
+.cf7as-field-group textarea:focus,
+.cf7as-field-group select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    transform: translateY(-1px);
+}
+
+.cf7as-field-group input.cf7as-field-error,
+.cf7as-field-group textarea.cf7as-field-error,
+.cf7as-field-group select.cf7as-field-error {
+    border-color: #e74c3c;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
+    background: #fdf2f2;
+}
+
+.cf7as-field-group:has(.cf7as-field-error) {
+    border-color: #e74c3c;
+    background: #fdf2f2;
+}
+
+.cf7as-step-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 24px;
+    padding-bottom: 32px;
+    border-top: 1px solid #e1e5e9;
+    gap: 16px;
+}
+
+.cf7as-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.cf7as-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.cf7as-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.cf7as-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.cf7as-btn-secondary:hover {
+    background: #5a6268;
+}
+
+.cf7as-btn-success {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+}
+
+.cf7as-btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.cf7as-upload-container {
+    flex: 1;
+    position: relative;
+}
+
+.cf7as-submission-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 24px;
+    margin-top: 24px;
+}
+
+.cf7as-summary-section {
+    margin-bottom: 24px;
+}
+
+.cf7as-summary-section:last-child {
+    margin-bottom: 0;
+}
+
+.cf7as-summary-section h4 {
+    margin: 0 0 12px 0;
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.cf7as-summary-section p {
+    margin: 8px 0;
+    font-size: 14px;
+    color: #495057;
+}
+
+.cf7as-modal-error {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    border: 1px solid #f5c6cb;
+}
+
+.cf7as-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: cf7as-spin 1s linear infinite;
+}
+
+@keyframes cf7as-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.cf7as-success-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483648;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cf7as-success-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.cf7as-success-content {
+    position: relative;
+    background: white;
+    padding: 48px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 500px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+}
+
+.cf7as-success-icon {
+    margin-bottom: 24px;
+}
+
+.cf7as-success-content h2 {
+    color: #27ae60;
+    margin: 0 0 16px 0;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.cf7as-success-content p {
+    color: #6c757d;
+    margin: 16px 0;
+    line-height: 1.6;
+}
+
+body.cf7as-submission-modal-open {
+    overflow: hidden;
+}
+
+/* === MODAL UPLOAD INTERFACE STYLES === */
+/* Note: Some styles are duplicated from main uploader but kept for modal-specific contexts */
+
+/* Modal body inner container */
+.cf7as-modal-body-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}

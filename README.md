@@ -93,8 +93,25 @@ This plugin uses **self-hosted Uppy** for modern drag-and-drop file uploads, eli
 - ✅ **No CORS issues**: All files loaded from your server
 - ✅ **Automatic fallback**: Falls back to CDN if local files aren't found
 - ✅ **Easy updates**: Run `php build-uppy.php` to update Uppy version
+- 🆕 **Form Takeover Mode**: Complete multi-step submission experience with guided workflow
 
-**For developers**: See `UPPY-SETUP.md` for details on updating Uppy versions.
+#### 🎯 Form Takeover Feature
+Enable a modern, guided submission experience by adding the `takeover` option:
+
+```
+[uploader your-work takeover]
+```
+
+**What it does:**
+- Replaces entire form with a single "Submit My Work" button
+- Opens full-screen modal with 3-step process:
+  1. **Your Details** - Form fields from your CF7 form
+  2. **Upload Works** - Drag-and-drop file interface
+  3. **Review & Submit** - Summary before final submission
+- Professional styling with progress indicators
+- Success confirmation popup
+
+**For developers**: See `FORM-TAKEOVER.md` for complete documentation.
 
 ---
 

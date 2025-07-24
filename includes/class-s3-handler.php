@@ -106,6 +106,20 @@ class CF7_Artist_Submissions_S3_Handler {
         
         $atts['max_size'] = (!empty($max_size_from_tag) && $max_size_from_tag > 0) ? $max_size_from_tag : 5120; // 5GB in MB
         
+        // Check for form takeover option
+        $form_takeover = false;
+        if (method_exists($tag, 'has_option') && $tag->has_option('takeover')) {
+            $form_takeover = true;
+        } elseif (isset($tag->options)) {
+            foreach ($tag->options as $option) {
+                if ($option === 'takeover') {
+                    $form_takeover = true;
+                    break;
+                }
+            }
+        }
+        $atts['form_takeover'] = $form_takeover;
+        
         $args = $atts;
         
         ob_start();

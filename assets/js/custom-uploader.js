@@ -45,9 +45,14 @@
             console.log('Initializing custom uploader for:', this.containerId);
             console.log('Options:', this.options);
             
-            this.createUI();
-            this.bindEvents();
-            this.setupFormIntegration();
+            // Check if form takeover is enabled
+            if (this.container.data('form-takeover') === true || this.container.data('form-takeover') === 'true') {
+                this.setupFormTakeover();
+            } else {
+                this.createUI();
+                this.bindEvents();
+                this.setupFormIntegration();
+            }
             
             // Mark as initialized
             this.container.addClass('custom-uploader-initialized');
@@ -106,6 +111,1596 @@
                 console.log('Form submission allowed - all files processed');
                 return true;
             });
+        }
+        
+        setupFormTakeover() {
+            const form = this.container.closest('form');
+            if (!form.length) return;
+            
+            // Store original form content
+            this.originalFormContent = form.html();
+            
+            // Replace form with submission button
+            this.replaceFormWithSubmissionButton(form);
+        }
+        
+        replaceFormWithSubmissionButton(form) {
+            const formHtml = `
+                <div class="cf7as-form-takeover">
+                    <div class="cf7as-submission-intro">
+                        <h2>Ready to Submit Your Work?</h2>
+                        <p>Click the button below to begin your submission process. You'll be able to fill out your details and upload your artwork files.</p>
+                    </div>
+                    <div class="cf7as-submission-button-container">
+                        <button type="button" class="cf7as-submit-work-btn">
+                            <span class="cf7as-btn-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7,10 12,5 17,10"></polyline>
+                                    <line x1="12" y1="5" x2="12" y2="15"></line>
+                                </svg>
+                            </span>
+                            Submit My Work
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            form.html(formHtml);
+            
+            // Bind click event to submission button
+            form.find('.cf7as-submit-work-btn').on('click', (e) => {
+                e.preventDefault();
+                this.startSubmissionProcess(form);
+            });
+            
+            // Add CSS for the takeover interface
+            this.addTakeoverStyles();
+        }
+        
+        addTakeoverStyles() {
+            if ($('#cf7as-takeover-styles').length) return;
+            
+            const styles = `
+                <style id="cf7as-takeover-styles">
+                .cf7as-form-takeover {
+                    text-align: center;
+                    padding: 40px 20px;
+                    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                    border-radius: 12px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                
+                .cf7as-submission-intro h2 {
+                    color: #2c3e50;
+                    font-size: 28px;
+                    margin-bottom: 16px;
+                    font-weight: 600;
+                }
+                
+                .cf7as-submission-intro p {
+                    color: #5a6c7d;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    margin-bottom: 30px;
+                    max-width: 500px;
+                    margin-left: auto !important;
+                    margin-right: auto !important;
+                    text-align: center !important;
+                }
+                
+                .cf7as-submit-work-btn {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    padding: 18px 36px;
+                    font-size: 18px;
+                    font-weight: 600;
+                    border-radius: 50px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 12px;
+                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+                }
+                
+                .cf7as-submit-work-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+                }
+                
+                .cf7as-submit-work-btn:active {
+                    transform: translateY(0);
+                }
+                
+                .cf7as-btn-icon svg {
+                    transition: transform 0.3s ease;
+                }
+                
+                .cf7as-submit-work-btn:hover .cf7as-btn-icon svg {
+                    transform: translateY(-2px);
+                }
+                </style>
+            `;
+            
+            $('head').append(styles);
+        }
+        
+        startSubmissionProcess(form) {
+            // Create the multi-step modal
+            this.createSubmissionModal(form);
+        }
+        
+        createSubmissionModal(form) {
+            // Parse original form to extract fields
+            const tempDiv = $('<div>').html(this.originalFormContent);
+            const formFields = this.extractFormFields(tempDiv);
+            
+            const modalHtml = `
+                <div class="cf7as-submission-modal" style="display: none;">
+                    <div class="cf7as-submission-overlay"></div>
+                    <div class="cf7as-submission-content">
+                        <div class="cf7as-submission-header">
+                            <h2 class="cf7as-submission-title">Submit Your Work</h2>
+                            <button type="button" class="cf7as-submission-close">&times;</button>
+                        </div>
+                        
+                        <div class="cf7as-submission-steps">
+                            <div class="cf7as-step cf7as-step-1 active">
+                                <span class="cf7as-step-number">1</span>
+                                <span class="cf7as-step-label">Your Details</span>
+                            </div>
+                            <div class="cf7as-step cf7as-step-2">
+                                <span class="cf7as-step-number">2</span>
+                                <span class="cf7as-step-label">Upload Work</span>
+                            </div>
+                            <div class="cf7as-step cf7as-step-3">
+                                <span class="cf7as-step-number">3</span>
+                                <span class="cf7as-step-label">Submit</span>
+                            </div>
+                        </div>
+                        
+                        <div class="cf7as-submission-body">
+                            <!-- Step 1: Form Fields -->
+                            <div class="cf7as-submission-step cf7as-step-content-1" style="display: block;">
+                                <h3>Tell us about yourself</h3>
+                                <div class="cf7as-form-fields">
+                                    ${formFields}
+                                </div>
+                                <div class="cf7as-step-actions">
+                                    <button type="button" class="cf7as-btn cf7as-btn-primary cf7as-continue-to-upload">
+                                        Continue to Upload Work
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9,18 15,12 9,6"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Step 2: File Upload -->
+                            <div class="cf7as-submission-step cf7as-step-content-2" style="display: none;">
+                                <div class="cf7as-upload-container">
+                                    <!-- Upload interface will be inserted here -->
+                                </div>
+                                <div class="cf7as-step-actions">
+                                    <button type="button" class="cf7as-btn cf7as-btn-secondary cf7as-back-to-details">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="15,18 9,12 15,6"></polyline>
+                                        </svg>
+                                        Back to Details
+                                    </button>
+                                    <button type="button" class="cf7as-btn cf7as-btn-primary cf7as-continue-to-submit" style="display: none;">
+                                        Continue to Submit
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="9,18 15,12 9,6"></polyline>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Step 3: Final Submit -->
+                            <div class="cf7as-submission-step cf7as-step-content-3" style="display: none;">
+                                <div class="cf7as-submission-review">
+                                    <h3>Ready to Submit</h3>
+                                    <p>Please review your submission and click submit when ready.</p>
+                                    <div class="cf7as-submission-summary">
+                                        <!-- Summary will be populated here -->
+                                    </div>
+                                </div>
+                                <div class="cf7as-step-actions">
+                                    <button type="button" class="cf7as-btn cf7as-btn-secondary cf7as-back-to-upload">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="15,18 9,12 15,6"></polyline>
+                                        </svg>
+                                        Back to Upload
+                                    </button>
+                                    <button type="button" class="cf7as-btn cf7as-btn-success cf7as-final-submit">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="20,6 9,17 4,12"></polyline>
+                                        </svg>
+                                        Submit My Work
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if present
+            $('.cf7as-submission-modal').remove();
+            
+            // Add modal to body
+            $('body').append(modalHtml);
+            
+            // Cache modal elements
+            this.submissionModal = $('.cf7as-submission-modal');
+            this.currentStep = 1;
+            
+            // Bind modal events
+            this.bindSubmissionModalEvents(form);
+            
+            // Add modal styles
+            this.addSubmissionModalStyles();
+            
+            // Show modal
+            this.showSubmissionModal();
+        }
+        
+        extractFormFields(tempDiv) {
+            let fieldsHtml = '';
+            
+            // Find all form inputs, textareas, and selects
+            tempDiv.find('input[type="text"], input[type="email"], input[type="tel"], input[type="url"], textarea, select').each(function() {
+                const $field = $(this);
+                const fieldName = $field.attr('name') || '';
+                const fieldType = $field.attr('type') || $field.prop('tagName').toLowerCase();
+                
+                // Try to find the actual label from the original form
+                let fieldLabel = '';
+                
+                // Method 1: Look for a label element with matching 'for' attribute
+                const $associatedLabel = tempDiv.find(`label[for="${$field.attr('id')}"]`);
+                if ($associatedLabel.length) {
+                    fieldLabel = $associatedLabel.text().trim();
+                }
+                
+                // Method 2: Look for a parent label element
+                if (!fieldLabel) {
+                    const $parentLabel = $field.closest('label');
+                    if ($parentLabel.length) {
+                        // Get text but exclude nested input text
+                        fieldLabel = $parentLabel.clone().find('input, textarea, select').remove().end().text().trim();
+                    }
+                }
+                
+                // Method 3: Look for preceding label or text
+                if (!fieldLabel) {
+                    const $precedingLabel = $field.prevAll('label').first();
+                    if ($precedingLabel.length) {
+                        fieldLabel = $precedingLabel.text().trim();
+                    }
+                }
+                
+                // Method 4: Use placeholder as fallback
+                if (!fieldLabel) {
+                    fieldLabel = $field.attr('placeholder') || '';
+                }
+                
+                // Method 5: Generate from field name as last resort
+                if (!fieldLabel) {
+                    fieldLabel = fieldName.replace(/[\[\]]/g, '').replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
+                
+                const isRequired = $field.hasClass('wpcf7-validates-as-required') || $field.attr('required');
+                
+                if (fieldName && !fieldName.includes('uploader')) {
+                    // Check if this is an artist statement or description field that should span full width
+                    const isArtistStatement = fieldLabel.toLowerCase().includes('statement') || 
+                                            fieldLabel.toLowerCase().includes('description') || 
+                                            fieldName.toLowerCase().includes('statement') || 
+                                            fieldName.toLowerCase().includes('description');
+                    
+                    const fieldGroupClass = isArtistStatement ? 'cf7as-field-group cf7as-field-group-full-width' : 'cf7as-field-group';
+                    
+                    if (fieldType === 'textarea') {
+                        const textareaClass = isArtistStatement ? 'cf7as-textarea-large' : '';
+                        fieldsHtml += `
+                            <div class="${fieldGroupClass}">
+                                <label for="${fieldName}">${fieldLabel}${isRequired ? ' *' : ''}</label>
+                                <textarea name="${fieldName}" id="${fieldName}" class="${textareaClass}" ${isRequired ? 'required' : ''}></textarea>
+                            </div>
+                        `;
+                    } else if (fieldType === 'select') {
+                        const options = $field.html();
+                        fieldsHtml += `
+                            <div class="${fieldGroupClass}">
+                                <label for="${fieldName}">${fieldLabel}${isRequired ? ' *' : ''}</label>
+                                <select name="${fieldName}" id="${fieldName}" ${isRequired ? 'required' : ''}>${options}</select>
+                            </div>
+                        `;
+                    } else {
+                        fieldsHtml += `
+                            <div class="${fieldGroupClass}">
+                                <label for="${fieldName}">${fieldLabel}${isRequired ? ' *' : ''}</label>
+                                <input type="${fieldType}" name="${fieldName}" id="${fieldName}" ${isRequired ? 'required' : ''} />
+                            </div>
+                        `;
+                    }
+                }
+            });
+            
+            return fieldsHtml;
+        }
+        
+        bindSubmissionModalEvents(form) {
+            const modal = this.submissionModal;
+            
+            // Close modal
+            modal.find('.cf7as-submission-close').on('click', () => {
+                this.closeSubmissionModal();
+            });
+            
+            modal.find('.cf7as-submission-overlay').on('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    this.closeSubmissionModal();
+                }
+            });
+            
+            // Step navigation
+            modal.find('.cf7as-continue-to-upload').on('click', () => {
+                if (this.validateFormFields()) {
+                    this.goToStep(2);
+                    this.initializeUploaderInModal();
+                }
+            });
+            
+            modal.find('.cf7as-back-to-details').on('click', () => {
+                this.goToStep(1);
+            });
+            
+            modal.find('.cf7as-continue-to-submit').on('click', () => {
+                this.goToStep(3);
+                this.populateSubmissionSummary();
+            });
+            
+            modal.find('.cf7as-back-to-upload').on('click', () => {
+                this.goToStep(2);
+            });
+            
+            modal.find('.cf7as-final-submit').on('click', () => {
+                this.finalizeSubmission(form);
+            });
+            
+            // Escape key to close modal
+            $(document).on('keydown.cf7as-submission', (e) => {
+                if (e.keyCode === 27 && modal.is(':visible')) {
+                    this.closeSubmissionModal();
+                }
+            });
+        }
+        
+        validateFormFields() {
+            const modal = this.submissionModal;
+            let isValid = true;
+            
+            modal.find('.cf7as-step-content-1 input[required], .cf7as-step-content-1 textarea[required], .cf7as-step-content-1 select[required]').each(function() {
+                const $field = $(this);
+                const value = $field.val().trim();
+                
+                $field.removeClass('cf7as-field-error');
+                
+                if (!value) {
+                    $field.addClass('cf7as-field-error');
+                    isValid = false;
+                }
+            });
+            
+            if (!isValid) {
+                this.showModalError('Please fill in all required fields.');
+            }
+            
+            return isValid;
+        }
+        
+        goToStep(stepNumber) {
+            const modal = this.submissionModal;
+            
+            // Update step indicators
+            modal.find('.cf7as-step').removeClass('active completed');
+            for (let i = 1; i < stepNumber; i++) {
+                modal.find(`.cf7as-step-${i}`).addClass('completed');
+            }
+            modal.find(`.cf7as-step-${stepNumber}`).addClass('active');
+            
+            // Show/hide step content
+            modal.find('.cf7as-submission-step').hide();
+            modal.find(`.cf7as-step-content-${stepNumber}`).show();
+            
+            this.currentStep = stepNumber;
+        }
+        
+        initializeUploaderInModal() {
+            const uploadContainer = this.submissionModal.find('.cf7as-upload-container');
+            
+            if (uploadContainer.find('.cf7as-modal-body-inner').length) {
+                return; // Already initialized
+            }
+            
+            // Create the upload interface
+            this.createModalUploadInterface(uploadContainer);
+            this.bindModalUploadEvents();
+            this.bindSubmissionModalDragEvents();
+            
+            // Watch for file uploads to show continue button
+            this.watchForCompletedUploads();
+        }
+        
+        createModalUploadInterface(container) {
+            const maxSizeGB = Math.round(this.options.maxSize / (1024*1024*1024));
+            
+            const uploadHtml = `
+                <div class="cf7as-modal-body-inner">
+                    <div class="cf7as-upload-area" data-container-id="${this.containerId}">
+                        <div class="cf7as-upload-prompt">
+                            <div class="cf7as-upload-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7,10 12,5 17,10"></polyline>
+                                    <line x1="12" y1="5" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <div class="cf7as-upload-text">
+                                <h3>Upload Your Artwork</h3>
+                                <p>Drag & drop files here or <button type="button" class="cf7as-browse-btn">browse files</button></p>
+                                <small>Max ${maxSizeGB}GB per file, up to ${this.options.maxFiles} files</small>
+                            </div>
+                        </div>
+                        <input type="file" class="cf7as-file-input" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.txt,.rtf" style="display: none;">
+                    </div>
+                    
+                    <div class="cf7as-work-content">
+                        <div class="cf7as-work-grid-container">
+                            <div class="cf7as-work-grid"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="cf7as-work-editor">
+                        <div class="cf7as-editor-header">
+                            <h3 class="cf7as-editor-title">Edit Work Details</h3>
+                            <p class="cf7as-editor-subtitle">Select a work to edit its information</p>
+                        </div>
+                        <div class="cf7as-editor-body">
+                            <div class="cf7as-editor-field">
+                                <label for="cf7as-selected-work-title">Work Title *</label>
+                                <input type="text" id="cf7as-selected-work-title" class="cf7as-selected-work-title" placeholder="Enter the title of this work">
+                            </div>
+                            <div class="cf7as-editor-field">
+                                <label for="cf7as-selected-work-statement">Work Statement</label>
+                                <textarea id="cf7as-selected-work-statement" class="cf7as-selected-work-statement" placeholder="Describe this work, techniques used, artistic intentions, etc." rows="4"></textarea>
+                            </div>
+                        </div>
+                        <div class="cf7as-editor-actions">
+                            <button type="button" class="cf7as-upload-single-btn">Upload This File</button>
+                            <button type="button" class="cf7as-remove-single-btn">Remove File</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.html(uploadHtml);
+            
+            // Cache new DOM elements
+            this.modalBody = container.find('.cf7as-modal-body-inner');
+            this.uploadArea = container.find('.cf7as-upload-area');
+            this.fileInput = container.find('.cf7as-file-input');
+            this.workContent = container.find('.cf7as-work-content');
+            this.workGrid = container.find('.cf7as-work-grid');
+            this.workEditor = container.find('.cf7as-work-editor');
+            this.browseBtn = container.find('.cf7as-browse-btn');
+            this.selectedWorkTitle = container.find('.cf7as-selected-work-title');
+            this.selectedWorkStatement = container.find('.cf7as-selected-work-statement');
+            this.uploadSingleBtn = container.find('.cf7as-upload-single-btn');
+            this.removeSingleBtn = container.find('.cf7as-remove-single-btn');
+        }
+        
+        bindModalUploadEvents() {
+            const self = this;
+            
+            // Work selection
+            this.workGrid.on('click', '.cf7as-work-item', function(e) {
+                e.preventDefault();
+                const fileId = $(this).data('file-id');
+                self.selectFile(fileId);
+            });
+            
+            // Work title input
+            this.selectedWorkTitle.on('input', function() {
+                if (self.selectedFileId) {
+                    const file = self.files.find(f => f.id === self.selectedFileId);
+                    if (file) {
+                        file.workTitle = $(this).val();
+                        self.updateWorkTitleDisplay(self.selectedFileId, $(this).val());
+                        self.updateFormSubmissionState();
+                    }
+                }
+            });
+            
+            // Work statement input
+            this.selectedWorkStatement.on('input', function() {
+                if (self.selectedFileId) {
+                    const file = self.files.find(f => f.id === self.selectedFileId);
+                    if (file) {
+                        file.workStatement = $(this).val();
+                    }
+                }
+            });
+            
+            // Upload single file
+            this.uploadSingleBtn.on('click', function(e) {
+                e.preventDefault();
+                if (self.selectedFileId) {
+                    const file = self.files.find(f => f.id === self.selectedFileId);
+                    if (file && file.status === 'pending') {
+                        
+                        // Check if work title is provided
+                        if (!file.workTitle || file.workTitle.trim() === '') {
+                            self.showError('Please provide a work title before uploading.');
+                            self.selectedWorkTitle.focus();
+                            return;
+                        }
+                        
+                        self.uploadFile(self.selectedFileId);
+                    }
+                }
+            });
+            
+            // Remove single file
+            this.removeSingleBtn.on('click', function(e) {
+                e.preventDefault();
+                if (self.selectedFileId) {
+                    self.removeFile(self.selectedFileId);
+                    self.selectedFileId = null;
+                    self.updateWorkEditor();
+                }
+            });
+        }
+        
+        bindSubmissionModalDragEvents() {
+            const uploadArea = this.uploadArea;
+            const fileInput = this.fileInput;
+            
+            // Prevent default drag behaviors on upload area
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.on(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            
+            // Drag enter and over on upload area
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.on(eventName, (e) => {
+                    uploadArea.addClass('cf7as-dragover');
+                });
+            });
+            
+            // Drag leave on upload area
+            uploadArea.on('dragleave', (e) => {
+                uploadArea.removeClass('cf7as-dragover');
+            });
+            
+            // Drop on upload area
+            uploadArea.on('drop', (e) => {
+                console.log('Drop event on upload area');
+                uploadArea.removeClass('cf7as-dragover');
+                const files = e.originalEvent.dataTransfer.files;
+                console.log('Files dropped on upload area:', files.length);
+                this.addFiles(files);
+            });
+            
+            // Bind viewport-level drag events for files dragged anywhere in the modal
+            const modal = this.submissionModal;
+            
+            // Prevent default drag behaviors on entire modal
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                modal.on(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            
+            // Handle files dropped anywhere in the modal
+            modal.on('drop', (e) => {
+                console.log('Drop event on modal');
+                const files = e.originalEvent.dataTransfer.files;
+                console.log('Files dropped on modal:', files.length);
+                if (files && files.length > 0) {
+                    uploadArea.removeClass('cf7as-dragover');
+                    this.addFiles(files);
+                }
+            });
+            
+            // Visual feedback when dragging over modal
+            modal.on('dragenter dragover', (e) => {
+                if (e.originalEvent.dataTransfer.types.includes('Files')) {
+                    console.log('Files detected in drag over modal');
+                    uploadArea.addClass('cf7as-dragover');
+                }
+            });
+            
+            modal.on('dragleave', (e) => {
+                // Only remove dragover if we're leaving the modal entirely
+                if (!modal[0].contains(e.originalEvent.relatedTarget)) {
+                    uploadArea.removeClass('cf7as-dragover');
+                }
+            });
+            
+            // Browse button click
+            this.browseBtn.on('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Browse button clicked, triggering file input');
+                console.log('File input element:', this.fileInput.length);
+                if (this.fileInput.length > 0) {
+                    this.fileInput[0].click();
+                } else {
+                    console.error('File input not found');
+                }
+            });
+            
+            // File input change
+            fileInput.on('change', (e) => {
+                const files = e.target.files;
+                console.log('File input changed, files:', files.length);
+                this.addFiles(files);
+                // Clear the input so the same file can be selected again
+                fileInput.val('');
+            });
+        }
+        
+        watchForCompletedUploads() {
+            // Monitor for completed uploads and show continue button
+            const checkUploads = () => {
+                const uploadedFiles = this.files.filter(f => f.status === 'uploaded').length;
+                const totalFiles = this.files.length;
+                const continueBtn = this.submissionModal.find('.cf7as-continue-to-submit');
+                
+                if (totalFiles > 0 && uploadedFiles === totalFiles) {
+                    continueBtn.show();
+                } else {
+                    continueBtn.hide();
+                }
+            };
+            
+            // Check every second
+            this.uploadCheckInterval = setInterval(checkUploads, 1000);
+        }
+        
+        populateSubmissionSummary() {
+            const modal = this.submissionModal;
+            const summaryContainer = modal.find('.cf7as-submission-summary');
+            
+            // Get form data
+            const formData = {};
+            modal.find('.cf7as-step-content-1 input, .cf7as-step-content-1 textarea, .cf7as-step-content-1 select').each(function() {
+                const $field = $(this);
+                const name = $field.attr('name');
+                const value = $field.val();
+                if (name && value) {
+                    formData[name] = value;
+                }
+            });
+            
+            // Create summary HTML
+            let summaryHtml = '<div class="cf7as-summary-section"><h4>Your Details</h4>';
+            Object.keys(formData).forEach(key => {
+                const label = key.replace(/[\[\]]/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                summaryHtml += `<p><strong>${label}:</strong> ${formData[key]}</p>`;
+            });
+            summaryHtml += '</div>';
+            
+            summaryHtml += '<div class="cf7as-summary-section"><h4>Uploaded Files</h4>';
+            this.files.forEach(file => {
+                summaryHtml += `<p><strong>${file.workTitle || file.name}:</strong> ${file.name} (${this.formatBytes(file.size)})</p>`;
+            });
+            summaryHtml += '</div>';
+            
+            summaryContainer.html(summaryHtml);
+        }
+        
+        finalizeSubmission(form) {
+            // Collect all form data
+            const formData = new FormData(form[0]);
+            
+            // Add modal form data
+            this.submissionModal.find('.cf7as-step-content-1 input, .cf7as-step-content-1 textarea, .cf7as-step-content-1 select').each(function() {
+                const $field = $(this);
+                const name = $field.attr('name');
+                const value = $field.val();
+                if (name && value) {
+                    formData.set(name, value);
+                }
+            });
+            
+            // Add file data
+            formData.set(this.containerId + '_data', JSON.stringify(this.files.filter(f => f.status === 'uploaded').map(f => ({
+                id: f.id,
+                filename: f.name,
+                size: f.size,
+                type: f.type,
+                s3_key: f.s3Key,
+                work_title: f.workTitle,
+                work_statement: f.workStatement
+            }))));
+            
+            // Show loading state
+            const submitBtn = this.submissionModal.find('.cf7as-final-submit');
+            const originalText = submitBtn.html();
+            submitBtn.html('<span class="cf7as-spinner"></span> Submitting...').prop('disabled', true);
+            
+            // Submit via AJAX
+            $.ajax({
+                url: form.attr('action') || window.location.href,
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: (response) => {
+                    this.showSuccessMessage();
+                    this.closeSubmissionModal();
+                },
+                error: (xhr, status, error) => {
+                    submitBtn.html(originalText).prop('disabled', false);
+                    this.showModalError('Submission failed. Please try again.');
+                    console.error('Submission error:', error);
+                }
+            });
+        }
+        
+        showSuccessMessage() {
+            const successHtml = `
+                <div class="cf7as-success-popup" style="display: none;">
+                    <div class="cf7as-success-overlay"></div>
+                    <div class="cf7as-success-content">
+                        <div class="cf7as-success-icon">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="16,9 10,14 8,12"></polyline>
+                            </svg>
+                        </div>
+                        <h2>Submission Received!</h2>
+                        <p>Thank you for your submission. We have received your artwork and details successfully.</p>
+                        <p>You will receive an email confirmation shortly with more information about the next steps.</p>
+                        <button type="button" class="cf7as-btn cf7as-btn-primary cf7as-close-success">Close</button>
+                    </div>
+                </div>
+            `;
+            
+            $('body').append(successHtml);
+            
+            const popup = $('.cf7as-success-popup');
+            popup.fadeIn(300);
+            
+            popup.find('.cf7as-close-success, .cf7as-success-overlay').on('click', () => {
+                popup.fadeOut(300, () => popup.remove());
+            });
+        }
+        
+        showSubmissionModal() {
+            // Ensure modal is properly positioned for fullscreen
+            this.submissionModal.css({
+                'position': 'fixed',
+                'top': '0',
+                'left': '0',
+                'width': '100vw',
+                'height': '100vh',
+                'margin': '0',
+                'padding': '0',
+                'display': 'flex'
+            }).hide().fadeIn(300);
+            
+            $('body').addClass('cf7as-submission-modal-open');
+            
+            // Prevent body scrolling
+            $('html, body').css({
+                'overflow': 'hidden',
+                'height': '100%',
+                'margin': '0',
+                'padding': '0'
+            });
+        }
+        
+        closeSubmissionModal() {
+            this.submissionModal.fadeOut(300);
+            $('body').removeClass('cf7as-submission-modal-open');
+            
+            // Restore body scrolling
+            $('html, body').css({
+                'overflow': '',
+                'height': '',
+                'margin': '',
+                'padding': ''
+            });
+            
+            // Clean up intervals
+            if (this.uploadCheckInterval) {
+                clearInterval(this.uploadCheckInterval);
+                this.uploadCheckInterval = null;
+            }
+            
+            // Remove event listeners
+            $(document).off('keydown.cf7as-submission');
+        }
+        
+        showModalError(message) {
+            // Remove existing error
+            this.submissionModal.find('.cf7as-modal-error').remove();
+            
+            const errorHtml = `<div class="cf7as-modal-error">${message}</div>`;
+            this.submissionModal.find('.cf7as-submission-body').prepend(errorHtml);
+            
+            setTimeout(() => {
+                this.submissionModal.find('.cf7as-modal-error').fadeOut(() => {
+                    $(this).remove();
+                });
+            }, 5000);
+        }
+        
+        addSubmissionModalStyles() {
+            if ($('#cf7as-submission-modal-styles').length) return;
+            
+            const styles = `
+                <style id="cf7as-submission-modal-styles">
+                .cf7as-submission-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    z-index: 2147483647;
+                    display: flex;
+                    align-items: stretch;
+                    justify-content: stretch;
+                    margin: 0;
+                    padding: 0;
+                }
+                
+                .cf7as-submission-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.9);
+                    z-index: -1;
+                }
+                
+                .cf7as-submission-content {
+                    position: relative;
+                    width: 100vw;
+                    height: 100vh;
+                    max-width: none;
+                    max-height: none;
+                    background: white;
+                    border-radius: 0;
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                    box-shadow: none;
+                }
+                
+                .cf7as-submission-header {
+                    padding: 24px 32px;
+                    border-bottom: 1px solid #e1e5e9;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                }
+                
+                .cf7as-submission-title {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: white !important;
+                }
+                
+                .cf7as-submission-close {
+                    background: none;
+                    border: none;
+                    font-size: 32px;
+                    color: white;
+                    cursor: pointer;
+                    padding: 0;
+                    width: 40px;
+                    height: 40px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                    transition: background-color 0.2s;
+                }
+                
+                .cf7as-submission-close:hover {
+                    background-color: rgba(255,255,255,0.1);
+                }
+                
+                .cf7as-submission-steps {
+                    display: flex;
+                    padding: 24px 32px;
+                    background: #f8f9fa;
+                    border-bottom: 1px solid #e1e5e9;
+                    justify-content: center;
+                    gap: 60px;
+                }
+                
+                .cf7as-step {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 8px;
+                    opacity: 0.5;
+                    transition: opacity 0.3s;
+                }
+                
+                .cf7as-step.active {
+                    opacity: 1;
+                }
+                
+                .cf7as-step.completed {
+                    opacity: 0.8;
+                }
+                
+                .cf7as-step-number {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    background: #dee2e6;
+                    color: #6c757d;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 600;
+                    transition: all 0.3s;
+                }
+                
+                .cf7as-step.active .cf7as-step-number {
+                    background: #667eea;
+                    color: white;
+                }
+                
+                .cf7as-step.completed .cf7as-step-number {
+                    background: #27ae60;
+                    color: white;
+                }
+                
+                .cf7as-step-label {
+                    font-size: 14px;
+                    font-weight: 500;
+                    color: #6c757d;
+                }
+                
+                .cf7as-step.active .cf7as-step-label {
+                    color: #495057;
+                }
+                
+                .cf7as-submission-body {
+                    flex: 1;
+                    overflow: auto;
+                    position: relative;
+                }
+                
+                .cf7as-submission-step {
+                    padding: 48px 32px 32px 32px;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                @media (max-width: 768px) {
+                    .cf7as-submission-step {
+                        padding: 32px 16px 24px 16px;
+                    }
+                }
+                
+                .cf7as-submission-step h3 {
+                    margin: 0 0 24px 0;
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    text-align: center;
+                }
+                
+                .cf7as-form-fields {
+                    flex: 1;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                    gap: 32px;
+                    margin-bottom: 32px;
+                    padding: 0 16px;
+                    max-width: 1200px;
+                    margin-left: auto;
+                    margin-right: auto;
+                }
+                
+                @media (max-width: 768px) {
+                    .cf7as-form-fields {
+                        grid-template-columns: 1fr;
+                        gap: 24px;
+                        padding: 0 8px;
+                    }
+                }
+                
+                .cf7as-field-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    background: #f8f9fa;
+                    padding: 24px;
+                    border-radius: 12px;
+                    border: 1px solid #e9ecef;
+                    transition: all 0.2s ease;
+                }
+                
+                .cf7as-field-group-full-width {
+                    grid-column: 1 / -1;
+                }
+                
+                @media (max-width: 768px) {
+                    .cf7as-field-group-full-width {
+                        grid-column: 1;
+                    }
+                }
+                
+                .cf7as-field-group:hover {
+                    border-color: #667eea;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+                }
+                
+                .cf7as-field-group:focus-within {
+                    border-color: #667eea;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+                    background: #ffffff;
+                }
+                
+                .cf7as-field-group label {
+                    font-weight: 600;
+                    color: #2c3e50;
+                    font-size: 15px;
+                    margin-bottom: 4px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    font-size: 12px;
+                }
+                
+                .cf7as-field-group input,
+                .cf7as-field-group textarea,
+                .cf7as-field-group select {
+                    padding: 16px 20px;
+                    border: 2px solid transparent;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    background: #ffffff;
+                    transition: all 0.2s ease;
+                    font-family: inherit;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+                
+                .cf7as-field-group textarea {
+                    min-height: 120px;
+                    resize: vertical;
+                    line-height: 1.6;
+                    font-family: inherit;
+                }
+                
+                .cf7as-textarea-large {
+                    min-height: 180px !important;
+                }
+                
+                .cf7as-field-group input:focus,
+                .cf7as-field-group textarea:focus,
+                .cf7as-field-group select:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+                    transform: translateY(-1px);
+                }
+                
+                .cf7as-field-group input.cf7as-field-error,
+                .cf7as-field-group textarea.cf7as-field-error,
+                .cf7as-field-group select.cf7as-field-error {
+                    border-color: #e74c3c;
+                    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
+                    background: #fdf2f2;
+                }
+                
+                .cf7as-field-group:has(.cf7as-field-error) {
+                    border-color: #e74c3c;
+                    background: #fdf2f2;
+                }
+                
+                .cf7as-step-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding-top: 24px;
+                    padding-bottom: 32px;
+                    border-top: 1px solid #e1e5e9;
+                    gap: 16px;
+                }
+                
+                .cf7as-btn {
+                    padding: 12px 24px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                    text-decoration: none;
+                }
+                
+                .cf7as-btn-primary {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                }
+                
+                .cf7as-btn-primary:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                }
+                
+                .cf7as-btn-secondary {
+                    background: #6c757d;
+                    color: white;
+                }
+                
+                .cf7as-btn-secondary:hover {
+                    background: #5a6268;
+                }
+                
+                .cf7as-btn-success {
+                    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                    color: white;
+                }
+                
+                .cf7as-btn-success:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+                }
+                
+                .cf7as-upload-container {
+                    flex: 1;
+                    position: relative;
+                }
+                
+                .cf7as-modal-body-inner {
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    position: relative;
+                }
+                
+                .cf7as-upload-area {
+                    width: 100%;
+                    min-height: 300px;
+                    background: #f8f9fa;
+                    border: 2px dashed #dee2e6;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.3s ease;
+                    margin-bottom: 24px;
+                }
+                
+                /* When files are added, show the layout */
+                .cf7as-modal-body-inner.has-files {
+                    display: grid !important;
+                    grid-template-columns: 1fr 350px;
+                    gap: 24px;
+                    padding: 24px;
+                }
+                
+                .cf7as-modal-body-inner.has-files .cf7as-upload-area {
+                    grid-column: 1 / -1;
+                    min-height: 150px;
+                    margin-bottom: 0;
+                }
+                
+                .cf7as-modal-body-inner.has-files .cf7as-work-content {
+                    grid-column: 1;
+                    display: block !important;
+                }
+                
+                .cf7as-modal-body-inner.has-files .cf7as-work-editor {
+                    grid-column: 2;
+                    margin-top: 0;
+                }
+                
+                .cf7as-upload-area:hover {
+                    border-color: #667eea;
+                    background: #f0f4ff;
+                }
+                
+                .cf7as-upload-area.cf7as-dragover {
+                    border-color: #667eea;
+                    background: #e8f0fe;
+                    transform: scale(1.02);
+                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+                }
+                
+                .cf7as-upload-prompt {
+                    text-align: center;
+                    padding: 40px 20px;
+                }
+                
+                .cf7as-upload-icon {
+                    margin-bottom: 16px;
+                    color: #6c757d;
+                }
+                
+                .cf7as-upload-text h3 {
+                    margin: 0 0 8px 0;
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                }
+                
+                .cf7as-upload-text p {
+                    margin: 8px 0;
+                    color: #6c757d;
+                    font-size: 16px;
+                }
+                
+                .cf7as-upload-text small {
+                    display: block;
+                    margin-top: 8px;
+                    color: #9ca3af;
+                    font-size: 14px;
+                }
+                
+                .cf7as-browse-btn {
+                    background: none;
+                    border: none;
+                    color: #667eea;
+                    font-weight: 600;
+                    text-decoration: underline;
+                    cursor: pointer;
+                    font-size: inherit;
+                }
+                
+                .cf7as-submission-summary {
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 24px;
+                    margin-top: 24px;
+                }
+                
+                .cf7as-summary-section {
+                    margin-bottom: 24px;
+                }
+                
+                .cf7as-summary-section:last-child {
+                    margin-bottom: 0;
+                }
+                
+                .cf7as-summary-section h4 {
+                    margin: 0 0 12px 0;
+                    color: #2c3e50;
+                    font-size: 16px;
+                    font-weight: 600;
+                }
+                
+                .cf7as-summary-section p {
+                    margin: 8px 0;
+                    font-size: 14px;
+                    color: #495057;
+                }
+                
+                .cf7as-modal-error {
+                    background: #f8d7da;
+                    color: #721c24;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    margin-bottom: 24px;
+                    border: 1px solid #f5c6cb;
+                }
+                
+                .cf7as-spinner {
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid transparent;
+                    border-top: 2px solid currentColor;
+                    border-radius: 50%;
+                    animation: cf7as-spin 1s linear infinite;
+                }
+                
+                @keyframes cf7as-spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                
+                .cf7as-success-popup {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    z-index: 2147483648;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .cf7as-success-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.6);
+                }
+                
+                .cf7as-success-content {
+                    position: relative;
+                    background: white;
+                    padding: 48px;
+                    border-radius: 16px;
+                    text-align: center;
+                    max-width: 500px;
+                    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+                }
+                
+                .cf7as-success-icon {
+                    margin-bottom: 24px;
+                }
+                
+                .cf7as-success-content h2 {
+                    color: #27ae60;
+                    margin: 0 0 16px 0;
+                    font-size: 28px;
+                    font-weight: 600;
+                }
+                
+                .cf7as-success-content p {
+                    color: #6c757d;
+                    margin: 16px 0;
+                    line-height: 1.6;
+                }
+                
+                body.cf7as-submission-modal-open {
+                    overflow: hidden;
+                }
+                
+                .cf7as-work-content {
+                    display: none; /* Hidden by default */
+                    flex: 1;
+                    padding: 16px;
+                    overflow-y: auto;
+                }
+                
+                .cf7as-work-grid-container {
+                    width: 100%;
+                }
+                
+                .cf7as-work-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 16px;
+                    padding: 16px 0;
+                }
+                
+                .cf7as-work-item {
+                    background: #f8f9fa;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    padding: 16px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+                
+                .cf7as-work-item:hover {
+                    border-color: #667eea;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+                }
+                
+                .cf7as-work-item.selected {
+                    border-color: #667eea;
+                    background: #f0f4ff;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+                }
+                
+                .cf7as-work-preview {
+                    text-align: center;
+                    margin-bottom: 12px;
+                    color: #6c757d;
+                    position: relative;
+                    height: 120px;
+                    overflow: hidden;
+                    border-radius: 6px;
+                    background: #e9ecef;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .cf7as-work-preview img,
+                .cf7as-work-preview video {
+                    max-width: 100%;
+                    max-height: 100%;
+                    object-fit: cover;
+                    border-radius: 4px;
+                }
+                
+                .cf7as-work-preview .cf7as-file-icon {
+                    opacity: 0.5;
+                }
+                
+                .cf7as-work-status-badge {
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                    text-transform: uppercase;
+                }
+                
+                .cf7as-progress-overlay {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: rgba(0,0,0,0.1);
+                    border-radius: 0 0 6px 6px;
+                }
+                
+                .cf7as-progress-fill {
+                    height: 100%;
+                    background: #667eea;
+                    border-radius: 0 0 6px 6px;
+                    transition: width 0.3s ease;
+                }
+                
+                .cf7as-work-info {
+                    text-align: center;
+                }
+                
+                .cf7as-work-title-display {
+                    font-weight: 600;
+                    color: #2c3e50;
+                    margin-bottom: 4px;
+                    font-size: 14px;
+                }
+                
+                .cf7as-work-filename {
+                    color: #6c757d;
+                    font-size: 12px;
+                    margin-bottom: 4px;
+                    word-break: break-word;
+                }
+                
+                .cf7as-work-size {
+                    color: #9ca3af;
+                    font-size: 11px;
+                }
+                
+                .cf7as-work-editor {
+                    background: #f8f9fa;
+                    border: 1px solid #e9ecef;
+                    border-radius: 8px;
+                    padding: 24px;
+                    margin-top: 24px;
+                }
+                
+                .cf7as-editor-header {
+                    text-align: center;
+                    margin-bottom: 24px;
+                }
+                
+                .cf7as-editor-title {
+                    margin: 0 0 8px 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                }
+                
+                .cf7as-editor-subtitle {
+                    margin: 0;
+                    color: #6c757d;
+                    font-size: 14px;
+                }
+                
+                .cf7as-editor-field {
+                    margin-bottom: 16px;
+                }
+                
+                .cf7as-editor-field label {
+                    display: block;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    margin-bottom: 8px;
+                    font-size: 14px;
+                }
+                
+                .cf7as-editor-field input,
+                .cf7as-editor-field textarea {
+                    width: 100%;
+                    padding: 12px 16px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    transition: border-color 0.2s;
+                    box-sizing: border-box;
+                }
+                
+                .cf7as-editor-field input:focus,
+                .cf7as-editor-field textarea:focus {
+                    outline: none;
+                    border-color: #667eea;
+                }
+                
+                .cf7as-editor-actions {
+                    display: flex;
+                    gap: 12px;
+                    justify-content: center;
+                    margin-top: 24px;
+                }
+                
+                .cf7as-upload-single-btn,
+                .cf7as-remove-single-btn {
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .cf7as-upload-single-btn {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                }
+                
+                .cf7as-upload-single-btn:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                }
+                
+                .cf7as-upload-single-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+                
+                .cf7as-remove-single-btn {
+                    background: #dc3545;
+                    color: white;
+                }
+                
+                .cf7as-remove-single-btn:hover:not(:disabled) {
+                    background: #c82333;
+                }
+                
+                .cf7as-remove-single-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+                </style>
+            `;
+            
+            $('head').append(styles);
         }
         
         async uploadAllThenSubmit() {
@@ -597,9 +2192,22 @@
                     continue;
                 }
                 
-                // Check file type
-                if (!this.isAllowedType(file.type)) {
-                    this.showError(`File type "${file.type}" not allowed for "${file.name}"`);
+                // Check file type with fallback to extension detection
+                console.log('File type debug:', {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size
+                });
+                
+                let mimeType = file.type;
+                if (!mimeType || mimeType === '') {
+                    // Fallback to file extension detection
+                    mimeType = this.getMimeTypeFromExtension(file.name);
+                    console.log('Using fallback MIME type:', mimeType);
+                }
+                
+                if (!this.isAllowedType(mimeType)) {
+                    this.showError(`File type "${mimeType}" not allowed for "${file.name}"`);
                     continue;
                 }
                 
@@ -615,7 +2223,7 @@
                     file: file,
                     name: file.name,
                     size: file.size,
-                    type: file.type,
+                    type: mimeType, // Use the detected/fallback MIME type
                     status: 'pending', // pending, uploading, uploaded, error
                     progress: 0,
                     s3Key: null,
@@ -633,13 +2241,27 @@
                 };
                 
                 this.files.push(fileData);
+                console.log('Calling renderWorkItem for:', fileData.name);
                 this.renderWorkItem(fileData);
             }
             
+            console.log('About to call updateUI with files.length:', this.files.length);
             this.updateUI();
+            
+            // Log final modal state after updateUI
+            console.log('Final DOM state after updateUI:');
+            if (this.modalBody && this.modalBody.length > 0) {
+                console.log('- modalBody final classes:', this.modalBody[0].className);
+                console.log('- modalBody has has-files class:', this.modalBody.hasClass('has-files'));
+                
+                const finalStyle = window.getComputedStyle(this.modalBody[0]);
+                console.log('- modalBody final computed styles:');
+                console.log('  - display:', finalStyle.display);
+            }
             
             // Select first file if none selected
             if (this.files.length > 0 && !this.selectedFileId) {
+                console.log('Auto-selecting first file:', this.files[0].name);
                 this.selectWorkItem(this.files[0].id);
             }
             console.log('Total files after adding:', this.files.length);
@@ -655,6 +2277,33 @@
                    });
         }
         
+        getMimeTypeFromExtension(filename) {
+            const extension = filename.toLowerCase().split('.').pop();
+            const mimeMap = {
+                // Images
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'webp': 'image/webp',
+                'svg': 'image/svg+xml',
+                // Videos
+                'mp4': 'video/mp4',
+                'avi': 'video/avi',
+                'mov': 'video/mov',
+                'wmv': 'video/wmv',
+                'webm': 'video/webm',
+                // Documents
+                'pdf': 'application/pdf',
+                'doc': 'application/msword',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'txt': 'text/plain',
+                'rtf': 'application/rtf'
+            };
+            
+            return mimeMap[extension] || 'application/octet-stream';
+        }
+        
         generateFileId() {
             return 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
@@ -664,6 +2313,9 @@
         }
         
         renderWorkItem(fileData) {
+            console.log('renderWorkItem called for:', fileData.name);
+            console.log('Work grid element:', this.workGrid, 'Length:', this.workGrid ? this.workGrid.length : 'undefined');
+            
             const fileSize = this.formatBytes(fileData.size);
             const fileIcon = this.getFileIcon(fileData.type);
             
@@ -714,12 +2366,43 @@
                 this.selectWorkItem(fileData.id);
             });
             
+            console.log('Appending work element to work grid');
+            console.log('Work element HTML:', workItemHtml);
             this.workGrid.append(workElement);
+            console.log('Work grid children after append:', this.workGrid.children().length);
+            
+            // Log DOM state after rendering work item
+            console.log('DOM Debug after renderWorkItem:');
+            console.log('- Work grid HTML content:', this.workGrid.html().substring(0, 200) + '...');
+            console.log('- Work grid computed styles:');
+            if (this.workGrid.length > 0) {
+                const gridStyle = window.getComputedStyle(this.workGrid[0]);
+                console.log('  - display:', gridStyle.display);
+                console.log('  - visibility:', gridStyle.visibility);
+                console.log('  - opacity:', gridStyle.opacity);
+                console.log('  - height:', gridStyle.height);
+                console.log('  - width:', gridStyle.width);
+            }
+            
+            // Log parent containers
+            console.log('- Work content (.cf7as-work-content) styles:');
+            if (this.workContent.length > 0) {
+                const contentStyle = window.getComputedStyle(this.workContent[0]);
+                console.log('  - display:', contentStyle.display);
+                console.log('  - visibility:', contentStyle.visibility);
+                console.log('  - opacity:', contentStyle.opacity);
+            }
         }
         
         selectWorkItem(fileId) {
+            console.log('selectWorkItem called for fileId:', fileId);
             const fileData = this.files.find(f => f.id === fileId);
-            if (!fileData) return;
+            if (!fileData) {
+                console.log('File data not found for fileId:', fileId);
+                return;
+            }
+            
+            console.log('Selecting work item:', fileData.name);
             
             // Update visual selection
             this.workGrid.find('.cf7as-work-item').removeClass('selected');
@@ -742,6 +2425,18 @@
                 this.uploadSingleBtn.text('Uploading...');
             } else {
                 this.uploadSingleBtn.text('Upload This File');
+            }
+            
+            // Log work editor state
+            console.log('Work editor updated:');
+            console.log('- Editor title:', this.workEditor.find('.cf7as-editor-title').text());
+            console.log('- Selected work title input value:', this.selectedWorkTitle.val());
+            console.log('- Work editor visibility:');
+            if (this.workEditor.length > 0) {
+                const editorStyle = window.getComputedStyle(this.workEditor[0]);
+                console.log('  - display:', editorStyle.display);
+                console.log('  - visibility:', editorStyle.visibility);
+                console.log('  - opacity:', editorStyle.opacity);
             }
         }
         
@@ -791,44 +2486,191 @@
         }
         
         updateUI() {
-            // Update file count in button area
-            const fileCount = this.files.length;
-            this.fileSummary.text(fileCount === 0 ? '0 files selected' : 
-                                  fileCount === 1 ? '1 file selected' : 
-                                  `${fileCount} files selected`);
+            console.log('updateUI called, files.length:', this.files.length);
+            console.log('modalBody:', this.modalBody, 'length:', this.modalBody ? this.modalBody.length : 'undefined');
+            
+            // Check if this is a modal context or regular uploader context
+            const isModalContext = this.submissionModal && this.submissionModal.length > 0;
+            
+            // Update file count in button area (only for regular uploader)
+            if (this.fileSummary && this.fileSummary.length > 0) {
+                const fileCount = this.files.length;
+                this.fileSummary.text(fileCount === 0 ? '0 files selected' : 
+                                      fileCount === 1 ? '1 file selected' : 
+                                      `${fileCount} files selected`);
+            }
             
             // Update modal layout based on whether files exist
-            if (this.files.length > 0) {
-                this.modalBody.addClass('has-files');
-            } else {
-                this.modalBody.removeClass('has-files');
-                this.selectedFileId = null;
-            }
-            
-            // Update thumbnails preview
-            this.updateThumbnailsPreview();
-            
-            // Show/hide upload controls
-            if (this.files.length > 0) {
-                this.uploadControls.show();
-                
-                // Show done button if all files are uploaded
-                const uploadedFiles = this.files.filter(f => f.status === 'uploaded').length;
-                if (uploadedFiles === this.files.length && uploadedFiles > 0) {
-                    this.doneBtn.show();
+            if (this.modalBody && this.modalBody.length > 0) {
+                if (this.files.length > 0) {
+                    console.log('Adding has-files class to modalBody (for CSS compatibility)');
+                    this.modalBody.addClass('has-files');
+                    
+                    // Log DOM state after adding class
+                    console.log('DOM Debug after adding has-files:');
+                    console.log('- modalBody classes:', this.modalBody[0].className);
+                    console.log('- modalBody has has-files class:', this.modalBody.hasClass('has-files'));
+                    console.log('- workContent element:', this.workContent.length > 0 ? 'exists' : 'missing');
+                    console.log('- workGrid element:', this.workGrid.length > 0 ? 'exists' : 'missing');
+                    console.log('- workGrid children count:', this.workGrid.children().length);
+                    console.log('- workEditor element:', this.workEditor.length > 0 ? 'exists' : 'missing');
+                    
+                    // Check CSS computed styles
+                    if (this.modalBody.length > 0) {
+                        const computedStyle = window.getComputedStyle(this.modalBody[0]);
+                        console.log('- modalBody computed display:', computedStyle.display);
+                    }
+                    
+                    if (this.workContent.length > 0) {
+                        const workContentStyle = window.getComputedStyle(this.workContent[0]);
+                        console.log('- workContent computed display:', workContentStyle.display);
+                        console.log('- workContent computed visibility:', workContentStyle.visibility);
+                    }
+                    
+                    if (this.workGrid.length > 0) {
+                        const workGridStyle = window.getComputedStyle(this.workGrid[0]);
+                        console.log('- workGrid computed display:', workGridStyle.display);
+                        console.log('- workGrid computed visibility:', workGridStyle.visibility);
+                    }
+                    
+                    if (this.workEditor.length > 0) {
+                        const workEditorStyle = window.getComputedStyle(this.workEditor[0]);
+                        console.log('- workEditor computed display:', workEditorStyle.display);
+                        console.log('- workEditor computed visibility:', workEditorStyle.visibility);
+                    }
                 } else {
-                    this.doneBtn.hide();
+                    console.log('Removing has-files class from modalBody');
+                    this.modalBody.removeClass('has-files');
+                    this.selectedFileId = null;
                 }
-            } else {
-                this.uploadControls.hide();
-                this.doneBtn.hide();
             }
             
-            // Update form data
-            this.updateFormData();
+            // Update thumbnails preview (only if element exists)
+            if (this.thumbnailsPreview && this.thumbnailsPreview.length > 0) {
+                this.updateThumbnailsPreview();
+            } else if (isModalContext && this.workGrid && this.workGrid.length > 0) {
+                // Update work grid for modal context
+                this.updateWorkGrid();
+            }
+            
+            // Show/hide upload controls (only for regular uploader)
+            if (this.uploadControls && this.uploadControls.length > 0) {
+                if (this.files.length > 0) {
+                    this.uploadControls.show();
+                    
+                    // Show done button if all files are uploaded
+                    const uploadedFiles = this.files.filter(f => f.status === 'uploaded').length;
+                    if (uploadedFiles === this.files.length && uploadedFiles > 0) {
+                        if (this.doneBtn && this.doneBtn.length > 0) {
+                            this.doneBtn.show();
+                        }
+                    } else {
+                        if (this.doneBtn && this.doneBtn.length > 0) {
+                            this.doneBtn.hide();
+                        }
+                    }
+                } else {
+                    this.uploadControls.hide();
+                    if (this.doneBtn && this.doneBtn.length > 0) {
+                        this.doneBtn.hide();
+                    }
+                }
+            }
+            
+            // Update form data (only if method exists)
+            if (typeof this.updateFormData === 'function') {
+                this.updateFormData();
+            }
             
             // Enable/disable form submission based on upload status
             this.updateFormSubmissionState();
+        }
+        
+        updateWorkGrid() {
+            if (!this.workGrid || this.workGrid.length === 0) return;
+            
+            if (this.files.length === 0) {
+                this.workGrid.empty();
+                return;
+            }
+            
+            let gridHtml = '';
+            
+            this.files.forEach(fileData => {
+                const statusClass = `cf7as-work-${fileData.status}`;
+                const isSelected = this.selectedFileId === fileData.id;
+                const selectedClass = isSelected ? 'cf7as-work-selected' : '';
+                const workTitle = fileData.workTitle || 'Untitled Work';
+                
+                gridHtml += `
+                    <div class="cf7as-work-item ${statusClass} ${selectedClass}" data-file-id="${fileData.id}">
+                        <div class="cf7as-work-preview">
+                            ${this.getFileIcon(fileData.type)}
+                        </div>
+                        <div class="cf7as-work-info">
+                            <div class="cf7as-work-title">${workTitle}</div>
+                            <div class="cf7as-work-filename">${fileData.name}</div>
+                            <div class="cf7as-work-size">${this.formatBytes(fileData.size)}</div>
+                        </div>
+                        <div class="cf7as-work-status">
+                            ${this.getStatusIcon(fileData.status)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            this.workGrid.html(gridHtml);
+        }
+        
+        updateWorkTitleDisplay(fileId, title) {
+            // Update the title in the work grid
+            const workItem = this.workGrid.find(`[data-file-id="${fileId}"]`);
+            if (workItem.length > 0) {
+                workItem.find('.cf7as-work-title').text(title || 'Untitled Work');
+            }
+        }
+        
+        updateWorkEditor() {
+            if (!this.selectedFileId) {
+                // No file selected, show default state
+                this.selectedWorkTitle.val('');
+                this.selectedWorkStatement.val('');
+                this.uploadSingleBtn.prop('disabled', true);
+                this.removeSingleBtn.prop('disabled', true);
+                return;
+            }
+            
+            const file = this.files.find(f => f.id === this.selectedFileId);
+            if (file) {
+                this.selectedWorkTitle.val(file.workTitle || '');
+                this.selectedWorkStatement.val(file.workStatement || '');
+                this.uploadSingleBtn.prop('disabled', file.status !== 'pending');
+                this.removeSingleBtn.prop('disabled', false);
+            }
+        }
+        
+        selectFile(fileId) {
+            this.selectedFileId = fileId;
+            
+            // Update visual selection in grid
+            this.workGrid.find('.cf7as-work-item').removeClass('cf7as-work-selected');
+            this.workGrid.find(`[data-file-id="${fileId}"]`).addClass('cf7as-work-selected');
+            
+            // Update work editor
+            this.updateWorkEditor();
+        }
+        
+        getStatusIcon(status) {
+            switch (status) {
+                case 'uploading':
+                    return '<div class="cf7as-spinner"></div>';
+                case 'uploaded':
+                    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>';
+                case 'error':
+                    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+                default:
+                    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2"><circle cx="12" cy="12" r="3"></circle></svg>';
+            }
         }
         
         updateThumbnailsPreview() {
@@ -904,18 +2746,22 @@
         }
         
         updateFormData() {
-            // Update hidden input with complete file data including metadata
-            const fileData = this.files.filter(f => f.status === 'uploaded').map(f => ({
-                id: f.id,
-                filename: f.name,
-                size: f.size,
-                type: f.type,
-                s3_key: f.s3Key,
-                work_title: f.workTitle,
-                work_statement: f.workStatement
-            }));
-            
-            this.hiddenInput.val(JSON.stringify(fileData));
+            // Only update hidden input if it exists (regular uploader context)
+            if (this.hiddenInput && this.hiddenInput.length > 0) {
+                // Update hidden input with complete file data including metadata
+                const fileData = this.files.filter(f => f.status === 'uploaded').map(f => ({
+                    id: f.id,
+                    filename: f.name,
+                    size: f.size,
+                    type: f.type,
+                    s3_key: f.s3Key,
+                    work_title: f.workTitle,
+                    work_statement: f.workStatement
+                }));
+                
+                this.hiddenInput.val(JSON.stringify(fileData));
+            }
+            // In modal context, form data is handled by finalizeSubmission method
         }
         
         updateFormSubmissionState() {
