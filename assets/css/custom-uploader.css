@@ -8,6 +8,18 @@
  * @since 1.2.0
  */
 
+/* Submission intro text centering */
+.cf7as-submission-intro p {
+    text-align: center;
+}
+
+/* Protect against Kahlo theme's aggressive paragraph margins */
+body[class*="kahlo-core"] .cf7as-submission-intro p,
+.cf7as-submission-intro p {
+    margin: 0 auto 20px !important;
+    text-align: center !important;
+}
+
 /* ===================================================================
    THEME OVERRIDE PROTECTION - HIGH SPECIFICITY STYLES
    Protects against Kahlo theme's aggressive global CSS
@@ -363,8 +375,51 @@
     border-radius: 0;
 }
 
+/* Submission modal upload area when no files are present */
+.cf7as-upload-container .cf7as-modal-body-inner .cf7as-upload-area:not(.has-files),
+.cf7as-upload-container .cf7as-upload-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    border: 2px dashed #d0d0d0;
+    background: #ffffff;
+}
+
+/* When files are present in submission modal, make upload area compact */
+.cf7as-upload-container .cf7as-modal-body-inner.has-files .cf7as-upload-area {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    padding: 10px;
+    margin: 0;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
 .cf7as-modal-body:not(.has-files) .cf7as-upload-area .cf7as-upload-prompt {
     text-align: center;
+}
+
+/* Submission modal upload prompt styling */
+.cf7as-upload-container .cf7as-upload-area .cf7as-upload-prompt {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
 }
 
 /* Transitioned state - compact in top right */
@@ -408,10 +463,28 @@
 }
 
 .cf7as-upload-area.cf7as-dragover {
-    border-color: #2271b1;
-    background: #e7f3ff;
-    border-style: solid;
-    transform: scale(1.02);
+    border-color: #2271b1 !important;
+    background: #e7f3ff !important;
+    border-style: solid !important;
+    border-width: 3px !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 0 15px rgba(34, 113, 177, 0.3) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* High specificity dragover state for maximum theme protection */
+html body .cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-dragover,
+html body .cf7as-upload-area.cf7as-dragover,
+.cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-dragover,
+.cf7as-upload-area.cf7as-dragover.cf7as-dragover {
+    border-color: #2271b1 !important;
+    background: #e7f3ff !important;
+    border-style: solid !important;
+    border-width: 3px !important;
+    transform: scale(1.02) !important;
+    box-shadow: 0 0 15px rgba(34, 113, 177, 0.3) !important;
+    transition: all 0.2s ease !important;
+    opacity: 1 !important;
 }
 
 /* Dynamic drag expansion when files are present - Maximum specificity override */
@@ -927,6 +1000,8 @@ html body .cf7as-modal .cf7as-progress-overlay,
     z-index: 5 !important;
     border-bottom-left-radius: 10px !important;
     border-bottom-right-radius: 10px !important;
+    transform: translateZ(0) !important; /* Force hardware acceleration to prevent flickering */
+    backface-visibility: hidden !important; /* Prevent flickering during transforms */
 }
 
 html body .cf7as-modal .cf7as-progress-overlay .cf7as-progress-fill,
@@ -938,6 +1013,8 @@ html body .cf7as-modal .cf7as-progress-overlay .cf7as-progress-fill,
     border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+    transform: translateZ(0) !important; /* Force hardware acceleration */
+    backface-visibility: hidden !important; /* Prevent flickering */
 }
 
 html body .cf7as-modal .cf7as-work-item.uploaded .cf7as-progress-overlay .cf7as-progress-fill,
@@ -2464,6 +2541,16 @@ button.cf7as-upload-all-btn:disabled:hover {
     padding-bottom: 32px;
     border-top: 1px solid #e1e5e9;
     gap: 16px;
+}
+
+/* Align single button (like continue-to-upload) to the right */
+.cf7as-step-actions:has(button:only-child) {
+    justify-content: flex-end;
+}
+
+/* Fallback for browsers that don't support :has() */
+.cf7as-step-actions .cf7as-continue-to-upload:only-child {
+    margin-left: auto;
 }
 
 .cf7as-btn {

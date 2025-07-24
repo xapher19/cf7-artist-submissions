@@ -38,6 +38,10 @@
             this.dragExpanded = false; // Track drag area expansion state
             this.dragTimeout = null; // For throttling drag events
             
+            // Submission modal drag state
+            this.submissionDragExpanded = false;
+            this.submissionDragTimeout = null;
+            
             this.init();
         }
         
@@ -516,32 +520,32 @@
             
             container.html(uploadHtml);
             
-            // Cache new DOM elements
-            this.modalBody = container.find('.cf7as-modal-body-inner');
-            this.uploadArea = container.find('.cf7as-upload-area');
-            this.fileInput = container.find('.cf7as-file-input');
-            this.workContent = container.find('.cf7as-work-content');
-            this.workGrid = container.find('.cf7as-work-grid');
-            this.workEditor = container.find('.cf7as-work-editor');
-            this.browseBtn = container.find('.cf7as-browse-btn');
-            this.selectedWorkTitle = container.find('.cf7as-selected-work-title');
-            this.selectedWorkStatement = container.find('.cf7as-selected-work-statement');
-            this.uploadSingleBtn = container.find('.cf7as-upload-single-btn');
-            this.removeSingleBtn = container.find('.cf7as-remove-single-btn');
+            // Cache new DOM elements for submission modal (separate from regular modal)
+            this.submissionModalBody = container.find('.cf7as-modal-body-inner');
+            this.submissionUploadArea = container.find('.cf7as-upload-area');
+            this.submissionFileInput = container.find('.cf7as-file-input');
+            this.submissionWorkContent = container.find('.cf7as-work-content');
+            this.submissionWorkGrid = container.find('.cf7as-work-grid');
+            this.submissionWorkEditor = container.find('.cf7as-work-editor');
+            this.submissionBrowseBtn = container.find('.cf7as-browse-btn');
+            this.submissionSelectedWorkTitle = container.find('.cf7as-selected-work-title');
+            this.submissionSelectedWorkStatement = container.find('.cf7as-selected-work-statement');
+            this.submissionUploadSingleBtn = container.find('.cf7as-upload-single-btn');
+            this.submissionRemoveSingleBtn = container.find('.cf7as-remove-single-btn');
         }
         
         bindModalUploadEvents() {
             const self = this;
             
-            // Work selection
-            this.workGrid.on('click', '.cf7as-work-item', function(e) {
+            // Work selection - use submission modal elements
+            this.submissionWorkGrid.on('click', '.cf7as-work-item', function(e) {
                 e.preventDefault();
                 const fileId = $(this).data('file-id');
                 self.selectFile(fileId);
             });
             
             // Work title input
-            this.selectedWorkTitle.on('input', function() {
+            this.submissionSelectedWorkTitle.on('input', function() {
                 if (self.selectedFileId) {
                     const file = self.files.find(f => f.id === self.selectedFileId);
                     if (file) {
@@ -553,7 +557,7 @@
             });
             
             // Work statement input
-            this.selectedWorkStatement.on('input', function() {
+            this.submissionSelectedWorkStatement.on('input', function() {
                 if (self.selectedFileId) {
                     const file = self.files.find(f => f.id === self.selectedFileId);
                     if (file) {
@@ -563,7 +567,7 @@
             });
             
             // Upload single file
-            this.uploadSingleBtn.on('click', function(e) {
+            this.submissionUploadSingleBtn.on('click', function(e) {
                 e.preventDefault();
                 if (self.selectedFileId) {
                     const file = self.files.find(f => f.id === self.selectedFileId);
@@ -572,7 +576,7 @@
                         // Check if work title is provided
                         if (!file.workTitle || file.workTitle.trim() === '') {
                             self.showError('Please provide a work title before uploading.');
-                            self.selectedWorkTitle.focus();
+                            self.submissionSelectedWorkTitle.focus();
                             return;
                         }
                         
@@ -582,7 +586,7 @@
             });
             
             // Remove single file
-            this.removeSingleBtn.on('click', function(e) {
+            this.submissionRemoveSingleBtn.on('click', function(e) {
                 e.preventDefault();
                 if (self.selectedFileId) {
                     self.removeFile(self.selectedFileId);
@@ -593,46 +597,117 @@
         }
         
         bindSubmissionModalDragEvents() {
-            const uploadArea = this.uploadArea;
-            const fileInput = this.fileInput;
+            const uploadArea = this.submissionUploadArea;
+            const fileInput = this.submissionFileInput;
+            const modal = this.submissionModal;
             
-            // Prevent default drag behaviors on upload area
+            // Debug: Check if elements exist
+            console.log('Binding submission modal drag events');
+            console.log('Upload area found:', uploadArea && uploadArea.length > 0);
+            console.log('File input found:', fileInput && fileInput.length > 0);
+            console.log('Modal found:', modal && modal.length > 0);
+            
+            if (!uploadArea || uploadArea.length === 0) {
+                console.error('Upload area not found for submission modal');
+                return;
+            }
+            
+            if (!modal || modal.length === 0) {
+                console.error('Modal not found for submission modal');
+                return;
+            }
+            
+            // Prevent default drag behaviors globally on the document when modal is open
+            $(document).on('dragenter.submission-modal dragover.submission-modal', (e) => {
+                if (modal.is(':visible')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Document drag event prevented');
+                }
+            });
+            
+            $(document).on('drop.submission-modal', (e) => {
+                if (modal.is(':visible')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Document drop event prevented');
+                }
+            });
+            
+            // Prevent default drag behaviors on upload area (but still allow class changes)
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 uploadArea.on(eventName, (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    console.log(`Upload area ${eventName} event`);
+                    
+                    // Handle dragover class immediately in the same handler
+                    if (eventName === 'dragenter' || eventName === 'dragover') {
+                        console.log(`Adding dragover class on ${eventName}`);
+                        uploadArea.addClass('cf7as-dragover');
+                    } else if (eventName === 'dragleave') {
+                        // Only remove dragover if we're actually leaving the upload area
+                        const rect = uploadArea[0].getBoundingClientRect();
+                        const x = e.originalEvent.clientX;
+                        const y = e.originalEvent.clientY;
+                        
+                        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                            console.log('Removing dragover class on dragleave');
+                            uploadArea.removeClass('cf7as-dragover');
+                        }
+                    } else if (eventName === 'drop') {
+                        console.log('Removing dragover class on drop');
+                        uploadArea.removeClass('cf7as-dragover');
+                    }
                 });
             });
             
-            // Drag enter and over on upload area
-            ['dragenter', 'dragover'].forEach(eventName => {
-                uploadArea.on(eventName, (e) => {
-                    uploadArea.addClass('cf7as-dragover');
-                });
+            // Remove the duplicate event handlers - handle everything in one place
+            // Also bind to the modal container as fallback using event delegation
+            modal.on('dragenter dragover dragleave drop', '.cf7as-upload-area', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`Delegated upload area ${e.type} event`);
+                
+                const target = $(e.currentTarget);
+                
+                if (e.type === 'dragenter' || e.type === 'dragover') {
+                    console.log(`Delegated: Adding dragover class on ${e.type}`);
+                    target.addClass('cf7as-dragover');
+                } else if (e.type === 'dragleave') {
+                    // Only remove if leaving the element bounds
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.originalEvent.clientX;
+                    const y = e.originalEvent.clientY;
+                    
+                    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                        console.log('Delegated: Removing dragover class on dragleave');
+                        target.removeClass('cf7as-dragover');
+                    }
+                } else if (e.type === 'drop') {
+                    console.log('Delegated: Removing dragover class on drop');
+                    target.removeClass('cf7as-dragover');
+                    
+                    // Handle the file drop
+                    const files = e.originalEvent.dataTransfer.files;
+                    console.log('Files dropped on upload area (delegated):', files.length);
+                    if (files && files.length > 0) {
+                        this.addFiles(files);
+                    }
+                }
             });
             
-            // Drag leave on upload area
-            uploadArea.on('dragleave', (e) => {
-                uploadArea.removeClass('cf7as-dragover');
+            // Add click test to verify element is interactive
+            uploadArea.on('click', (e) => {
+                console.log('Upload area clicked - element is interactive');
             });
-            
-            // Drop on upload area
-            uploadArea.on('drop', (e) => {
-                console.log('Drop event on upload area');
-                uploadArea.removeClass('cf7as-dragover');
-                const files = e.originalEvent.dataTransfer.files;
-                console.log('Files dropped on upload area:', files.length);
-                this.addFiles(files);
-            });
-            
-            // Bind viewport-level drag events for files dragged anywhere in the modal
-            const modal = this.submissionModal;
             
             // Prevent default drag behaviors on entire modal
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 modal.on(eventName, (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    console.log(`Modal ${eventName} event`);
                 });
             });
             
@@ -642,34 +717,61 @@
                 const files = e.originalEvent.dataTransfer.files;
                 console.log('Files dropped on modal:', files.length);
                 if (files && files.length > 0) {
-                    uploadArea.removeClass('cf7as-dragover');
+                    // Collapse drag area immediately after drop
+                    if (this.submissionDragExpanded) {
+                        this.collapseSubmissionModalDragAreaImmediate();
+                    } else {
+                        uploadArea.removeClass('cf7as-dragover');
+                    }
                     this.addFiles(files);
                 }
             });
             
             // Visual feedback when dragging over modal
             modal.on('dragenter dragover', (e) => {
-                if (e.originalEvent.dataTransfer.types.includes('Files')) {
+                const dt = e.originalEvent.dataTransfer;
+                const hasFiles = dt && (dt.types.includes('Files') || dt.types.includes('application/x-moz-file') || dt.files.length > 0);
+                
+                console.log('Drag over modal - dataTransfer types:', dt ? dt.types : 'no dataTransfer');
+                console.log('Has files:', hasFiles);
+                
+                if (hasFiles) {
                     console.log('Files detected in drag over modal');
-                    uploadArea.addClass('cf7as-dragover');
+                    
+                    // If there are already files present, expand the drag area to fill the modal
+                    if (this.files.length > 0) {
+                        // Only expand if not already expanded to prevent repeated calls
+                        if (!this.submissionDragExpanded) {
+                            this.expandSubmissionModalDragArea();
+                        }
+                    } else {
+                        // Just show dragover state for empty modal
+                        uploadArea.addClass('cf7as-dragover');
+                    }
                 }
             });
             
             modal.on('dragleave', (e) => {
-                // Only remove dragover if we're leaving the modal entirely
-                if (!modal[0].contains(e.originalEvent.relatedTarget)) {
-                    uploadArea.removeClass('cf7as-dragover');
+                // Only handle dragleave if we're leaving the modal entirely
+                const relatedTarget = e.originalEvent.relatedTarget;
+                if (!relatedTarget || !modal[0].contains(relatedTarget)) {
+                    if (this.files.length > 0) {
+                        // Use delayed collapse to prevent flickering during rapid events
+                        this.collapseSubmissionModalDragArea();
+                    } else {
+                        uploadArea.removeClass('cf7as-dragover');
+                    }
                 }
             });
             
             // Browse button click
-            this.browseBtn.on('click', (e) => {
+            this.submissionBrowseBtn.on('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Browse button clicked, triggering file input');
-                console.log('File input element:', this.fileInput.length);
-                if (this.fileInput.length > 0) {
-                    this.fileInput[0].click();
+                console.log('File input element:', this.submissionFileInput.length);
+                if (this.submissionFileInput.length > 0) {
+                    this.submissionFileInput[0].click();
                 } else {
                     console.error('File input not found');
                 }
@@ -855,8 +957,14 @@
                 this.uploadCheckInterval = null;
             }
             
+            // Clean up submission modal drag area
+            if (this.submissionDragExpanded) {
+                this.collapseSubmissionModalDragAreaImmediate();
+            }
+            
             // Remove event listeners
             $(document).off('keydown.cf7as-submission');
+            $(document).off('dragenter.submission-modal dragover.submission-modal drop.submission-modal');
         }
         
         showModalError(message) {
@@ -1083,6 +1191,120 @@
             
             // Reset inline styles immediately
             this.uploadArea.css({
+                'position': '',
+                'top': '',
+                'left': '',
+                'right': '',
+                'bottom': '',
+                'width': '',
+                'height': '',
+                'z-index': '',
+                'background': '',
+                'border': '',
+                'border-radius': '',
+                'margin': '',
+                'padding': '',
+                'display': '',
+                'align-items': '',
+                'justify-content': '',
+                'transform': '',
+                'transition': '',
+                'box-shadow': ''
+            });
+        }
+        
+        // Submission modal drag area expansion methods
+        expandSubmissionModalDragArea() {
+            if (this.submissionDragExpanded) return; // Already expanded
+            
+            // Clear any pending collapse timeout
+            if (this.submissionDragTimeout) {
+                clearTimeout(this.submissionDragTimeout);
+                this.submissionDragTimeout = null;
+            }
+            
+            this.submissionDragExpanded = true;
+            this.submissionUploadArea.addClass('cf7as-drag-expanded');
+            
+            // Force inline styles for full modal coverage
+            this.submissionUploadArea.css({
+                'position': 'fixed',
+                'top': '0',
+                'left': '0',
+                'right': '0',
+                'bottom': '0',
+                'width': '100vw',
+                'height': '100vh',
+                'z-index': '2147483649', // Higher than regular modal
+                'background': 'rgba(59, 130, 246, 0.1)',
+                'border': '3px dashed #3b82f6',
+                'border-radius': '0',
+                'margin': '0',
+                'padding': '0',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'transform': 'none',
+                'transition': 'none',
+                'box-shadow': 'none'
+            });
+        }
+        
+        collapseSubmissionModalDragArea() {
+            if (!this.submissionDragExpanded) return; // Already collapsed
+            
+            // Clear any existing timeout
+            if (this.submissionDragTimeout) {
+                clearTimeout(this.submissionDragTimeout);
+            }
+            
+            // Add a small delay to prevent flickering during rapid events
+            this.submissionDragTimeout = setTimeout(() => {
+                this.submissionDragExpanded = false;
+                this.submissionUploadArea.removeClass('cf7as-drag-expanded');
+                
+                // Reset inline styles
+                this.submissionUploadArea.css({
+                    'position': '',
+                    'top': '',
+                    'left': '',
+                    'right': '',
+                    'bottom': '',
+                    'width': '',
+                    'height': '',
+                    'z-index': '',
+                    'background': '',
+                    'border': '',
+                    'border-radius': '',
+                    'margin': '',
+                    'padding': '',
+                    'display': '',
+                    'align-items': '',
+                    'justify-content': '',
+                    'transform': '',
+                    'transition': '',
+                    'box-shadow': ''
+                });
+                
+                this.submissionDragTimeout = null;
+            }, 200);
+        }
+        
+        collapseSubmissionModalDragAreaImmediate() {
+            if (!this.submissionDragExpanded) return; // Already collapsed
+            
+            // Clear any pending timeout
+            if (this.submissionDragTimeout) {
+                clearTimeout(this.submissionDragTimeout);
+                this.submissionDragTimeout = null;
+            }
+            
+            // Collapse immediately
+            this.submissionDragExpanded = false;
+            this.submissionUploadArea.removeClass('cf7as-drag-expanded');
+            
+            // Reset inline styles immediately
+            this.submissionUploadArea.css({
                 'position': '',
                 'top': '',
                 'left': '',
@@ -1417,10 +1639,16 @@
         }
         
         addFiles(fileList) {
-            console.log('Adding files:', fileList.length);
+            console.log('addFiles called with:', fileList ? fileList.length : 'null', 'files');
+            
+            if (!fileList || fileList.length === 0) {
+                console.log('No files to add');
+                return;
+            }
             
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
+                console.log('Processing file:', file.name, 'type:', file.type, 'size:', file.size);
                 
                 // Check file count limit
                 if (this.files.length >= this.options.maxFiles) {
@@ -1435,17 +1663,11 @@
                 }
                 
                 // Check file type with fallback to extension detection
-                console.log('File type debug:', {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size
-                });
-                
                 let mimeType = file.type;
+                
                 if (!mimeType || mimeType === '') {
                     // Fallback to file extension detection
                     mimeType = this.getMimeTypeFromExtension(file.name);
-                    console.log('Using fallback MIME type:', mimeType);
                 }
                 
                 if (!this.isAllowedType(mimeType)) {
@@ -1482,40 +1704,16 @@
                     uploadId: null // For multipart upload
                 };
                 
-                console.log('📝 Created fileData object:', {
-                    id: fileData.id,
-                    name: fileData.name,
-                    type: fileData.type,
-                    status: fileData.status,
-                    size: fileData.size
-                });
-                
                 this.files.push(fileData);
-                console.log('📚 Total files now:', this.files.length);
-                console.log('Calling renderWorkItem for:', fileData.name);
                 this.renderWorkItem(fileData);
             }
             
-            console.log('About to call updateUI with files.length:', this.files.length);
             this.updateUI();
-            
-            // Log final modal state after updateUI
-            console.log('Final DOM state after updateUI:');
-            if (this.modalBody && this.modalBody.length > 0) {
-                console.log('- modalBody final classes:', this.modalBody[0].className);
-                console.log('- modalBody has has-files class:', this.modalBody.hasClass('has-files'));
-                
-                const finalStyle = window.getComputedStyle(this.modalBody[0]);
-                console.log('- modalBody final computed styles:');
-                console.log('  - display:', finalStyle.display);
-            }
             
             // Select first file if none selected
             if (this.files.length > 0 && !this.selectedFileId) {
-                console.log('Auto-selecting first file:', this.files[0].name);
                 this.selectWorkItem(this.files[0].id);
             }
-            console.log('Total files after adding:', this.files.length);
         }
         
         isAllowedType(mimeType) {
@@ -1530,6 +1728,7 @@
         
         getMimeTypeFromExtension(filename) {
             const extension = filename.toLowerCase().split('.').pop();
+            
             const mimeMap = {
                 // Images
                 'jpg': 'image/jpeg',
@@ -1564,57 +1763,52 @@
         }
         
         renderWorkItem(fileData) {
-            console.log('renderWorkItem called for:', fileData.name);
-            console.log('Work grid element:', this.workGrid, 'Length:', this.workGrid ? this.workGrid.length : 'undefined');
-            
             const fileSize = this.formatBytes(fileData.size);
             const fileIcon = this.getFileIcon(fileData.type);
             
             // Create preview content for different file types
             let previewContent = '';
-            console.log('🖼️ THUMBNAIL DEBUG: Creating preview for file:', fileData.name);
-            console.log('- File type:', fileData.type);
-            console.log('- Is image file:', this.isImageFile(fileData.type));
             
             if (this.isImageFile(fileData.type)) {
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
-                console.log('- Object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
+                
                 if (objectUrl) {
+                    // Properly escape filename for inline event handlers
+                    const escapedName = fileData.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    
                     // Don't immediately revoke the URL, let it persist for thumbnail display
                     // Include fallback icon that shows if image fails to load
                     previewContent = `
                         <img src="${objectUrl}" alt="${this.escapeHtml(fileData.name)}" 
-                            onload="console.log('✅ Image loaded:', '${fileData.name}'); this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
-                            onerror="console.log('❌ Image failed to load:', '${fileData.name}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            onload="this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                             style="opacity:0; transition: opacity 0.3s ease;">
                         <div class="cf7as-file-icon" style="display: flex;">${fileIcon}</div>`;
-                    console.log('- Generated image HTML with fallback icon');
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
-                    console.log('- Using fallback icon only (no object URL)');
                 }
             } else if (fileData.type.startsWith('video/')) {
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
-                console.log('- Video Object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
+                
                 if (objectUrl) {
+                    // Properly escape filename for inline event handlers
+                    const escapedName = fileData.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    
                     previewContent = `
                         <video src="${objectUrl}" muted preload="metadata" 
-                            onloadeddata="console.log('✅ Video loaded:', '${fileData.name}'); this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
-                            onerror="console.log('❌ Video failed to load:', '${fileData.name}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                            style="opacity:0; transition: opacity 0.3s ease;"></video>
-                        <div class="cf7as-file-icon" style="display: flex;">${fileIcon}</div>`;
-                    console.log('- Generated video HTML with fallback icon');
+                            onloadeddata="this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
+                            onloadedmetadata="if(this.readyState >= 1) { this.style.opacity='1'; this.nextElementSibling.style.display='none'; }"
+                            oncanplay="this.style.opacity='1'; this.nextElementSibling.style.display='none';"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            onsuspend="if(this.readyState >= 1) { this.style.opacity='1'; this.nextElementSibling.style.display='none'; }"
+                            style="opacity:0; transition: opacity 0.3s ease; max-width: 100%; max-height: 100%; object-fit: cover;"></video>
+                        <div class="cf7as-file-icon" style="display: none;">${fileIcon}</div>`;
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
-                    console.log('- Using fallback icon only (no video object URL)');
                 }
             } else {
                 previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
-                console.log('- Non-image/video file, using file icon only');
             }
-            console.log('🏷️ STATUS BADGE DEBUG:');
-            console.log('- File status:', fileData.status);
-            console.log('- Status label:', this.getStatusLabel(fileData.status));
             
             const workItemHtml = `
                 <div class="cf7as-work-item" data-file-id="${fileData.id}">
@@ -1636,10 +1830,6 @@
             `;
             
             const workElement = $(workItemHtml);
-            console.log('📋 WORK ELEMENT DEBUG:');
-            console.log('- Work element created:', workElement.length > 0 ? 'SUCCESS' : 'FAILED');
-            console.log('- Work element classes:', workElement.attr('class'));
-            console.log('- Work element data-file-id:', workElement.attr('data-file-id'));
             
             // Add click handler for selection
             workElement.on('click', (e) => {
@@ -1647,151 +1837,71 @@
                 this.selectWorkItem(fileData.id);
             });
             
-            console.log('📦 WORK GRID DEBUG:');
-            console.log('- Work grid exists:', this.workGrid.length > 0 ? 'YES' : 'NO');
-            console.log('- Work grid selector:', this.workGrid.selector);
-            console.log('- Work grid children before append:', this.workGrid.children().length);
+            // Append to the appropriate grid based on which modal is active
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                this.submissionWorkGrid.append(workElement);
+            } else if (this.workGrid && this.workGrid.length > 0) {
+                this.workGrid.append(workElement);
+            }
             
-            this.workGrid.append(workElement);
-            
-            console.log('- Work grid children after append:', this.workGrid.children().length);
-            
-            // Wait a moment for DOM to update, then check CSS
+            // Setup fallback visibility for videos with metadata
             setTimeout(() => {
-                const addedElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
-                console.log('🎨 CSS DEBUG for work item:', fileData.name);
-                console.log('- Element found in DOM:', addedElement.length > 0 ? 'YES' : 'NO');
+                // Find in both grids
+                let appendedElement = null;
+                if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                    appendedElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
+                }
+                if (!appendedElement || appendedElement.length === 0) {
+                    if (this.workGrid && this.workGrid.length > 0) {
+                        appendedElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
+                    }
+                }
                 
-                if (addedElement.length > 0) {
-                    const itemStyle = window.getComputedStyle(addedElement[0]);
-                    console.log('- Work item computed styles:');
-                    console.log('  - display:', itemStyle.display);
-                    console.log('  - width:', itemStyle.width);
-                    console.log('  - height:', itemStyle.height);
-                    console.log('  - position:', itemStyle.position);
-                    console.log('  - overflow:', itemStyle.overflow);
-                    console.log('  - border:', itemStyle.border);
+                if (appendedElement && appendedElement.length > 0) {
+                    const previewDiv = appendedElement.find('.cf7as-work-preview');
                     
-                    const previewElement = addedElement.find('.cf7as-work-preview');
-                    if (previewElement.length > 0) {
-                        const previewStyle = window.getComputedStyle(previewElement[0]);
-                        console.log('- Work preview computed styles:');
-                        console.log('  - display:', previewStyle.display);
-                        console.log('  - width:', previewStyle.width);
-                        console.log('  - height:', previewStyle.height);
-                        console.log('  - background:', previewStyle.background);
-                    }
-                    
-                    const statusBadge = addedElement.find('.cf7as-work-status-badge');
-                    if (statusBadge.length > 0) {
-                        const badgeStyle = window.getComputedStyle(statusBadge[0]);
-                        console.log('- Status badge computed styles:');
-                        console.log('  - display:', badgeStyle.display);
-                        console.log('  - visibility:', badgeStyle.visibility);
-                        console.log('  - opacity:', badgeStyle.opacity);
-                        console.log('  - width:', badgeStyle.width);
-                        console.log('  - height:', badgeStyle.height);
-                        console.log('  - font-size:', badgeStyle.fontSize);
-                        console.log('  - color:', badgeStyle.color);
-                        console.log('  - background:', badgeStyle.background);
-                        console.log('  - z-index:', badgeStyle.zIndex);
-                        console.log('  - position:', badgeStyle.position);
-                        console.log('  - top:', badgeStyle.top);
-                        console.log('  - right:', badgeStyle.right);
-                        console.log('  - text content:', statusBadge.text());
-                    }
-                    
-                    const img = addedElement.find('img');
-                    if (img.length > 0) {
-                        const imgStyle = window.getComputedStyle(img[0]);
-                        console.log('- Image computed styles:');
-                        console.log('  - display:', imgStyle.display);
-                        console.log('  - opacity:', imgStyle.opacity);
-                        console.log('  - width:', imgStyle.width);
-                        console.log('  - height:', imgStyle.height);
-                        console.log('  - src:', img.attr('src'));
-                    }
-                    
-                    const fileIcon = addedElement.find('.cf7as-file-icon');
-                    if (fileIcon.length > 0) {
-                        const iconStyle = window.getComputedStyle(fileIcon[0]);
-                        console.log('- File icon computed styles:');
-                        console.log('  - display:', iconStyle.display);
-                        console.log('  - opacity:', iconStyle.opacity);
-                        console.log('  - width:', iconStyle.width);
-                        console.log('  - height:', iconStyle.height);
+                    if (previewDiv.length > 0) {
+                        const video = previewDiv.find('video');
+                        if (video.length > 0) {
+                            // Check if video failed to load
+                            if (video[0].readyState === 0) {
+                                // Try to force video loading
+                                video[0].load();
+                                
+                                // Set a fallback timeout to show icon if video doesn't load
+                                setTimeout(() => {
+                                    if (video[0].readyState === 0) {
+                                        video.css('display', 'none');
+                                        previewDiv.find('.cf7as-file-icon').css('display', 'flex');
+                                    }
+                                }, 2000);
+                            } else if (video[0].readyState >= 1) {
+                                // Video has metadata, show it after a short delay if events haven't fired
+                                setTimeout(() => {
+                                    if (video.css('opacity') === '0' || video.css('opacity') === 0) {
+                                        video.css('opacity', '1');
+                                        previewDiv.find('.cf7as-file-icon').css('display', 'none');
+                                    }
+                                }, 1000);
+                            }
+                        }
                     }
                 }
             }, 100);
-            // Log DOM state after rendering work item
-            console.log('🏗️ DOM STRUCTURE DEBUG after renderWorkItem:');
-            console.log('- Work grid HTML content length:', this.workGrid.html().length);
-            console.log('- Work grid computed styles:');
-            if (this.workGrid.length > 0) {
-                const gridStyle = window.getComputedStyle(this.workGrid[0]);
-                console.log('  - display:', gridStyle.display);
-                console.log('  - grid-template-columns:', gridStyle.gridTemplateColumns);
-                console.log('  - gap:', gridStyle.gap);
-                console.log('  - visibility:', gridStyle.visibility);
-                console.log('  - opacity:', gridStyle.opacity);
-                console.log('  - height:', gridStyle.height);
-                console.log('  - width:', gridStyle.width);
-                console.log('  - overflow:', gridStyle.overflow);
-                console.log('  - position:', gridStyle.position);
-            }
-            
-            // Log work grid container
-            console.log('- Work grid container (.cf7as-work-grid-container) styles:');
-            const workGridContainer = $('.cf7as-work-grid-container');
-            if (workGridContainer.length > 0) {
-                const containerStyle = window.getComputedStyle(workGridContainer[0]);
-                console.log('  - display:', containerStyle.display);
-                console.log('  - width:', containerStyle.width);
-                console.log('  - height:', containerStyle.height);
-                console.log('  - padding:', containerStyle.padding);
-                console.log('  - overflow-x:', containerStyle.overflowX);
-                console.log('  - overflow-y:', containerStyle.overflowY);
-                console.log('  - flex:', containerStyle.flex);
-            }
-            
-            // Log parent containers
-            console.log('- Work content (.cf7as-work-content) styles:');
-            if (this.workContent.length > 0) {
-                const contentStyle = window.getComputedStyle(this.workContent[0]);
-                console.log('  - display:', contentStyle.display);
-                console.log('  - flex-direction:', contentStyle.flexDirection);
-                console.log('  - visibility:', contentStyle.visibility);
-                console.log('  - opacity:', contentStyle.opacity);
-                console.log('  - height:', contentStyle.height);
-                console.log('  - width:', contentStyle.width);
-            }
-            
-            // Log modal body
-            console.log('- Modal body (.cf7as-modal-body-inner) styles:');
-            const modalBody = $('.cf7as-modal-body-inner');
-            if (modalBody.length > 0) {
-                const modalStyle = window.getComputedStyle(modalBody[0]);
-                console.log('  - display:', modalStyle.display);
-                console.log('  - flex-direction:', modalStyle.flexDirection);
-                console.log('  - height:', modalStyle.height);
-                console.log('  - width:', modalStyle.width);
-                console.log('  - has-files class:', modalBody.hasClass('has-files') ? 'YES' : 'NO');
-            }
         }
         
         selectWorkItem(fileId) {
-            console.log('selectWorkItem called for fileId:', fileId);
             const fileData = this.files.find(f => f.id === fileId);
             if (!fileData) {
-                console.log('File data not found for fileId:', fileId);
                 return;
             }
             
-            console.log('Selecting work item:', fileData.name);
-            
-            // Update visual selection
-            this.workGrid.find('.cf7as-work-item').removeClass('selected');
-            this.workGrid.find(`[data-file-id="${fileId}"]`).addClass('selected');
+            // Update visual selection - check both grids
+            const workGrid = this.submissionWorkGrid && this.submissionWorkGrid.length > 0 ? this.submissionWorkGrid : this.workGrid;
+            if (workGrid && workGrid.length > 0) {
+                workGrid.find('.cf7as-work-item').removeClass('selected');
+                workGrid.find(`[data-file-id="${fileId}"]`).addClass('selected');
+            }
             
             // Update editor panel
             this.selectedFileId = fileId;
@@ -1811,62 +1921,27 @@
             } else {
                 this.uploadSingleBtn.text('Upload This File');
             }
-            
-            // Log work editor state
-            console.log('Work editor updated:');
-            console.log('- Editor title:', this.workEditor.find('.cf7as-editor-title').text());
-            console.log('- Selected work title input value:', this.selectedWorkTitle.val());
-            console.log('- Work editor visibility:');
-            if (this.workEditor.length > 0) {
-                const editorStyle = window.getComputedStyle(this.workEditor[0]);
-                console.log('  - display:', editorStyle.display);
-                console.log('  - visibility:', editorStyle.visibility);
-                console.log('  - opacity:', editorStyle.opacity);
-            }
         }
         
         updateWorkItemDisplay(fileId) {
-            console.log('🔄 UPDATE WORK ITEM DEBUG:', fileId);
             const fileData = this.files.find(f => f.id === fileId);
             if (!fileData) {
-                console.log('❌ File data not found for ID:', fileId);
                 return;
             }
             
-            console.log('- File data found:', fileData.name);
-            console.log('- Current status:', fileData.status);
-            console.log('- Status label:', this.getStatusLabel(fileData.status));
-            
             const workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
-            console.log('- Work element found:', workElement.length > 0 ? 'YES' : 'NO');
             
             if (workElement.length > 0) {
                 // Update title display
                 workElement.find('.cf7as-work-title-display').text(fileData.workTitle || 'Untitled Work');
                 
                 // Update status
-                console.log('- Removing old status classes and adding:', fileData.status);
                 workElement.removeClass('pending uploading uploaded error').addClass(fileData.status);
                 
                 const statusBadge = workElement.find('.cf7as-work-status-badge');
-                console.log('- Status badge found:', statusBadge.length > 0 ? 'YES' : 'NO');
                 if (statusBadge.length > 0) {
                     const newText = this.getStatusLabel(fileData.status);
                     statusBadge.text(newText);
-                    console.log('- Status badge text updated to:', newText);
-                    
-                    // Check CSS after update
-                    setTimeout(() => {
-                        const badgeStyle = window.getComputedStyle(statusBadge[0]);
-                        console.log('- Status badge CSS after update:');
-                        console.log('  - display:', badgeStyle.display);
-                        console.log('  - visibility:', badgeStyle.visibility);
-                        console.log('  - opacity:', badgeStyle.opacity);
-                        console.log('  - background:', badgeStyle.background);
-                        console.log('  - font-size:', badgeStyle.fontSize);
-                        console.log('  - color:', badgeStyle.color);
-                        console.log('  - actual text:', statusBadge.text());
-                    }, 50);
                 }
                 
                 // Update progress
@@ -1886,48 +1961,33 @@
                 'uploaded': 'Complete',
                 'error': 'Failed'
             };
-            const label = statusLabels[status] || status;
-            console.log('🏷️ getStatusLabel:', status, '→', label);
-            return label;
+            return statusLabels[status] || status;
         }
         
         getFileIcon(mimeType) {
-            console.log('🎨 getFileIcon called with mimeType:', mimeType);
-            let icon;
-            
             if (mimeType.startsWith('image/')) {
-                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21,15 16,10 5,21"></polyline>
                 </svg>`;
-                console.log('  → Image icon generated');
             } else if (mimeType.startsWith('video/')) {
-                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="23,7 16,12 23,17"></polygon>
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                 </svg>`;
-                console.log('  → Video icon generated');
             } else if (mimeType === 'application/pdf') {
-                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"></path>
                 </svg>`;
-                console.log('  → PDF icon generated');
             } else {
-                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"></path>
                 </svg>`;
-                console.log('  → Generic file icon generated');
             }
-            
-            console.log('  → Icon HTML length:', icon.length);
-            return icon;
         }
         
         updateUI() {
-            console.log('updateUI called, files.length:', this.files.length);
-            console.log('modalBody:', this.modalBody, 'length:', this.modalBody ? this.modalBody.length : 'undefined');
-            
             // Check if this is a modal context or regular uploader context
             const isModalContext = this.submissionModal && this.submissionModal.length > 0;
             
@@ -1942,44 +2002,19 @@
             // Update modal layout based on whether files exist
             if (this.modalBody && this.modalBody.length > 0) {
                 if (this.files.length > 0) {
-                    console.log('Adding has-files class to modalBody (for CSS compatibility)');
                     this.modalBody.addClass('has-files');
-                    
-                    // Log DOM state after adding class
-                    console.log('DOM Debug after adding has-files:');
-                    console.log('- modalBody classes:', this.modalBody[0].className);
-                    console.log('- modalBody has has-files class:', this.modalBody.hasClass('has-files'));
-                    console.log('- workContent element:', this.workContent.length > 0 ? 'exists' : 'missing');
-                    console.log('- workGrid element:', this.workGrid.length > 0 ? 'exists' : 'missing');
-                    console.log('- workGrid children count:', this.workGrid.children().length);
-                    console.log('- workEditor element:', this.workEditor.length > 0 ? 'exists' : 'missing');
-                    
-                    // Check CSS computed styles
-                    if (this.modalBody.length > 0) {
-                        const computedStyle = window.getComputedStyle(this.modalBody[0]);
-                        console.log('- modalBody computed display:', computedStyle.display);
-                    }
-                    
-                    if (this.workContent.length > 0) {
-                        const workContentStyle = window.getComputedStyle(this.workContent[0]);
-                        console.log('- workContent computed display:', workContentStyle.display);
-                        console.log('- workContent computed visibility:', workContentStyle.visibility);
-                    }
-                    
-                    if (this.workGrid.length > 0) {
-                        const workGridStyle = window.getComputedStyle(this.workGrid[0]);
-                        console.log('- workGrid computed display:', workGridStyle.display);
-                        console.log('- workGrid computed visibility:', workGridStyle.visibility);
-                    }
-                    
-                    if (this.workEditor.length > 0) {
-                        const workEditorStyle = window.getComputedStyle(this.workEditor[0]);
-                        console.log('- workEditor computed display:', workEditorStyle.display);
-                        console.log('- workEditor computed visibility:', workEditorStyle.visibility);
-                    }
                 } else {
-                    console.log('Removing has-files class from modalBody');
                     this.modalBody.removeClass('has-files');
+                    this.selectedFileId = null;
+                }
+            }
+            
+            // Update submission modal layout separately if it exists
+            if (this.submissionModalBody && this.submissionModalBody.length > 0) {
+                if (this.files.length > 0) {
+                    this.submissionModalBody.addClass('has-files');
+                } else {
+                    this.submissionModalBody.removeClass('has-files');
                     this.selectedFileId = null;
                 }
             }
@@ -1987,9 +2022,6 @@
             // Update thumbnails preview (only if element exists)
             if (this.thumbnailsPreview && this.thumbnailsPreview.length > 0) {
                 this.updateThumbnailsPreview();
-            } else if (isModalContext && this.workGrid && this.workGrid.length > 0) {
-                // Update work grid for modal context
-                this.updateWorkGrid();
             }
             
             // Show/hide upload controls (only for regular uploader)
@@ -2026,181 +2058,75 @@
         }
         
         updateWorkGrid() {
-            console.log('🔄 updateWorkGrid() called');
-            console.log('- workGrid element exists:', this.workGrid && this.workGrid.length > 0);
-            console.log('- files array length:', this.files.length);
-            
-            if (!this.workGrid || this.workGrid.length === 0) {
-                console.log('❌ No workGrid element found, returning');
-                return;
-            }
-            
-            if (this.files.length === 0) {
-                console.log('📂 No files to display, emptying grid');
-                this.workGrid.empty();
-                return;
-            }
-            
-            console.log('📝 Building grid HTML for', this.files.length, 'files');
-            let gridHtml = '';
-            
-            this.files.forEach((fileData, index) => {
-                const statusClass = `cf7as-work-${fileData.status}`;
-                const isSelected = this.selectedFileId === fileData.id;
-                const selectedClass = isSelected ? 'cf7as-work-selected' : '';
-                const workTitle = fileData.workTitle || 'Untitled Work';
-                
-                console.log(`📦 File ${index + 1}/${this.files.length}:`, {
-                    id: fileData.id,
-                    name: fileData.name,
-                    status: fileData.status,
-                    statusClass: statusClass,
-                    isSelected: isSelected,
-                    workTitle: workTitle
-                });
-                
-                const fileIcon = this.getFileIcon(fileData.type);
-                const statusIcon = this.getStatusIcon(fileData.status);
-                const statusLabel = this.getStatusLabel(fileData.status);
-                
-                console.log(`  - File icon HTML:`, fileIcon.substring(0, 100) + '...');
-                console.log(`  - Status icon HTML:`, statusIcon.substring(0, 100) + '...');
-                console.log(`  - Status label:`, statusLabel);
-                
-                gridHtml += `
-                    <div class="cf7as-work-item ${statusClass} ${selectedClass}" data-file-id="${fileData.id}">
-                        <div class="cf7as-work-preview">
-                            ${fileIcon}
-                            <div class="cf7as-work-status-badge">${statusLabel}</div>
-                            <div class="cf7as-progress-overlay">
-                                <div class="cf7as-progress-fill" style="width: ${fileData.progress}%"></div>
-                            </div>
-                        </div>
-                        <div class="cf7as-work-info">
-                            <div class="cf7as-work-title">${workTitle}</div>
-                            <div class="cf7as-work-filename">${fileData.name}</div>
-                            <div class="cf7as-work-size">${this.formatBytes(fileData.size)}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            console.log('🏗️ Final grid HTML length:', gridHtml.length);
-            console.log('🏗️ Grid HTML preview:', gridHtml.substring(0, 300) + '...');
-            
-            this.workGrid.html(gridHtml);
-            
-            // Debug final DOM state
-            console.log('✅ Grid updated. Final state:');
-            console.log('- workGrid children count:', this.workGrid.children().length);
-            console.log('- workGrid computed display:', window.getComputedStyle(this.workGrid[0]).display);
-            console.log('- workGrid computed grid-template-columns:', window.getComputedStyle(this.workGrid[0]).gridTemplateColumns);
-            console.log('- workGrid computed gap:', window.getComputedStyle(this.workGrid[0]).gap);
-            
-            // Debug container dimensions that affect grid layout
-            const gridStyle = window.getComputedStyle(this.workGrid[0]);
-            console.log('🔍 GRID LAYOUT DIAGNOSIS:');
-            console.log('- Grid container width:', gridStyle.width);
-            console.log('- Grid container height:', gridStyle.height);
-            console.log('- Grid padding:', gridStyle.padding);
-            console.log('- Grid margin:', gridStyle.margin);
-            console.log('- Grid box-sizing:', gridStyle.boxSizing);
-            
-            // Check parent container dimensions
-            const workGridContainer = this.workGrid.parent();
-            if (workGridContainer.length > 0) {
-                const containerStyle = window.getComputedStyle(workGridContainer[0]);
-                console.log('- Parent container width:', containerStyle.width);
-                console.log('- Parent container overflow-x:', containerStyle.overflowX);
-                console.log('- Parent container flex-direction:', containerStyle.flexDirection);
-            }
-            
-            // Check work content dimensions
-            if (this.workContent.length > 0) {
-                const contentStyle = window.getComputedStyle(this.workContent[0]);
-                console.log('- Work content width:', contentStyle.width);
-                console.log('- Work content height:', contentStyle.height);
-                console.log('- Work content flex:', contentStyle.flex);
-            }
-            
-            // Check each work item
-            this.workGrid.children().each((index, element) => {
-                const computedStyle = window.getComputedStyle(element);
-                console.log(`📦 Work item ${index + 1} CSS:`, {
-                    display: computedStyle.display,
-                    width: computedStyle.width,
-                    height: computedStyle.height,
-                    overflow: computedStyle.overflow,
-                    classes: element.className
-                });
-                
-                // Check for status badge in this work item
-                const statusBadge = $(element).find('.cf7as-work-status-badge');
-                console.log(`🔍 Status badge search for work item ${index + 1}:`);
-                console.log(`  - Looking for .cf7as-work-status-badge in:`, element);
-                console.log(`  - Found ${statusBadge.length} status badges`);
-                
-                if (statusBadge.length > 0) {
-                    const badgeStyle = window.getComputedStyle(statusBadge[0]);
-                    console.log(`  🏷️ Status badge ${index + 1}:`, {
-                        display: badgeStyle.display,
-                        visibility: badgeStyle.visibility,
-                        opacity: badgeStyle.opacity,
-                        fontSize: badgeStyle.fontSize,
-                        color: badgeStyle.color,
-                        background: badgeStyle.background,
-                        position: badgeStyle.position,
-                        top: badgeStyle.top,
-                        right: badgeStyle.right,
-                        textContent: statusBadge.text()
-                    });
-                } else {
-                    console.log(`  ❌ No status badge found in work item ${index + 1}`);
-                    // Debug what elements ARE in the work item
-                    console.log(`  🔍 Work item ${index + 1} contains:`, $(element).children().map((i, child) => {
-                        return {
-                            tagName: child.tagName,
-                            className: child.className,
-                            children: $(child).children().length
-                        };
-                    }).get());
-                }
-            });
+            // Grid rendering is handled by renderWorkItem() method
+            // This method is kept for compatibility but does not interfere with thumbnails
         }
         
         updateWorkTitleDisplay(fileId, title) {
-            // Update the title in the work grid
-            const workItem = this.workGrid.find(`[data-file-id="${fileId}"]`);
-            if (workItem.length > 0) {
-                workItem.find('.cf7as-work-title').text(title || 'Untitled Work');
+            // Update the title in the regular work grid
+            if (this.workGrid && this.workGrid.length > 0) {
+                const workItem = this.workGrid.find(`[data-file-id="${fileId}"]`);
+                if (workItem.length > 0) {
+                    workItem.find('.cf7as-work-title-display').text(title || 'Untitled Work');
+                }
+            }
+            
+            // Update the title in the submission work grid
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                const workItem = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+                if (workItem.length > 0) {
+                    workItem.find('.cf7as-work-title-display').text(title || 'Untitled Work');
+                }
             }
         }
         
         updateWorkEditor() {
+            // Determine which elements to update based on which modal is active
+            const workTitle = this.submissionSelectedWorkTitle && this.submissionSelectedWorkTitle.length > 0 
+                            ? this.submissionSelectedWorkTitle 
+                            : this.selectedWorkTitle;
+            const workStatement = this.submissionSelectedWorkStatement && this.submissionSelectedWorkStatement.length > 0 
+                                ? this.submissionSelectedWorkStatement 
+                                : this.selectedWorkStatement;
+            const uploadBtn = this.submissionUploadSingleBtn && this.submissionUploadSingleBtn.length > 0 
+                            ? this.submissionUploadSingleBtn 
+                            : this.uploadSingleBtn;
+            const removeBtn = this.submissionRemoveSingleBtn && this.submissionRemoveSingleBtn.length > 0 
+                            ? this.submissionRemoveSingleBtn 
+                            : this.removeSingleBtn;
+            
             if (!this.selectedFileId) {
                 // No file selected, show default state
-                this.selectedWorkTitle.val('');
-                this.selectedWorkStatement.val('');
-                this.uploadSingleBtn.prop('disabled', true);
-                this.removeSingleBtn.prop('disabled', true);
+                if (workTitle) workTitle.val('');
+                if (workStatement) workStatement.val('');
+                if (uploadBtn) uploadBtn.prop('disabled', true);
+                if (removeBtn) removeBtn.prop('disabled', true);
                 return;
             }
             
             const file = this.files.find(f => f.id === this.selectedFileId);
             if (file) {
-                this.selectedWorkTitle.val(file.workTitle || '');
-                this.selectedWorkStatement.val(file.workStatement || '');
-                this.uploadSingleBtn.prop('disabled', file.status !== 'pending');
-                this.removeSingleBtn.prop('disabled', false);
+                if (workTitle) workTitle.val(file.workTitle || '');
+                if (workStatement) workStatement.val(file.workStatement || '');
+                if (uploadBtn) uploadBtn.prop('disabled', file.status !== 'pending');
+                if (removeBtn) removeBtn.prop('disabled', false);
             }
         }
         
         selectFile(fileId) {
             this.selectedFileId = fileId;
             
-            // Update visual selection in grid
-            this.workGrid.find('.cf7as-work-item').removeClass('cf7as-work-selected');
-            this.workGrid.find(`[data-file-id="${fileId}"]`).addClass('cf7as-work-selected');
+            // Update visual selection in regular grid
+            if (this.workGrid && this.workGrid.length > 0) {
+                this.workGrid.find('.cf7as-work-item').removeClass('cf7as-work-selected');
+                this.workGrid.find(`[data-file-id="${fileId}"]`).addClass('cf7as-work-selected');
+            }
+            
+            // Update visual selection in submission grid
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                this.submissionWorkGrid.find('.cf7as-work-item').removeClass('cf7as-work-selected');
+                this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`).addClass('cf7as-work-selected');
+            }
             
             // Update work editor
             this.updateWorkEditor();
@@ -2865,23 +2791,37 @@
             
             // Clean up object URLs if they exist
             if (fileData && (this.isImageFile(fileData.type) || fileData.type.startsWith('video/'))) {
-                const workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
-                const img = workElement.find('img');
-                const video = workElement.find('video');
+                // Check both regular and submission grids for the element
+                let workElement = null;
                 
-                if (img.length && img.attr('src') && img.attr('src').startsWith('blob:')) {
-                    try {
-                        window.URL.revokeObjectURL(img.attr('src'));
-                    } catch (e) {
-                        console.warn('Failed to revoke object URL for image:', e);
+                if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                    workElement = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+                }
+                
+                if (!workElement || workElement.length === 0) {
+                    if (this.workGrid && this.workGrid.length > 0) {
+                        workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
                     }
                 }
                 
-                if (video.length && video.attr('src') && video.attr('src').startsWith('blob:')) {
-                    try {
-                        window.URL.revokeObjectURL(video.attr('src'));
-                    } catch (e) {
-                        console.warn('Failed to revoke object URL for video:', e);
+                if (workElement && workElement.length > 0) {
+                    const img = workElement.find('img');
+                    const video = workElement.find('video');
+                    
+                    if (img.length && img.attr('src') && img.attr('src').startsWith('blob:')) {
+                        try {
+                            window.URL.revokeObjectURL(img.attr('src'));
+                        } catch (e) {
+                            console.warn('Failed to revoke object URL for image:', e);
+                        }
+                    }
+                    
+                    if (video.length && video.attr('src') && video.attr('src').startsWith('blob:')) {
+                        try {
+                            window.URL.revokeObjectURL(video.attr('src'));
+                        } catch (e) {
+                            console.warn('Failed to revoke object URL for video:', e);
+                        }
                     }
                 }
             }
@@ -2889,8 +2829,14 @@
             // Remove from array
             this.files = this.files.filter(f => f.id !== fileId);
             
-            // Remove from DOM
-            this.workGrid.find(`[data-file-id="${fileId}"]`).remove();
+            // Remove from DOM - check both grids
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`).remove();
+            }
+            
+            if (this.workGrid && this.workGrid.length > 0) {
+                this.workGrid.find(`[data-file-id="${fileId}"]`).remove();
+            }
             
             // Clear selection if this file was selected
             if (this.selectedFileId === fileId) {
@@ -2914,23 +2860,37 @@
             // Clean up object URLs before clearing files
             this.files.forEach(fileData => {
                 if (this.isImageFile(fileData.type) || fileData.type.startsWith('video/')) {
-                    const workElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
-                    const img = workElement.find('img');
-                    const video = workElement.find('video');
+                    // Check both grids for the element
+                    let workElement = null;
                     
-                    if (img.length && img.attr('src') && img.attr('src').startsWith('blob:')) {
-                        try {
-                            window.URL.revokeObjectURL(img.attr('src'));
-                        } catch (e) {
-                            console.warn('Failed to revoke object URL for image:', e);
+                    if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                        workElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
+                    }
+                    
+                    if (!workElement || workElement.length === 0) {
+                        if (this.workGrid && this.workGrid.length > 0) {
+                            workElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
                         }
                     }
                     
-                    if (video.length && video.attr('src') && video.attr('src').startsWith('blob:')) {
-                        try {
-                            window.URL.revokeObjectURL(video.attr('src'));
-                        } catch (e) {
-                            console.warn('Failed to revoke object URL for video:', e);
+                    if (workElement && workElement.length > 0) {
+                        const img = workElement.find('img');
+                        const video = workElement.find('video');
+                        
+                        if (img.length && img.attr('src') && img.attr('src').startsWith('blob:')) {
+                            try {
+                                window.URL.revokeObjectURL(img.attr('src'));
+                            } catch (e) {
+                                console.warn('Failed to revoke object URL for image:', e);
+                            }
+                        }
+                        
+                        if (video.length && video.attr('src') && video.attr('src').startsWith('blob:')) {
+                            try {
+                                window.URL.revokeObjectURL(video.attr('src'));
+                            } catch (e) {
+                                console.warn('Failed to revoke object URL for video:', e);
+                            }
                         }
                     }
                 }
@@ -2940,7 +2900,15 @@
             this.uploadQueue = [];
             this.selectedFileId = null;
             
-            this.workGrid.empty();
+            // Clear both grids
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                this.submissionWorkGrid.empty();
+            }
+            
+            if (this.workGrid && this.workGrid.length > 0) {
+                this.workGrid.empty();
+            }
+            
             this.updateUI();
             
             console.log('All files cleared');
