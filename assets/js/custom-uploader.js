@@ -153,78 +153,6 @@
                 e.preventDefault();
                 this.startSubmissionProcess(form);
             });
-            
-            // Add CSS for the takeover interface
-            this.addTakeoverStyles();
-        }
-        
-        addTakeoverStyles() {
-            if ($('#cf7as-takeover-styles').length) return;
-            
-            const styles = `
-                <style id="cf7as-takeover-styles">
-                .cf7as-form-takeover {
-                    text-align: center;
-                    padding: 40px 20px;
-                    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                    border-radius: 12px;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                }
-                
-                .cf7as-submission-intro h2 {
-                    color: #2c3e50;
-                    font-size: 28px;
-                    margin-bottom: 16px;
-                    font-weight: 600;
-                }
-                
-                .cf7as-submission-intro p {
-                    color: #5a6c7d;
-                    font-size: 16px;
-                    line-height: 1.6;
-                    margin-bottom: 30px;
-                    max-width: 500px;
-                    margin-left: auto !important;
-                    margin-right: auto !important;
-                    text-align: center !important;
-                }
-                
-                .cf7as-submit-work-btn {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    border: none;
-                    padding: 18px 36px;
-                    font-size: 18px;
-                    font-weight: 600;
-                    border-radius: 50px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 12px;
-                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-                }
-                
-                .cf7as-submit-work-btn:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
-                }
-                
-                .cf7as-submit-work-btn:active {
-                    transform: translateY(0);
-                }
-                
-                .cf7as-btn-icon svg {
-                    transition: transform 0.3s ease;
-                }
-                
-                .cf7as-submit-work-btn:hover .cf7as-btn-icon svg {
-                    transform: translateY(-2px);
-                }
-                </style>
-            `;
-            
-            $('head').append(styles);
         }
         
         startSubmissionProcess(form) {
@@ -340,9 +268,6 @@
             
             // Bind modal events
             this.bindSubmissionModalEvents(form);
-            
-            // Add modal styles
-            this.addSubmissionModalStyles();
             
             // Show modal
             this.showSubmissionModal();
@@ -948,760 +873,7 @@
             }, 5000);
         }
         
-        addSubmissionModalStyles() {
-            if ($('#cf7as-submission-modal-styles').length) return;
-            
-            const styles = `
-                <style id="cf7as-submission-modal-styles">
-                .cf7as-submission-modal {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    z-index: 2147483647;
-                    display: flex;
-                    align-items: stretch;
-                    justify-content: stretch;
-                    margin: 0;
-                    padding: 0;
-                }
-                
-                .cf7as-submission-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.9);
-                    z-index: -1;
-                }
-                
-                .cf7as-submission-content {
-                    position: relative;
-                    width: 100vw;
-                    height: 100vh;
-                    max-width: none;
-                    max-height: none;
-                    background: white;
-                    border-radius: 0;
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
-                    box-shadow: none;
-                }
-                
-                .cf7as-submission-header {
-                    padding: 24px 32px;
-                    border-bottom: 1px solid #e1e5e9;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                }
-                
-                .cf7as-submission-title {
-                    margin: 0;
-                    font-size: 24px;
-                    font-weight: 600;
-                    color: white !important;
-                }
-                
-                .cf7as-submission-close {
-                    background: none;
-                    border: none;
-                    font-size: 32px;
-                    color: white;
-                    cursor: pointer;
-                    padding: 0;
-                    width: 40px;
-                    height: 40px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 50%;
-                    transition: background-color 0.2s;
-                }
-                
-                .cf7as-submission-close:hover {
-                    background-color: rgba(255,255,255,0.1);
-                }
-                
-                .cf7as-submission-steps {
-                    display: flex;
-                    padding: 24px 32px;
-                    background: #f8f9fa;
-                    border-bottom: 1px solid #e1e5e9;
-                    justify-content: center;
-                    gap: 60px;
-                }
-                
-                .cf7as-step {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 8px;
-                    opacity: 0.5;
-                    transition: opacity 0.3s;
-                }
-                
-                .cf7as-step.active {
-                    opacity: 1;
-                }
-                
-                .cf7as-step.completed {
-                    opacity: 0.8;
-                }
-                
-                .cf7as-step-number {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 50%;
-                    background: #dee2e6;
-                    color: #6c757d;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: 600;
-                    transition: all 0.3s;
-                }
-                
-                .cf7as-step.active .cf7as-step-number {
-                    background: #667eea;
-                    color: white;
-                }
-                
-                .cf7as-step.completed .cf7as-step-number {
-                    background: #27ae60;
-                    color: white;
-                }
-                
-                .cf7as-step-label {
-                    font-size: 14px;
-                    font-weight: 500;
-                    color: #6c757d;
-                }
-                
-                .cf7as-step.active .cf7as-step-label {
-                    color: #495057;
-                }
-                
-                .cf7as-submission-body {
-                    flex: 1;
-                    overflow: auto;
-                    position: relative;
-                }
-                
-                .cf7as-submission-step {
-                    padding: 48px 32px 32px 32px;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                
-                @media (max-width: 768px) {
-                    .cf7as-submission-step {
-                        padding: 32px 16px 24px 16px;
-                    }
-                }
-                
-                .cf7as-submission-step h3 {
-                    margin: 0 0 24px 0;
-                    font-size: 20px;
-                    font-weight: 600;
-                    color: #2c3e50;
-                    text-align: center;
-                }
-                
-                .cf7as-form-fields {
-                    flex: 1;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-                    gap: 32px;
-                    margin-bottom: 32px;
-                    padding: 0 16px;
-                    max-width: 1200px;
-                    margin-left: auto;
-                    margin-right: auto;
-                }
-                
-                @media (max-width: 768px) {
-                    .cf7as-form-fields {
-                        grid-template-columns: 1fr;
-                        gap: 24px;
-                        padding: 0 8px;
-                    }
-                }
-                
-                .cf7as-field-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                    background: #f8f9fa;
-                    padding: 24px;
-                    border-radius: 12px;
-                    border: 1px solid #e9ecef;
-                    transition: all 0.2s ease;
-                }
-                
-                .cf7as-field-group-full-width {
-                    grid-column: 1 / -1;
-                }
-                
-                @media (max-width: 768px) {
-                    .cf7as-field-group-full-width {
-                        grid-column: 1;
-                    }
-                }
-                
-                .cf7as-field-group:hover {
-                    border-color: #667eea;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-                }
-                
-                .cf7as-field-group:focus-within {
-                    border-color: #667eea;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-                    background: #ffffff;
-                }
-                
-                .cf7as-field-group label {
-                    font-weight: 600;
-                    color: #2c3e50;
-                    font-size: 15px;
-                    margin-bottom: 4px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                    font-size: 12px;
-                }
-                
-                .cf7as-field-group input,
-                .cf7as-field-group textarea,
-                .cf7as-field-group select {
-                    padding: 16px 20px;
-                    border: 2px solid transparent;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    background: #ffffff;
-                    transition: all 0.2s ease;
-                    font-family: inherit;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                }
-                
-                .cf7as-field-group textarea {
-                    min-height: 120px;
-                    resize: vertical;
-                    line-height: 1.6;
-                    font-family: inherit;
-                }
-                
-                .cf7as-textarea-large {
-                    min-height: 180px !important;
-                }
-                
-                .cf7as-field-group input:focus,
-                .cf7as-field-group textarea:focus,
-                .cf7as-field-group select:focus {
-                    outline: none;
-                    border-color: #667eea;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-                    transform: translateY(-1px);
-                }
-                
-                .cf7as-field-group input.cf7as-field-error,
-                .cf7as-field-group textarea.cf7as-field-error,
-                .cf7as-field-group select.cf7as-field-error {
-                    border-color: #e74c3c;
-                    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.2);
-                    background: #fdf2f2;
-                }
-                
-                .cf7as-field-group:has(.cf7as-field-error) {
-                    border-color: #e74c3c;
-                    background: #fdf2f2;
-                }
-                
-                .cf7as-step-actions {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding-top: 24px;
-                    padding-bottom: 32px;
-                    border-top: 1px solid #e1e5e9;
-                    gap: 16px;
-                }
-                
-                .cf7as-btn {
-                    padding: 12px 24px;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    transition: all 0.2s;
-                    text-decoration: none;
-                }
-                
-                .cf7as-btn-primary {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                }
-                
-                .cf7as-btn-primary:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-                }
-                
-                .cf7as-btn-secondary {
-                    background: #6c757d;
-                    color: white;
-                }
-                
-                .cf7as-btn-secondary:hover {
-                    background: #5a6268;
-                }
-                
-                .cf7as-btn-success {
-                    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-                    color: white;
-                }
-                
-                .cf7as-btn-success:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-                }
-                
-                .cf7as-upload-container {
-                    flex: 1;
-                    position: relative;
-                }
-                
-                .cf7as-modal-body-inner {
-                    width: 100%;
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    position: relative;
-                }
-                
-                .cf7as-upload-area {
-                    width: 100%;
-                    min-height: 300px;
-                    background: #f8f9fa;
-                    border: 2px dashed #dee2e6;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: all 0.3s ease;
-                    margin-bottom: 24px;
-                }
-                
-                /* When files are added, show the layout */
-                .cf7as-modal-body-inner.has-files {
-                    display: grid !important;
-                    grid-template-columns: 1fr 350px;
-                    gap: 24px;
-                    padding: 24px;
-                }
-                
-                .cf7as-modal-body-inner.has-files .cf7as-upload-area {
-                    grid-column: 1 / -1;
-                    min-height: 150px;
-                    margin-bottom: 0;
-                }
-                
-                .cf7as-modal-body-inner.has-files .cf7as-work-content {
-                    grid-column: 1;
-                    display: block !important;
-                }
-                
-                .cf7as-modal-body-inner.has-files .cf7as-work-editor {
-                    grid-column: 2;
-                    margin-top: 0;
-                }
-                
-                .cf7as-upload-area:hover {
-                    border-color: #667eea;
-                    background: #f0f4ff;
-                }
-                
-                .cf7as-upload-area.cf7as-dragover {
-                    border-color: #667eea;
-                    background: #e8f0fe;
-                    transform: scale(1.02);
-                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
-                }
-                
-                .cf7as-upload-prompt {
-                    text-align: center;
-                    padding: 40px 20px;
-                }
-                
-                .cf7as-upload-icon {
-                    margin-bottom: 16px;
-                    color: #6c757d;
-                }
-                
-                .cf7as-upload-text h3 {
-                    margin: 0 0 8px 0;
-                    font-size: 20px;
-                    font-weight: 600;
-                    color: #2c3e50;
-                }
-                
-                .cf7as-upload-text p {
-                    margin: 8px 0;
-                    color: #6c757d;
-                    font-size: 16px;
-                }
-                
-                .cf7as-upload-text small {
-                    display: block;
-                    margin-top: 8px;
-                    color: #9ca3af;
-                    font-size: 14px;
-                }
-                
-                .cf7as-browse-btn {
-                    background: none;
-                    border: none;
-                    color: #667eea;
-                    font-weight: 600;
-                    text-decoration: underline;
-                    cursor: pointer;
-                    font-size: inherit;
-                }
-                
-                .cf7as-submission-summary {
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                    padding: 24px;
-                    margin-top: 24px;
-                }
-                
-                .cf7as-summary-section {
-                    margin-bottom: 24px;
-                }
-                
-                .cf7as-summary-section:last-child {
-                    margin-bottom: 0;
-                }
-                
-                .cf7as-summary-section h4 {
-                    margin: 0 0 12px 0;
-                    color: #2c3e50;
-                    font-size: 16px;
-                    font-weight: 600;
-                }
-                
-                .cf7as-summary-section p {
-                    margin: 8px 0;
-                    font-size: 14px;
-                    color: #495057;
-                }
-                
-                .cf7as-modal-error {
-                    background: #f8d7da;
-                    color: #721c24;
-                    padding: 12px 16px;
-                    border-radius: 8px;
-                    margin-bottom: 24px;
-                    border: 1px solid #f5c6cb;
-                }
-                
-                .cf7as-spinner {
-                    width: 16px;
-                    height: 16px;
-                    border: 2px solid transparent;
-                    border-top: 2px solid currentColor;
-                    border-radius: 50%;
-                    animation: cf7as-spin 1s linear infinite;
-                }
-                
-                @keyframes cf7as-spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-                
-                .cf7as-success-popup {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100vw;
-                    height: 100vh;
-                    z-index: 2147483648;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .cf7as-success-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.6);
-                }
-                
-                .cf7as-success-content {
-                    position: relative;
-                    background: white;
-                    padding: 48px;
-                    border-radius: 16px;
-                    text-align: center;
-                    max-width: 500px;
-                    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-                }
-                
-                .cf7as-success-icon {
-                    margin-bottom: 24px;
-                }
-                
-                .cf7as-success-content h2 {
-                    color: #27ae60;
-                    margin: 0 0 16px 0;
-                    font-size: 28px;
-                    font-weight: 600;
-                }
-                
-                .cf7as-success-content p {
-                    color: #6c757d;
-                    margin: 16px 0;
-                    line-height: 1.6;
-                }
-                
-                body.cf7as-submission-modal-open {
-                    overflow: hidden;
-                }
-                
-                .cf7as-work-content {
-                    display: none; /* Hidden by default */
-                    flex: 1;
-                    padding: 16px;
-                    overflow-y: auto;
-                }
-                
-                .cf7as-work-grid-container {
-                    width: 100%;
-                }
-                
-                .cf7as-work-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                    gap: 16px;
-                    padding: 16px 0;
-                }
-                
-                .cf7as-work-item {
-                    background: #f8f9fa;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    padding: 16px;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                }
-                
-                .cf7as-work-item:hover {
-                    border-color: #667eea;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-                }
-                
-                .cf7as-work-item.selected {
-                    border-color: #667eea;
-                    background: #f0f4ff;
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-                }
-                
-                .cf7as-work-preview {
-                    text-align: center;
-                    margin-bottom: 12px;
-                    color: #6c757d;
-                    position: relative;
-                    height: 120px;
-                    overflow: hidden;
-                    border-radius: 6px;
-                    background: #e9ecef;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .cf7as-work-preview img,
-                .cf7as-work-preview video {
-                    max-width: 100%;
-                    max-height: 100%;
-                    object-fit: cover;
-                    border-radius: 4px;
-                }
-                
-                .cf7as-work-preview .cf7as-file-icon {
-                    opacity: 0.5;
-                }
-                
-                .cf7as-work-status-badge {
-                    position: absolute;
-                    top: 8px;
-                    right: 8px;
-                    background: rgba(0,0,0,0.7);
-                    color: white;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-size: 10px;
-                    text-transform: uppercase;
-                }
-                
-                .cf7as-progress-overlay {
-                    position: absolute;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
-                    height: 4px;
-                    background: rgba(0,0,0,0.1);
-                    border-radius: 0 0 6px 6px;
-                }
-                
-                .cf7as-progress-fill {
-                    height: 100%;
-                    background: #667eea;
-                    border-radius: 0 0 6px 6px;
-                    transition: width 0.3s ease;
-                }
-                
-                .cf7as-work-info {
-                    text-align: center;
-                }
-                
-                .cf7as-work-title-display {
-                    font-weight: 600;
-                    color: #2c3e50;
-                    margin-bottom: 4px;
-                    font-size: 14px;
-                }
-                
-                .cf7as-work-filename {
-                    color: #6c757d;
-                    font-size: 12px;
-                    margin-bottom: 4px;
-                    word-break: break-word;
-                }
-                
-                .cf7as-work-size {
-                    color: #9ca3af;
-                    font-size: 11px;
-                }
-                
-                .cf7as-work-editor {
-                    background: #f8f9fa;
-                    border: 1px solid #e9ecef;
-                    border-radius: 8px;
-                    padding: 24px;
-                    margin-top: 24px;
-                }
-                
-                .cf7as-editor-header {
-                    text-align: center;
-                    margin-bottom: 24px;
-                }
-                
-                .cf7as-editor-title {
-                    margin: 0 0 8px 0;
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #2c3e50;
-                }
-                
-                .cf7as-editor-subtitle {
-                    margin: 0;
-                    color: #6c757d;
-                    font-size: 14px;
-                }
-                
-                .cf7as-editor-field {
-                    margin-bottom: 16px;
-                }
-                
-                .cf7as-editor-field label {
-                    display: block;
-                    font-weight: 600;
-                    color: #2c3e50;
-                    margin-bottom: 8px;
-                    font-size: 14px;
-                }
-                
-                .cf7as-editor-field input,
-                .cf7as-editor-field textarea {
-                    width: 100%;
-                    padding: 12px 16px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    transition: border-color 0.2s;
-                    box-sizing: border-box;
-                }
-                
-                .cf7as-editor-field input:focus,
-                .cf7as-editor-field textarea:focus {
-                    outline: none;
-                    border-color: #667eea;
-                }
-                
-                .cf7as-editor-actions {
-                    display: flex;
-                    gap: 12px;
-                    justify-content: center;
-                    margin-top: 24px;
-                }
-                
-                .cf7as-upload-single-btn,
-                .cf7as-remove-single-btn {
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                
-                .cf7as-upload-single-btn {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                }
-                
-                .cf7as-upload-single-btn:hover:not(:disabled) {
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-                }
-                
-                .cf7as-upload-single-btn:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-                
-                .cf7as-remove-single-btn {
-                    background: #dc3545;
-                    color: white;
-                }
-                
-                .cf7as-remove-single-btn:hover:not(:disabled) {
-                    background: #c82333;
-                }
-                
-                .cf7as-remove-single-btn:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-                </style>
-            `;
-            
-            $('head').append(styles);
-        }
+
         
         async uploadAllThenSubmit() {
             const form = this.container.closest('form');
@@ -1830,6 +1002,29 @@
             
             this.dragExpanded = true;
             this.uploadArea.addClass('cf7as-drag-expanded');
+            
+            // Force inline styles as backup for theme conflicts
+            this.uploadArea.css({
+                'position': 'fixed',
+                'top': '0',
+                'left': '0',
+                'right': '0',
+                'bottom': '0',
+                'width': '100vw',
+                'height': '100vh',
+                'z-index': '2147483648',
+                'background': 'rgba(59, 130, 246, 0.1)',
+                'border': '3px dashed #3b82f6',
+                'border-radius': '0',
+                'margin': '0',
+                'padding': '0',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'transform': 'none',
+                'transition': 'none',
+                'box-shadow': 'none'
+            });
         }
         
         collapseDragArea() {
@@ -1844,6 +1039,30 @@
             this.dragTimeout = setTimeout(() => {
                 this.dragExpanded = false;
                 this.uploadArea.removeClass('cf7as-drag-expanded');
+                
+                // Reset inline styles
+                this.uploadArea.css({
+                    'position': '',
+                    'top': '',
+                    'left': '',
+                    'right': '',
+                    'bottom': '',
+                    'width': '',
+                    'height': '',
+                    'z-index': '',
+                    'background': '',
+                    'border': '',
+                    'border-radius': '',
+                    'margin': '',
+                    'padding': '',
+                    'display': '',
+                    'align-items': '',
+                    'justify-content': '',
+                    'transform': '',
+                    'transition': '',
+                    'box-shadow': ''
+                });
+                
                 this.dragTimeout = null;
             }, 200); // Increased to 200ms for more stability
         }
@@ -1861,6 +1080,29 @@
             // Collapse immediately
             this.dragExpanded = false;
             this.uploadArea.removeClass('cf7as-drag-expanded');
+            
+            // Reset inline styles immediately
+            this.uploadArea.css({
+                'position': '',
+                'top': '',
+                'left': '',
+                'right': '',
+                'bottom': '',
+                'width': '',
+                'height': '',
+                'z-index': '',
+                'background': '',
+                'border': '',
+                'border-radius': '',
+                'margin': '',
+                'padding': '',
+                'display': '',
+                'align-items': '',
+                'justify-content': '',
+                'transform': '',
+                'transition': '',
+                'box-shadow': ''
+            });
         }
         
         createUI() {
@@ -2240,7 +1482,16 @@
                     uploadId: null // For multipart upload
                 };
                 
+                console.log('📝 Created fileData object:', {
+                    id: fileData.id,
+                    name: fileData.name,
+                    type: fileData.type,
+                    status: fileData.status,
+                    size: fileData.size
+                });
+                
                 this.files.push(fileData);
+                console.log('📚 Total files now:', this.files.length);
                 console.log('Calling renderWorkItem for:', fileData.name);
                 this.renderWorkItem(fileData);
             }
@@ -2321,29 +1572,55 @@
             
             // Create preview content for different file types
             let previewContent = '';
+            console.log('🖼️ THUMBNAIL DEBUG: Creating preview for file:', fileData.name);
+            console.log('- File type:', fileData.type);
+            console.log('- Is image file:', this.isImageFile(fileData.type));
+            
             if (this.isImageFile(fileData.type)) {
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
+                console.log('- Object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
                 if (objectUrl) {
-                    previewContent = `<img src="${objectUrl}" alt="${this.escapeHtml(fileData.name)}" onload="if(window.URL && window.URL.revokeObjectURL) window.URL.revokeObjectURL(this.src)">`;
+                    // Don't immediately revoke the URL, let it persist for thumbnail display
+                    // Include fallback icon that shows if image fails to load
+                    previewContent = `
+                        <img src="${objectUrl}" alt="${this.escapeHtml(fileData.name)}" 
+                            onload="console.log('✅ Image loaded:', '${fileData.name}'); this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
+                            onerror="console.log('❌ Image failed to load:', '${fileData.name}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            style="opacity:0; transition: opacity 0.3s ease;">
+                        <div class="cf7as-file-icon" style="display: flex;">${fileIcon}</div>`;
+                    console.log('- Generated image HTML with fallback icon');
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
+                    console.log('- Using fallback icon only (no object URL)');
                 }
             } else if (fileData.type.startsWith('video/')) {
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
+                console.log('- Video Object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
                 if (objectUrl) {
-                    previewContent = `<video src="${objectUrl}" muted onloadeddata="if(window.URL && window.URL.revokeObjectURL) window.URL.revokeObjectURL(this.src)"></video>`;
+                    previewContent = `
+                        <video src="${objectUrl}" muted preload="metadata" 
+                            onloadeddata="console.log('✅ Video loaded:', '${fileData.name}'); this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
+                            onerror="console.log('❌ Video failed to load:', '${fileData.name}'); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            style="opacity:0; transition: opacity 0.3s ease;"></video>
+                        <div class="cf7as-file-icon" style="display: flex;">${fileIcon}</div>`;
+                    console.log('- Generated video HTML with fallback icon');
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
+                    console.log('- Using fallback icon only (no video object URL)');
                 }
             } else {
                 previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
+                console.log('- Non-image/video file, using file icon only');
             }
+            console.log('🏷️ STATUS BADGE DEBUG:');
+            console.log('- File status:', fileData.status);
+            console.log('- Status label:', this.getStatusLabel(fileData.status));
             
             const workItemHtml = `
                 <div class="cf7as-work-item" data-file-id="${fileData.id}">
                     <div class="cf7as-work-preview">
                         ${previewContent}
-                        <div class="cf7as-work-status-badge">${fileData.status}</div>
+                        <div class="cf7as-work-status-badge">${this.getStatusLabel(fileData.status)}</div>
                         <div class="cf7as-progress-overlay">
                             <div class="cf7as-progress-fill" style="width: ${fileData.progress}%"></div>
                         </div>
@@ -2359,6 +1636,10 @@
             `;
             
             const workElement = $(workItemHtml);
+            console.log('📋 WORK ELEMENT DEBUG:');
+            console.log('- Work element created:', workElement.length > 0 ? 'SUCCESS' : 'FAILED');
+            console.log('- Work element classes:', workElement.attr('class'));
+            console.log('- Work element data-file-id:', workElement.attr('data-file-id'));
             
             // Add click handler for selection
             workElement.on('click', (e) => {
@@ -2366,22 +1647,111 @@
                 this.selectWorkItem(fileData.id);
             });
             
-            console.log('Appending work element to work grid');
-            console.log('Work element HTML:', workItemHtml);
-            this.workGrid.append(workElement);
-            console.log('Work grid children after append:', this.workGrid.children().length);
+            console.log('📦 WORK GRID DEBUG:');
+            console.log('- Work grid exists:', this.workGrid.length > 0 ? 'YES' : 'NO');
+            console.log('- Work grid selector:', this.workGrid.selector);
+            console.log('- Work grid children before append:', this.workGrid.children().length);
             
+            this.workGrid.append(workElement);
+            
+            console.log('- Work grid children after append:', this.workGrid.children().length);
+            
+            // Wait a moment for DOM to update, then check CSS
+            setTimeout(() => {
+                const addedElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
+                console.log('🎨 CSS DEBUG for work item:', fileData.name);
+                console.log('- Element found in DOM:', addedElement.length > 0 ? 'YES' : 'NO');
+                
+                if (addedElement.length > 0) {
+                    const itemStyle = window.getComputedStyle(addedElement[0]);
+                    console.log('- Work item computed styles:');
+                    console.log('  - display:', itemStyle.display);
+                    console.log('  - width:', itemStyle.width);
+                    console.log('  - height:', itemStyle.height);
+                    console.log('  - position:', itemStyle.position);
+                    console.log('  - overflow:', itemStyle.overflow);
+                    console.log('  - border:', itemStyle.border);
+                    
+                    const previewElement = addedElement.find('.cf7as-work-preview');
+                    if (previewElement.length > 0) {
+                        const previewStyle = window.getComputedStyle(previewElement[0]);
+                        console.log('- Work preview computed styles:');
+                        console.log('  - display:', previewStyle.display);
+                        console.log('  - width:', previewStyle.width);
+                        console.log('  - height:', previewStyle.height);
+                        console.log('  - background:', previewStyle.background);
+                    }
+                    
+                    const statusBadge = addedElement.find('.cf7as-work-status-badge');
+                    if (statusBadge.length > 0) {
+                        const badgeStyle = window.getComputedStyle(statusBadge[0]);
+                        console.log('- Status badge computed styles:');
+                        console.log('  - display:', badgeStyle.display);
+                        console.log('  - visibility:', badgeStyle.visibility);
+                        console.log('  - opacity:', badgeStyle.opacity);
+                        console.log('  - width:', badgeStyle.width);
+                        console.log('  - height:', badgeStyle.height);
+                        console.log('  - font-size:', badgeStyle.fontSize);
+                        console.log('  - color:', badgeStyle.color);
+                        console.log('  - background:', badgeStyle.background);
+                        console.log('  - z-index:', badgeStyle.zIndex);
+                        console.log('  - position:', badgeStyle.position);
+                        console.log('  - top:', badgeStyle.top);
+                        console.log('  - right:', badgeStyle.right);
+                        console.log('  - text content:', statusBadge.text());
+                    }
+                    
+                    const img = addedElement.find('img');
+                    if (img.length > 0) {
+                        const imgStyle = window.getComputedStyle(img[0]);
+                        console.log('- Image computed styles:');
+                        console.log('  - display:', imgStyle.display);
+                        console.log('  - opacity:', imgStyle.opacity);
+                        console.log('  - width:', imgStyle.width);
+                        console.log('  - height:', imgStyle.height);
+                        console.log('  - src:', img.attr('src'));
+                    }
+                    
+                    const fileIcon = addedElement.find('.cf7as-file-icon');
+                    if (fileIcon.length > 0) {
+                        const iconStyle = window.getComputedStyle(fileIcon[0]);
+                        console.log('- File icon computed styles:');
+                        console.log('  - display:', iconStyle.display);
+                        console.log('  - opacity:', iconStyle.opacity);
+                        console.log('  - width:', iconStyle.width);
+                        console.log('  - height:', iconStyle.height);
+                    }
+                }
+            }, 100);
             // Log DOM state after rendering work item
-            console.log('DOM Debug after renderWorkItem:');
-            console.log('- Work grid HTML content:', this.workGrid.html().substring(0, 200) + '...');
+            console.log('🏗️ DOM STRUCTURE DEBUG after renderWorkItem:');
+            console.log('- Work grid HTML content length:', this.workGrid.html().length);
             console.log('- Work grid computed styles:');
             if (this.workGrid.length > 0) {
                 const gridStyle = window.getComputedStyle(this.workGrid[0]);
                 console.log('  - display:', gridStyle.display);
+                console.log('  - grid-template-columns:', gridStyle.gridTemplateColumns);
+                console.log('  - gap:', gridStyle.gap);
                 console.log('  - visibility:', gridStyle.visibility);
                 console.log('  - opacity:', gridStyle.opacity);
                 console.log('  - height:', gridStyle.height);
                 console.log('  - width:', gridStyle.width);
+                console.log('  - overflow:', gridStyle.overflow);
+                console.log('  - position:', gridStyle.position);
+            }
+            
+            // Log work grid container
+            console.log('- Work grid container (.cf7as-work-grid-container) styles:');
+            const workGridContainer = $('.cf7as-work-grid-container');
+            if (workGridContainer.length > 0) {
+                const containerStyle = window.getComputedStyle(workGridContainer[0]);
+                console.log('  - display:', containerStyle.display);
+                console.log('  - width:', containerStyle.width);
+                console.log('  - height:', containerStyle.height);
+                console.log('  - padding:', containerStyle.padding);
+                console.log('  - overflow-x:', containerStyle.overflowX);
+                console.log('  - overflow-y:', containerStyle.overflowY);
+                console.log('  - flex:', containerStyle.flex);
             }
             
             // Log parent containers
@@ -2389,8 +1759,23 @@
             if (this.workContent.length > 0) {
                 const contentStyle = window.getComputedStyle(this.workContent[0]);
                 console.log('  - display:', contentStyle.display);
+                console.log('  - flex-direction:', contentStyle.flexDirection);
                 console.log('  - visibility:', contentStyle.visibility);
                 console.log('  - opacity:', contentStyle.opacity);
+                console.log('  - height:', contentStyle.height);
+                console.log('  - width:', contentStyle.width);
+            }
+            
+            // Log modal body
+            console.log('- Modal body (.cf7as-modal-body-inner) styles:');
+            const modalBody = $('.cf7as-modal-body-inner');
+            if (modalBody.length > 0) {
+                const modalStyle = window.getComputedStyle(modalBody[0]);
+                console.log('  - display:', modalStyle.display);
+                console.log('  - flex-direction:', modalStyle.flexDirection);
+                console.log('  - height:', modalStyle.height);
+                console.log('  - width:', modalStyle.width);
+                console.log('  - has-files class:', modalBody.hasClass('has-files') ? 'YES' : 'NO');
             }
         }
         
@@ -2441,48 +1826,102 @@
         }
         
         updateWorkItemDisplay(fileId) {
+            console.log('🔄 UPDATE WORK ITEM DEBUG:', fileId);
             const fileData = this.files.find(f => f.id === fileId);
-            if (!fileData) return;
+            if (!fileData) {
+                console.log('❌ File data not found for ID:', fileId);
+                return;
+            }
+            
+            console.log('- File data found:', fileData.name);
+            console.log('- Current status:', fileData.status);
+            console.log('- Status label:', this.getStatusLabel(fileData.status));
             
             const workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
+            console.log('- Work element found:', workElement.length > 0 ? 'YES' : 'NO');
             
-            // Update title display
-            workElement.find('.cf7as-work-title-display').text(fileData.workTitle || 'Untitled Work');
-            
-            // Update status
-            workElement.removeClass('pending uploading uploaded error').addClass(fileData.status);
-            workElement.find('.cf7as-work-status-badge').text(fileData.status);
-            
-            // Update progress
-            workElement.find('.cf7as-progress-fill').css('width', fileData.progress + '%');
-            
-            // Update editor if this item is selected
-            if (this.selectedFileId === fileId) {
-                this.workEditor.find('.cf7as-editor-subtitle').text(`${this.formatBytes(fileData.size)} • ${fileData.status}`);
+            if (workElement.length > 0) {
+                // Update title display
+                workElement.find('.cf7as-work-title-display').text(fileData.workTitle || 'Untitled Work');
+                
+                // Update status
+                console.log('- Removing old status classes and adding:', fileData.status);
+                workElement.removeClass('pending uploading uploaded error').addClass(fileData.status);
+                
+                const statusBadge = workElement.find('.cf7as-work-status-badge');
+                console.log('- Status badge found:', statusBadge.length > 0 ? 'YES' : 'NO');
+                if (statusBadge.length > 0) {
+                    const newText = this.getStatusLabel(fileData.status);
+                    statusBadge.text(newText);
+                    console.log('- Status badge text updated to:', newText);
+                    
+                    // Check CSS after update
+                    setTimeout(() => {
+                        const badgeStyle = window.getComputedStyle(statusBadge[0]);
+                        console.log('- Status badge CSS after update:');
+                        console.log('  - display:', badgeStyle.display);
+                        console.log('  - visibility:', badgeStyle.visibility);
+                        console.log('  - opacity:', badgeStyle.opacity);
+                        console.log('  - background:', badgeStyle.background);
+                        console.log('  - font-size:', badgeStyle.fontSize);
+                        console.log('  - color:', badgeStyle.color);
+                        console.log('  - actual text:', statusBadge.text());
+                    }, 50);
+                }
+                
+                // Update progress
+                workElement.find('.cf7as-progress-fill').css('width', fileData.progress + '%');
+                
+                // Update editor if this item is selected
+                if (this.selectedFileId === fileId) {
+                    this.workEditor.find('.cf7as-editor-subtitle').text(`${this.formatBytes(fileData.size)} • ${this.getStatusLabel(fileData.status)}`);
+                }
             }
         }
         
+        getStatusLabel(status) {
+            const statusLabels = {
+                'pending': 'Ready',
+                'uploading': 'Uploading',
+                'uploaded': 'Complete',
+                'error': 'Failed'
+            };
+            const label = statusLabels[status] || status;
+            console.log('🏷️ getStatusLabel:', status, '→', label);
+            return label;
+        }
+        
         getFileIcon(mimeType) {
+            console.log('🎨 getFileIcon called with mimeType:', mimeType);
+            let icon;
+            
             if (mimeType.startsWith('image/')) {
-                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                     <circle cx="8.5" cy="8.5" r="1.5"></circle>
                     <polyline points="21,15 16,10 5,21"></polyline>
                 </svg>`;
+                console.log('  → Image icon generated');
             } else if (mimeType.startsWith('video/')) {
-                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polygon points="23,7 16,12 23,17"></polygon>
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                 </svg>`;
+                console.log('  → Video icon generated');
             } else if (mimeType === 'application/pdf') {
-                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"></path>
                 </svg>`;
+                console.log('  → PDF icon generated');
             } else {
-                return `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                icon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"></path>
                 </svg>`;
+                console.log('  → Generic file icon generated');
             }
+            
+            console.log('  → Icon HTML length:', icon.length);
+            return icon;
         }
         
         updateUI() {
@@ -2587,39 +2026,146 @@
         }
         
         updateWorkGrid() {
-            if (!this.workGrid || this.workGrid.length === 0) return;
+            console.log('🔄 updateWorkGrid() called');
+            console.log('- workGrid element exists:', this.workGrid && this.workGrid.length > 0);
+            console.log('- files array length:', this.files.length);
+            
+            if (!this.workGrid || this.workGrid.length === 0) {
+                console.log('❌ No workGrid element found, returning');
+                return;
+            }
             
             if (this.files.length === 0) {
+                console.log('📂 No files to display, emptying grid');
                 this.workGrid.empty();
                 return;
             }
             
+            console.log('📝 Building grid HTML for', this.files.length, 'files');
             let gridHtml = '';
             
-            this.files.forEach(fileData => {
+            this.files.forEach((fileData, index) => {
                 const statusClass = `cf7as-work-${fileData.status}`;
                 const isSelected = this.selectedFileId === fileData.id;
                 const selectedClass = isSelected ? 'cf7as-work-selected' : '';
                 const workTitle = fileData.workTitle || 'Untitled Work';
                 
+                console.log(`📦 File ${index + 1}/${this.files.length}:`, {
+                    id: fileData.id,
+                    name: fileData.name,
+                    status: fileData.status,
+                    statusClass: statusClass,
+                    isSelected: isSelected,
+                    workTitle: workTitle
+                });
+                
+                const fileIcon = this.getFileIcon(fileData.type);
+                const statusIcon = this.getStatusIcon(fileData.status);
+                const statusLabel = this.getStatusLabel(fileData.status);
+                
+                console.log(`  - File icon HTML:`, fileIcon.substring(0, 100) + '...');
+                console.log(`  - Status icon HTML:`, statusIcon.substring(0, 100) + '...');
+                console.log(`  - Status label:`, statusLabel);
+                
                 gridHtml += `
                     <div class="cf7as-work-item ${statusClass} ${selectedClass}" data-file-id="${fileData.id}">
                         <div class="cf7as-work-preview">
-                            ${this.getFileIcon(fileData.type)}
+                            ${fileIcon}
+                            <div class="cf7as-work-status-badge">${statusLabel}</div>
+                            <div class="cf7as-progress-overlay">
+                                <div class="cf7as-progress-fill" style="width: ${fileData.progress}%"></div>
+                            </div>
                         </div>
                         <div class="cf7as-work-info">
                             <div class="cf7as-work-title">${workTitle}</div>
                             <div class="cf7as-work-filename">${fileData.name}</div>
                             <div class="cf7as-work-size">${this.formatBytes(fileData.size)}</div>
                         </div>
-                        <div class="cf7as-work-status">
-                            ${this.getStatusIcon(fileData.status)}
-                        </div>
                     </div>
                 `;
             });
             
+            console.log('🏗️ Final grid HTML length:', gridHtml.length);
+            console.log('🏗️ Grid HTML preview:', gridHtml.substring(0, 300) + '...');
+            
             this.workGrid.html(gridHtml);
+            
+            // Debug final DOM state
+            console.log('✅ Grid updated. Final state:');
+            console.log('- workGrid children count:', this.workGrid.children().length);
+            console.log('- workGrid computed display:', window.getComputedStyle(this.workGrid[0]).display);
+            console.log('- workGrid computed grid-template-columns:', window.getComputedStyle(this.workGrid[0]).gridTemplateColumns);
+            console.log('- workGrid computed gap:', window.getComputedStyle(this.workGrid[0]).gap);
+            
+            // Debug container dimensions that affect grid layout
+            const gridStyle = window.getComputedStyle(this.workGrid[0]);
+            console.log('🔍 GRID LAYOUT DIAGNOSIS:');
+            console.log('- Grid container width:', gridStyle.width);
+            console.log('- Grid container height:', gridStyle.height);
+            console.log('- Grid padding:', gridStyle.padding);
+            console.log('- Grid margin:', gridStyle.margin);
+            console.log('- Grid box-sizing:', gridStyle.boxSizing);
+            
+            // Check parent container dimensions
+            const workGridContainer = this.workGrid.parent();
+            if (workGridContainer.length > 0) {
+                const containerStyle = window.getComputedStyle(workGridContainer[0]);
+                console.log('- Parent container width:', containerStyle.width);
+                console.log('- Parent container overflow-x:', containerStyle.overflowX);
+                console.log('- Parent container flex-direction:', containerStyle.flexDirection);
+            }
+            
+            // Check work content dimensions
+            if (this.workContent.length > 0) {
+                const contentStyle = window.getComputedStyle(this.workContent[0]);
+                console.log('- Work content width:', contentStyle.width);
+                console.log('- Work content height:', contentStyle.height);
+                console.log('- Work content flex:', contentStyle.flex);
+            }
+            
+            // Check each work item
+            this.workGrid.children().each((index, element) => {
+                const computedStyle = window.getComputedStyle(element);
+                console.log(`📦 Work item ${index + 1} CSS:`, {
+                    display: computedStyle.display,
+                    width: computedStyle.width,
+                    height: computedStyle.height,
+                    overflow: computedStyle.overflow,
+                    classes: element.className
+                });
+                
+                // Check for status badge in this work item
+                const statusBadge = $(element).find('.cf7as-work-status-badge');
+                console.log(`🔍 Status badge search for work item ${index + 1}:`);
+                console.log(`  - Looking for .cf7as-work-status-badge in:`, element);
+                console.log(`  - Found ${statusBadge.length} status badges`);
+                
+                if (statusBadge.length > 0) {
+                    const badgeStyle = window.getComputedStyle(statusBadge[0]);
+                    console.log(`  🏷️ Status badge ${index + 1}:`, {
+                        display: badgeStyle.display,
+                        visibility: badgeStyle.visibility,
+                        opacity: badgeStyle.opacity,
+                        fontSize: badgeStyle.fontSize,
+                        color: badgeStyle.color,
+                        background: badgeStyle.background,
+                        position: badgeStyle.position,
+                        top: badgeStyle.top,
+                        right: badgeStyle.right,
+                        textContent: statusBadge.text()
+                    });
+                } else {
+                    console.log(`  ❌ No status badge found in work item ${index + 1}`);
+                    // Debug what elements ARE in the work item
+                    console.log(`  🔍 Work item ${index + 1} contains:`, $(element).children().map((i, child) => {
+                        return {
+                            tagName: child.tagName,
+                            className: child.className,
+                            children: $(child).children().length
+                        };
+                    }).get());
+                }
+            });
         }
         
         updateWorkTitleDisplay(fileId, title) {
@@ -2661,16 +2207,30 @@
         }
         
         getStatusIcon(status) {
+            console.log('🏷️ getStatusIcon called with status:', status);
+            let icon;
+            
             switch (status) {
                 case 'uploading':
-                    return '<div class="cf7as-spinner"></div>';
+                    icon = '<div class="cf7as-spinner"></div>';
+                    console.log('  → Uploading spinner generated');
+                    break;
                 case 'uploaded':
-                    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>';
+                    icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>';
+                    console.log('  → Uploaded checkmark generated');
+                    break;
                 case 'error':
-                    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+                    icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
+                    console.log('  → Error X icon generated');
+                    break;
                 default:
-                    return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2"><circle cx="12" cy="12" r="3"></circle></svg>';
+                    icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2"><circle cx="12" cy="12" r="3"></circle></svg>';
+                    console.log('  → Default pending circle generated');
+                    break;
             }
+            
+            console.log('  → Status icon HTML length:', icon.length);
+            return icon;
         }
         
         updateThumbnailsPreview() {
@@ -3300,6 +2860,32 @@
         removeFile(fileId) {
             console.log('Removing file:', fileId);
             
+            // Find the file data before removing it
+            const fileData = this.files.find(f => f.id === fileId);
+            
+            // Clean up object URLs if they exist
+            if (fileData && (this.isImageFile(fileData.type) || fileData.type.startsWith('video/'))) {
+                const workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
+                const img = workElement.find('img');
+                const video = workElement.find('video');
+                
+                if (img.length && img.attr('src') && img.attr('src').startsWith('blob:')) {
+                    try {
+                        window.URL.revokeObjectURL(img.attr('src'));
+                    } catch (e) {
+                        console.warn('Failed to revoke object URL for image:', e);
+                    }
+                }
+                
+                if (video.length && video.attr('src') && video.attr('src').startsWith('blob:')) {
+                    try {
+                        window.URL.revokeObjectURL(video.attr('src'));
+                    } catch (e) {
+                        console.warn('Failed to revoke object URL for video:', e);
+                    }
+                }
+            }
+            
             // Remove from array
             this.files = this.files.filter(f => f.id !== fileId);
             
@@ -3324,6 +2910,31 @@
                     return;
                 }
             }
+            
+            // Clean up object URLs before clearing files
+            this.files.forEach(fileData => {
+                if (this.isImageFile(fileData.type) || fileData.type.startsWith('video/')) {
+                    const workElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
+                    const img = workElement.find('img');
+                    const video = workElement.find('video');
+                    
+                    if (img.length && img.attr('src') && img.attr('src').startsWith('blob:')) {
+                        try {
+                            window.URL.revokeObjectURL(img.attr('src'));
+                        } catch (e) {
+                            console.warn('Failed to revoke object URL for image:', e);
+                        }
+                    }
+                    
+                    if (video.length && video.attr('src') && video.attr('src').startsWith('blob:')) {
+                        try {
+                            window.URL.revokeObjectURL(video.attr('src'));
+                        } catch (e) {
+                            console.warn('Failed to revoke object URL for video:', e);
+                        }
+                    }
+                }
+            });
             
             this.files = [];
             this.uploadQueue = [];

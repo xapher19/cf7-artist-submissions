@@ -2,10 +2,323 @@
  * CF7 Artist Submissions - Custom Uploader Styles
  * 
  * Styles for the custom drag-and-drop file uploader
+ * All styles are scoped under .cf7as-* classes to avoid theme conflicts
  * 
  * @package CF7_Artist_Submissions
  * @since 1.2.0
  */
+
+/* ===================================================================
+   THEME OVERRIDE PROTECTION - HIGH SPECIFICITY STYLES
+   Protects against Kahlo theme's aggressive global CSS
+   =================================================================== */
+
+/* Protect modal input fields from theme's global input styles */
+.cf7as-submission-modal input[type="text"],
+.cf7as-submission-modal input[type="email"], 
+.cf7as-submission-modal input[type="tel"],
+.cf7as-submission-modal input[type="url"],
+.cf7as-submission-modal textarea,
+.cf7as-submission-modal select,
+.cf7as-upload-modal input[type="text"],
+.cf7as-upload-modal input[type="email"],
+.cf7as-upload-modal input[type="tel"],
+.cf7as-upload-modal input[type="url"],
+.cf7as-upload-modal textarea,
+.cf7as-upload-modal select {
+    border: 2px solid transparent !important;
+    border-radius: 8px !important;
+    background: #ffffff !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    padding: 16px 20px !important;
+    margin: 0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: normal !important;
+}
+
+.cf7as-submission-modal input[type="text"]:focus,
+.cf7as-submission-modal input[type="email"]:focus,
+.cf7as-submission-modal input[type="tel"]:focus,
+.cf7as-submission-modal input[type="url"]:focus,
+.cf7as-submission-modal textarea:focus,
+.cf7as-submission-modal select:focus,
+.cf7as-upload-modal input[type="text"]:focus,
+.cf7as-upload-modal input[type="email"]:focus,
+.cf7as-upload-modal input[type="tel"]:focus,
+.cf7as-upload-modal input[type="url"]:focus,
+.cf7as-upload-modal textarea:focus,
+.cf7as-upload-modal select:focus {
+    outline: none !important;
+    border-color: #667eea !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Protect modal buttons from theme's global button styles */
+.cf7as-submission-modal button,
+.cf7as-submission-modal .cf7as-btn,
+.cf7as-upload-modal button,
+.cf7as-upload-modal .cf7as-btn {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+    letter-spacing: normal !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    text-decoration: none !important;
+}
+
+/* Protect modal text from theme's global typography */
+.cf7as-submission-modal,
+.cf7as-submission-modal *,
+.cf7as-upload-modal,
+.cf7as-upload-modal * {
+    box-sizing: border-box !important;
+}
+
+.cf7as-submission-modal h1,
+.cf7as-submission-modal h2,
+.cf7as-submission-modal h3,
+.cf7as-submission-modal h4,
+.cf7as-submission-modal h5,
+.cf7as-submission-modal h6,
+.cf7as-upload-modal h1,
+.cf7as-upload-modal h2,
+.cf7as-upload-modal h3,
+.cf7as-upload-modal h4,
+.cf7as-upload-modal h5,
+.cf7as-upload-modal h6 {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    letter-spacing: normal !important;
+    margin: 0 0 16px 0 !important;
+}
+
+.cf7as-submission-modal p,
+.cf7as-submission-modal div,
+.cf7as-submission-modal span,
+.cf7as-submission-modal label,
+.cf7as-upload-modal p,
+.cf7as-upload-modal div,
+.cf7as-upload-modal span,
+.cf7as-upload-modal label {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    line-height: 1.5 !important;
+    letter-spacing: normal !important;
+}
+
+/* Protect select elements from theme styles */
+.cf7as-submission-modal select,
+.cf7as-upload-modal select {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 4 5'%3E%3Cpath fill='%23666' d='m2 0-2 2h4zm0 5 2-2h-4z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    background-size: 12px !important;
+    padding-right: 40px !important;
+}
+
+/* Protect layout and grid elements from theme CSS */
+.cf7as-submission-modal .cf7as-work-grid,
+.cf7as-upload-modal .cf7as-work-grid,
+.cf7as-submission-modal .cf7as-work-grid-container,
+.cf7as-upload-modal .cf7as-work-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    gap: 20px !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    overflow-y: auto !important;
+}
+
+/* Ensure work grid container has proper flex properties */
+.cf7as-submission-modal .cf7as-work-grid-container,
+.cf7as-upload-modal .cf7as-work-grid-container {
+    flex: 1 !important;
+    padding-right: 320px !important; /* Space for upload area and editor */
+}
+
+/* Removed duplicate work item styles - now handled by enhanced styles below */
+
+/* Protect work status badge from theme interference */
+.cf7as-submission-modal .cf7as-work-status-badge,
+.cf7as-upload-modal .cf7as-work-status-badge {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    padding: 4px 8px !important;
+    border-radius: 12px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: white !important;
+    z-index: 10 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important; /* Will be set by status-specific classes */
+}
+
+/* Protect work status badge colors from theme interference */
+.cf7as-submission-modal .cf7as-work-item.pending .cf7as-work-status-badge,
+.cf7as-upload-modal .cf7as-work-item.pending .cf7as-work-status-badge {
+    background: #856404 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item.uploading .cf7as-work-status-badge,
+.cf7as-upload-modal .cf7as-work-item.uploading .cf7as-work-status-badge {
+    background: #f0ad4e !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item.uploaded .cf7as-work-status-badge,
+.cf7as-upload-modal .cf7as-work-item.uploaded .cf7as-work-status-badge {
+    background: #5cb85c !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item.error .cf7as-work-status-badge,
+.cf7as-upload-modal .cf7as-work-item.error .cf7as-work-status-badge {
+    background: #d9534f !important;
+}
+
+/* Protect work preview container from theme interference */
+.cf7as-submission-modal .cf7as-work-preview,
+.cf7as-upload-modal .cf7as-work-preview {
+    width: 100% !important;
+    height: 150px !important;
+    overflow: hidden !important;
+    background: #f8f9fa !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Protect work info section from theme interference */
+.cf7as-submission-modal .cf7as-work-info,
+.cf7as-upload-modal .cf7as-work-info {
+    padding: 15px !important;
+    background: white !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-display,
+.cf7as-upload-modal .cf7as-work-title-display {
+    font-weight: 600 !important;
+    color: #333 !important;
+    font-size: 14px !important;
+    margin-bottom: 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    line-height: 1.2 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-filename,
+.cf7as-upload-modal .cf7as-work-filename {
+    font-size: 12px !important;
+    color: #666 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-bottom: 8px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    line-height: 1.2 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-meta,
+.cf7as-upload-modal .cf7as-work-meta {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 11px !important;
+    color: #888 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Protect work content layout from theme interference */
+.cf7as-submission-modal .cf7as-work-content,
+.cf7as-upload-modal .cf7as-work-content {
+    flex: 1 !important;
+    display: none !important; /* Hidden by default */
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-work-content,
+.cf7as-upload-modal .cf7as-modal-body-inner.has-files .cf7as-work-content {
+    display: flex !important; /* Show when files are present */
+}
+
+/* Protect flex layouts from theme interference */
+.cf7as-submission-modal .cf7as-modal-body-inner,
+.cf7as-upload-modal .cf7as-modal-body-inner {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files,
+.cf7as-upload-modal .cf7as-modal-body-inner.has-files {
+    flex-direction: row !important;
+}
+
+/* Reset any theme interference with modal containers */
+.cf7as-submission-modal,
+.cf7as-upload-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    z-index: 999999 !important;
+    background: rgba(0, 0, 0, 0.9) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.cf7as-submission-modal .cf7as-modal-content,
+.cf7as-upload-modal .cf7as-modal-content {
+    position: relative !important;
+    width: 90% !important;
+    max-width: 1200px !important;
+    height: 90% !important;
+    background: #ffffff !important;
+    border-radius: 16px !important;
+    margin: 5% auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+    overflow: hidden !important;
+}
+
+/* ===================================================================
+   SCOPING: All styles are constrained to CF7AS components only
+   =================================================================== */
 
 /* Main uploader container */
 .cf7as-custom-uploader {
@@ -55,7 +368,7 @@
 }
 
 /* Transitioned state - compact in top right */
-.cf7as-modal-body.has-files .cf7as-upload-area {
+.cf7as-modal-body-inner.has-files .cf7as-upload-area {
     position: absolute;
     top: 20px;
     right: 20px;
@@ -68,7 +381,7 @@
     border-radius: 8px; /* Smaller border radius */
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-prompt {
+.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-prompt {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -76,16 +389,16 @@
     height: 100%;
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-icon {
+.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon {
     margin-bottom: 0; /* Remove margin for compact layout */
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-icon svg {
+.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon svg {
     width: 24px; /* Smaller icon */
     height: 24px;
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-area .cf7as-upload-text {
+.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-text {
     display: none; /* Hide text in compact mode */
 }
 
@@ -101,13 +414,22 @@
     transform: scale(1.02);
 }
 
-/* Dynamic drag expansion when files are present */
+/* Dynamic drag expansion when files are present - Maximum specificity override */
+html body .cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded,
+html body .cf7as-upload-area.cf7as-drag-expanded,  
+.cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded,
 .cf7as-upload-area.cf7as-drag-expanded {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     width: 100vw !important;
     height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 100vw !important;
+    min-height: 100vh !important;
     z-index: 2147483648 !important;
     background: rgba(59, 130, 246, 0.1) !important;
     border: 3px dashed #3b82f6 !important;
@@ -120,8 +442,14 @@
     transform: none !important;
     transition: none !important;
     box-shadow: none !important;
+    overflow: visible !important;
+    clip: none !important;
+    clip-path: none !important;
 }
 
+html body .cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
+html body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
+.cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
 .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt {
     position: absolute !important;
     top: 50% !important;
@@ -138,6 +466,11 @@
     align-items: center !important;
     justify-content: center !important;
     height: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    overflow: visible !important;
 }
 /* Upload prompt content */
 .cf7as-upload-prompt {
@@ -189,168 +522,434 @@
     overflow: hidden;
 }
 
-.cf7as-modal-body.has-files .cf7as-work-content {
+.cf7as-modal-body-inner.has-files .cf7as-work-content {
     display: flex; /* Show when files are present */
 }
 
+/* Work grid container with maximum specificity */
+html body .cf7as-upload-modal .cf7as-work-grid-container,
+html body .cf7as-modal .cf7as-work-grid-container,
+.cf7as-modal .cf7as-work-grid-container,
 .cf7as-work-grid-container {
-    flex: 1;
-    padding: 20px;
-    padding-right: 320px; /* Space for compact upload area and editing panel */
-    overflow-y: auto;
+    flex: 1 !important;
+    padding: 20px !important;
+    padding-right: 120px !important; /* Further reduced to maximize grid space */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    height: auto !important;
+    min-height: 400px !important;
+    width: 100% !important;
+    max-width: none !important;
+    /* Ensure minimum width for grid layout */
+    min-width: 800px !important; /* Increased to ensure horizontal layout */
 }
 
+/* Enhanced work grid with maximum theme protection and specificity */
+html body .cf7as-upload-modal .cf7as-work-grid,
+html body .cf7as-modal .cf7as-work-grid,
+.cf7as-modal .cf7as-work-grid,
 .cf7as-work-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+    grid-auto-rows: auto !important;
+    gap: 16px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: start !important;
+    align-items: start !important;
+    /* Force minimum width to ensure multiple columns can fit */
+    min-width: 500px !important;
 }
 
+/* Enhanced work items with maximum theme protection */
+html body .cf7as-modal .cf7as-work-item,
+.cf7as-modal .cf7as-work-item,
 .cf7as-work-item {
-    background: white;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
+    background: #ffffff !important;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important; /* Hidden to prevent cutoff */
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    display: block !important; /* Changed back to block */
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 220px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-decoration: none !important;
+    color: inherit !important;
+    list-style: none !important;
+    flex-shrink: 0 !important;
 }
 
+html body .cf7as-modal .cf7as-work-item:hover,
+.cf7as-modal .cf7as-work-item:hover,
 .cf7as-work-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    border-color: #2271b1;
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    border-color: #2271b1 !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.selected,
+.cf7as-modal .cf7as-work-item.selected,
 .cf7as-work-item.selected {
-    border-color: #2271b1;
-    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.2);
+    border-color: #2271b1 !important;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.2) !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.uploading,
+.cf7as-modal .cf7as-work-item.uploading,
 .cf7as-work-item.uploading {
-    border-color: #f0ad4e;
-    opacity: 0.8;
+    border-color: #f0ad4e !important;
+    opacity: 0.8 !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.uploaded,
+.cf7as-modal .cf7as-work-item.uploaded,
 .cf7as-work-item.uploaded {
-    border-color: #5cb85c;
+    border-color: #5cb85c !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.error,
+.cf7as-modal .cf7as-work-item.error,
 .cf7as-work-item.error {
-    border-color: #d9534f;
+    border-color: #d9534f !important;
 }
 
+/* Enhanced work preview with proper thumbnail handling */
+html body .cf7as-modal .cf7as-work-preview,
+.cf7as-modal .cf7as-work-preview,
 .cf7as-work-preview {
-    width: 100%;
-    height: 150px;
-    overflow: hidden;
-    background: #f8f9fa;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
+    width: 100% !important;
+    height: 160px !important;
+    overflow: hidden !important;
+    background: #f8f9fa !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    flex-shrink: 0 !important; /* Prevent shrinking */
+    border-top-left-radius: 10px !important;
+    border-top-right-radius: 10px !important;
 }
 
-.cf7as-work-preview img,
+/* Loading state for thumbnails */
+html body .cf7as-modal .cf7as-work-preview.loading,
+.cf7as-modal .cf7as-work-preview.loading,
+.cf7as-work-preview.loading {
+    background: linear-gradient(90deg, #f8f9fa 25%, #e9ecef 50%, #f8f9fa 75%) !important;
+    background-size: 200% 100% !important;
+    animation: shimmer 1.5s infinite !important;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+html body .cf7as-modal .cf7as-work-preview img,
+.cf7as-modal .cf7as-work-preview img,
+.cf7as-work-preview img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transition: opacity 0.3s ease !important;
+    position: relative !important;
+    z-index: 2 !important;
+    max-width: none !important;
+    max-height: none !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+}
+
+html body .cf7as-modal .cf7as-work-preview video,
+.cf7as-modal .cf7as-work-preview video,
 .cf7as-work-preview video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #000000 !important;
+    position: relative !important;
+    z-index: 2 !important;
+    transition: opacity 0.3s ease !important;
 }
 
+/* File icon for non-image files and fallbacks */
+html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon,
+.cf7as-modal .cf7as-work-preview .cf7as-file-icon,
 .cf7as-work-preview .cf7as-file-icon {
-    color: #999;
+    color: #999999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: #f8f9fa !important;
+    z-index: 1 !important;
+    transition: opacity 0.3s ease !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-sizing: border-box !important;
 }
 
+/* Always show file icon for non-image files */
+html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
+.cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
+.cf7as-work-preview .cf7as-file-icon:only-child {
+    display: flex !important;
+    opacity: 1 !important;
+}
+
+/* When used as fallback, file icon should be initially hidden */
+html body .cf7as-modal .cf7as-work-preview img + .cf7as-file-icon,
+.cf7as-modal .cf7as-work-preview img + .cf7as-file-icon,
+.cf7as-work-preview img + .cf7as-file-icon {
+    display: none !important;
+    opacity: 0 !important;
+}
+
+/* When used as fallback, file icon should be initially hidden */
+html body .cf7as-modal .cf7as-work-preview video + .cf7as-file-icon,
+.cf7as-modal .cf7as-work-preview video + .cf7as-file-icon,
+.cf7as-work-preview video + .cf7as-file-icon {
+    display: none !important;
+    opacity: 0 !important;
+}
+
+html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon svg,
+.cf7as-modal .cf7as-work-preview .cf7as-file-icon svg,
 .cf7as-work-preview .cf7as-file-icon svg {
-    width: 48px;
-    height: 48px;
+    width: 48px !important;
+    height: 48px !important;
+    fill: currentColor !important;
 }
 
+/* Thumbnail loading states */
+html body .cf7as-modal .cf7as-work-preview img[src=""],
+.cf7as-modal .cf7as-work-preview img[src=""],
+.cf7as-work-preview img[src=""] {
+    display: none !important;
+}
+
+html body .cf7as-modal .cf7as-work-preview img:not([src]),
+.cf7as-modal .cf7as-work-preview img:not([src]),
+.cf7as-work-preview img:not([src]) {
+    display: none !important;
+}
+
+/* Ensure thumbnails are visible when they have valid src */
+html body .cf7as-modal .cf7as-work-preview img[src]:not([src=""]),
+.cf7as-modal .cf7as-work-preview img[src]:not([src=""]),
+.cf7as-work-preview img[src]:not([src=""]) {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Enhanced status badge with theme protection */
+html body .cf7as-modal .cf7as-work-status-badge,
+.cf7as-modal .cf7as-work-status-badge,
 .cf7as-work-status-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: white;
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    padding: 8px 16px !important;
+    border-radius: 20px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    color: white !important;
+    z-index: 15 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    line-height: 1 !important;
+    display: block !important;
+    min-width: 70px !important;
+    min-height: 24px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    backdrop-filter: blur(4px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
+/* Show badge only when work item has a status class */
+html body .cf7as-modal .cf7as-work-item.pending .cf7as-work-status-badge,
+.cf7as-modal .cf7as-work-item.pending .cf7as-work-status-badge,
 .cf7as-work-item.pending .cf7as-work-status-badge {
-    background: #856404;
+    background: linear-gradient(135deg, #856404, #6c5503) !important;
+    display: block !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.uploading .cf7as-work-status-badge,
+.cf7as-modal .cf7as-work-item.uploading .cf7as-work-status-badge,
 .cf7as-work-item.uploading .cf7as-work-status-badge {
-    background: #f0ad4e;
+    background: linear-gradient(135deg, #f0ad4e, #ec971f) !important;
+    display: block !important;
+    animation: pulse 2s infinite !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.uploaded .cf7as-work-status-badge,
+.cf7as-modal .cf7as-work-item.uploaded .cf7as-work-status-badge,
 .cf7as-work-item.uploaded .cf7as-work-status-badge {
-    background: #5cb85c;
+    background: linear-gradient(135deg, #5cb85c, #449d44) !important;
+    display: block !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.error .cf7as-work-status-badge,
+.cf7as-modal .cf7as-work-item.error .cf7as-work-status-badge,
 .cf7as-work-item.error .cf7as-work-status-badge {
-    background: #d9534f;
+    background: linear-gradient(135deg, #d9534f, #c9302c) !important;
+    display: block !important;
 }
 
+/* Pulse animation for uploading status */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Enhanced work info section with theme protection */
+html body .cf7as-modal .cf7as-work-info,
+.cf7as-modal .cf7as-work-info,
 .cf7as-work-info {
-    padding: 15px;
-    background: white;
+    padding: 15px !important;
+    background: white !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-top: 1px solid #f0f0f0 !important;
+    flex: 1 !important; /* Take remaining space */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-height: 70px !important; /* Ensure minimum height for content */
 }
 
+html body .cf7as-modal .cf7as-work-title-display,
+.cf7as-modal .cf7as-work-title-display,
 .cf7as-work-title-display {
-    font-weight: 600;
-    color: #333;
-    font-size: 14px;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-weight: 600 !important;
+    color: #333333 !important;
+    font-size: 14px !important;
+    margin: 0 0 4px 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.4 !important;
+    font-family: inherit !important;
 }
 
+html body .cf7as-modal .cf7as-work-filename,
+.cf7as-modal .cf7as-work-filename,
 .cf7as-work-filename {
-    font-size: 12px;
-    color: #666;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 8px;
+    font-size: 12px !important;
+    color: #666666 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+    line-height: 1.3 !important;
+    font-family: inherit !important;
 }
 
+/* Enhanced work meta section */
+html body .cf7as-modal .cf7as-work-meta,
+.cf7as-modal .cf7as-work-meta,
 .cf7as-work-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 11px;
-    color: #888;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 11px !important;
+    color: #888888 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
 }
 
+/* Enhanced progress overlay with theme protection */
+html body .cf7as-modal .cf7as-progress-overlay,
+.cf7as-modal .cf7as-progress-overlay,
 .cf7as-progress-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: rgba(0, 0, 0, 0.1);
-    overflow: hidden;
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    background: rgba(0, 0, 0, 0.1) !important;
+    overflow: hidden !important;
+    z-index: 5 !important;
+    border-bottom-left-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
 }
 
+html body .cf7as-modal .cf7as-progress-overlay .cf7as-progress-fill,
+.cf7as-modal .cf7as-progress-overlay .cf7as-progress-fill,
 .cf7as-progress-overlay .cf7as-progress-fill {
-    height: 100%;
-    background: #2271b1;
-    transition: width 0.3s ease;
+    height: 100% !important;
+    background: #2271b1 !important;
+    transition: width 0.3s ease !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.uploaded .cf7as-progress-overlay .cf7as-progress-fill,
+.cf7as-modal .cf7as-work-item.uploaded .cf7as-progress-overlay .cf7as-progress-fill,
 .cf7as-work-item.uploaded .cf7as-progress-overlay .cf7as-progress-fill {
-    background: #5cb85c;
+    background: #5cb85c !important;
 }
 
+html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-progress-fill,
+.cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-progress-fill,
 .cf7as-work-item.error .cf7as-progress-overlay .cf7as-progress-fill {
-    background: #d9534f;
+    background: #d9534f !important;
 }
 
 /* Work editing panel */
@@ -370,7 +969,7 @@
     z-index: 5; /* Ensure it's below the upload area but above content */
 }
 
-.cf7as-modal-body.has-files .cf7as-work-editor {
+.cf7as-modal-body-inner.has-files .cf7as-work-editor {
     display: flex; /* Show when files are present */
 }
 
@@ -703,7 +1302,7 @@
     flex-shrink: 0;
 }
 
-.cf7as-modal-body.has-files .cf7as-upload-controls {
+.cf7as-modal-body-inner.has-files .cf7as-upload-controls {
     margin-right: 320px; /* Account for right panel */
 }
 
@@ -1324,8 +1923,9 @@ html:has(body.cf7as-modal-open) {
     height: 100vh !important;
 }
 
-/* Additional reset for any potential interfering elements */
-body.cf7as-modal-open * {
+/* Additional reset for CF7AS elements only - constrained to avoid theme conflicts */
+body.cf7as-modal-open .cf7as-upload-modal *,
+body.cf7as-modal-open .cf7as-submission-modal * {
     box-sizing: border-box;
 }
 
@@ -1396,7 +1996,7 @@ button.cf7as-upload-all-btn:disabled:hover {
     }
     
     /* Stack layout on mobile */
-    .cf7as-modal-body.has-files {
+    .cf7as-modal-body-inner.has-files {
         flex-direction: column;
         padding: 15px;
     }
@@ -1413,7 +2013,7 @@ button.cf7as-upload-all-btn:disabled:hover {
     }
     
     /* Move upload area and editor to bottom on mobile */
-    .cf7as-modal-body.has-files .cf7as-upload-area {
+    .cf7as-modal-body-inner.has-files .cf7as-upload-area {
         position: relative;
         top: auto;
         right: auto;
@@ -1439,7 +2039,7 @@ button.cf7as-upload-all-btn:disabled:hover {
         order: 1;
     }
     
-    .cf7as-modal-body.has-files .cf7as-upload-controls {
+    .cf7as-modal-body-inner.has-files .cf7as-upload-controls {
         margin-right: 0;
         order: 4;
     }
@@ -1519,69 +2119,74 @@ button.cf7as-upload-all-btn:disabled:hover {
     }
 }
 
-/* === FORM TAKEOVER & SUBMISSION MODAL STYLES === */
+/* ===================================================================
+   FORM TAKEOVER STYLES
+   =================================================================== */
 
-/* Form takeover initial interface */
 .cf7as-form-takeover {
+    padding: 60px 20px;
     text-align: center;
-    padding: 40px 20px;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    margin: 20px 0;
+}
+
+.cf7as-submission-intro {
+    margin-bottom: 40px;
 }
 
 .cf7as-submission-intro h2 {
-    color: #2c3e50;
+    margin: 0 0 16px 0;
     font-size: 28px;
-    margin-bottom: 16px;
     font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
 }
 
 .cf7as-submission-intro p {
-    color: #5a6c7d;
-    font-size: 16px;
+    margin: 0;
+    font-size: 18px;
+    color: #6c757d;
     line-height: 1.6;
-    margin-bottom: 30px;
-    max-width: 500px;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    text-align: center !important;
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.cf7as-submission-button-container {
+    margin-top: 32px;
 }
 
 .cf7as-submit-work-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
-    padding: 18px 36px;
+    padding: 20px 40px;
     font-size: 18px;
     font-weight: 600;
-    border-radius: 50px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .cf7as-submit-work-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
-.cf7as-submit-work-btn:active {
-    transform: translateY(0);
+.cf7as-btn-icon {
+    display: flex;
+    align-items: center;
 }
 
-.cf7as-btn-icon svg {
-    transition: transform 0.3s ease;
-}
+/* ===================================================================
+   SUBMISSION MODAL STYLES
+   =================================================================== */
 
-.cf7as-submit-work-btn:hover .cf7as-btn-icon svg {
-    transform: translateY(-2px);
-}
-
-/* Submission Modal */
 .cf7as-submission-modal {
     position: fixed;
     top: 0;
@@ -1798,10 +2403,11 @@ button.cf7as-upload-all-btn:disabled:hover {
 .cf7as-field-group label {
     font-weight: 600;
     color: #2c3e50;
-    font-size: 12px;
+    font-size: 15px;
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-size: 12px;
 }
 
 .cf7as-field-group input,
@@ -2009,16 +2615,4 @@ button.cf7as-upload-all-btn:disabled:hover {
 
 body.cf7as-submission-modal-open {
     overflow: hidden;
-}
-
-/* === MODAL UPLOAD INTERFACE STYLES === */
-/* Note: Some styles are duplicated from main uploader but kept for modal-specific contexts */
-
-/* Modal body inner container */
-.cf7as-modal-body-inner {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    position: relative;
 }
