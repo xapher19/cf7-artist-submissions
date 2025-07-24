@@ -49,14 +49,8 @@
             console.log('Initializing custom uploader for:', this.containerId);
             console.log('Options:', this.options);
             
-            // Check if form takeover is enabled
-            if (this.container.data('form-takeover') === true || this.container.data('form-takeover') === 'true') {
-                this.setupFormTakeover();
-            } else {
-                this.createUI();
-                this.bindEvents();
-                this.setupFormIntegration();
-            }
+            // Only support form takeover mode going forward
+            this.setupFormTakeover();
             
             // Mark as initialized
             this.container.addClass('custom-uploader-initialized');
@@ -459,6 +453,10 @@
             
             // Create the upload interface
             this.createModalUploadInterface(uploadContainer);
+            
+            // Add upload controls to step actions
+            this.addUploadControlsToStepActions();
+            
             this.bindModalUploadEvents();
             this.bindSubmissionModalDragEvents();
             
@@ -494,104 +492,104 @@
                             <div class="cf7as-work-grid"></div>
                         </div>
                     </div>
-                    
-                    <div class="cf7as-work-editor">
-                        <div class="cf7as-editor-header">
-                            <h3 class="cf7as-editor-title">Edit Work Details</h3>
-                            <p class="cf7as-editor-subtitle">Select a work to edit its information</p>
-                        </div>
-                        <div class="cf7as-editor-body">
-                            <div class="cf7as-editor-field">
-                                <label for="cf7as-selected-work-title">Work Title *</label>
-                                <input type="text" id="cf7as-selected-work-title" class="cf7as-selected-work-title" placeholder="Enter the title of this work">
-                            </div>
-                            <div class="cf7as-editor-field">
-                                <label for="cf7as-selected-work-statement">Work Statement</label>
-                                <textarea id="cf7as-selected-work-statement" class="cf7as-selected-work-statement" placeholder="Describe this work, techniques used, artistic intentions, etc." rows="4"></textarea>
-                            </div>
-                        </div>
-                        <div class="cf7as-editor-actions">
-                            <button type="button" class="cf7as-upload-single-btn">Upload This File</button>
-                            <button type="button" class="cf7as-remove-single-btn">Remove File</button>
-                        </div>
-                    </div>
                 </div>
             `;
             
             container.html(uploadHtml);
             
-            // Cache new DOM elements for submission modal (separate from regular modal)
+            // Cache new DOM elements for submission modal
             this.submissionModalBody = container.find('.cf7as-modal-body-inner');
             this.submissionUploadArea = container.find('.cf7as-upload-area');
             this.submissionFileInput = container.find('.cf7as-file-input');
             this.submissionWorkContent = container.find('.cf7as-work-content');
             this.submissionWorkGrid = container.find('.cf7as-work-grid');
-            this.submissionWorkEditor = container.find('.cf7as-work-editor');
             this.submissionBrowseBtn = container.find('.cf7as-browse-btn');
-            this.submissionSelectedWorkTitle = container.find('.cf7as-selected-work-title');
-            this.submissionSelectedWorkStatement = container.find('.cf7as-selected-work-statement');
-            this.submissionUploadSingleBtn = container.find('.cf7as-upload-single-btn');
-            this.submissionRemoveSingleBtn = container.find('.cf7as-remove-single-btn');
+            
+            console.log('🔧 Submission modal DOM elements cached:', {
+                modalBody: this.submissionModalBody.length,
+                uploadArea: this.submissionUploadArea.length,
+                fileInput: this.submissionFileInput.length,
+                workContent: this.submissionWorkContent.length,
+                workGrid: this.submissionWorkGrid.length,
+                browseBtn: this.submissionBrowseBtn.length
+            });
+            
+            if (this.submissionWorkGrid.length === 0) {
+                console.error('❌ CRITICAL: .cf7as-work-grid not found in submission modal!');
+                console.log('🔍 Available elements with "grid" in class:', container.find('[class*="grid"]').length);
+                console.log('🔍 Available work-related elements:', container.find('[class*="work"]').map((i, el) => el.className).get());
+            } else {
+                console.log('✅ Work grid found and cached successfully');
+            }
+        }
+        
+        addUploadControlsToStepActions() {
+            // Find the step actions container for step 2
+            const stepActions = this.submissionModal.find('.cf7as-step-content-2 .cf7as-step-actions');
+            
+            if (stepActions.length === 0) {
+                console.error('Step actions container not found');
+                return;
+            }
+            
+            // Add upload controls HTML between existing buttons
+            const uploadControlsHtml = `
+                <div class="cf7as-upload-controls-group">
+                    <button type="button" class="cf7as-btn cf7as-btn-primary cf7as-submission-upload-all-btn">
+                        Upload All Files
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,5 17,10"></polyline>
+                            <line x1="12" y1="5" x2="12" y2="15"></line>
+                        </svg>
+                    </button>
+                    <button type="button" class="cf7as-btn cf7as-btn-secondary cf7as-submission-clear-all-btn">
+                        Clear All
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="cf7as-upload-progress-container">
+                    <div class="cf7as-upload-progress-bar">
+                        <div class="cf7as-upload-progress-fill"></div>
+                    </div>
+                    <div class="cf7as-upload-progress-text">Uploading files...</div>
+                </div>
+            `;
+            
+            // Insert upload controls before the continue button
+            const continueBtn = stepActions.find('.cf7as-continue-to-submit');
+            if (continueBtn.length > 0) {
+                continueBtn.before(uploadControlsHtml);
+            } else {
+                stepActions.append(uploadControlsHtml);
+            }
+            
+            // Cache the new elements
+            this.submissionUploadAllBtn = stepActions.find('.cf7as-submission-upload-all-btn');
+            this.submissionClearAllBtn = stepActions.find('.cf7as-submission-clear-all-btn');
+            this.submissionProgressContainer = stepActions.find('.cf7as-upload-progress-container');
+            this.submissionProgressFill = stepActions.find('.cf7as-upload-progress-fill');
+            this.submissionProgressText = stepActions.find('.cf7as-upload-progress-text');
         }
         
         bindModalUploadEvents() {
             const self = this;
             
-            // Work selection - use submission modal elements
-            this.submissionWorkGrid.on('click', '.cf7as-work-item', function(e) {
+            // Upload all files button for submission modal
+            this.submissionUploadAllBtn.on('click', function(e) {
                 e.preventDefault();
-                const fileId = $(this).data('file-id');
-                self.selectFile(fileId);
+                self.uploadAllWithProgress();
             });
             
-            // Work title input
-            this.submissionSelectedWorkTitle.on('input', function() {
-                if (self.selectedFileId) {
-                    const file = self.files.find(f => f.id === self.selectedFileId);
-                    if (file) {
-                        file.workTitle = $(this).val();
-                        self.updateWorkTitleDisplay(self.selectedFileId, $(this).val());
-                        self.updateFormSubmissionState();
-                    }
-                }
-            });
-            
-            // Work statement input
-            this.submissionSelectedWorkStatement.on('input', function() {
-                if (self.selectedFileId) {
-                    const file = self.files.find(f => f.id === self.selectedFileId);
-                    if (file) {
-                        file.workStatement = $(this).val();
-                    }
-                }
-            });
-            
-            // Upload single file
-            this.submissionUploadSingleBtn.on('click', function(e) {
+            // Clear all files button for submission modal
+            this.submissionClearAllBtn.on('click', function(e) {
                 e.preventDefault();
-                if (self.selectedFileId) {
-                    const file = self.files.find(f => f.id === self.selectedFileId);
-                    if (file && file.status === 'pending') {
-                        
-                        // Check if work title is provided
-                        if (!file.workTitle || file.workTitle.trim() === '') {
-                            self.showError('Please provide a work title before uploading.');
-                            self.submissionSelectedWorkTitle.focus();
-                            return;
-                        }
-                        
-                        self.uploadFile(self.selectedFileId);
-                    }
-                }
-            });
-            
-            // Remove single file
-            this.submissionRemoveSingleBtn.on('click', function(e) {
-                e.preventDefault();
-                if (self.selectedFileId) {
-                    self.removeFile(self.selectedFileId);
-                    self.selectedFileId = null;
-                    self.updateWorkEditor();
+                if (confirm('Are you sure you want to remove all files?')) {
+                    self.clearAll();
                 }
             });
         }
@@ -600,12 +598,6 @@
             const uploadArea = this.submissionUploadArea;
             const fileInput = this.submissionFileInput;
             const modal = this.submissionModal;
-            
-            // Debug: Check if elements exist
-            console.log('Binding submission modal drag events');
-            console.log('Upload area found:', uploadArea && uploadArea.length > 0);
-            console.log('File input found:', fileInput && fileInput.length > 0);
-            console.log('Modal found:', modal && modal.length > 0);
             
             if (!uploadArea || uploadArea.length === 0) {
                 console.error('Upload area not found for submission modal');
@@ -622,7 +614,6 @@
                 if (modal.is(':visible')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Document drag event prevented');
                 }
             });
             
@@ -630,7 +621,6 @@
                 if (modal.is(':visible')) {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Document drop event prevented');
                 }
             });
             
@@ -639,11 +629,9 @@
                 uploadArea.on(eventName, (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log(`Upload area ${eventName} event`);
                     
                     // Handle dragover class immediately in the same handler
                     if (eventName === 'dragenter' || eventName === 'dragover') {
-                        console.log(`Adding dragover class on ${eventName}`);
                         uploadArea.addClass('cf7as-dragover');
                     } else if (eventName === 'dragleave') {
                         // Only remove dragover if we're actually leaving the upload area
@@ -652,12 +640,16 @@
                         const y = e.originalEvent.clientY;
                         
                         if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-                            console.log('Removing dragover class on dragleave');
                             uploadArea.removeClass('cf7as-dragover');
                         }
                     } else if (eventName === 'drop') {
-                        console.log('Removing dragover class on drop');
                         uploadArea.removeClass('cf7as-dragover');
+                        
+                        // Handle the file drop
+                        const files = e.originalEvent.dataTransfer.files;
+                        if (files && files.length > 0) {
+                            this.addFiles(files);
+                        }
                     }
                 });
             });
@@ -667,12 +659,10 @@
             modal.on('dragenter dragover dragleave drop', '.cf7as-upload-area', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log(`Delegated upload area ${e.type} event`);
                 
                 const target = $(e.currentTarget);
                 
                 if (e.type === 'dragenter' || e.type === 'dragover') {
-                    console.log(`Delegated: Adding dragover class on ${e.type}`);
                     target.addClass('cf7as-dragover');
                 } else if (e.type === 'dragleave') {
                     // Only remove if leaving the element bounds
@@ -681,25 +671,17 @@
                     const y = e.originalEvent.clientY;
                     
                     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-                        console.log('Delegated: Removing dragover class on dragleave');
                         target.removeClass('cf7as-dragover');
                     }
                 } else if (e.type === 'drop') {
-                    console.log('Delegated: Removing dragover class on drop');
                     target.removeClass('cf7as-dragover');
                     
                     // Handle the file drop
                     const files = e.originalEvent.dataTransfer.files;
-                    console.log('Files dropped on upload area (delegated):', files.length);
                     if (files && files.length > 0) {
                         this.addFiles(files);
                     }
                 }
-            });
-            
-            // Add click test to verify element is interactive
-            uploadArea.on('click', (e) => {
-                console.log('Upload area clicked - element is interactive');
             });
             
             // Prevent default drag behaviors on entire modal
@@ -707,15 +689,12 @@
                 modal.on(eventName, (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log(`Modal ${eventName} event`);
                 });
             });
             
             // Handle files dropped anywhere in the modal
             modal.on('drop', (e) => {
-                console.log('Drop event on modal');
                 const files = e.originalEvent.dataTransfer.files;
-                console.log('Files dropped on modal:', files.length);
                 if (files && files.length > 0) {
                     // Collapse drag area immediately after drop
                     if (this.submissionDragExpanded) {
@@ -732,12 +711,7 @@
                 const dt = e.originalEvent.dataTransfer;
                 const hasFiles = dt && (dt.types.includes('Files') || dt.types.includes('application/x-moz-file') || dt.files.length > 0);
                 
-                console.log('Drag over modal - dataTransfer types:', dt ? dt.types : 'no dataTransfer');
-                console.log('Has files:', hasFiles);
-                
                 if (hasFiles) {
-                    console.log('Files detected in drag over modal');
-                    
                     // If there are already files present, expand the drag area to fill the modal
                     if (this.files.length > 0) {
                         // Only expand if not already expanded to prevent repeated calls
@@ -768,19 +742,14 @@
             this.submissionBrowseBtn.on('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('Browse button clicked, triggering file input');
-                console.log('File input element:', this.submissionFileInput.length);
                 if (this.submissionFileInput.length > 0) {
                     this.submissionFileInput[0].click();
-                } else {
-                    console.error('File input not found');
                 }
             });
             
             // File input change
             fileInput.on('change', (e) => {
                 const files = e.target.files;
-                console.log('File input changed, files:', files.length);
                 this.addFiles(files);
                 // Clear the input so the same file can be selected again
                 fileInput.val('');
@@ -1030,189 +999,6 @@
             form.submit();
         }
         
-        // Modal control methods
-        openModal() {
-            // Move modal to body to escape container positioning constraints
-            this.modal.appendTo('body');
-            
-            // Ensure modal is properly positioned to cover entire viewport
-            this.modal.css({
-                'position': 'fixed',
-                'top': '0',
-                'left': '0',
-                'width': '100vw',
-                'height': '100vh',
-                'z-index': '2147483647',
-                'margin': '0',
-                'padding': '0'
-            });
-            
-            // Ensure modal content covers full viewport
-            this.modal.find('.cf7as-modal-content').css({
-                'width': '100vw',
-                'height': '100vh',
-                'max-width': 'none',
-                'max-height': 'none',
-                'margin': '0',
-                'padding': '0',
-                'border-radius': '0'
-            });
-            
-            // Ensure overlay covers full viewport
-            this.modal.find('.cf7as-modal-overlay').css({
-                'width': '100vw',
-                'height': '100vh',
-                'margin': '0',
-                'padding': '0'
-            });
-            
-            this.modal.show();
-            $('body').addClass('cf7as-modal-open');
-            
-            // Prevent body scrolling and ensure fullscreen
-            $('html, body').css({
-                'overflow': 'hidden',
-                'height': '100%',
-                'margin': '0',
-                'padding': '0'
-            });
-        }
-        
-        closeModal() {
-            this.modal.hide();
-            $('body').removeClass('cf7as-modal-open');
-            
-            // Collapse drag area immediately and clean up
-            this.collapseDragAreaImmediate();
-            
-            // Remove document-level drag event handlers
-            $(document).off('dragenter.cf7as-modal dragover.cf7as-modal dragleave.cf7as-modal drop.cf7as-modal');
-            
-            // Restore body scrolling
-            $('html, body').css({
-                'overflow': '',
-                'height': ''
-            });
-            
-            // Move modal back to original container to keep it with the uploader instance
-            this.modal.appendTo(this.container);
-        }
-        
-        // Drag area expansion methods
-        expandDragArea() {
-            if (this.dragExpanded) return; // Already expanded
-            
-            // Clear any pending collapse timeout
-            if (this.dragTimeout) {
-                clearTimeout(this.dragTimeout);
-                this.dragTimeout = null;
-            }
-            
-            this.dragExpanded = true;
-            this.uploadArea.addClass('cf7as-drag-expanded');
-            
-            // Force inline styles as backup for theme conflicts
-            this.uploadArea.css({
-                'position': 'fixed',
-                'top': '0',
-                'left': '0',
-                'right': '0',
-                'bottom': '0',
-                'width': '100vw',
-                'height': '100vh',
-                'z-index': '2147483648',
-                'background': 'rgba(59, 130, 246, 0.1)',
-                'border': '3px dashed #3b82f6',
-                'border-radius': '0',
-                'margin': '0',
-                'padding': '0',
-                'display': 'flex',
-                'align-items': 'center',
-                'justify-content': 'center',
-                'transform': 'none',
-                'transition': 'none',
-                'box-shadow': 'none'
-            });
-        }
-        
-        collapseDragArea() {
-            if (!this.dragExpanded) return; // Already collapsed
-            
-            // Clear any existing timeout
-            if (this.dragTimeout) {
-                clearTimeout(this.dragTimeout);
-            }
-            
-            // Add a small delay to prevent flickering during rapid events
-            this.dragTimeout = setTimeout(() => {
-                this.dragExpanded = false;
-                this.uploadArea.removeClass('cf7as-drag-expanded');
-                
-                // Reset inline styles
-                this.uploadArea.css({
-                    'position': '',
-                    'top': '',
-                    'left': '',
-                    'right': '',
-                    'bottom': '',
-                    'width': '',
-                    'height': '',
-                    'z-index': '',
-                    'background': '',
-                    'border': '',
-                    'border-radius': '',
-                    'margin': '',
-                    'padding': '',
-                    'display': '',
-                    'align-items': '',
-                    'justify-content': '',
-                    'transform': '',
-                    'transition': '',
-                    'box-shadow': ''
-                });
-                
-                this.dragTimeout = null;
-            }, 200); // Increased to 200ms for more stability
-        }
-        
-        // Immediately collapse without delay - for definitive actions like drops
-        collapseDragAreaImmediate() {
-            if (!this.dragExpanded) return; // Already collapsed
-            
-            // Clear any pending timeout
-            if (this.dragTimeout) {
-                clearTimeout(this.dragTimeout);
-                this.dragTimeout = null;
-            }
-            
-            // Collapse immediately
-            this.dragExpanded = false;
-            this.uploadArea.removeClass('cf7as-drag-expanded');
-            
-            // Reset inline styles immediately
-            this.uploadArea.css({
-                'position': '',
-                'top': '',
-                'left': '',
-                'right': '',
-                'bottom': '',
-                'width': '',
-                'height': '',
-                'z-index': '',
-                'background': '',
-                'border': '',
-                'border-radius': '',
-                'margin': '',
-                'padding': '',
-                'display': '',
-                'align-items': '',
-                'justify-content': '',
-                'transform': '',
-                'transition': '',
-                'box-shadow': ''
-            });
-        }
-        
         // Submission modal drag area expansion methods
         expandSubmissionModalDragArea() {
             if (this.submissionDragExpanded) return; // Already expanded
@@ -1327,331 +1113,34 @@
             });
         }
         
-        createUI() {
-            const maxSizeGB = Math.round(this.options.maxSize / (1024*1024*1024));
-            
-            // Create button-based interface
-            const html = `
-                <div class="cf7as-custom-uploader">
-                    <div class="cf7as-upload-button-container">
-                        <button type="button" class="cf7as-open-modal-btn">
-                            <span class="cf7as-upload-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7,10 12,5 17,10"></polyline>
-                                    <line x1="12" y1="5" x2="12" y2="15"></line>
-                                </svg>
-                            </span>
-                            <span>Upload Artwork Files</span>
-                        </button>
-                        <div class="cf7as-upload-summary">
-                            <span class="cf7as-file-count">0 files selected</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Full-screen modal -->
-                    <div class="cf7as-upload-modal" style="display: none;">
-                        <div class="cf7as-modal-overlay"></div>
-                        <div class="cf7as-modal-content">
-                            <div class="cf7as-modal-header">
-                                <h2>Upload Artwork Files</h2>
-                                <button type="button" class="cf7as-modal-close">&times;</button>
-                            </div>
-                            
-                            <div class="cf7as-modal-body">
-                                <div class="cf7as-modal-body-inner">
-                                    <!-- Upload area - slides to top right when files added -->
-                                    <div class="cf7as-upload-area" data-container-id="${this.containerId}">
-                                        <div class="cf7as-upload-prompt">
-                                            <div class="cf7as-upload-icon">
-                                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                    <polyline points="7,10 12,5 17,10"></polyline>
-                                                    <line x1="12" y1="5" x2="12" y2="15"></line>
-                                                </svg>
-                                            </div>
-                                            <div class="cf7as-upload-text">
-                                                <h3>Drag & drop files here</h3>
-                                                <p>or <button type="button" class="cf7as-browse-btn">browse files</button></p>
-                                                <small>Max ${maxSizeGB}GB per file, up to ${this.options.maxFiles} files</small>
-                                            </div>
-                                        </div>
-                                        <input type="file" class="cf7as-file-input" multiple style="display: none;">
-                                    </div>
-                                    
-                                    <!-- Work content area - shows when files are added -->
-                                    <div class="cf7as-work-content">
-                                        <div class="cf7as-work-grid-container">
-                                            <div class="cf7as-work-grid"></div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Work editing panel - fixed on right side -->
-                                    <div class="cf7as-work-editor">
-                                        <div class="cf7as-editor-header">
-                                            <h3 class="cf7as-editor-title">Edit Work Details</h3>
-                                            <p class="cf7as-editor-subtitle">Select a work to edit its information</p>
-                                        </div>
-                                        <div class="cf7as-editor-body">
-                                            <div class="cf7as-editor-field">
-                                                <label for="cf7as-selected-work-title">Work Title *</label>
-                                                <input type="text" id="cf7as-selected-work-title" class="cf7as-selected-work-title" placeholder="Enter the title of this work">
-                                            </div>
-                                            <div class="cf7as-editor-field">
-                                                <label for="cf7as-selected-work-statement">Work Statement</label>
-                                                <textarea id="cf7as-selected-work-statement" class="cf7as-selected-work-statement" placeholder="Describe this work, techniques used, artistic intentions, etc." rows="4"></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="cf7as-editor-actions">
-                                            <button type="button" class="cf7as-upload-single-btn">Upload This File</button>
-                                            <button type="button" class="cf7as-remove-single-btn">Remove File</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="cf7as-modal-footer">
-                                <div class="cf7as-upload-controls">
-                                    <button type="button" class="cf7as-upload-all-btn">Upload All Files</button>
-                                    <button type="button" class="cf7as-clear-all-btn">Clear All</button>
-                                    <button type="button" class="cf7as-done-btn" style="display: none;">Done</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Thumbnails preview outside modal -->
-                    <div class="cf7as-thumbnails-preview"></div>
-                    
-                    <!-- Hidden input to store file data for Contact Form 7 -->
-                    <input type="hidden" id="${this.containerId}_data" name="${this.containerId}_data" value="">
-                </div>
-            `;
-            
-            this.container.html(html);
-            
-            // Cache DOM elements
-            this.openModalBtn = this.container.find('.cf7as-open-modal-btn');
-            this.fileSummary = this.container.find('.cf7as-file-count');
-            this.modal = this.container.find('.cf7as-upload-modal');
-            this.modalOverlay = this.container.find('.cf7as-modal-overlay');
-            this.modalClose = this.container.find('.cf7as-modal-close');
-            this.modalBody = this.container.find('.cf7as-modal-body');
-            this.modalBodyInner = this.container.find('.cf7as-modal-body-inner');
-            this.uploadArea = this.container.find('.cf7as-upload-area');
-            this.fileInput = this.container.find('.cf7as-file-input');
-            this.workContent = this.container.find('.cf7as-work-content');
-            this.workGrid = this.container.find('.cf7as-work-grid');
-            this.workEditor = this.container.find('.cf7as-work-editor');
-            this.uploadControls = this.container.find('.cf7as-upload-controls');
-            this.browseBtn = this.container.find('.cf7as-browse-btn');
-            this.uploadAllBtn = this.container.find('.cf7as-upload-all-btn');
-            this.clearAllBtn = this.container.find('.cf7as-clear-all-btn');
-            this.doneBtn = this.container.find('.cf7as-done-btn');
-            this.thumbnailsPreview = this.container.find('.cf7as-thumbnails-preview');
-            this.hiddenInput = this.container.find(`#${this.containerId}_data`);
-            
-            // Editor elements
-            this.selectedWorkTitle = this.container.find('.cf7as-selected-work-title');
-            this.selectedWorkStatement = this.container.find('.cf7as-selected-work-statement');
-            this.uploadSingleBtn = this.container.find('.cf7as-upload-single-btn');
-            this.removeSingleBtn = this.container.find('.cf7as-remove-single-btn');
-            
-            // Current selection tracking
-            this.selectedFileId = null;
-        }
-        
-        bindEvents() {
-            const self = this;
-            
-            // Modal controls
-            this.openModalBtn.on('click', function(e) {
-                e.preventDefault();
-                self.openModal();
-            });
-            
-            this.modalClose.on('click', function(e) {
-                e.preventDefault();
-                self.closeModal();
-            });
-            
-            this.modalOverlay.on('click', function(e) {
-                if (e.target === this) {
-                    self.closeModal();
-                }
-            });
-            
-            this.doneBtn.on('click', function(e) {
-                e.preventDefault();
-                self.closeModal();
-            });
-            
-            // Escape key to close modal
-            $(document).on('keydown.cf7as-modal', function(e) {
-                if (e.keyCode === 27 && self.modal.is(':visible')) {
-                    self.closeModal();
-                }
-            });
-            
-            // Enhanced drag and drop events with dynamic expansion
-            this.uploadArea.on('dragover dragenter', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                $(this).addClass('cf7as-dragover');
-            });
-            
-            this.uploadArea.on('dragleave', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Only remove dragover if leaving the upload area entirely
-                if (!$.contains(this, e.relatedTarget)) {
-                    $(this).removeClass('cf7as-dragover');
-                }
-            });
-            
-            this.uploadArea.on('drop', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                $(this).removeClass('cf7as-dragover');
-                
-                // Collapse drag area immediately after drop
-                if (self.files.length > 0) {
-                    self.collapseDragAreaImmediate();
-                }
-                
-                const files = e.originalEvent.dataTransfer.files;
-                self.addFiles(files);
-            });
-            
-            // Global drag events to handle drag expansion when files are present
-            // Use document-level events for more reliable drag detection
-            $(document).on('dragenter.cf7as-modal', function(e) {
-                // Only handle when modal is open and has files
-                if (self.modal.is(':visible') && self.files.length > 0) {
-                    // Check if we're dragging files
-                    const dt = e.originalEvent.dataTransfer;
-                    if (dt && dt.types && dt.types.indexOf('Files') !== -1) {
-                        self.expandDragArea();
-                    }
-                }
-            });
-            
-            $(document).on('dragover.cf7as-modal', function(e) {
-                // Maintain expansion during dragover
-                if (self.modal.is(':visible') && self.files.length > 0 && self.dragExpanded) {
-                    e.preventDefault(); // Prevent default to allow drop
-                    // Keep the area expanded - don't collapse during dragover
-                    if (self.dragTimeout) {
-                        clearTimeout(self.dragTimeout);
-                        self.dragTimeout = null;
-                    }
-                }
-            });
-            
-            $(document).on('dragleave.cf7as-modal', function(e) {
-                // Only collapse if we've left the entire window
-                if (self.modal.is(':visible') && self.files.length > 0) {
-                    // Check if cursor is leaving the window entirely
-                    if (e.originalEvent.clientX <= 0 || e.originalEvent.clientY <= 0 || 
-                        e.originalEvent.clientX >= window.innerWidth || 
-                        e.originalEvent.clientY >= window.innerHeight) {
-                        self.collapseDragArea();
-                    }
-                }
-            });
-            
-            // Global drop event to ensure collapse happens
-            $(document).on('drop.cf7as-modal', function(e) {
-                if (self.modal.is(':visible') && self.files.length > 0) {
-                    self.collapseDragAreaImmediate();
-                }
-            });
-            
-            // Browse button
-            this.browseBtn.on('click', function(e) {
-                e.preventDefault();
-                self.fileInput.click();
-            });
-            
-            // Upload area click - when compact, clicking the area opens file browser
-            this.uploadArea.on('click', function(e) {
-                e.preventDefault();
-                // Only handle clicks when in compact mode (has files) 
-                // and not during drag operations
-                if (self.files.length > 0 && !self.dragExpanded) {
-                    self.fileInput.click();
-                }
-            });
-            
-            // File input change
-            this.fileInput.on('change', function() {
-                self.addFiles(this.files);
-                this.value = ''; // Clear input
-            });
-            
-            // Control buttons
-            this.uploadAllBtn.on('click', function(e) {
-                e.preventDefault();
-                self.uploadAll();
-            });
-            
-            this.clearAllBtn.on('click', function(e) {
-                e.preventDefault();
-                self.clearAll();
-            });
-            
-            // Work editor events
-            this.selectedWorkTitle.on('input', function(e) {
-                if (self.selectedFileId) {
-                    const fileData = self.files.find(f => f.id === self.selectedFileId);
-                    if (fileData) {
-                        fileData.workTitle = e.target.value;
-                        self.updateFormData();
-                        self.updateFormSubmissionState();
-                        self.updateWorkItemDisplay(self.selectedFileId);
-                    }
-                }
-            });
-            
-            this.selectedWorkStatement.on('input', function(e) {
-                if (self.selectedFileId) {
-                    const fileData = self.files.find(f => f.id === self.selectedFileId);
-                    if (fileData) {
-                        fileData.workStatement = e.target.value;
-                        self.updateFormData();
-                    }
-                }
-            });
-            
-            this.uploadSingleBtn.on('click', function(e) {
-                e.preventDefault();
-                if (self.selectedFileId) {
-                    self.uploadFile(self.selectedFileId);
-                }
-            });
-            
-            this.removeSingleBtn.on('click', function(e) {
-                e.preventDefault();
-                if (self.selectedFileId) {
-                    self.removeFile(self.selectedFileId);
-                }
-            });
-        }
-        
         addFiles(fileList) {
-            console.log('addFiles called with:', fileList ? fileList.length : 'null', 'files');
+            console.log('🚀 addFiles called with:', fileList ? fileList.length : 'null', 'files');
+            console.log('📊 Current state:', {
+                existingFilesCount: this.files ? this.files.length : 'undefined',
+                submissionModalExists: !!this.submissionModal,
+                submissionWorkGridExists: !!this.submissionWorkGrid,
+                submissionWorkGridLength: this.submissionWorkGrid ? this.submissionWorkGrid.length : 'N/A'
+            });
             
             if (!fileList || fileList.length === 0) {
-                console.log('No files to add');
+                console.log('⚠️ No files to add');
                 return;
             }
             
+            console.log('📝 Processing', fileList.length, 'files...');
+            
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
-                console.log('Processing file:', file.name, 'type:', file.type, 'size:', file.size);
+                console.log(`📄 Processing file ${i + 1}/${fileList.length}:`, {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    lastModified: file.lastModified
+                });
                 
                 // Check file count limit
                 if (this.files.length >= this.options.maxFiles) {
+                    console.log('❌ File limit reached:', this.files.length, '>=', this.options.maxFiles);
                     this.showError(`Maximum ${this.options.maxFiles} files allowed`);
                     break;
                 }
@@ -1705,15 +1194,22 @@
                 };
                 
                 this.files.push(fileData);
+                console.log('📋 File added to files array, total files:', this.files.length);
+                console.log('🎯 About to render work item for:', fileData.name, 'ID:', fileData.id);
                 this.renderWorkItem(fileData);
             }
             
+            console.log('✅ All files processed in addFiles loop');
+            console.log('📊 Final state after addFiles:', {
+                totalFilesNow: this.files.length,
+                submissionWorkGridStillExists: !!this.submissionWorkGrid,
+                submissionWorkGridChildren: this.submissionWorkGrid ? this.submissionWorkGrid.children().length : 'N/A'
+            });
+            
             this.updateUI();
             
-            // Select first file if none selected
-            if (this.files.length > 0 && !this.selectedFileId) {
-                this.selectWorkItem(this.files[0].id);
-            }
+            console.log('🔄 updateUI called after addFiles');
+            // Files are now edited inline - no selection needed
         }
         
         isAllowedType(mimeType) {
@@ -1763,14 +1259,30 @@
         }
         
         renderWorkItem(fileData) {
+            console.log('🚀 renderWorkItem called for file:', fileData.name, 'ID:', fileData.id);
+            console.log('📊 File data:', {
+                name: fileData.name,
+                size: fileData.size,
+                type: fileData.type,
+                status: fileData.status,
+                workTitle: fileData.workTitle,
+                workStatement: fileData.workStatement
+            });
+            
             const fileSize = this.formatBytes(fileData.size);
             const fileIcon = this.getFileIcon(fileData.type);
             
+            console.log('🖼️ File size formatted:', fileSize);
+            console.log('🎨 File icon:', fileIcon);
+            
             // Create preview content for different file types
             let previewContent = '';
+            console.log('🎬 Creating preview content for type:', fileData.type);
             
             if (this.isImageFile(fileData.type)) {
+                console.log('📸 Processing image file');
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
+                console.log('🔗 Object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
                 
                 if (objectUrl) {
                     // Properly escape filename for inline event handlers
@@ -1787,8 +1299,11 @@
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
                 }
+                console.log('📸 Image preview content created');
             } else if (fileData.type.startsWith('video/')) {
+                console.log('🎥 Processing video file');
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
+                console.log('🔗 Video object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
                 
                 if (objectUrl) {
                     // Properly escape filename for inline event handlers
@@ -1806,24 +1321,63 @@
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
                 }
+                console.log('🎥 Video preview content created');
             } else {
+                console.log('📄 Processing other file type, using icon');
                 previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
             }
             
+            console.log('✅ Preview content ready:', previewContent.length, 'characters');
+            
+            // Check if work title is missing for error state
+            const isTitleMissing = !fileData.workTitle || fileData.workTitle.trim() === '';
+            const errorClass = isTitleMissing ? ' cf7as-work-item-error' : '';
+            const errorBadge = isTitleMissing ? '<div class="cf7as-work-error-badge" title="Work title required"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>' : '';
+            
+            console.log('⚠️ Title validation:', {
+                isTitleMissing,
+                workTitle: fileData.workTitle,
+                errorClass,
+                hasErrorBadge: !!errorBadge
+            });
+            
+            console.log('🏗️ Building work item HTML...');
             const workItemHtml = `
-                <div class="cf7as-work-item" data-file-id="${fileData.id}">
+                <div class="cf7as-work-item${errorClass}" data-file-id="${fileData.id}" tabindex="0" role="button" aria-label="Edit work: ${this.escapeHtml(fileData.workTitle || 'Untitled Work')}">
                     <div class="cf7as-work-preview">
                         ${previewContent}
                         <div class="cf7as-work-status-badge">${this.getStatusLabel(fileData.status)}</div>
+                        ${errorBadge}
                         <div class="cf7as-progress-overlay">
                             <div class="cf7as-progress-fill" style="width: ${fileData.progress}%"></div>
                         </div>
                     </div>
                     <div class="cf7as-work-info">
-                        <div class="cf7as-work-title-display">${this.escapeHtml(fileData.workTitle || 'Untitled Work')}</div>
-                        <div class="cf7as-work-filename">${this.escapeHtml(fileData.name)}</div>
-                        <div class="cf7as-work-meta">
-                            <span class="cf7as-work-size">${fileSize}</span>
+                        <div class="cf7as-work-basic-info">
+                            <div class="cf7as-work-title-display">${this.escapeHtml(fileData.workTitle || 'Click to add title')}</div>
+                            <input type="text" class="cf7as-work-title-input-inline" placeholder="Enter work title" value="${this.escapeHtml(fileData.workTitle || '')}" style="display: none;">
+                            <div class="cf7as-work-filename">${this.escapeHtml(fileData.name)}</div>
+                            <div class="cf7as-work-meta">
+                                <span class="cf7as-work-size">${fileSize}</span>
+                                <div class="cf7as-work-actions">
+                                    <button type="button" class="cf7as-work-upload-btn" ${fileData.status !== 'pending' ? 'disabled' : ''}>
+                                        ${fileData.status === 'uploaded' ? 'Uploaded' : fileData.status === 'uploading' ? 'Uploading...' : 'Upload'}
+                                    </button>
+                                    <button type="button" class="cf7as-work-remove-btn">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cf7as-work-editor" style="display: none;">
+                            <div class="cf7as-work-editor-fields">
+                                <div class="cf7as-work-editor-field">
+                                    <label>Work Statement</label>
+                                    <textarea class="cf7as-work-statement-input" placeholder="Describe this work, techniques used, artistic intentions, etc." rows="3">${this.escapeHtml(fileData.workStatement || '')}</textarea>
+                                </div>
+                            </div>
+                            <div class="cf7as-work-editor-actions">
+                                <button type="button" class="cf7as-work-save-btn">Save Changes</button>
+                                <button type="button" class="cf7as-work-cancel-btn">Cancel</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1831,128 +1385,299 @@
             
             const workElement = $(workItemHtml);
             
-            // Add click handler for selection
-            workElement.on('click', (e) => {
+            // Add click handler for expansion/editing
+            workElement.find('.cf7as-work-basic-info').on('click', (e) => {
                 e.preventDefault();
-                this.selectWorkItem(fileData.id);
+                this.toggleWorkItemEditor(fileData.id);
             });
             
-            // Append to the appropriate grid based on which modal is active
+            // Add individual button handlers
+            workElement.find('.cf7as-work-upload-btn').on('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (fileData.status === 'pending') {
+                    // Check if work title is provided
+                    if (!fileData.workTitle || fileData.workTitle.trim() === '') {
+                        this.showError('Please provide a work title before uploading.');
+                        this.toggleWorkItemEditor(fileData.id);
+                        return;
+                    }
+                    this.uploadFile(fileData.id);
+                }
+            });
+            
+            workElement.find('.cf7as-work-remove-btn').on('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.removeFile(fileData.id);
+            });
+            
+            // Add editor handlers
+            workElement.find('.cf7as-work-save-btn').on('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.saveWorkItemChanges(fileData.id);
+            });
+            
+            workElement.find('.cf7as-work-cancel-btn').on('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.cancelWorkItemEditor(fileData.id);
+            });
+            
+            // Add input handlers for live updates
+            workElement.find('.cf7as-work-title-input-inline').on('input', (e) => {
+                const title = $(e.target).val();
+                fileData.workTitle = title;
+                this.updateFormSubmissionState();
+            });
+            
+            workElement.find('.cf7as-work-statement-input').on('input', (e) => {
+                const statement = $(e.target).val();
+                fileData.workStatement = statement;
+            });
+            
+            // Append to the submission modal work grid
+            console.log('🌐 Finding submission work grid...');
+            console.log('🔍 this.submissionWorkGrid exists:', !!this.submissionWorkGrid);
+            console.log('🔍 this.submissionWorkGrid length:', this.submissionWorkGrid ? this.submissionWorkGrid.length : 'N/A');
+            
             if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                console.log('✅ Submission work grid found, current children:', this.submissionWorkGrid.children().length);
+                console.log('📦 Appending work element...');
                 this.submissionWorkGrid.append(workElement);
-            } else if (this.workGrid && this.workGrid.length > 0) {
-                this.workGrid.append(workElement);
+                console.log('✅ Work element appended, new children count:', this.submissionWorkGrid.children().length);
+                console.log('🎯 Checking if element was properly inserted...');
+                const insertedElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
+                console.log('🔍 Inserted element found:', insertedElement.length > 0);
+                if (insertedElement.length > 0) {
+                    console.log('📊 Inserted element details:', {
+                        tagName: insertedElement[0].tagName,
+                        className: insertedElement[0].className,
+                        dataFileId: insertedElement[0].getAttribute('data-file-id'),
+                        isVisible: insertedElement.is(':visible'),
+                        computedDisplay: window.getComputedStyle(insertedElement[0]).display,
+                        computedVisibility: window.getComputedStyle(insertedElement[0]).visibility,
+                        computedOpacity: window.getComputedStyle(insertedElement[0]).opacity,
+                        offsetWidth: insertedElement[0].offsetWidth,
+                        offsetHeight: insertedElement[0].offsetHeight,
+                        parentVisible: insertedElement.parent().is(':visible')
+                    });
+                    
+                    // Force element to be visible for debugging
+                    insertedElement.css({
+                        'display': 'block !important',
+                        'visibility': 'visible !important',
+                        'opacity': '1 !important',
+                        'position': 'relative !important',
+                        'z-index': '9999 !important',
+                        'background': 'red !important',
+                        'border': '3px solid yellow !important',
+                        'min-height': '100px !important',
+                        'width': '100% !important'
+                    });
+                    console.log('🚨 FORCED ELEMENT VISIBLE FOR DEBUGGING');
+                } else {
+                    console.error('❌ CRITICAL: Element not found after insertion!');
+                }
+            } else {
+                console.error('❌ CRITICAL: No submission work grid found!');
+                console.log('🔍 Available grids in submission modal:', this.submissionModal ? $(this.submissionModal).find('[class*="grid"]').length : 'No submission modal');
             }
             
             // Setup fallback visibility for videos with metadata
+            console.log('⏰ Setting up video fallback visibility check...');
             setTimeout(() => {
-                // Find in both grids
+                console.log('🔄 Video fallback timeout triggered for file:', fileData.id);
+                // Find in submission grid
                 let appendedElement = null;
                 if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
                     appendedElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
-                }
-                if (!appendedElement || appendedElement.length === 0) {
-                    if (this.workGrid && this.workGrid.length > 0) {
-                        appendedElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
-                    }
+                    console.log('🔍 Found appended element in timeout:', !!appendedElement && appendedElement.length > 0);
+                } else {
+                    console.log('⚠️ No submission work grid in timeout');
                 }
                 
                 if (appendedElement && appendedElement.length > 0) {
+                    console.log('📺 Checking video preview...');
                     const previewDiv = appendedElement.find('.cf7as-work-preview');
+                    console.log('🎬 Preview div found:', previewDiv.length > 0);
                     
                     if (previewDiv.length > 0) {
                         const video = previewDiv.find('video');
+                        console.log('📹 Video element found:', video.length > 0);
                         if (video.length > 0) {
+                            console.log('📊 Video ready state:', video[0].readyState);
                             // Check if video failed to load
                             if (video[0].readyState === 0) {
+                                console.log('🔄 Forcing video load...');
                                 // Try to force video loading
                                 video[0].load();
                                 
                                 // Set a fallback timeout to show icon if video doesn't load
                                 setTimeout(() => {
+                                    console.log('🔍 Final video fallback check, ready state:', video[0].readyState);
                                     if (video[0].readyState === 0) {
+                                        console.log('⚠️ Video failed to load completely, showing fallback icon');
                                         video.css('display', 'none');
                                         previewDiv.find('.cf7as-file-icon').css('display', 'flex');
+                                    } else {
+                                        console.log('✅ Video loaded after force load');
                                     }
                                 }, 2000);
                             } else if (video[0].readyState >= 1) {
+                                console.log('📊 Video has metadata, ready state:', video[0].readyState);
                                 // Video has metadata, show it after a short delay if events haven't fired
                                 setTimeout(() => {
+                                    console.log('🔍 Checking video opacity after metadata delay');
                                     if (video.css('opacity') === '0' || video.css('opacity') === 0) {
+                                        console.log('🎬 Setting video visible due to metadata');
                                         video.css('opacity', '1');
                                         previewDiv.find('.cf7as-file-icon').css('display', 'none');
+                                    } else {
+                                        console.log('✅ Video already visible');
                                     }
                                 }, 1000);
+                            } else {
+                                console.log('📊 Video ready state unknown:', video[0].readyState);
                             }
+                        } else {
+                            console.log('⚠️ No video element found in preview');
                         }
+                    } else {
+                        console.log('⚠️ No preview div found in appended element');
                     }
+                } else {
+                    console.log('⚠️ No appended element found in timeout for file:', fileData.id);
                 }
             }, 100);
+            
+            console.log('🎪 renderWorkItem completed successfully for file:', fileData.id);
+            console.log('📊 Final submission work grid state:', {
+                hasGrid: !!this.submissionWorkGrid,
+                gridLength: this.submissionWorkGrid ? this.submissionWorkGrid.length : 0,
+                childrenCount: this.submissionWorkGrid ? this.submissionWorkGrid.children().length : 0
+            });
         }
         
-        selectWorkItem(fileId) {
+        toggleWorkItemEditor(fileId) {
+            // Find the work item in submission modal work grid
+            let workItem = null;
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                workItem = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+            }
+            
+            if (!workItem || workItem.length === 0) return;
+            
+            const basicInfo = workItem.find('.cf7as-work-basic-info');
+            const editor = workItem.find('.cf7as-work-editor');
+            const titleDisplay = workItem.find('.cf7as-work-title-display');
+            const titleInputInline = workItem.find('.cf7as-work-title-input-inline');
             const fileData = this.files.find(f => f.id === fileId);
-            if (!fileData) {
-                return;
-            }
             
-            // Update visual selection - check both grids
-            const workGrid = this.submissionWorkGrid && this.submissionWorkGrid.length > 0 ? this.submissionWorkGrid : this.workGrid;
-            if (workGrid && workGrid.length > 0) {
-                workGrid.find('.cf7as-work-item').removeClass('selected');
-                workGrid.find(`[data-file-id="${fileId}"]`).addClass('selected');
-            }
+            if (!fileData) return;
             
-            // Update editor panel
-            this.selectedFileId = fileId;
-            this.selectedWorkTitle.val(fileData.workTitle);
-            this.selectedWorkStatement.val(fileData.workStatement);
+            // Close any other open editors first
+            this.closeAllWorkItemEditors();
             
-            // Update editor header
-            this.workEditor.find('.cf7as-editor-title').text(`Edit: ${fileData.workTitle || fileData.name}`);
-            this.workEditor.find('.cf7as-editor-subtitle').text(`${this.formatBytes(fileData.size)} • ${fileData.status}`);
-            
-            // Update action button states
-            this.uploadSingleBtn.prop('disabled', fileData.status === 'uploaded' || fileData.status === 'uploading');
-            if (fileData.status === 'uploaded') {
-                this.uploadSingleBtn.text('File Uploaded');
-            } else if (fileData.status === 'uploading') {
-                this.uploadSingleBtn.text('Uploading...');
+            if (editor.is(':visible')) {
+                // Close this editor
+                editor.slideUp(200);
+                workItem.removeClass('cf7as-work-item-editing');
+                // Show title display, hide inline input
+                titleDisplay.show();
+                titleInputInline.hide();
             } else {
-                this.uploadSingleBtn.text('Upload This File');
+                // Open this editor
+                // Update input values with current data
+                titleInputInline.val(fileData.workTitle || '');
+                editor.find('.cf7as-work-statement-input').val(fileData.workStatement || '');
+                
+                workItem.addClass('cf7as-work-item-editing');
+                // Hide title display, show inline input
+                titleDisplay.hide();
+                titleInputInline.show().focus();
+                
+                editor.slideDown(200);
             }
         }
         
-        updateWorkItemDisplay(fileId) {
-            const fileData = this.files.find(f => f.id === fileId);
-            if (!fileData) {
-                return;
-            }
-            
-            const workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
-            
-            if (workElement.length > 0) {
-                // Update title display
-                workElement.find('.cf7as-work-title-display').text(fileData.workTitle || 'Untitled Work');
-                
-                // Update status
-                workElement.removeClass('pending uploading uploaded error').addClass(fileData.status);
-                
-                const statusBadge = workElement.find('.cf7as-work-status-badge');
-                if (statusBadge.length > 0) {
-                    const newText = this.getStatusLabel(fileData.status);
-                    statusBadge.text(newText);
+        closeAllWorkItemEditors() {
+            // Close editors in submission modal work grid
+            const closeEditors = (grid) => {
+                if (grid && grid.length > 0) {
+                    grid.find('.cf7as-work-editor:visible').slideUp(200);
+                    grid.find('.cf7as-work-item').removeClass('cf7as-work-item-editing');
+                    // Reset title display/input visibility
+                    grid.find('.cf7as-work-title-display').show();
+                    grid.find('.cf7as-work-title-input-inline').hide();
                 }
-                
-                // Update progress
-                workElement.find('.cf7as-progress-fill').css('width', fileData.progress + '%');
-                
-                // Update editor if this item is selected
-                if (this.selectedFileId === fileId) {
-                    this.workEditor.find('.cf7as-editor-subtitle').text(`${this.formatBytes(fileData.size)} • ${this.getStatusLabel(fileData.status)}`);
-                }
-            }
+            };
+            
+            closeEditors(this.submissionWorkGrid);
         }
+        
+        saveWorkItemChanges(fileId) {
+            const fileData = this.files.find(f => f.id === fileId);
+            if (!fileData) return;
+            
+            // Find the work item in submission modal
+            let workItem = null;
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                workItem = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+            }
+            
+            if (!workItem || workItem.length === 0) return;
+            
+            const editor = workItem.find('.cf7as-work-editor');
+            const titleInputInline = workItem.find('.cf7as-work-title-input-inline');
+            const statementInput = editor.find('.cf7as-work-statement-input');
+            const titleDisplay = workItem.find('.cf7as-work-title-display');
+            
+            // Save the values
+            fileData.workTitle = titleInputInline.val().trim();
+            fileData.workStatement = statementInput.val().trim();
+            
+            // Update the display
+            this.updateWorkItemDisplay(fileId);
+            
+            // Close the editor
+            editor.slideUp(200);
+            workItem.removeClass('cf7as-work-item-editing');
+            titleDisplay.show();
+            titleInputInline.hide();
+            
+            // Update form submission state
+            this.updateFormSubmissionState();
+        }
+        
+        cancelWorkItemEditor(fileId) {
+            const fileData = this.files.find(f => f.id === fileId);
+            if (!fileData) return;
+            
+            // Find the work item in submission modal
+            let workItem = null;
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                workItem = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+            }
+            
+            if (!workItem || workItem.length === 0) return;
+            
+            const editor = workItem.find('.cf7as-work-editor');
+            const titleInputInline = workItem.find('.cf7as-work-title-input-inline');
+            const titleDisplay = workItem.find('.cf7as-work-title-display');
+            
+            // Reset input values to original data
+            titleInputInline.val(fileData.workTitle || '');
+            editor.find('.cf7as-work-statement-input').val(fileData.workStatement || '');
+            
+            // Close the editor
+            editor.slideUp(200);
+            workItem.removeClass('cf7as-work-item-editing');
+            titleDisplay.show();
+            titleInputInline.hide();
+        }
+        
         
         getStatusLabel(status) {
             const statusLabels = {
@@ -2003,9 +1728,10 @@
             if (this.modalBody && this.modalBody.length > 0) {
                 if (this.files.length > 0) {
                     this.modalBody.addClass('has-files');
+                    console.log('🎯 Added has-files class to regular modal body');
                 } else {
                     this.modalBody.removeClass('has-files');
-                    this.selectedFileId = null;
+                    console.log('🎯 Removed has-files class from regular modal body');
                 }
             }
             
@@ -2013,9 +1739,10 @@
             if (this.submissionModalBody && this.submissionModalBody.length > 0) {
                 if (this.files.length > 0) {
                     this.submissionModalBody.addClass('has-files');
+                    console.log('🎯 Added has-files class to submission modal body');
                 } else {
                     this.submissionModalBody.removeClass('has-files');
-                    this.selectedFileId = null;
+                    console.log('🎯 Removed has-files class from submission modal body');
                 }
             }
             
@@ -2063,73 +1790,26 @@
         }
         
         updateWorkTitleDisplay(fileId, title) {
-            // Update the title in the regular work grid
-            if (this.workGrid && this.workGrid.length > 0) {
-                const workItem = this.workGrid.find(`[data-file-id="${fileId}"]`);
-                if (workItem.length > 0) {
-                    workItem.find('.cf7as-work-title-display').text(title || 'Untitled Work');
-                }
-            }
+            const isTitleMissing = !title || title.trim() === '';
             
             // Update the title in the submission work grid
             if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
                 const workItem = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
                 if (workItem.length > 0) {
-                    workItem.find('.cf7as-work-title-display').text(title || 'Untitled Work');
+                    workItem.find('.cf7as-work-title-display').text(title || 'Click to add title');
+                    
+                    // Update error state
+                    if (isTitleMissing) {
+                        workItem.addClass('cf7as-work-item-error');
+                        if (workItem.find('.cf7as-work-error-badge').length === 0) {
+                            workItem.find('.cf7as-work-preview').append('<div class="cf7as-work-error-badge" title="Work title required"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>');
+                        }
+                    } else {
+                        workItem.removeClass('cf7as-work-item-error');
+                        workItem.find('.cf7as-work-error-badge').remove();
+                    }
                 }
             }
-        }
-        
-        updateWorkEditor() {
-            // Determine which elements to update based on which modal is active
-            const workTitle = this.submissionSelectedWorkTitle && this.submissionSelectedWorkTitle.length > 0 
-                            ? this.submissionSelectedWorkTitle 
-                            : this.selectedWorkTitle;
-            const workStatement = this.submissionSelectedWorkStatement && this.submissionSelectedWorkStatement.length > 0 
-                                ? this.submissionSelectedWorkStatement 
-                                : this.selectedWorkStatement;
-            const uploadBtn = this.submissionUploadSingleBtn && this.submissionUploadSingleBtn.length > 0 
-                            ? this.submissionUploadSingleBtn 
-                            : this.uploadSingleBtn;
-            const removeBtn = this.submissionRemoveSingleBtn && this.submissionRemoveSingleBtn.length > 0 
-                            ? this.submissionRemoveSingleBtn 
-                            : this.removeSingleBtn;
-            
-            if (!this.selectedFileId) {
-                // No file selected, show default state
-                if (workTitle) workTitle.val('');
-                if (workStatement) workStatement.val('');
-                if (uploadBtn) uploadBtn.prop('disabled', true);
-                if (removeBtn) removeBtn.prop('disabled', true);
-                return;
-            }
-            
-            const file = this.files.find(f => f.id === this.selectedFileId);
-            if (file) {
-                if (workTitle) workTitle.val(file.workTitle || '');
-                if (workStatement) workStatement.val(file.workStatement || '');
-                if (uploadBtn) uploadBtn.prop('disabled', file.status !== 'pending');
-                if (removeBtn) removeBtn.prop('disabled', false);
-            }
-        }
-        
-        selectFile(fileId) {
-            this.selectedFileId = fileId;
-            
-            // Update visual selection in regular grid
-            if (this.workGrid && this.workGrid.length > 0) {
-                this.workGrid.find('.cf7as-work-item').removeClass('cf7as-work-selected');
-                this.workGrid.find(`[data-file-id="${fileId}"]`).addClass('cf7as-work-selected');
-            }
-            
-            // Update visual selection in submission grid
-            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
-                this.submissionWorkGrid.find('.cf7as-work-item').removeClass('cf7as-work-selected');
-                this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`).addClass('cf7as-work-selected');
-            }
-            
-            // Update work editor
-            this.updateWorkEditor();
         }
         
         getStatusIcon(status) {
@@ -2728,19 +2408,10 @@
             
             fileData.progress = progress;
             
-            // Update work item progress
-            const workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
-            workElement.find('.cf7as-progress-fill').css('width', progress + '%');
-            
-            // Update editor if this item is selected
-            if (this.selectedFileId === fileId) {
-                let statusText = `${this.formatBytes(fileData.size)} • ${fileData.status}`;
-                if (chunkInfo) {
-                    statusText += ` (chunk ${chunkInfo.current}/${chunkInfo.total})`;
-                } else if (progress > 0 && progress < 100) {
-                    statusText += ` (${progress}%)`;
-                }
-                this.workEditor.find('.cf7as-editor-subtitle').text(statusText);
+            // Update work item progress in submission grid
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                const workElement = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+                workElement.find('.cf7as-progress-fill').css('width', progress + '%');
             }
         }
         
@@ -2791,17 +2462,11 @@
             
             // Clean up object URLs if they exist
             if (fileData && (this.isImageFile(fileData.type) || fileData.type.startsWith('video/'))) {
-                // Check both regular and submission grids for the element
+                // Find the element in the submission grid
                 let workElement = null;
                 
                 if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
                     workElement = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
-                }
-                
-                if (!workElement || workElement.length === 0) {
-                    if (this.workGrid && this.workGrid.length > 0) {
-                        workElement = this.workGrid.find(`[data-file-id="${fileId}"]`);
-                    }
                 }
                 
                 if (workElement && workElement.length > 0) {
@@ -2834,18 +2499,7 @@
                 this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`).remove();
             }
             
-            if (this.workGrid && this.workGrid.length > 0) {
-                this.workGrid.find(`[data-file-id="${fileId}"]`).remove();
-            }
-            
-            // Clear selection if this file was selected
-            if (this.selectedFileId === fileId) {
-                this.selectedFileId = null;
-                if (this.files.length > 0) {
-                    // Select first available file
-                    this.selectWorkItem(this.files[0].id);
-                }
-            }
+            // Files removed - inline editing handles individual items
             
             this.updateUI();
         }
@@ -2865,12 +2519,6 @@
                     
                     if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
                         workElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
-                    }
-                    
-                    if (!workElement || workElement.length === 0) {
-                        if (this.workGrid && this.workGrid.length > 0) {
-                            workElement = this.workGrid.find(`[data-file-id="${fileData.id}"]`);
-                        }
                     }
                     
                     if (workElement && workElement.length > 0) {
@@ -2898,15 +2546,10 @@
             
             this.files = [];
             this.uploadQueue = [];
-            this.selectedFileId = null;
             
-            // Clear both grids
+            // Clear submission grid
             if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
                 this.submissionWorkGrid.empty();
-            }
-            
-            if (this.workGrid && this.workGrid.length > 0) {
-                this.workGrid.empty();
             }
             
             this.updateUI();

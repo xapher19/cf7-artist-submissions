@@ -31,13 +31,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 .cf7as-submission-modal input[type="tel"],
 .cf7as-submission-modal input[type="url"],
 .cf7as-submission-modal textarea,
-.cf7as-submission-modal select,
-.cf7as-upload-modal input[type="text"],
-.cf7as-upload-modal input[type="email"],
-.cf7as-upload-modal input[type="tel"],
-.cf7as-upload-modal input[type="url"],
-.cf7as-upload-modal textarea,
-.cf7as-upload-modal select {
+.cf7as-submission-modal select {
     border: 2px solid transparent !important;
     border-radius: 8px !important;
     background: #ffffff !important;
@@ -56,13 +50,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 .cf7as-submission-modal input[type="tel"]:focus,
 .cf7as-submission-modal input[type="url"]:focus,
 .cf7as-submission-modal textarea:focus,
-.cf7as-submission-modal select:focus,
-.cf7as-upload-modal input[type="text"]:focus,
-.cf7as-upload-modal input[type="email"]:focus,
-.cf7as-upload-modal input[type="tel"]:focus,
-.cf7as-upload-modal input[type="url"]:focus,
-.cf7as-upload-modal textarea:focus,
-.cf7as-upload-modal select:focus {
+.cf7as-submission-modal select:focus {
     outline: none !important;
     border-color: #667eea !important;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2) !important;
@@ -71,9 +59,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 
 /* Protect modal buttons from theme's global button styles */
 .cf7as-submission-modal button,
-.cf7as-submission-modal .cf7as-btn,
-.cf7as-upload-modal button,
-.cf7as-upload-modal .cf7as-btn {
+.cf7as-submission-modal .cf7as-btn {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 16px !important;
     font-weight: 500 !important;
@@ -87,9 +73,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 
 /* Protect modal text from theme's global typography */
 .cf7as-submission-modal,
-.cf7as-submission-modal *,
-.cf7as-upload-modal,
-.cf7as-upload-modal * {
+.cf7as-submission-modal * {
     box-sizing: border-box !important;
 }
 
@@ -98,13 +82,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 .cf7as-submission-modal h3,
 .cf7as-submission-modal h4,
 .cf7as-submission-modal h5,
-.cf7as-submission-modal h6,
-.cf7as-upload-modal h1,
-.cf7as-upload-modal h2,
-.cf7as-upload-modal h3,
-.cf7as-upload-modal h4,
-.cf7as-upload-modal h5,
-.cf7as-upload-modal h6 {
+.cf7as-submission-modal h6 {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-weight: 600 !important;
     line-height: 1.2 !important;
@@ -115,19 +93,14 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 .cf7as-submission-modal p,
 .cf7as-submission-modal div,
 .cf7as-submission-modal span,
-.cf7as-submission-modal label,
-.cf7as-upload-modal p,
-.cf7as-upload-modal div,
-.cf7as-upload-modal span,
-.cf7as-upload-modal label {
+.cf7as-submission-modal label {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     line-height: 1.5 !important;
     letter-spacing: normal !important;
 }
 
 /* Protect select elements from theme styles */
-.cf7as-submission-modal select,
-.cf7as-upload-modal select {
+.cf7as-submission-modal select {
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     appearance: none !important;
@@ -138,33 +111,229 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     padding-right: 40px !important;
 }
 
-/* Protect layout and grid elements from theme CSS */
-.cf7as-submission-modal .cf7as-work-grid,
-.cf7as-upload-modal .cf7as-work-grid,
-.cf7as-submission-modal .cf7as-work-grid-container,
-.cf7as-upload-modal .cf7as-work-grid-container {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
-    gap: 20px !important;
+/* Protect layout and grid elements from theme CSS - submission modal only */
+/* ===== COMPLETELY REDESIGNED WORK ITEMS DISPLAY ===== */
+
+/* Clean, modern work grid container */
+.cf7as-submission-modal .cf7as-work-content {
+    flex: 1 !important;
     padding: 20px !important;
-    margin: 0 !important;
-    background: transparent !important;
-    border: none !important;
     overflow-y: auto !important;
+    background: #f8f9fa !important;
 }
 
-/* Ensure work grid container has proper flex properties */
-.cf7as-submission-modal .cf7as-work-grid-container,
-.cf7as-upload-modal .cf7as-work-grid-container {
+.cf7as-submission-modal .cf7as-work-grid-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Modern CSS Grid - Responsive and Clean */
+.cf7as-submission-modal .cf7as-work-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    list-style: none !important;
+}
+
+/* Clean work item cards */
+.cf7as-submission-modal .cf7as-work-item {
+    background: white !important;
+    border: 1px solid #e1e5e9 !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 200px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item:hover {
+    border-color: #2271b1 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Preview area - fixed height for consistency */
+.cf7as-submission-modal .cf7as-work-preview {
+    height: 120px !important;
+    width: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background: #f8f9fa !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-bottom: 1px solid #e1e5e9 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-preview img,
+.cf7as-submission-modal .cf7as-work-preview video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+.cf7as-submission-modal .cf7as-work-preview .cf7as-file-icon {
+    color: #666 !important;
+    opacity: 0.7 !important;
+}
+
+/* Work info section */
+.cf7as-submission-modal .cf7as-work-info {
     flex: 1 !important;
-    padding-right: 320px !important; /* Space for upload area and editor */
+    padding: 15px !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-display {
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    color: #1d2327 !important;
+    margin-bottom: 8px !important;
+    line-height: 1.3 !important;
+    word-wrap: break-word !important;
+}
+
+.cf7as-submission-modal .cf7as-work-filename {
+    font-size: 12px !important;
+    color: #666 !important;
+    margin-bottom: 8px !important;
+    word-wrap: break-word !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.cf7as-submission-modal .cf7as-work-size {
+    font-size: 11px !important;
+    color: #999 !important;
+    margin-bottom: 10px !important;
+}
+
+/* Action buttons - clean and minimal */
+.cf7as-submission-modal .cf7as-work-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: auto !important;
+}
+
+.cf7as-submission-modal .cf7as-work-upload-btn,
+.cf7as-submission-modal .cf7as-work-remove-btn {
+    flex: 1 !important;
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    color: #666 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.cf7as-submission-modal .cf7as-work-upload-btn:hover {
+    background: #2271b1 !important;
+    color: white !important;
+    border-color: #2271b1 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-remove-btn:hover {
+    background: #dc3545 !important;
+    color: white !important;
+    border-color: #dc3545 !important;
+}
+
+/* Status badge - top right corner */
+.cf7as-submission-modal .cf7as-work-status-badge {
+    position: absolute !important;
+    top: 8px !important;
+    right: 8px !important;
+    background: rgba(0,0,0,0.7) !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    border-radius: 12px !important;
+    font-size: 10px !important;
+    font-weight: 500 !important;
+    z-index: 2 !important;
+}
+
+/* Error state */
+.cf7as-submission-modal .cf7as-work-item-error {
+    border-color: #dc3545 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-error-badge {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    background: #dc3545 !important;
+    color: white !important;
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 2 !important;
+}
+
+/* Progress overlay */
+.cf7as-submission-modal .cf7as-progress-overlay {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 3px !important;
+    background: rgba(0,0,0,0.1) !important;
+    overflow: hidden !important;
+}
+
+.cf7as-submission-modal .cf7as-progress-fill {
+    height: 100% !important;
+    background: #2271b1 !important;
+    transition: width 0.3s ease !important;
+    width: 0% !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+        gap: 15px !important;
+    }
+    
+    .cf7as-submission-modal .cf7as-work-content {
+        padding: 15px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
 }
 
 /* Removed duplicate work item styles - now handled by enhanced styles below */
 
 /* Protect work status badge from theme interference */
-.cf7as-submission-modal .cf7as-work-status-badge,
-.cf7as-upload-modal .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-status-badge {
     position: absolute !important;
     top: 8px !important;
     right: 8px !important;
@@ -183,29 +352,62 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Protect work status badge colors from theme interference */
-.cf7as-submission-modal .cf7as-work-item.pending .cf7as-work-status-badge,
-.cf7as-upload-modal .cf7as-work-item.pending .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.pending .cf7as-work-status-badge {
     background: #856404 !important;
 }
 
-.cf7as-submission-modal .cf7as-work-item.uploading .cf7as-work-status-badge,
-.cf7as-upload-modal .cf7as-work-item.uploading .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.uploading .cf7as-work-status-badge {
     background: #f0ad4e !important;
 }
 
-.cf7as-submission-modal .cf7as-work-item.uploaded .cf7as-work-status-badge,
-.cf7as-upload-modal .cf7as-work-item.uploaded .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.uploaded .cf7as-work-status-badge {
     background: #5cb85c !important;
 }
 
-.cf7as-submission-modal .cf7as-work-item.error .cf7as-work-status-badge,
-.cf7as-upload-modal .cf7as-work-item.error .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.error .cf7as-work-status-badge {
     background: #d9534f !important;
 }
 
+/* Work item error state for missing titles */
+.cf7as-submission-modal .cf7as-work-item-error {
+    border: 2px solid #dc3545 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item-error .cf7as-work-title-display {
+    color: #dc3545 !important;
+    font-style: italic !important;
+}
+
+/* Work error badge for missing titles */
+.cf7as-submission-modal .cf7as-work-error-badge {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    width: 24px !important;
+    height: 24px !important;
+    background: #dc3545 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    z-index: 11 !important;
+    cursor: help !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+}
+
+.cf7as-submission-modal .cf7as-work-error-badge svg {
+    width: 12px !important;
+    height: 12px !important;
+    stroke-width: 2.5 !important;
+}
+
 /* Protect work preview container from theme interference */
-.cf7as-submission-modal .cf7as-work-preview,
-.cf7as-upload-modal .cf7as-work-preview {
+.cf7as-submission-modal .cf7as-work-preview {
     width: 100% !important;
     height: 150px !important;
     overflow: hidden !important;
@@ -220,16 +422,14 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Protect work info section from theme interference */
-.cf7as-submission-modal .cf7as-work-info,
-.cf7as-upload-modal .cf7as-work-info {
+.cf7as-submission-modal .cf7as-work-info {
     padding: 15px !important;
     background: white !important;
     margin: 0 !important;
     border: none !important;
 }
 
-.cf7as-submission-modal .cf7as-work-title-display,
-.cf7as-upload-modal .cf7as-work-title-display {
+.cf7as-submission-modal .cf7as-work-title-display {
     font-weight: 600 !important;
     color: #333 !important;
     font-size: 14px !important;
@@ -241,8 +441,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     line-height: 1.2 !important;
 }
 
-.cf7as-submission-modal .cf7as-work-filename,
-.cf7as-upload-modal .cf7as-work-filename {
+.cf7as-submission-modal .cf7as-work-filename {
     font-size: 12px !important;
     color: #666 !important;
     white-space: nowrap !important;
@@ -253,8 +452,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     line-height: 1.2 !important;
 }
 
-.cf7as-submission-modal .cf7as-work-meta,
-.cf7as-upload-modal .cf7as-work-meta {
+.cf7as-submission-modal .cf7as-work-meta {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
@@ -266,8 +464,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Protect work content layout from theme interference */
-.cf7as-submission-modal .cf7as-work-content,
-.cf7as-upload-modal .cf7as-work-content {
+.cf7as-submission-modal .cf7as-work-content {
     flex: 1 !important;
     display: none !important; /* Hidden by default */
     flex-direction: column !important;
@@ -278,28 +475,24 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     border: none !important;
 }
 
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-work-content,
-.cf7as-upload-modal .cf7as-modal-body-inner.has-files .cf7as-work-content {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-work-content {
     display: flex !important; /* Show when files are present */
 }
 
 /* Protect flex layouts from theme interference */
-.cf7as-submission-modal .cf7as-modal-body-inner,
-.cf7as-upload-modal .cf7as-modal-body-inner {
+.cf7as-submission-modal .cf7as-modal-body-inner {
     display: flex !important;
     flex-direction: column !important;
     height: 100% !important;
     overflow: hidden !important;
 }
 
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files,
-.cf7as-upload-modal .cf7as-modal-body-inner.has-files {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files {
     flex-direction: row !important;
 }
 
 /* Reset any theme interference with modal containers */
-.cf7as-submission-modal,
-.cf7as-upload-modal {
+.cf7as-submission-modal {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -313,8 +506,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     box-shadow: none !important;
 }
 
-.cf7as-submission-modal .cf7as-modal-content,
-.cf7as-upload-modal .cf7as-modal-content {
+.cf7as-submission-modal .cf7as-modal-content {
     position: relative !important;
     width: 90% !important;
     max-width: 1200px !important;
@@ -333,7 +525,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
    =================================================================== */
 
 /* Main uploader container */
-.cf7as-custom-uploader {
+.cf7as-submission-modal .cf7as-custom-uploader {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -342,7 +534,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Upload area - drag and drop zone with transition states */
-.cf7as-upload-area {
+.cf7as-submission-modal .cf7as-upload-area {
     border: 2px dashed #d0d0d0;
     border-radius: 6px;
     padding: 40px 20px;
@@ -355,12 +547,12 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Disable transitions during drag expansion for instant effect */
-.cf7as-upload-area.cf7as-drag-expanded {
+.cf7as-submission-modal .cf7as-upload-area.cf7as-drag-expanded {
     transition: none !important;
 }
 
 /* Initial state - full screen centered in modal */
-.cf7as-modal-body:not(.has-files) .cf7as-upload-area {
+.cf7as-submission-modal .cf7as-modal-body:not(.has-files) .cf7as-upload-area {
     position: absolute;
     top: 0;
     left: 0;
@@ -376,8 +568,8 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Submission modal upload area when no files are present */
-.cf7as-upload-container .cf7as-modal-body-inner .cf7as-upload-area:not(.has-files),
-.cf7as-upload-container .cf7as-upload-area {
+.cf7as-submission-modal .cf7as-upload-container .cf7as-modal-body-inner .cf7as-upload-area:not(.has-files),
+.cf7as-submission-modal .cf7as-upload-container .cf7as-upload-area {
     position: absolute;
     top: 0;
     left: 0;
@@ -395,7 +587,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* When files are present in submission modal, make upload area compact */
-.cf7as-upload-container .cf7as-modal-body-inner.has-files .cf7as-upload-area {
+.cf7as-submission-modal .cf7as-upload-container .cf7as-modal-body-inner.has-files .cf7as-upload-area {
     position: absolute;
     top: 20px;
     right: 20px;
@@ -408,7 +600,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     border-radius: 8px;
 }
 
-.cf7as-modal-body:not(.has-files) .cf7as-upload-area .cf7as-upload-prompt {
+.cf7as-submission-modal .cf7as-modal-body:not(.has-files) .cf7as-upload-area .cf7as-upload-prompt {
     text-align: center;
 }
 
@@ -423,20 +615,23 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Transitioned state - compact in top right */
-.cf7as-modal-body-inner.has-files .cf7as-upload-area {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 60px; /* Much smaller - just for the icon */
-    height: 60px; /* Square compact size */
-    padding: 10px; /* Minimal padding */
-    margin: 0;
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-radius: 8px; /* Smaller border radius */
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area,
+.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area {
+    position: absolute !important;
+    top: 20px !important;
+    right: 20px !important;
+    left: auto !important;
+    width: 60px !important; /* Much smaller - just for the icon */
+    height: 60px !important; /* Square compact size */
+    padding: 10px !important; /* Minimal padding */
+    margin: 0 !important;
+    z-index: 10 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 8px !important; /* Smaller border radius */
 }
 
-.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-prompt {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-prompt,
+.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-prompt {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -444,25 +639,28 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     height: 100%;
 }
 
-.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon,
+.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-icon {
     margin-bottom: 0; /* Remove margin for compact layout */
 }
 
-.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon svg {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon svg,
+.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-icon svg {
     width: 24px; /* Smaller icon */
     height: 24px;
 }
 
-.cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-text {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-text,
+.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-text {
     display: none; /* Hide text in compact mode */
 }
 
-.cf7as-upload-area:hover {
+.cf7as-submission-modal .cf7as-upload-area:hover {
     border-color: #2271b1;
     background: #f8f9fa;
 }
 
-.cf7as-upload-area.cf7as-dragover {
+.cf7as-submission-modal .cf7as-upload-area.cf7as-dragover {
     border-color: #2271b1 !important;
     background: #e7f3ff !important;
     border-style: solid !important;
@@ -473,10 +671,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* High specificity dragover state for maximum theme protection */
-html body .cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-dragover,
-html body .cf7as-upload-area.cf7as-dragover,
-.cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-dragover,
-.cf7as-upload-area.cf7as-dragover.cf7as-dragover {
+.cf7as-submission-modal .cf7as-upload-area.cf7as-dragover.cf7as-dragover {
     border-color: #2271b1 !important;
     background: #e7f3ff !important;
     border-style: solid !important;
@@ -488,10 +683,7 @@ html body .cf7as-upload-area.cf7as-dragover,
 }
 
 /* Dynamic drag expansion when files are present - Maximum specificity override */
-html body .cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded,
-html body .cf7as-upload-area.cf7as-drag-expanded,  
-.cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded,
-.cf7as-upload-area.cf7as-drag-expanded {
+.cf7as-submission-modal .cf7as-upload-area.cf7as-drag-expanded {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -520,10 +712,7 @@ html body .cf7as-upload-area.cf7as-drag-expanded,
     clip-path: none !important;
 }
 
-html body .cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
-html body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
-.cf7as-modal .cf7as-modal-body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
-.cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt {
+.cf7as-submission-modal .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt {
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
@@ -546,33 +735,33 @@ html body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
     overflow: visible !important;
 }
 /* Upload prompt content */
-.cf7as-upload-prompt {
+.cf7as-submission-modal .cf7as-upload-prompt {
     color: #666;
 }
 
-.cf7as-upload-icon {
+.cf7as-submission-modal .cf7as-upload-icon {
     margin-bottom: 16px;
     color: #999;
 }
 
-.cf7as-upload-text h3 {
+.cf7as-submission-modal .cf7as-upload-text h3 {
     margin: 0 0 8px 0;
     font-size: 18px;
     font-weight: 600;
     color: #333;
 }
 
-.cf7as-upload-text p {
+.cf7as-submission-modal .cf7as-upload-text p {
     margin: 0 0 8px 0;
     font-size: 14px;
 }
 
-.cf7as-upload-text small {
+.cf7as-submission-modal .cf7as-upload-text small {
     font-size: 12px;
     color: #888;
 }
 
-.cf7as-browse-btn {
+.cf7as-submission-modal .cf7as-browse-btn {
     background: none;
     border: none;
     color: #2271b1;
@@ -582,12 +771,12 @@ html body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
     padding: 0;
 }
 
-.cf7as-browse-btn:hover {
+.cf7as-submission-modal .cf7as-browse-btn:hover {
     color: #135e96;
 }
 
 /* Work grid layout - main content area */
-.cf7as-work-content {
+.cf7as-submission-modal .cf7as-work-content {
     flex: 1;
     display: none; /* Hidden by default */
     flex-direction: column;
@@ -595,18 +784,14 @@ html body .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
     overflow: hidden;
 }
 
-.cf7as-modal-body-inner.has-files .cf7as-work-content {
+.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-work-content {
     display: flex; /* Show when files are present */
 }
 
 /* Work grid container with maximum specificity */
-html body .cf7as-upload-modal .cf7as-work-grid-container,
-html body .cf7as-modal .cf7as-work-grid-container,
-.cf7as-modal .cf7as-work-grid-container,
-.cf7as-work-grid-container {
+.cf7as-submission-modal .cf7as-work-grid-container {
     flex: 1 !important;
     padding: 20px !important;
-    padding-right: 120px !important; /* Further reduced to maximize grid space */
     overflow-y: auto !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
@@ -614,19 +799,31 @@ html body .cf7as-modal .cf7as-work-grid-container,
     min-height: 400px !important;
     width: 100% !important;
     max-width: none !important;
-    /* Ensure minimum width for grid layout */
-    min-width: 800px !important; /* Increased to ensure horizontal layout */
 }
 
-/* Enhanced work grid with maximum theme protection and specificity */
-html body .cf7as-upload-modal .cf7as-work-grid,
-html body .cf7as-modal .cf7as-work-grid,
-.cf7as-modal .cf7as-work-grid,
-.cf7as-work-grid {
+/* Hide the work editor sidebar in submission modal since we use inline editing */
+.cf7as-submission-modal .cf7as-work-editor {
+    display: none !important;
+}
+
+.cf7as-submission-modal .cf7as-work-grid-container {
+    flex: 1 !important;
+    padding: 20px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    height: auto !important;
+    min-height: 400px !important;
+    width: 100% !important;
+    max-width: none !important;
+}
+
+/* Enhanced work grid with maximum theme protection - submission modal only */
+.cf7as-submission-modal .cf7as-work-grid {
     display: grid !important;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
     grid-auto-rows: auto !important;
-    gap: 16px !important;
+    gap: 20px !important;
     margin: 0 !important;
     padding: 0 !important;
     list-style: none !important;
@@ -635,73 +832,106 @@ html body .cf7as-modal .cf7as-work-grid,
     box-sizing: border-box !important;
     justify-content: start !important;
     align-items: start !important;
-    /* Force minimum width to ensure multiple columns can fit */
-    min-width: 500px !important;
+}
+
+/* Ensure submission modal grid specifically supports multi-column layout */
+.cf7as-submission-modal .cf7as-work-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+    gap: 24px !important;
+    width: 100% !important;
+}
+
+/* Responsive grid adjustments for submission modal */
+@media (max-width: 1200px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+        gap: 20px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+        gap: 16px !important;
+    }
+    
+    .cf7as-submission-modal .cf7as-work-grid-container {
+        padding: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
 }
 
 /* Enhanced work items with maximum theme protection */
 html body .cf7as-modal .cf7as-work-item,
-.cf7as-modal .cf7as-work-item,
-.cf7as-work-item {
+.cf7as-submission-modal .cf7as-work-item {
     background: #ffffff !important;
     border: 2px solid #e0e0e0 !important;
     border-radius: 12px !important;
-    overflow: hidden !important; /* Hidden to prevent cutoff */
+    overflow: visible !important; /* Allow expansion for inline editor */
     cursor: pointer !important;
     transition: all 0.3s ease !important;
     position: relative !important;
-    display: block !important; /* Changed back to block */
+    display: block !important;
     box-sizing: border-box !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
-    min-height: 220px !important;
     margin: 0 !important;
     padding: 0 !important;
     text-decoration: none !important;
     color: inherit !important;
     list-style: none !important;
     flex-shrink: 0 !important;
+    min-height: auto !important;
 }
 
-html body .cf7as-modal .cf7as-work-item:hover,
-.cf7as-modal .cf7as-work-item:hover,
-.cf7as-work-item:hover {
+.cf7as-submission-modal .cf7as-work-item:hover {
     transform: translateY(-4px) !important;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
     border-color: #2271b1 !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.selected,
-.cf7as-modal .cf7as-work-item.selected,
-.cf7as-work-item.selected {
+.cf7as-submission-modal .cf7as-work-item.selected {
     border-color: #2271b1 !important;
     box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.2) !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.uploading,
-.cf7as-modal .cf7as-work-item.uploading,
-.cf7as-work-item.uploading {
+/* Focus styling for keyboard navigation */
+.cf7as-submission-modal .cf7as-work-item:focus {
+    outline: none !important;
+    border-color: #2271b1 !important;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.3) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Focus and selected combined styling */
+.cf7as-submission-modal .cf7as-work-item.selected:focus {
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.4) !important;
+    transform: translateY(-3px) !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item.uploading {
     border-color: #f0ad4e !important;
     opacity: 0.8 !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.uploaded,
-.cf7as-modal .cf7as-work-item.uploaded,
-.cf7as-work-item.uploaded {
+.cf7as-submission-modal .cf7as-work-item.uploaded {
     border-color: #5cb85c !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.error,
-.cf7as-modal .cf7as-work-item.error,
-.cf7as-work-item.error {
+.cf7as-submission-modal .cf7as-work-item.error {
     border-color: #d9534f !important;
 }
 
 /* Enhanced work preview with proper thumbnail handling */
-html body .cf7as-modal .cf7as-work-preview,
-.cf7as-modal .cf7as-work-preview,
-.cf7as-work-preview {
+.cf7as-submission-modal .cf7as-work-preview {
     width: 100% !important;
     height: 160px !important;
     overflow: hidden !important;
@@ -719,9 +949,7 @@ html body .cf7as-modal .cf7as-work-preview,
 }
 
 /* Loading state for thumbnails */
-html body .cf7as-modal .cf7as-work-preview.loading,
-.cf7as-modal .cf7as-work-preview.loading,
-.cf7as-work-preview.loading {
+.cf7as-submission-modal .cf7as-work-preview.loading {
     background: linear-gradient(90deg, #f8f9fa 25%, #e9ecef 50%, #f8f9fa 75%) !important;
     background-size: 200% 100% !important;
     animation: shimmer 1.5s infinite !important;
@@ -736,9 +964,7 @@ html body .cf7as-modal .cf7as-work-preview.loading,
     }
 }
 
-html body .cf7as-modal .cf7as-work-preview img,
-.cf7as-modal .cf7as-work-preview img,
-.cf7as-work-preview img {
+.cf7as-submission-modal .cf7as-work-preview img {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
@@ -760,9 +986,7 @@ html body .cf7as-modal .cf7as-work-preview img,
     min-height: 0 !important;
 }
 
-html body .cf7as-modal .cf7as-work-preview video,
-.cf7as-modal .cf7as-work-preview video,
-.cf7as-work-preview video {
+.cf7as-submission-modal .cf7as-work-preview video {
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
@@ -779,9 +1003,7 @@ html body .cf7as-modal .cf7as-work-preview video,
 }
 
 /* File icon for non-image files and fallbacks */
-html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon,
-.cf7as-modal .cf7as-work-preview .cf7as-file-icon,
-.cf7as-work-preview .cf7as-file-icon {
+.cf7as-submission-modal .cf7as-work-preview .cf7as-file-icon {
     color: #999999 !important;
     display: flex !important;
     align-items: center !important;
@@ -803,61 +1025,47 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon,
 /* Always show file icon for non-image files */
 html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
 .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
-.cf7as-work-preview .cf7as-file-icon:only-child {
+.cf7as-submission-modal .cf7as-work-preview .cf7as-file-icon:only-child {
     display: flex !important;
     opacity: 1 !important;
 }
 
 /* When used as fallback, file icon should be initially hidden */
-html body .cf7as-modal .cf7as-work-preview img + .cf7as-file-icon,
-.cf7as-modal .cf7as-work-preview img + .cf7as-file-icon,
-.cf7as-work-preview img + .cf7as-file-icon {
+.cf7as-submission-modal .cf7as-work-preview img + .cf7as-file-icon {
     display: none !important;
     opacity: 0 !important;
 }
 
 /* When used as fallback, file icon should be initially hidden */
-html body .cf7as-modal .cf7as-work-preview video + .cf7as-file-icon,
-.cf7as-modal .cf7as-work-preview video + .cf7as-file-icon,
-.cf7as-work-preview video + .cf7as-file-icon {
+.cf7as-submission-modal .cf7as-work-preview video + .cf7as-file-icon {
     display: none !important;
     opacity: 0 !important;
 }
 
-html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon svg,
-.cf7as-modal .cf7as-work-preview .cf7as-file-icon svg,
-.cf7as-work-preview .cf7as-file-icon svg {
+.cf7as-submission-modal .cf7as-work-preview .cf7as-file-icon svg {
     width: 48px !important;
     height: 48px !important;
     fill: currentColor !important;
 }
 
 /* Thumbnail loading states */
-html body .cf7as-modal .cf7as-work-preview img[src=""],
-.cf7as-modal .cf7as-work-preview img[src=""],
-.cf7as-work-preview img[src=""] {
+.cf7as-submission-modal .cf7as-work-preview img[src=""] {
     display: none !important;
 }
 
-html body .cf7as-modal .cf7as-work-preview img:not([src]),
-.cf7as-modal .cf7as-work-preview img:not([src]),
-.cf7as-work-preview img:not([src]) {
+.cf7as-submission-modal .cf7as-work-preview img:not([src]) {
     display: none !important;
 }
 
 /* Ensure thumbnails are visible when they have valid src */
-html body .cf7as-modal .cf7as-work-preview img[src]:not([src=""]),
-.cf7as-modal .cf7as-work-preview img[src]:not([src=""]),
-.cf7as-work-preview img[src]:not([src=""]) {
+.cf7as-submission-modal .cf7as-work-preview img[src]:not([src=""]) {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
 }
 
 /* Enhanced status badge with theme protection */
-html body .cf7as-modal .cf7as-work-status-badge,
-.cf7as-modal .cf7as-work-status-badge,
-.cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-status-badge {
     position: absolute !important;
     top: 8px !important;
     right: 8px !important;
@@ -882,31 +1090,23 @@ html body .cf7as-modal .cf7as-work-status-badge,
 }
 
 /* Show badge only when work item has a status class */
-html body .cf7as-modal .cf7as-work-item.pending .cf7as-work-status-badge,
-.cf7as-modal .cf7as-work-item.pending .cf7as-work-status-badge,
-.cf7as-work-item.pending .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.pending .cf7as-work-status-badge {
     background: linear-gradient(135deg, #856404, #6c5503) !important;
     display: block !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.uploading .cf7as-work-status-badge,
-.cf7as-modal .cf7as-work-item.uploading .cf7as-work-status-badge,
-.cf7as-work-item.uploading .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.uploading .cf7as-work-status-badge {
     background: linear-gradient(135deg, #f0ad4e, #ec971f) !important;
     display: block !important;
     animation: pulse 2s infinite !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.uploaded .cf7as-work-status-badge,
-.cf7as-modal .cf7as-work-item.uploaded .cf7as-work-status-badge,
-.cf7as-work-item.uploaded .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.uploaded .cf7as-work-status-badge {
     background: linear-gradient(135deg, #5cb85c, #449d44) !important;
     display: block !important;
 }
 
-html body .cf7as-modal .cf7as-work-item.error .cf7as-work-status-badge,
-.cf7as-modal .cf7as-work-item.error .cf7as-work-status-badge,
-.cf7as-work-item.error .cf7as-work-status-badge {
+.cf7as-submission-modal .cf7as-work-item.error .cf7as-work-status-badge {
     background: linear-gradient(135deg, #d9534f, #c9302c) !important;
     display: block !important;
 }
@@ -928,10 +1128,8 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-work-status-badge,
 }
 
 /* Enhanced work info section with theme protection */
-html body .cf7as-modal .cf7as-work-info,
-.cf7as-modal .cf7as-work-info,
-.cf7as-work-info {
-    padding: 15px !important;
+.cf7as-submission-modal .cf7as-work-info {
+    padding: 0 !important;
     background: white !important;
     margin: 0 !important;
     box-sizing: border-box !important;
@@ -939,13 +1137,234 @@ html body .cf7as-modal .cf7as-work-info,
     flex: 1 !important; /* Take remaining space */
     display: flex !important;
     flex-direction: column !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     min-height: 70px !important; /* Ensure minimum height for content */
 }
 
-html body .cf7as-modal .cf7as-work-title-display,
-.cf7as-modal .cf7as-work-title-display,
-.cf7as-work-title-display {
+/* Basic info section - always visible */
+.cf7as-submission-modal .cf7as-work-basic-info {
+    padding: 15px !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-basic-info:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Work title display that becomes editable */
+.cf7as-submission-modal .cf7as-work-title-display {
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    margin-bottom: 4px !important;
+    cursor: pointer !important;
+    min-height: 20px !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-display:hover {
+    color: #007cba !important;
+}
+
+/* When editing, hide title display and show input */
+.cf7as-submission-modal .cf7as-work-item-editing .cf7as-work-title-display {
+    display: none !important;
+}
+
+/* Inline title input - hidden by default */
+.cf7as-submission-modal .cf7as-work-title-input-inline {
+    display: none !important;
+    width: 100% !important;
+    padding: 8px 12px !important;
+    margin-bottom: 8px !important;
+    border: 2px solid #007cba !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    font-family: inherit !important;
+    background: white !important;
+    box-sizing: border-box !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1) !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-input-inline:focus {
+    outline: none !important;
+    border-color: #005a87 !important;
+    box-shadow: 0 0 0 3px rgba(0, 124, 186, 0.2) !important;
+}
+
+/* Show inline title input when editing */
+.cf7as-submission-modal .cf7as-work-item-editing .cf7as-work-title-input-inline {
+    display: block !important;
+}
+
+/* Add editing indicator to work item */
+.cf7as-submission-modal .cf7as-work-item-editing {
+    border-color: #007cba !important;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.1) !important;
+}
+
+/* Work actions container */
+.cf7as-submission-modal .cf7as-work-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+}
+
+.cf7as-submission-modal .cf7as-work-upload-btn,
+.cf7as-submission-modal .cf7as-work-remove-btn {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    background: white !important;
+    color: #333 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.cf7as-submission-modal .cf7as-work-upload-btn {
+    background: #007cba !important;
+    color: white !important;
+    border-color: #007cba !important;
+}
+
+.cf7as-submission-modal .cf7as-work-upload-btn:hover:not(:disabled) {
+    background: #005a87 !important;
+    border-color: #005a87 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-upload-btn:disabled {
+    background: #6c757d !important;
+    border-color: #6c757d !important;
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+}
+
+.cf7as-submission-modal .cf7as-work-remove-btn:hover {
+    background: #dc3545 !important;
+    color: white !important;
+    border-color: #dc3545 !important;
+}
+
+/* Editor section - hidden by default, slides down when editing */
+.cf7as-submission-modal .cf7as-work-editor {
+    display: none !important;
+    padding: 15px !important;
+    background: #f8f9fa !important;
+    border-top: 1px solid #e9ecef !important;
+    border-bottom-left-radius: 10px !important;
+    border-bottom-right-radius: 10px !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+    max-height: 0 !important;
+    opacity: 0 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item-editing .cf7as-work-editor {
+    display: block !important;
+    max-height: 300px !important;
+    opacity: 1 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-editor-fields {
+    margin-bottom: 15px !important;
+}
+
+.cf7as-submission-modal .cf7as-work-editor-field {
+    margin-bottom: 12px !important;
+}
+
+.cf7as-submission-modal .cf7as-work-editor-field:last-child {
+    margin-bottom: 0 !important;
+}
+
+.cf7as-work-editor-field label {
+    display: block !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    color: #495057 !important;
+    margin-bottom: 4px !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-input,
+.cf7as-submission-modal .cf7as-work-statement-input {
+    width: 100% !important;
+    padding: 8px !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    font-family: inherit !important;
+    background: white !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-input:focus,
+.cf7as-submission-modal .cf7as-work-statement-input:focus {
+    outline: none !important;
+    border-color: #007cba !important;
+    box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2) !important;
+}
+
+.cf7as-submission-modal .cf7as-work-statement-input {
+    resize: vertical !important;
+    min-height: 60px !important;
+}
+
+.cf7as-submission-modal .cf7as-work-editor-actions {
+    display: flex !important;
+    gap: 8px !important;
+    justify-content: flex-end !important;
+}
+
+.cf7as-submission-modal .cf7as-work-save-btn,
+.cf7as-submission-modal .cf7as-work-cancel-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-weight: 500 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-save-btn {
+    background: #28a745 !important;
+    color: white !important;
+    border-color: #28a745 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-save-btn:hover {
+    background: #218838 !important;
+    border-color: #1e7e34 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-cancel-btn {
+    background: #6c757d !important;
+    color: white !important;
+    border-color: #6c757d !important;
+}
+
+.cf7as-submission-modal .cf7as-work-cancel-btn:hover {
+    background: #5a6268 !important;
+    border-color: #545b62 !important;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 300px;
+    }
+}
+
+.cf7as-submission-modal .cf7as-work-title-display {
     font-weight: 600 !important;
     color: #333333 !important;
     font-size: 14px !important;
@@ -958,9 +1377,7 @@ html body .cf7as-modal .cf7as-work-title-display,
     font-family: inherit !important;
 }
 
-html body .cf7as-modal .cf7as-work-filename,
-.cf7as-modal .cf7as-work-filename,
-.cf7as-work-filename {
+.cf7as-submission-modal .cf7as-work-filename {
     font-size: 12px !important;
     color: #666666 !important;
     white-space: nowrap !important;
@@ -973,9 +1390,7 @@ html body .cf7as-modal .cf7as-work-filename,
 }
 
 /* Enhanced work meta section */
-html body .cf7as-modal .cf7as-work-meta,
-.cf7as-modal .cf7as-work-meta,
-.cf7as-work-meta {
+.cf7as-submission-modal .cf7as-work-meta {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
@@ -987,9 +1402,7 @@ html body .cf7as-modal .cf7as-work-meta,
 }
 
 /* Enhanced progress overlay with theme protection */
-html body .cf7as-modal .cf7as-progress-overlay,
-.cf7as-modal .cf7as-progress-overlay,
-.cf7as-progress-overlay {
+.cf7as-submission-modal .cf7as-progress-overlay {
     position: absolute !important;
     bottom: 0 !important;
     left: 0 !important;
@@ -1004,9 +1417,7 @@ html body .cf7as-modal .cf7as-progress-overlay,
     backface-visibility: hidden !important; /* Prevent flickering during transforms */
 }
 
-html body .cf7as-modal .cf7as-progress-overlay .cf7as-progress-fill,
-.cf7as-modal .cf7as-progress-overlay .cf7as-progress-fill,
-.cf7as-progress-overlay .cf7as-progress-fill {
+.cf7as-submission-modal .cf7as-progress-overlay .cf7as-progress-fill {
     height: 100% !important;
     background: #2271b1 !important;
     transition: width 0.3s ease !important;
@@ -1418,6 +1829,140 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
     border-color: #545b62;
 }
 
+/* Submission modal upload controls */
+.cf7as-submission-upload-controls {
+    display: none;
+    padding: 20px;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.cf7as-modal-body-inner.has-files .cf7as-submission-upload-controls {
+    display: flex;
+}
+
+.cf7as-submission-upload-all-btn,
+.cf7as-submission-clear-all-btn {
+    padding: 12px 24px;
+    border: 2px solid;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.cf7as-submission-upload-all-btn {
+    background: #007cba;
+    border-color: #007cba;
+    color: white;
+}
+
+.cf7as-submission-upload-all-btn:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+.cf7as-submission-upload-all-btn:disabled {
+    background: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.cf7as-submission-clear-all-btn {
+    background: #6c757d;
+    border-color: #6c757d;
+    color: white;
+}
+
+.cf7as-submission-clear-all-btn:hover {
+    background: #5a6268;
+    border-color: #545b62;
+}
+
+/* Upload Button Container for Centering */
+.cf7as-upload-button-container {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+}
+
+.cf7as-upload-progress-container.active ~ .cf7as-upload-button-container {
+    display: none;
+}
+
+/* Upload Progress Bar */
+.cf7as-upload-progress-container {
+    display: none;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.cf7as-upload-progress-container.active {
+    display: block;
+}
+
+.cf7as-upload-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.cf7as-upload-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007cba, #0099d4);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+    position: relative;
+}
+
+.cf7as-upload-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.2),
+        transparent
+    );
+    animation: cf7as-progress-shine 2s infinite;
+}
+
+@keyframes cf7as-progress-shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.cf7as-upload-progress-text {
+    text-align: center;
+    font-size: 14px;
+    color: #495057;
+    font-weight: 500;
+    min-height: 20px;
+    line-height: 20px;
+}
+
 /* Error and warning messages */
 .cf7as-error-message,
 .cf7as-warning-message {
@@ -1641,373 +2186,13 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
     font-size: 14px;
 }
 
-/* Modal overlay and structure */
-.cf7as-upload-modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 2147483647 !important; /* Maximum z-index value */
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.cf7as-modal-overlay {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0, 0, 0, 0.8) !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-.cf7as-modal-content {
-    position: relative !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    border-radius: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    box-shadow: none !important;
-}
-
-.cf7as-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 30px;
-    border-bottom: 1px solid #e0e0e0;
-    background: #f8f9fa;
-}
-
-.cf7as-modal-header h2 {
-    margin: 0;
-    font-size: 24px;
-    color: #333;
-}
-
-.cf7as-modal-close {
-    background: none;
-    border: none;
-    font-size: 32px;
-    color: #666;
-    cursor: pointer;
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-}
-
-.cf7as-modal-close:hover {
-    background: #e0e0e0;
-    color: #333;
-}
-
-.cf7as-modal-body {
-    flex: 1;
-    padding: 0;
-    overflow: hidden;
-    display: flex;
-    background: #f8f9fa;
-    position: relative;
-}
-
-.cf7as-modal-body-inner {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-    position: relative;
-    height: calc(100% - 80px); /* Account for modal footer height */
-    /* Ensure this is the positioning context for absolute elements */
-}
-
-.cf7as-modal-body.has-files {
-    justify-content: space-between;
-}
-
-.cf7as-modal-body.has-files .cf7as-modal-body-inner {
-    justify-content: space-between;
-}
-
-.cf7as-modal-body:not(.has-files) {
-    align-items: center;
-    justify-content: center;
-}
-
-.cf7as-modal-body:not(.has-files) .cf7as-modal-body-inner {
-    align-items: center;
-    justify-content: center;
-}
-
-.cf7as-modal-footer {
-    padding: 20px 30px;
-    border-top: 1px solid #e0e0e0;
-    background: #f8f9fa;
-    position: relative;
-    z-index: 10; /* Ensure footer stays above content but below modals */
-    flex-shrink: 0; /* Prevent footer from shrinking */
-}
-
-/* Enhanced file item styles for modal */
-.cf7as-file-item {
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-.cf7as-file-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.cf7as-file-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background: #f8f9fa;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.cf7as-file-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex: 1;
-}
-
-.cf7as-file-details {
-    flex: 1;
-}
-
-.cf7as-file-name {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.cf7as-file-meta {
-    font-size: 14px;
-    color: #666;
-}
-
-.cf7as-file-meta span {
-    margin-right: 15px;
-}
-
-/* File preview */
-.cf7as-file-preview {
-    padding: 20px;
-    text-align: center;
-    background: #f8f9fa;
-}
-
-.cf7as-file-preview img,
-.cf7as-file-preview video {
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* DPI warning */
-.cf7as-dpi-warning {
-    padding: 15px 20px;
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    color: #856404;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 14px;
-}
-
-.cf7as-warning-icon {
-    font-size: 18px;
-}
-
-/* Metadata fields */
-.cf7as-file-metadata {
-    padding: 20px;
-    background: white;
-}
-
-.cf7as-metadata-field {
-    margin-bottom: 20px;
-}
-
-.cf7as-metadata-field:last-child {
-    margin-bottom: 0;
-}
-
-.cf7as-metadata-field label {
-    display: block;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 8px;
-}
-
-.cf7as-work-title {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-.cf7as-work-statement {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    resize: vertical;
-    min-height: 80px;
-    font-family: inherit;
-}
-
-.cf7as-work-title:focus,
-.cf7as-work-statement:focus {
-    outline: none;
-    border-color: #2271b1;
-    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
-}
-
-/* Thumbnails preview outside modal */
-.cf7as-thumbnails-preview {
-    margin-top: 20px;
-}
-
-.cf7as-thumbnails-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
-}
-
-.cf7as-thumbnail-item {
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    overflow: hidden;
-    text-align: center;
-    transition: all 0.3s ease;
-}
-
-.cf7as-thumbnail-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.cf7as-thumbnail-item img,
-.cf7as-thumbnail-item video {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-}
-
-.cf7as-file-icon-large {
-    padding: 30px 20px;
-    color: #999;
-}
-
-.cf7as-file-icon-large svg {
-    width: 48px;
-    height: 48px;
-}
-
-.cf7as-thumbnail-info {
-    padding: 10px;
-}
-
-.cf7as-thumbnail-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.cf7as-thumbnail-status {
-    font-size: 12px;
-    text-transform: capitalize;
-}
-
-.cf7as-status-pending {
-    color: #856404;
-}
-
-.cf7as-status-uploading {
-    color: #0073aa;
-}
-
-.cf7as-status-uploaded {
-    color: #00a32a;
-}
-
-.cf7as-status-error {
-    color: #d63638;
-}
-
-/* Modal buttons */
-.cf7as-done-btn {
-    background: #00a32a;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
-    font-weight: 500;
-    cursor: pointer;
-    margin-left: 10px;
-}
-
-.cf7as-done-btn:hover {
-    background: #008a2a;
-}
-
-/* Body class when modal is open */
-body.cf7as-modal-open {
-    overflow: hidden !important;
-    position: fixed !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Ensure html element also doesn't interfere */
-html:has(body.cf7as-modal-open) {
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-}
-
 /* Additional reset for CF7AS elements only - constrained to avoid theme conflicts */
-body.cf7as-modal-open .cf7as-upload-modal *,
 body.cf7as-modal-open .cf7as-submission-modal * {
     box-sizing: border-box;
 }
 
-/* Ensure the modal completely covers viewport */
-body.cf7as-modal-open .cf7as-upload-modal {
+/* Ensure the submission modal completely covers viewport */
+body.cf7as-modal-open .cf7as-submission-modal {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -2134,6 +2319,21 @@ button.cf7as-upload-all-btn:disabled:hover {
     
     .cf7as-file-actions {
         align-self: flex-end;
+    }
+}
+
+/* Responsive work grid for different screen sizes */
+@media (min-width: 1400px) {
+    .cf7as-work-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+        gap: 12px !important;
+    }
+}
+
+@media (min-width: 1800px) {
+    .cf7as-work-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+        gap: 12px !important;
     }
 }
 
@@ -2702,4 +2902,134 @@ button.cf7as-upload-all-btn:disabled:hover {
 
 body.cf7as-submission-modal-open {
     overflow: hidden;
+}
+
+/* Upload Controls in Step Actions */
+.cf7as-upload-controls-group {
+    display: flex !important;
+    gap: 16px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 16px 0 !important;
+    order: 1 !important; /* Place in the middle of step actions */
+}
+
+/* Ensure step actions properly arrange items when upload controls are present */
+.cf7as-step-content-2 .cf7as-step-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 16px !important;
+}
+
+/* Back button should be on left */
+.cf7as-step-content-2 .cf7as-back-to-details {
+    order: 0 !important;
+}
+
+/* Continue button should be on right */
+.cf7as-step-content-2 .cf7as-continue-to-submit {
+    order: 2 !important;
+    margin-left: auto !important;
+}
+
+.cf7as-submission-upload-all-btn,
+.cf7as-submission-clear-all-btn {
+    padding: 12px 24px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-family: inherit !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.cf7as-submission-upload-all-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+}
+
+.cf7as-submission-upload-all-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+}
+
+.cf7as-submission-clear-all-btn {
+    background: #6c757d !important;
+    color: white !important;
+}
+
+.cf7as-submission-clear-all-btn:hover {
+    background: #5a6268 !important;
+}
+
+/* Progress bar styling for submission modal step actions */
+.cf7as-upload-progress-container {
+    display: none !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 16px auto !important;
+    text-align: center !important;
+}
+
+.cf7as-upload-progress-container.active {
+    display: block !important;
+}
+
+.cf7as-upload-progress-bar {
+    width: 100% !important;
+    height: 8px !important;
+    background: #e9ecef !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    margin-bottom: 8px !important;
+}
+
+.cf7as-upload-progress-fill {
+    height: 100% !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    transition: width 0.3s ease !important;
+    border-radius: 4px !important;
+}
+
+.cf7as-upload-progress-text {
+    text-align: center !important;
+    font-size: 14px !important;
+    color: #6c757d !important;
+    font-weight: 500 !important;
+}
+
+/* Responsive adjustments for step actions */
+@media (max-width: 768px) {
+    .cf7as-upload-controls-group {
+        flex-direction: column !important;
+        gap: 12px !important;
+        width: 100% !important;
+        order: 1 !important;
+    }
+    
+    .cf7as-submission-upload-all-btn,
+    .cf7as-submission-clear-all-btn {
+        width: 100% !important;
+        padding: 14px 20px !important;
+        justify-content: center !important;
+    }
+    
+    /* Stack step actions vertically on mobile */
+    .cf7as-step-content-2 .cf7as-step-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    
+    .cf7as-step-content-2 .cf7as-back-to-details,
+    .cf7as-step-content-2 .cf7as-continue-to-submit {
+        order: unset !important;
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
 }
