@@ -372,7 +372,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 /* When files are present, upload area becomes a grid item */
 .cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area {
     width: 100%;
-    min-height: 200px !important; /* Match work items */
+    min-height: 100% !important; /* Match work items */
     height: auto;
     padding: 20px;
     margin: 0;
@@ -555,6 +555,27 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 .cf7as-submission-modal .cf7as-browse-btn:hover {
+    color: #135e96;
+}
+
+/* File label styling for Brave browser compatibility */
+.cf7as-submission-modal .cf7as-file-label {
+    display: inline;
+    cursor: pointer;
+}
+
+.cf7as-submission-modal .cf7as-file-label .cf7as-browse-btn {
+    display: inline;
+    background: none;
+    border: none;
+    color: #2271b1;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: inherit;
+    padding: 0;
+}
+
+.cf7as-submission-modal .cf7as-file-label:hover .cf7as-browse-btn {
     color: #135e96;
 }
 
@@ -948,6 +969,179 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
     border-color: #dc3545 !important;
 }
 
+/* ===================================================================
+   UPLOAD STATE OVERLAYS
+   =================================================================== */
+
+/* Work item upload overlay */
+.cf7as-work-upload-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20; /* Higher than status badge (15) */
+    border-radius: inherit;
+    backdrop-filter: blur(2px);
+}
+
+/* Success overlay styling */
+.cf7as-upload-success-overlay {
+    background: rgba(39, 174, 96, 0.95) !important;
+}
+
+.cf7as-upload-overlay-content {
+    text-align: center;
+    padding: 20px;
+}
+
+/* Work item disabled state */
+.cf7as-work-item-disabled {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.cf7as-work-item-disabled * {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+/* Additional styling for uploaded work items */
+.cf7as-work-item-uploaded {
+    opacity: 0.9;
+}
+
+.cf7as-work-item-uploaded .cf7as-work-upload-overlay {
+    background: rgba(39, 174, 96, 0.95);
+}
+
+/* Upload states */
+.cf7as-upload-state-pending,
+.cf7as-upload-state-uploading,
+.cf7as-upload-state-uploaded {
+    display: none;
+}
+
+/* Pending state - animated ellipsis */
+.cf7as-upload-state-pending {
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.cf7as-waiting-text {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.cf7as-ellipsis-animation {
+    display: inline-block;
+    animation: ellipsis 1.5s infinite;
+    font-size: 18px;
+    line-height: 1;
+}
+
+@keyframes ellipsis {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+    100% { content: ''; }
+}
+
+/* Alternative ellipsis animation using opacity */
+.cf7as-ellipsis-animation::after {
+    content: '...';
+    animation: ellipsis-fade 1.5s infinite;
+}
+
+@keyframes ellipsis-fade {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+/* Uploading state - spinner */
+.cf7as-upload-state-uploading {
+    color: #007cba;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.cf7as-spinner-large {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e9ecef;
+    border-top: 3px solid #007cba;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 12px;
+}
+
+.cf7as-uploading-text {
+    display: block;
+}
+
+/* Uploaded state - success */
+.cf7as-upload-state-uploaded {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.cf7as-upload-success-overlay .cf7as-upload-state-uploaded {
+    color: #ffffff;
+}
+
+.cf7as-upload-success-overlay .cf7as-success-icon svg {
+    stroke: #ffffff;
+    fill: none;
+}
+
+.cf7as-success-icon {
+    margin: 0 auto 12px;
+    color: #ffffff;
+}
+
+.cf7as-uploaded-text {
+    display: block;
+    color: #ffffff;
+}
+
+/* Spin animation for spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+    .cf7as-upload-overlay-content {
+        padding: 16px;
+    }
+    
+    .cf7as-spinner-large {
+        width: 24px;
+        height: 24px;
+        border-width: 2px;
+    }
+    
+    .cf7as-upload-state-pending,
+    .cf7as-upload-state-uploading,
+    .cf7as-upload-state-uploaded {
+        font-size: 12px;
+    }
+    
+    .cf7as-success-icon svg {
+        width: 32px;
+        height: 32px;
+    }
+}
+
 /* Editor section - hidden by default, slides down when editing */
 .cf7as-submission-modal .cf7as-work-editor {
     display: none !important;
@@ -1142,10 +1336,7 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
 /* Work editing panel */
 .cf7as-work-editor {
     position: absolute; /* Changed from fixed to absolute */
-    top: 100px; /* Just below the compact upload area (20px + 60px + 20px margin) */
-    right: 20px;
     width: 280px;
-    bottom: 20px; /* Small margin from bottom */
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -1573,10 +1764,24 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
 }
 
 .cf7as-submission-upload-all-btn:disabled {
-    background: #6c757d;
-    border-color: #6c757d;
-    cursor: not-allowed;
-    opacity: 0.6;
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7 !important;
+    color: #fff !important;
+    position: relative !important;
+}
+
+.cf7as-submission-upload-all-btn:disabled:hover {
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+    transform: none !important;
+}
+
+.cf7as-submission-upload-all-btn:disabled::after {
+    content: " (Fix errors first)" !important;
+    font-size: 11px !important;
+    opacity: 0.9 !important;
 }
 
 .cf7as-submission-clear-all-btn {
@@ -1602,34 +1807,125 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
     display: none;
 }
 
-/* Upload Progress Bar */
+/* Upload Progress Bar - Enhanced */
 .cf7as-upload-progress-container {
     display: none;
+    position: relative;
     width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
+    margin: 0;
+    padding: 0;
 }
 
 .cf7as-upload-progress-container.active {
     display: block;
 }
 
+/* Progress bar takes over the top border of step actions */
+.cf7as-step-actions:has(.cf7as-upload-progress-container) {
+    border-top: none !important;
+    position: relative;
+}
+
 .cf7as-upload-progress-bar {
-    width: 100%;
-    height: 8px;
+    position: absolute;
+    top: -1px; /* Offset to cover the original border position */
+    left: -1px; /* Extend to cover full width including borders */
+    right: -1px; /* Extend to cover full width including borders */
+    width: calc(100% + 2px); /* Account for left/right offsets */
+    height: 4px;
     background: #e9ecef;
-    border-radius: 4px;
+    border-radius: 0;
     overflow: hidden;
-    margin-bottom: 8px;
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Add subtle shadow for definition */
 }
 
 .cf7as-upload-progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #007cba, #0099d4);
-    border-radius: 4px;
-    transition: width 0.3s ease;
+    border-radius: 0;
+    transition: width 0.15s ease-out; /* Faster, more responsive animation */
     width: 0%;
     position: relative;
+    transform-origin: left center; /* Ensure smooth scaling from left */
+    will-change: width; /* Optimize for width animations */
+}
+
+/* Progress details in the middle section */
+.cf7as-upload-progress-details {
+    padding: 16px 0 8px 0;
+    text-align: center;
+}
+
+.cf7as-upload-progress-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+.cf7as-upload-progress-stats {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 12px;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+
+.cf7as-upload-progress-stats span {
+    white-space: nowrap;
+}
+
+.cf7as-progress-current-file {
+    font-weight: 500;
+    color: #475569;
+}
+
+.cf7as-progress-time-left {
+    color: #007cba;
+    font-weight: 500;
+}
+
+/* Fallback for browsers without :has() support */
+.cf7as-step-actions.has-progress {
+    border-top: none !important;
+    position: relative;
+}
+
+.cf7as-step-actions.has-progress .cf7as-upload-progress-bar {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    width: calc(100% + 2px);
+    height: 4px;
+    background: #e9ecef;
+    border-radius: 0;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Hide progress container when not active */
+.cf7as-upload-progress-container:not(.active) {
+    display: none !important;
+}
+
+/* Responsive progress stats */
+@media (max-width: 640px) {
+    .cf7as-upload-progress-stats {
+        gap: 8px;
+        font-size: 11px;
+    }
+    
+    .cf7as-upload-progress-details {
+        padding: 12px 0 6px 0;
+    }
+    
+    .cf7as-upload-progress-text {
+        font-size: 13px;
+    }
 }
 
 .cf7as-upload-progress-fill::after {
@@ -2596,118 +2892,123 @@ body.cf7as-submission-modal-open {
 
 /* Upload Controls in Step Actions */
 .cf7as-upload-controls-group {
-    display: flex !important;
-    gap: 16px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 16px 0 !important;
-    order: 1 !important; /* Place in the middle of step actions */
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    margin: 16px 0;
+    order: 1; /* Place in the middle of step actions */
+}
+
+/* Hide upload controls when not needed */
+.cf7as-upload-controls-group.cf7as-hidden {
+    display: none !important;
 }
 
 /* Ensure step actions properly arrange items when upload controls are present */
 .cf7as-step-content-2 .cf7as-step-actions {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 16px !important;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
 }
 
 /* Back button should be on left */
 .cf7as-step-content-2 .cf7as-back-to-details {
-    order: 0 !important;
+    order: 0;
 }
 
 /* Continue button should be on right */
 .cf7as-step-content-2 .cf7as-continue-to-submit {
-    order: 2 !important;
-    margin-left: auto !important;
+    order: 2;
+    margin-left: auto;
 }
 
 .cf7as-submission-upload-all-btn,
 .cf7as-submission-clear-all-btn {
-    padding: 12px 24px !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-size: 16px !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-    font-family: inherit !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 8px !important;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .cf7as-submission-upload-all-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    color: white !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
 }
 
 .cf7as-submission-upload-all-btn:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 .cf7as-submission-clear-all-btn {
-    background: #6c757d !important;
-    color: white !important;
+    background: #6c757d;
+    color: white;
 }
 
 .cf7as-submission-clear-all-btn:hover {
-    background: #5a6268 !important;
+    background: #5a6268;
 }
 
 /* Progress bar styling for submission modal step actions */
 .cf7as-upload-progress-container {
-    display: none !important;
-    width: 100% !important;
-    max-width: 400px !important;
-    margin: 16px auto !important;
-    text-align: center !important;
+    display: none;
+    width: 100%;
+    max-width: 400px;
+    margin: 16px auto;
+    text-align: center;
 }
 
 .cf7as-upload-progress-container.active {
-    display: block !important;
+    display: block;
 }
 
 .cf7as-upload-progress-bar {
-    width: 100% !important;
-    height: 8px !important;
-    background: #e9ecef !important;
-    border-radius: 4px !important;
-    overflow: hidden !important;
-    margin-bottom: 8px !important;
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
 }
 
 .cf7as-upload-progress-fill {
-    height: 100% !important;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    transition: width 0.3s ease !important;
-    border-radius: 4px !important;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.3s ease;
+    border-radius: 4px;
 }
 
 .cf7as-upload-progress-text {
-    text-align: center !important;
-    font-size: 14px !important;
-    color: #6c757d !important;
-    font-weight: 500 !important;
+    text-align: center;
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
 }
 
 /* Responsive adjustments for step actions */
 @media (max-width: 768px) {
     .cf7as-upload-controls-group {
-        flex-direction: column !important;
-        gap: 12px !important;
-        width: 100% !important;
-        order: 1 !important;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+        order: 1;
     }
     
     .cf7as-submission-upload-all-btn,
     .cf7as-submission-clear-all-btn {
-        width: 100% !important;
-        padding: 14px 20px !important;
-        justify-content: center !important;
+        width: 100%;
+        padding: 14px 20px;
+        justify-content: center;
     }
     
     /* Stack step actions vertically on mobile */
