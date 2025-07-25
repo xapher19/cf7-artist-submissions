@@ -41,6 +41,7 @@
             // Submission modal drag state
             this.submissionDragExpanded = false;
             this.submissionDragTimeout = null;
+            this.submissionDragEnterCounter = 0;
             
             this.init();
         }
@@ -694,6 +695,7 @@
             
             // Handle files dropped anywhere in the modal
             modal.on('drop', (e) => {
+                this.submissionDragEnterCounter = 0; // Reset counter on drop
                 const files = e.originalEvent.dataTransfer.files;
                 if (files && files.length > 0) {
                     // Collapse drag area immediately after drop
@@ -707,41 +709,40 @@
             });
             
             // Visual feedback when dragging over modal
-            modal.on('dragenter dragover', (e) => {
+            modal.on('dragenter', (e) => {
+                this.submissionDragEnterCounter++;
                 const dt = e.originalEvent.dataTransfer;
                 const hasFiles = dt && (dt.types.includes('Files') || dt.types.includes('application/x-moz-file') || dt.files.length > 0);
                 
-                if (hasFiles) {
-                    // If there are already files present, expand the drag area to fill the modal
-                    if (this.files.length > 0) {
-                        // Only expand if not already expanded to prevent repeated calls
-                        if (!this.submissionDragExpanded) {
-                            // Add a small delay to prevent rapid expand/collapse cycles
-                            if (this.submissionDragTimeout) {
-                                clearTimeout(this.submissionDragTimeout);
-                                this.submissionDragTimeout = null;
-                            }
-                            this.expandSubmissionModalDragArea();
+                if (hasFiles && this.files.length > 0) {
+                    // Only expand if not already expanded and this is the first dragenter
+                    if (!this.submissionDragExpanded && this.submissionDragEnterCounter === 1) {
+                        // Clear any pending collapse timeout
+                        if (this.submissionDragTimeout) {
+                            clearTimeout(this.submissionDragTimeout);
+                            this.submissionDragTimeout = null;
                         }
-                    } else {
-                        // Just show dragover state for empty modal
-                        uploadArea.addClass('cf7as-dragover');
+                        this.expandSubmissionModalDragArea();
                     }
+                } else if (hasFiles) {
+                    // Just show dragover state for empty modal
+                    uploadArea.addClass('cf7as-dragover');
                 }
             });
             
+            modal.on('dragover', (e) => {
+                // Just prevent default, don't trigger expand here
+                e.preventDefault();
+            });
+            
             modal.on('dragleave', (e) => {
-                // Only handle dragleave if we're leaving the modal entirely
-                const relatedTarget = e.originalEvent.relatedTarget;
-                const modalElement = modal[0];
+                this.submissionDragEnterCounter--;
                 
-                // More robust check - ensure we're actually leaving the modal bounds
-                if (!relatedTarget || 
-                    (!modalElement.contains(relatedTarget) && 
-                     !this.submissionUploadArea[0].contains(relatedTarget))) {
+                // Only collapse when all drag events have left (counter reaches 0)
+                if (this.submissionDragEnterCounter <= 0) {
+                    this.submissionDragEnterCounter = 0; // Reset to prevent negative values
                     
-                    if (this.files.length > 0) {
-                        // Use delayed collapse to prevent flickering during rapid events
+                    if (this.files.length > 0 && this.submissionDragExpanded) {
                         this.collapseSubmissionModalDragArea();
                     } else {
                         uploadArea.removeClass('cf7as-dragover');
@@ -941,6 +942,9 @@
             if (this.submissionDragExpanded) {
                 this.collapseSubmissionModalDragAreaImmediate();
             }
+            
+            // Reset drag counter
+            this.submissionDragEnterCounter = 0;
             
             // Remove event listeners
             $(document).off('keydown.cf7as-submission');
