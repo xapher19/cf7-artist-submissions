@@ -346,29 +346,13 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Disable transitions during drag expansion for instant effect */
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area.cf7as-drag-expanded,
 .cf7as-submission-modal .cf7as-upload-area.cf7as-drag-expanded {
     transition: none !important;
 }
 
-/* Initial state - full screen centered in modal */
-.cf7as-submission-modal .cf7as-modal-body:not(.has-files) .cf7as-upload-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0;
-}
-
-/* Submission modal upload area when no files are present */
-.cf7as-submission-modal .cf7as-upload-container .cf7as-modal-body-inner .cf7as-upload-area:not(.has-files),
-.cf7as-submission-modal .cf7as-upload-container .cf7as-upload-area {
+/* Initial state - full screen centered in modal when no files are present */
+.cf7as-submission-modal .cf7as-modal-body-inner:not(.has-files) .cf7as-upload-area {
     position: absolute;
     top: 0;
     left: 0;
@@ -385,18 +369,22 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     background: #fff;
 }
 
-/* When files are present in submission modal, make upload area compact */
-.cf7as-submission-modal .cf7as-upload-container .cf7as-modal-body-inner.has-files .cf7as-upload-area {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    padding: 10px;
+/* When files are present, upload area becomes a grid item */
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area {
+    width: 100%;
+    min-height: 200px !important; /* Match work items */
+    height: auto;
+    padding: 20px;
     margin: 0;
-    z-index: 10;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 2px dashed #d0d0d0;
     border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
 }
 
 .cf7as-submission-modal .cf7as-modal-body:not(.has-files) .cf7as-upload-area .cf7as-upload-prompt {
@@ -413,45 +401,39 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     height: 100%;
 }
 
-/* Transitioned state - compact in top right */
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area,
-.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area {
-    position: absolute !important;
-    top: 20px !important;
-    right: 20px !important;
-    left: auto !important;
-    width: 60px !important; /* Much smaller - just for the icon */
-    height: 60px !important; /* Square compact size */
-    padding: 10px !important; /* Minimal padding */
-    margin: 0 !important;
-    z-index: 10 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-    border-radius: 8px !important; /* Smaller border radius */
-}
-
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-prompt,
-.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-prompt {
+/* Upload area content when positioned as grid item */
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area .cf7as-upload-prompt {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     height: 100%;
+    text-align: center;
 }
 
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon,
-.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-icon {
-    margin-bottom: 0; /* Remove margin for compact layout */
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area .cf7as-upload-icon {
+    opacity: 0.7;
+    margin-bottom: 12px;
 }
 
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-icon svg,
-.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-icon svg {
-    width: 24px; /* Smaller icon */
-    height: 24px;
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area .cf7as-upload-icon svg {
+    width: 32px;
+    height: 32px;
 }
 
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-upload-area .cf7as-upload-text,
-.cf7as-submission-modal .cf7as-modal-body.has-files .cf7as-modal-body-inner .cf7as-upload-area .cf7as-upload-text {
-    display: none; /* Hide text in compact mode */
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area .cf7as-upload-text h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area .cf7as-upload-text p {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area .cf7as-upload-text small {
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 .cf7as-submission-modal .cf7as-upload-area:hover {
@@ -482,6 +464,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Dynamic drag expansion when files are present - Maximum specificity override */
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area.cf7as-drag-expanded,
 .cf7as-submission-modal .cf7as-upload-area.cf7as-drag-expanded {
     position: fixed !important;
     top: 0 !important;
@@ -511,6 +494,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     clip-path: none !important;
 }
 
+.cf7as-submission-modal .cf7as-work-grid .cf7as-upload-grid-item .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt,
 .cf7as-submission-modal .cf7as-upload-area.cf7as-drag-expanded .cf7as-upload-prompt {
     position: absolute !important;
     top: 50% !important;

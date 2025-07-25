@@ -716,6 +716,11 @@
                     if (this.files.length > 0) {
                         // Only expand if not already expanded to prevent repeated calls
                         if (!this.submissionDragExpanded) {
+                            // Add a small delay to prevent rapid expand/collapse cycles
+                            if (this.submissionDragTimeout) {
+                                clearTimeout(this.submissionDragTimeout);
+                                this.submissionDragTimeout = null;
+                            }
                             this.expandSubmissionModalDragArea();
                         }
                     } else {
@@ -728,7 +733,13 @@
             modal.on('dragleave', (e) => {
                 // Only handle dragleave if we're leaving the modal entirely
                 const relatedTarget = e.originalEvent.relatedTarget;
-                if (!relatedTarget || !modal[0].contains(relatedTarget)) {
+                const modalElement = modal[0];
+                
+                // More robust check - ensure we're actually leaving the modal bounds
+                if (!relatedTarget || 
+                    (!modalElement.contains(relatedTarget) && 
+                     !this.submissionUploadArea[0].contains(relatedTarget))) {
+                    
                     if (this.files.length > 0) {
                         // Use delayed collapse to prevent flickering during rapid events
                         this.collapseSubmissionModalDragArea();
@@ -1003,6 +1014,13 @@
         expandSubmissionModalDragArea() {
             if (this.submissionDragExpanded) return; // Already expanded
             
+            // Throttle expansion to prevent rapid calls
+            const now = Date.now();
+            if (this.lastExpandTime && (now - this.lastExpandTime) < 100) {
+                return; // Too soon, ignore this call
+            }
+            this.lastExpandTime = now;
+            
             // Clear any pending collapse timeout
             if (this.submissionDragTimeout) {
                 clearTimeout(this.submissionDragTimeout);
@@ -1073,7 +1091,7 @@
                 });
                 
                 this.submissionDragTimeout = null;
-            }, 200);
+            }, 300); // Increased delay to prevent flickering
         }
         
         collapseSubmissionModalDragAreaImmediate() {
@@ -1641,9 +1659,36 @@
                 if (this.files.length > 0) {
                     this.submissionModalBody.addClass('has-files');
                     console.log('🎯 Added has-files class to submission modal body');
+                    
+                    // Move upload area into the work grid as first item
+                    if (this.submissionUploadArea && this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                        // Create a wrapper for the upload area to act as a grid item
+                        let uploadGridItem = this.submissionWorkGrid.find('.cf7as-upload-grid-item');
+                        if (uploadGridItem.length === 0) {
+                            uploadGridItem = $('<div class="cf7as-upload-grid-item"></div>');
+                            this.submissionWorkGrid.prepend(uploadGridItem);
+                        }
+                        
+                        // Move the upload area into the grid item wrapper
+                        if (this.submissionUploadArea.parent()[0] !== uploadGridItem[0]) {
+                            this.submissionUploadArea.detach().appendTo(uploadGridItem);
+                            console.log('🎯 Moved upload area into work grid');
+                        }
+                    }
                 } else {
                     this.submissionModalBody.removeClass('has-files');
                     console.log('🎯 Removed has-files class from submission modal body');
+                    
+                    // Move upload area back to its original position
+                    if (this.submissionUploadArea && this.submissionModalBody && this.submissionModalBody.length > 0) {
+                        const originalParent = this.submissionModalBody;
+                        if (this.submissionUploadArea.parent().hasClass('cf7as-upload-grid-item')) {
+                            this.submissionUploadArea.detach().prependTo(originalParent);
+                            // Remove the empty grid item wrapper
+                            this.submissionWorkGrid.find('.cf7as-upload-grid-item').remove();
+                            console.log('🎯 Moved upload area back to original position');
+                        }
+                    }
                 }
             }
             
