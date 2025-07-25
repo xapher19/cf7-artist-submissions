@@ -41,7 +41,6 @@
             // Submission modal drag state
             this.submissionDragExpanded = false;
             this.submissionDragTimeout = null;
-            this.submissionDragEnterCounter = 0;
             
             this.init();
         }
@@ -610,143 +609,68 @@
                 return;
             }
             
-            // Prevent default drag behaviors globally on the document when modal is open
-            $(document).on('dragenter.submission-modal dragover.submission-modal', (e) => {
-                if (modal.is(':visible')) {
-                    e.preventDefault();
-                    e.stopPropagation();
+            // Use a single, stable event handler approach to prevent conflicts
+            // Bind to document level to catch all drag events when modal is open
+            $(document).on('dragenter.submission-modal', (e) => {
+                if (!modal.is(':visible')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const dt = e.originalEvent.dataTransfer;
+                const hasFiles = dt && (dt.types.includes('Files') || dt.types.includes('application/x-moz-file') || dt.files.length > 0);
+                
+                if (hasFiles) {
+                    // Simple logic: if we have files already, expand for better drop target
+                    if (this.files.length > 0 && !this.submissionDragExpanded) {
+                        this.expandSubmissionModalDragArea();
+                    } else if (this.files.length === 0) {
+                        // Show basic dragover state
+                        uploadArea.addClass('cf7as-dragover');
+                    }
+                }
+            });
+            
+            $(document).on('dragover.submission-modal', (e) => {
+                if (!modal.is(':visible')) return;
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            
+            $(document).on('dragleave.submission-modal', (e) => {
+                if (!modal.is(':visible')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Only collapse if we're leaving the modal entirely
+                // Check if the mouse is still within the modal bounds
+                const modalRect = modal[0].getBoundingClientRect();
+                const x = e.originalEvent.clientX;
+                const y = e.originalEvent.clientY;
+                
+                // If mouse is outside modal bounds, collapse
+                if (x < modalRect.left || x > modalRect.right || y < modalRect.top || y > modalRect.bottom) {
+                    if (this.submissionDragExpanded) {
+                        this.collapseSubmissionModalDragArea();
+                    } else {
+                        uploadArea.removeClass('cf7as-dragover');
+                    }
                 }
             });
             
             $(document).on('drop.submission-modal', (e) => {
-                if (modal.is(':visible')) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            });
-            
-            // Prevent default drag behaviors on upload area (but still allow class changes)
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadArea.on(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // Handle dragover class immediately in the same handler
-                    if (eventName === 'dragenter' || eventName === 'dragover') {
-                        uploadArea.addClass('cf7as-dragover');
-                    } else if (eventName === 'dragleave') {
-                        // Only remove dragover if we're actually leaving the upload area
-                        const rect = uploadArea[0].getBoundingClientRect();
-                        const x = e.originalEvent.clientX;
-                        const y = e.originalEvent.clientY;
-                        
-                        if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-                            uploadArea.removeClass('cf7as-dragover');
-                        }
-                    } else if (eventName === 'drop') {
-                        uploadArea.removeClass('cf7as-dragover');
-                        
-                        // Handle the file drop
-                        const files = e.originalEvent.dataTransfer.files;
-                        if (files && files.length > 0) {
-                            this.addFiles(files);
-                        }
-                    }
-                });
-            });
-            
-            // Remove the duplicate event handlers - handle everything in one place
-            // Also bind to the modal container as fallback using event delegation
-            modal.on('dragenter dragover dragleave drop', '.cf7as-upload-area', (e) => {
+                if (!modal.is(':visible')) return;
                 e.preventDefault();
                 e.stopPropagation();
                 
-                const target = $(e.currentTarget);
-                
-                if (e.type === 'dragenter' || e.type === 'dragover') {
-                    target.addClass('cf7as-dragover');
-                } else if (e.type === 'dragleave') {
-                    // Only remove if leaving the element bounds
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.originalEvent.clientX;
-                    const y = e.originalEvent.clientY;
-                    
-                    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-                        target.removeClass('cf7as-dragover');
-                    }
-                } else if (e.type === 'drop') {
-                    target.removeClass('cf7as-dragover');
-                    
-                    // Handle the file drop
-                    const files = e.originalEvent.dataTransfer.files;
-                    if (files && files.length > 0) {
-                        this.addFiles(files);
-                    }
-                }
-            });
-            
-            // Prevent default drag behaviors on entire modal
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                modal.on(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-            
-            // Handle files dropped anywhere in the modal
-            modal.on('drop', (e) => {
-                this.submissionDragEnterCounter = 0; // Reset counter on drop
                 const files = e.originalEvent.dataTransfer.files;
                 if (files && files.length > 0) {
-                    // Collapse drag area immediately after drop
+                    // Immediately collapse and handle files
                     if (this.submissionDragExpanded) {
                         this.collapseSubmissionModalDragAreaImmediate();
                     } else {
                         uploadArea.removeClass('cf7as-dragover');
                     }
                     this.addFiles(files);
-                }
-            });
-            
-            // Visual feedback when dragging over modal
-            modal.on('dragenter', (e) => {
-                this.submissionDragEnterCounter++;
-                const dt = e.originalEvent.dataTransfer;
-                const hasFiles = dt && (dt.types.includes('Files') || dt.types.includes('application/x-moz-file') || dt.files.length > 0);
-                
-                if (hasFiles && this.files.length > 0) {
-                    // Only expand if not already expanded and this is the first dragenter
-                    if (!this.submissionDragExpanded && this.submissionDragEnterCounter === 1) {
-                        // Clear any pending collapse timeout
-                        if (this.submissionDragTimeout) {
-                            clearTimeout(this.submissionDragTimeout);
-                            this.submissionDragTimeout = null;
-                        }
-                        this.expandSubmissionModalDragArea();
-                    }
-                } else if (hasFiles) {
-                    // Just show dragover state for empty modal
-                    uploadArea.addClass('cf7as-dragover');
-                }
-            });
-            
-            modal.on('dragover', (e) => {
-                // Just prevent default, don't trigger expand here
-                e.preventDefault();
-            });
-            
-            modal.on('dragleave', (e) => {
-                this.submissionDragEnterCounter--;
-                
-                // Only collapse when all drag events have left (counter reaches 0)
-                if (this.submissionDragEnterCounter <= 0) {
-                    this.submissionDragEnterCounter = 0; // Reset to prevent negative values
-                    
-                    if (this.files.length > 0 && this.submissionDragExpanded) {
-                        this.collapseSubmissionModalDragArea();
-                    } else {
-                        uploadArea.removeClass('cf7as-dragover');
-                    }
                 }
             });
             
@@ -943,12 +867,9 @@
                 this.collapseSubmissionModalDragAreaImmediate();
             }
             
-            // Reset drag counter
-            this.submissionDragEnterCounter = 0;
-            
             // Remove event listeners
             $(document).off('keydown.cf7as-submission');
-            $(document).off('dragenter.submission-modal dragover.submission-modal drop.submission-modal');
+            $(document).off('dragenter.submission-modal dragover.submission-modal dragleave.submission-modal drop.submission-modal');
         }
         
         showModalError(message) {
@@ -1018,13 +939,6 @@
         expandSubmissionModalDragArea() {
             if (this.submissionDragExpanded) return; // Already expanded
             
-            // Throttle expansion to prevent rapid calls
-            const now = Date.now();
-            if (this.lastExpandTime && (now - this.lastExpandTime) < 100) {
-                return; // Too soon, ignore this call
-            }
-            this.lastExpandTime = now;
-            
             // Clear any pending collapse timeout
             if (this.submissionDragTimeout) {
                 clearTimeout(this.submissionDragTimeout);
@@ -1034,7 +948,7 @@
             this.submissionDragExpanded = true;
             this.submissionUploadArea.addClass('cf7as-drag-expanded');
             
-            // Force inline styles for full modal coverage
+            // Force inline styles for full modal coverage with stable positioning
             this.submissionUploadArea.css({
                 'position': 'fixed',
                 'top': '0',
@@ -1054,7 +968,8 @@
                 'justify-content': 'center',
                 'transform': 'none',
                 'transition': 'none',
-                'box-shadow': 'none'
+                'box-shadow': 'none',
+                'pointer-events': 'auto' // Ensure it can receive events
             });
         }
         
@@ -1066,7 +981,7 @@
                 clearTimeout(this.submissionDragTimeout);
             }
             
-            // Add a small delay to prevent flickering during rapid events
+            // Use a shorter, more responsive delay
             this.submissionDragTimeout = setTimeout(() => {
                 this.submissionDragExpanded = false;
                 this.submissionUploadArea.removeClass('cf7as-drag-expanded');
@@ -1091,11 +1006,12 @@
                     'justify-content': '',
                     'transform': '',
                     'transition': '',
-                    'box-shadow': ''
+                    'box-shadow': '',
+                    'pointer-events': ''
                 });
                 
                 this.submissionDragTimeout = null;
-            }, 300); // Increased delay to prevent flickering
+            }, 150); // Reduced from 300ms to 150ms for better responsiveness
         }
         
         collapseSubmissionModalDragAreaImmediate() {
