@@ -1259,37 +1259,18 @@
         }
         
         renderWorkItem(fileData) {
-            console.log('🚀 renderWorkItem called for file:', fileData.name, 'ID:', fileData.id);
-            console.log('📊 File data:', {
-                name: fileData.name,
-                size: fileData.size,
-                type: fileData.type,
-                status: fileData.status,
-                workTitle: fileData.workTitle,
-                workStatement: fileData.workStatement
-            });
+            console.log('🚀 renderWorkItem called for file:', fileData.name);
             
             const fileSize = this.formatBytes(fileData.size);
             const fileIcon = this.getFileIcon(fileData.type);
             
-            console.log('🖼️ File size formatted:', fileSize);
-            console.log('🎨 File icon:', fileIcon);
-            
             // Create preview content for different file types
             let previewContent = '';
-            console.log('🎬 Creating preview content for type:', fileData.type);
             
             if (this.isImageFile(fileData.type)) {
-                console.log('📸 Processing image file');
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
-                console.log('🔗 Object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
                 
                 if (objectUrl) {
-                    // Properly escape filename for inline event handlers
-                    const escapedName = fileData.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                    
-                    // Don't immediately revoke the URL, let it persist for thumbnail display
-                    // Include fallback icon that shows if image fails to load
                     previewContent = `
                         <img src="${objectUrl}" alt="${this.escapeHtml(fileData.name)}" 
                             onload="this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
@@ -1299,16 +1280,10 @@
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
                 }
-                console.log('📸 Image preview content created');
             } else if (fileData.type.startsWith('video/')) {
-                console.log('🎥 Processing video file');
                 const objectUrl = window.URL ? window.URL.createObjectURL(fileData.file) : null;
-                console.log('🔗 Video object URL created:', objectUrl ? 'SUCCESS' : 'FAILED');
                 
                 if (objectUrl) {
-                    // Properly escape filename for inline event handlers
-                    const escapedName = fileData.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
-                    
                     previewContent = `
                         <video src="${objectUrl}" muted preload="metadata" 
                             onloadeddata="this.style.opacity='1'; this.nextElementSibling.style.display='none';" 
@@ -1321,29 +1296,18 @@
                 } else {
                     previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
                 }
-                console.log('🎥 Video preview content created');
             } else {
-                console.log('📄 Processing other file type, using icon');
                 previewContent = `<div class="cf7as-file-icon">${fileIcon}</div>`;
             }
-            
-            console.log('✅ Preview content ready:', previewContent.length, 'characters');
             
             // Check if work title is missing for error state
             const isTitleMissing = !fileData.workTitle || fileData.workTitle.trim() === '';
             const errorClass = isTitleMissing ? ' cf7as-work-item-error' : '';
             const errorBadge = isTitleMissing ? '<div class="cf7as-work-error-badge" title="Work title required"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>' : '';
             
-            console.log('⚠️ Title validation:', {
-                isTitleMissing,
-                workTitle: fileData.workTitle,
-                errorClass,
-                hasErrorBadge: !!errorBadge
-            });
-            
             console.log('🏗️ Building work item HTML...');
             const workItemHtml = `
-                <div class="cf7as-work-item${errorClass}" data-file-id="${fileData.id}" tabindex="0" role="button" aria-label="Edit work: ${this.escapeHtml(fileData.workTitle || 'Untitled Work')}">
+                <div class="cf7as-work-item${errorClass}" data-file-id="${fileData.id}">
                     <div class="cf7as-work-preview">
                         ${previewContent}
                         <div class="cf7as-work-status-badge">${this.getStatusLabel(fileData.status)}</div>
@@ -1353,26 +1317,20 @@
                         </div>
                     </div>
                     <div class="cf7as-work-info">
-                        <div class="cf7as-work-basic-info">
-                            <div class="cf7as-work-title-display">${this.escapeHtml(fileData.workTitle || 'Click to add title')}</div>
-                            <input type="text" class="cf7as-work-title-input-inline" placeholder="Enter work title" value="${this.escapeHtml(fileData.workTitle || '')}" style="display: none;">
-                            <div class="cf7as-work-filename">${this.escapeHtml(fileData.name)}</div>
-                            <div class="cf7as-work-meta">
-                                <span class="cf7as-work-size">${fileSize}</span>
-                                <div class="cf7as-work-actions">
-                                    <button type="button" class="cf7as-work-upload-btn" ${fileData.status !== 'pending' ? 'disabled' : ''}>
-                                        ${fileData.status === 'uploaded' ? 'Uploaded' : fileData.status === 'uploading' ? 'Uploading...' : 'Upload'}
-                                    </button>
-                                    <button type="button" class="cf7as-work-remove-btn">Remove</button>
-                                </div>
-                            </div>
+                        <div class="cf7as-work-title-display">${this.escapeHtml(fileData.workTitle || 'Click to add title')}</div>
+                        <input type="text" class="cf7as-work-title-input-inline" placeholder="Enter work title" value="${this.escapeHtml(fileData.workTitle || '')}" style="display: none;">
+                        <div class="cf7as-work-filename">${this.escapeHtml(fileData.name)}</div>
+                        <div class="cf7as-work-size">${fileSize}</div>
+                        <div class="cf7as-work-actions">
+                            <button type="button" class="cf7as-work-upload-btn" ${fileData.status !== 'pending' ? 'disabled' : ''}>
+                                ${fileData.status === 'uploaded' ? 'Uploaded' : fileData.status === 'uploading' ? 'Uploading...' : 'Upload'}
+                            </button>
+                            <button type="button" class="cf7as-work-remove-btn">Remove</button>
                         </div>
                         <div class="cf7as-work-editor" style="display: none;">
-                            <div class="cf7as-work-editor-fields">
-                                <div class="cf7as-work-editor-field">
-                                    <label>Work Statement</label>
-                                    <textarea class="cf7as-work-statement-input" placeholder="Describe this work, techniques used, artistic intentions, etc." rows="3">${this.escapeHtml(fileData.workStatement || '')}</textarea>
-                                </div>
+                            <div class="cf7as-work-editor-field">
+                                <label>Work Statement</label>
+                                <textarea class="cf7as-work-statement-input" placeholder="Describe this work, techniques used, artistic intentions, etc." rows="3">${this.escapeHtml(fileData.workStatement || '')}</textarea>
                             </div>
                             <div class="cf7as-work-editor-actions">
                                 <button type="button" class="cf7as-work-save-btn">Save Changes</button>
@@ -1385,10 +1343,13 @@
             
             const workElement = $(workItemHtml);
             
-            // Add click handler for expansion/editing
-            workElement.find('.cf7as-work-basic-info').on('click', (e) => {
-                e.preventDefault();
-                this.toggleWorkItemEditor(fileData.id);
+            // Add click handler for expansion/editing - click on the whole item
+            workElement.on('click', (e) => {
+                // Don't trigger when clicking on buttons or inputs
+                if (!$(e.target).is('button, input, textarea')) {
+                    e.preventDefault();
+                    this.toggleWorkItemEditor(fileData.id);
+                }
             });
             
             // Add individual button handlers
@@ -1438,126 +1399,31 @@
             });
             
             // Append to the submission modal work grid
-            console.log('🌐 Finding submission work grid...');
-            console.log('🔍 this.submissionWorkGrid exists:', !!this.submissionWorkGrid);
-            console.log('🔍 this.submissionWorkGrid length:', this.submissionWorkGrid ? this.submissionWorkGrid.length : 'N/A');
-            
             if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
-                console.log('✅ Submission work grid found, current children:', this.submissionWorkGrid.children().length);
-                console.log('📦 Appending work element...');
                 this.submissionWorkGrid.append(workElement);
-                console.log('✅ Work element appended, new children count:', this.submissionWorkGrid.children().length);
-                console.log('🎯 Checking if element was properly inserted...');
-                const insertedElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
-                console.log('🔍 Inserted element found:', insertedElement.length > 0);
-                if (insertedElement.length > 0) {
-                    console.log('📊 Inserted element details:', {
-                        tagName: insertedElement[0].tagName,
-                        className: insertedElement[0].className,
-                        dataFileId: insertedElement[0].getAttribute('data-file-id'),
-                        isVisible: insertedElement.is(':visible'),
-                        computedDisplay: window.getComputedStyle(insertedElement[0]).display,
-                        computedVisibility: window.getComputedStyle(insertedElement[0]).visibility,
-                        computedOpacity: window.getComputedStyle(insertedElement[0]).opacity,
-                        offsetWidth: insertedElement[0].offsetWidth,
-                        offsetHeight: insertedElement[0].offsetHeight,
-                        parentVisible: insertedElement.parent().is(':visible')
-                    });
-                    
-                    // Force element to be visible for debugging
-                    insertedElement.css({
-                        'display': 'block !important',
-                        'visibility': 'visible !important',
-                        'opacity': '1 !important',
-                        'position': 'relative !important',
-                        'z-index': '9999 !important',
-                        'background': 'red !important',
-                        'border': '3px solid yellow !important',
-                        'min-height': '100px !important',
-                        'width': '100% !important'
-                    });
-                    console.log('🚨 FORCED ELEMENT VISIBLE FOR DEBUGGING');
-                } else {
-                    console.error('❌ CRITICAL: Element not found after insertion!');
-                }
+                console.log('✅ Work item added to grid:', fileData.name);
             } else {
                 console.error('❌ CRITICAL: No submission work grid found!');
-                console.log('🔍 Available grids in submission modal:', this.submissionModal ? $(this.submissionModal).find('[class*="grid"]').length : 'No submission modal');
             }
             
             // Setup fallback visibility for videos with metadata
-            console.log('⏰ Setting up video fallback visibility check...');
             setTimeout(() => {
-                console.log('🔄 Video fallback timeout triggered for file:', fileData.id);
-                // Find in submission grid
-                let appendedElement = null;
-                if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
-                    appendedElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
-                    console.log('🔍 Found appended element in timeout:', !!appendedElement && appendedElement.length > 0);
-                } else {
-                    console.log('⚠️ No submission work grid in timeout');
-                }
-                
+                const appendedElement = this.submissionWorkGrid.find(`[data-file-id="${fileData.id}"]`);
                 if (appendedElement && appendedElement.length > 0) {
-                    console.log('📺 Checking video preview...');
-                    const previewDiv = appendedElement.find('.cf7as-work-preview');
-                    console.log('🎬 Preview div found:', previewDiv.length > 0);
-                    
-                    if (previewDiv.length > 0) {
-                        const video = previewDiv.find('video');
-                        console.log('📹 Video element found:', video.length > 0);
-                        if (video.length > 0) {
-                            console.log('📊 Video ready state:', video[0].readyState);
-                            // Check if video failed to load
+                    const video = appendedElement.find('video');
+                    if (video.length > 0 && video[0].readyState === 0) {
+                        video[0].load();
+                        setTimeout(() => {
                             if (video[0].readyState === 0) {
-                                console.log('🔄 Forcing video load...');
-                                // Try to force video loading
-                                video[0].load();
-                                
-                                // Set a fallback timeout to show icon if video doesn't load
-                                setTimeout(() => {
-                                    console.log('🔍 Final video fallback check, ready state:', video[0].readyState);
-                                    if (video[0].readyState === 0) {
-                                        console.log('⚠️ Video failed to load completely, showing fallback icon');
-                                        video.css('display', 'none');
-                                        previewDiv.find('.cf7as-file-icon').css('display', 'flex');
-                                    } else {
-                                        console.log('✅ Video loaded after force load');
-                                    }
-                                }, 2000);
-                            } else if (video[0].readyState >= 1) {
-                                console.log('📊 Video has metadata, ready state:', video[0].readyState);
-                                // Video has metadata, show it after a short delay if events haven't fired
-                                setTimeout(() => {
-                                    console.log('🔍 Checking video opacity after metadata delay');
-                                    if (video.css('opacity') === '0' || video.css('opacity') === 0) {
-                                        console.log('🎬 Setting video visible due to metadata');
-                                        video.css('opacity', '1');
-                                        previewDiv.find('.cf7as-file-icon').css('display', 'none');
-                                    } else {
-                                        console.log('✅ Video already visible');
-                                    }
-                                }, 1000);
-                            } else {
-                                console.log('📊 Video ready state unknown:', video[0].readyState);
+                                video.css('display', 'none');
+                                appendedElement.find('.cf7as-file-icon').css('display', 'flex');
                             }
-                        } else {
-                            console.log('⚠️ No video element found in preview');
-                        }
-                    } else {
-                        console.log('⚠️ No preview div found in appended element');
+                        }, 2000);
                     }
-                } else {
-                    console.log('⚠️ No appended element found in timeout for file:', fileData.id);
                 }
             }, 100);
             
-            console.log('🎪 renderWorkItem completed successfully for file:', fileData.id);
-            console.log('📊 Final submission work grid state:', {
-                hasGrid: !!this.submissionWorkGrid,
-                gridLength: this.submissionWorkGrid ? this.submissionWorkGrid.length : 0,
-                childrenCount: this.submissionWorkGrid ? this.submissionWorkGrid.children().length : 0
-            });
+            console.log('✅ renderWorkItem completed for:', fileData.name);
         }
         
         toggleWorkItemEditor(fileId) {
@@ -1676,6 +1542,41 @@
             workItem.removeClass('cf7as-work-item-editing');
             titleDisplay.show();
             titleInputInline.hide();
+        }
+        
+        updateWorkItemDisplay(fileId) {
+            const fileData = this.files.find(f => f.id === fileId);
+            if (!fileData) return;
+            
+            // Find the work item in submission modal
+            let workItem = null;
+            if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
+                workItem = this.submissionWorkGrid.find(`[data-file-id="${fileId}"]`);
+            }
+            
+            if (!workItem || workItem.length === 0) return;
+            
+            const titleDisplay = workItem.find('.cf7as-work-title-display');
+            const titleInputInline = workItem.find('.cf7as-work-title-input-inline');
+            
+            // Update the displayed title
+            const displayTitle = fileData.workTitle || 'Click to add title';
+            titleDisplay.text(displayTitle);
+            titleInputInline.val(fileData.workTitle || '');
+            
+            // Update error state based on missing title
+            const isTitleMissing = !fileData.workTitle || fileData.workTitle.trim() === '';
+            if (isTitleMissing) {
+                workItem.addClass('cf7as-work-item-error');
+                let errorBadge = workItem.find('.cf7as-work-error-badge');
+                if (errorBadge.length === 0) {
+                    errorBadge = $('<div class="cf7as-work-error-badge" title="Work title required"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>');
+                    workItem.find('.cf7as-work-preview').append(errorBadge);
+                }
+            } else {
+                workItem.removeClass('cf7as-work-item-error');
+                workItem.find('.cf7as-work-error-badge').remove();
+            }
         }
         
         

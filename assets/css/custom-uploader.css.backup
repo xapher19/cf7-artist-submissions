@@ -129,6 +129,20 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     padding: 0 !important;
 }
 
+/* Modern CSS Grid - Responsive and Clean */
+.cf7as-submission-modal .cf7as-work-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 20px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    list-style: none !important;
+}
+
 /* Clean work item cards */
 .cf7as-submission-modal .cf7as-work-item {
     background: white !important;
@@ -154,6 +168,19 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     transform: translateY(-2px) !important;
 }
 
+/* Preview area - fixed height for consistency */
+.cf7as-submission-modal .cf7as-work-preview {
+    height: 120px !important;
+    width: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background: #f8f9fa !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-bottom: 1px solid #e1e5e9 !important;
+}
+
 .cf7as-submission-modal .cf7as-work-preview img,
 .cf7as-submission-modal .cf7as-work-preview video {
     width: 100% !important;
@@ -173,6 +200,15 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     padding: 20px !important;
     display: flex !important;
     flex-direction: column !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-display {
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    color: #1d2327 !important;
+    margin-bottom: 8px !important;
+    line-height: 1.3 !important;
+    word-wrap: break-word !important;
 }
 
 .cf7as-submission-modal .cf7as-work-filename {
@@ -275,6 +311,25 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     width: 0% !important;
 }
 
+/* Responsive design */
+@media (max-width: 768px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+        gap: 15px !important;
+    }
+    
+    .cf7as-submission-modal .cf7as-work-content {
+        padding: 15px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7as-submission-modal .cf7as-work-grid {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+}
+
 /* Removed duplicate work item styles - now handled by enhanced styles below */
 
 /* Protect work status badge from theme interference */
@@ -349,6 +404,52 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     width: 12px !important;
     height: 12px !important;
     stroke-width: 2.5 !important;
+}
+
+/* Protect work preview container from theme interference */
+.cf7as-submission-modal .cf7as-work-preview {
+    width: 100% !important;
+    height: 150px !important;
+    overflow: hidden !important;
+    background: #f8f9fa !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Protect work info section from theme interference */
+.cf7as-submission-modal .cf7as-work-info {
+    padding: 15px !important;
+    background: white !important;
+    margin: 0 !important;
+    border: none !important;
+}
+
+.cf7as-submission-modal .cf7as-work-title-display {
+    font-weight: 600 !important;
+    color: #333 !important;
+    font-size: 14px !important;
+    margin-bottom: 4px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    line-height: 1.2 !important;
+}
+
+.cf7as-submission-modal .cf7as-work-filename {
+    font-size: 12px !important;
+    color: #666 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-bottom: 8px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    line-height: 1.2 !important;
 }
 
 .cf7as-submission-modal .cf7as-work-meta {
@@ -700,6 +801,11 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     max-width: none !important;
 }
 
+/* Hide the work editor sidebar in submission modal since we use inline editing */
+.cf7as-submission-modal .cf7as-work-editor {
+    display: none !important;
+}
+
 .cf7as-submission-modal .cf7as-work-grid-container {
     flex: 1 !important;
     padding: 20px !important;
@@ -763,6 +869,34 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 }
 
 /* Enhanced work items with maximum theme protection */
+html body .cf7as-modal .cf7as-work-item,
+.cf7as-submission-modal .cf7as-work-item {
+    background: #ffffff !important;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 12px !important;
+    overflow: visible !important; /* Allow expansion for inline editor */
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-decoration: none !important;
+    color: inherit !important;
+    list-style: none !important;
+    flex-shrink: 0 !important;
+    min-height: auto !important;
+}
+
+.cf7as-submission-modal .cf7as-work-item:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    border-color: #2271b1 !important;
+}
 
 .cf7as-submission-modal .cf7as-work-item.selected {
     border-color: #2271b1 !important;
@@ -993,6 +1127,20 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
     }
 }
 
+/* Enhanced work info section with theme protection */
+.cf7as-submission-modal .cf7as-work-info {
+    padding: 0 !important;
+    background: white !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    border-top: 1px solid #f0f0f0 !important;
+    flex: 1 !important; /* Take remaining space */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    min-height: 70px !important; /* Ensure minimum height for content */
+}
+
 /* Basic info section - always visible */
 .cf7as-submission-modal .cf7as-work-basic-info {
     padding: 15px !important;
@@ -1003,6 +1151,16 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
 
 .cf7as-submission-modal .cf7as-work-basic-info:hover {
     background-color: #f8f9fa !important;
+}
+
+/* Work title display that becomes editable */
+.cf7as-submission-modal .cf7as-work-title-display {
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    color: #333 !important;
+    margin-bottom: 4px !important;
+    cursor: pointer !important;
+    min-height: 20px !important;
 }
 
 .cf7as-submission-modal .cf7as-work-title-display:hover {
@@ -1217,8 +1375,6 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
     text-overflow: ellipsis !important;
     line-height: 1.4 !important;
     font-family: inherit !important;
-    cursor: pointer !important;
-    min-height: 20px !important;
 }
 
 .cf7as-submission-modal .cf7as-work-filename {
