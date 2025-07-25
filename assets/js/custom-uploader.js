@@ -46,9 +46,6 @@
         }
         
         init() {
-            console.log('Initializing custom uploader for:', this.containerId);
-            console.log('Options:', this.options);
-            
             // Only support form takeover mode going forward
             this.setupFormTakeover();
             
@@ -80,7 +77,6 @@
                     e.preventDefault();
                     e.stopImmediatePropagation();
                     
-                    console.log('Form submission prevented - missing work titles');
                     this.showError('Please add work titles for all uploaded files before submitting.');
                     return false;
                 }
@@ -90,7 +86,6 @@
                     e.preventDefault();
                     e.stopImmediatePropagation();
                     
-                    console.log('Form submission prevented - uploading files first');
                     this.uploadAllThenSubmit();
                     return false;
                 }
@@ -100,13 +95,11 @@
                     e.preventDefault();
                     e.stopImmediatePropagation();
                     
-                    console.log('Form submission prevented - uploads in progress');
                     this.showError('Please wait for file uploads to complete before submitting.');
                     return false;
                 }
                 
                 // Allow normal form submission if no files or all files uploaded
-                console.log('Form submission allowed - all files processed');
                 return true;
             });
         }
@@ -668,32 +661,6 @@
             this.submissionWorkContent = container.find('.cf7as-work-content');
             this.submissionWorkGrid = container.find('.cf7as-work-grid');
             this.submissionBrowseBtn = container.find('.cf7as-browse-btn');
-            
-            console.log('🔧 Submission modal DOM elements cached:', {
-                modalBody: this.submissionModalBody.length,
-                uploadArea: this.submissionUploadArea.length,
-                fileInput: this.submissionFileInput.length,
-                workContent: this.submissionWorkContent.length,
-                workGrid: this.submissionWorkGrid.length,
-                browseBtn: this.submissionBrowseBtn.length
-            });
-            
-            // Debug browse button specifically
-            if (this.submissionBrowseBtn.length === 0) {
-                console.error('❌ CRITICAL: .cf7as-browse-btn not found in submission modal!');
-                console.log('🔍 Available buttons:', container.find('button').map((i, el) => el.className).get());
-                console.log('🔍 Available elements with "browse" in class:', container.find('[class*="browse"]').length);
-            } else {
-                console.log('✅ Browse button found and cached successfully');
-            }
-            
-            if (this.submissionWorkGrid.length === 0) {
-                console.error('❌ CRITICAL: .cf7as-work-grid not found in submission modal!');
-                console.log('🔍 Available elements with "grid" in class:', container.find('[class*="grid"]').length);
-                console.log('🔍 Available work-related elements:', container.find('[class*="work"]').map((i, el) => el.className).get());
-            } else {
-                console.log('✅ Work grid found and cached successfully');
-            }
         }
         
         addUploadControlsToStepActions() {
@@ -701,7 +668,6 @@
             const stepActions = this.submissionModal.find('.cf7as-step-content-2 .cf7as-step-actions');
             
             if (stepActions.length === 0) {
-                console.error('Step actions container not found');
                 return;
             }
             
@@ -786,20 +752,11 @@
             const fileInput = this.submissionFileInput;
             const modal = this.submissionModal;
             
-            console.log('🔗 Binding submission modal drag events. Elements check:', {
-                uploadArea: uploadArea?.length || 0,
-                fileInput: fileInput?.length || 0,
-                modal: modal?.length || 0,
-                browseBtn: this.submissionBrowseBtn?.length || 0
-            });
-            
             if (!uploadArea || uploadArea.length === 0) {
-                console.error('Upload area not found for submission modal');
                 return;
             }
             
             if (!modal || modal.length === 0) {
-                console.error('Modal not found for submission modal');
                 return;
             }
             
@@ -869,13 +826,6 @@
             });
             
             // Browse functionality - using both label approach and button click fallback
-            console.log('🔍 Setting up browse functionality with Brave browser compatibility');
-            console.log('🌐 Browser info:', {
-                userAgent: navigator.userAgent,
-                brave: navigator.brave !== undefined,
-                shields: typeof navigator.brave?.isBrave === 'function' ? navigator.brave.isBrave() : 'unknown'
-            });
-            
             // Primary approach: Label-based file selection (most compatible with Brave)
             // This is handled automatically by the browser via the label's 'for' attribute
             
@@ -883,39 +833,22 @@
             modal.on('click', '.cf7as-browse-btn', (e) => {
                 // Only handle if not within a label (to avoid double-triggering)
                 if ($(e.target).closest('label').length > 0) {
-                    console.log('🏷️ Click handled by label - skipping button handler');
                     return;
                 }
-                
-                console.log('🖱️ Browse button clicked via delegation (fallback)!');
-                console.log('🎯 Event details:', {
-                    type: e.type,
-                    target: e.target.tagName + '.' + e.target.className,
-                    currentTarget: e.currentTarget.tagName + '.' + e.currentTarget.className,
-                    isTrusted: e.isTrusted,
-                    detail: e.detail
-                });
                 
                 e.preventDefault();
                 e.stopPropagation();
                 
                 if (this.submissionFileInput && this.submissionFileInput.length > 0) {
-                    console.log('📁 Triggering file input click (fallback method)');
-                    
                     try {
                         const fileInput = this.submissionFileInput[0];
                         fileInput.click();
-                        console.log('✅ Fallback file input click triggered successfully');
                         
                     } catch (error) {
-                        console.error('❌ Error triggering file input click:', error);
                         alert('Please use drag and drop to add files, or try a different browser.');
                     }
                 } else {
-                    console.error('❌ File input not found!', {
-                        fileInputExists: !!this.submissionFileInput,
-                        fileInputLength: this.submissionFileInput?.length || 0
-                    });
+                    // File input not found
                 }
             });
             
@@ -979,7 +912,6 @@
         }
         
         finalizeSubmission(form) {
-            console.log('🚀 Finalizing submission with CF7 integration');
             
             // Instead of creating a hidden form, temporarily restore the original form content
             // but hide the form visually while keeping the takeover interface
@@ -987,7 +919,6 @@
             
             // Restore original form content temporarily for CF7 processing
             if (this.originalFormContent) {
-                console.log('🔄 Temporarily restoring original form content for CF7 processing');
                 form.html(this.originalFormContent);
                 
                 // Hide the form completely but keep it functional
@@ -1040,8 +971,6 @@
                 form.append(hiddenFileInput);
             }
             
-            console.log('📄 File data added to form:', fileDataJson);
-            
             // Show loading state
             const submitBtn = this.submissionModal.find('.cf7as-final-submit');
             const originalText = submitBtn.html();
@@ -1067,12 +996,10 @@
             this.closeSubmissionModal();
             
             // Trigger CF7's native form submission using the original form
-            console.log('🔄 Triggering CF7 form submission');
             
             // Since the form is intercepted by custom backend code and CF7 events won't fire,
             // we'll show the success modal directly after a short delay
             setTimeout(() => {
-                console.log('📤 Submitting form for CF7 processing');
                 
                 // Enable all form fields to ensure they're included in submission
                 form.find('input, textarea, select, button').prop('disabled', false);
@@ -1086,13 +1013,11 @@
                 }
                 
                 // Trigger CF7 submission by clicking the submit button
-                console.log('🎯 Clicking submit button to trigger CF7');
                 submitButton.trigger('click');
                 
                 // Since the form is intercepted and processed by custom backend,
                 // show success modal after a brief delay to allow form submission to process
                 setTimeout(() => {
-                    console.log('✅ Form submitted - showing success modal');
                     // Restore the takeover interface
                     this.restoreTakeoverInterface(form, takeoverOverlay);
                     // Show success message directly since CF7 events won't fire
@@ -1264,12 +1189,10 @@
                 await this.uploadAll();
                 
                 // After successful upload, submit the form
-                console.log('All files uploaded, submitting form...');
                 this.showStatus('Submitting form...');
                 this.submitForm();
                 
             } catch (error) {
-                console.error('Upload failed, preventing form submission:', error);
                 this.hideStatus();
                 this.showError('File upload failed. Please try again before submitting.');
             }
@@ -1288,7 +1211,6 @@
             submitBtn.val(submitBtn.data('original-value') || 'Submit');
             
             // Trigger form submission
-            console.log('Triggering form submission...');
             form.submit();
         }
         
@@ -1409,33 +1331,16 @@
         }
         
         addFiles(fileList) {
-            console.log('🚀 addFiles called with:', fileList ? fileList.length : 'null', 'files');
-            console.log('📊 Current state:', {
-                existingFilesCount: this.files ? this.files.length : 'undefined',
-                submissionModalExists: !!this.submissionModal,
-                submissionWorkGridExists: !!this.submissionWorkGrid,
-                submissionWorkGridLength: this.submissionWorkGrid ? this.submissionWorkGrid.length : 'N/A'
-            });
             
             if (!fileList || fileList.length === 0) {
-                console.log('⚠️ No files to add');
                 return;
             }
             
-            console.log('📝 Processing', fileList.length, 'files...');
-            
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
-                console.log(`📄 Processing file ${i + 1}/${fileList.length}:`, {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    lastModified: file.lastModified
-                });
                 
                 // Check file count limit
                 if (this.files.length >= this.options.maxFiles) {
-                    console.log('❌ File limit reached:', this.files.length, '>=', this.options.maxFiles);
                     this.showError(`Maximum ${this.options.maxFiles} files allowed`);
                     break;
                 }
@@ -1489,24 +1394,14 @@
                 };
                 
                 this.files.push(fileData);
-                console.log('📋 File added to files array, total files:', this.files.length);
-                console.log('🎯 About to render work item for:', fileData.name, 'ID:', fileData.id);
                 this.renderWorkItem(fileData);
             }
-            
-            console.log('✅ All files processed in addFiles loop');
-            console.log('📊 Final state after addFiles:', {
-                totalFilesNow: this.files.length,
-                submissionWorkGridStillExists: !!this.submissionWorkGrid,
-                submissionWorkGridChildren: this.submissionWorkGrid ? this.submissionWorkGrid.children().length : 'N/A'
-            });
             
             this.updateUI();
             
             // Update upload controls visibility based on current file state
             this.updateUploadControlsVisibility();
             
-            console.log('🔄 updateUI called after addFiles');
             // Files are now edited inline - no selection needed
         }
         
@@ -1540,10 +1435,8 @@
                     this.submissionUploadAllBtn.prop('disabled', hasErrors);
                 }
                 
-                console.log('👁️ Upload controls shown for', pendingFiles.length, 'pending files');
             } else {
                 this.submissionUploadControlsGroup.addClass('cf7as-hidden');
-                console.log('🙈 Upload controls hidden - no pending files or uploading in progress');
             }
         }
         
@@ -1594,7 +1487,6 @@
         }
         
         renderWorkItem(fileData) {
-            console.log('🚀 renderWorkItem called for file:', fileData.name);
             
             const fileSize = this.formatBytes(fileData.size);
             const fileIcon = this.getFileIcon(fileData.type);
@@ -1640,7 +1532,6 @@
             const errorClass = isTitleMissing ? ' cf7as-work-item-error' : '';
             const errorBadge = isTitleMissing ? '<div class="cf7as-work-error-badge" title="Work title required"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>' : '';
             
-            console.log('🏗️ Building work item HTML...');
             const workItemHtml = `
                 <div class="cf7as-work-item${errorClass}" data-file-id="${fileData.id}">
                     <div class="cf7as-work-preview">
@@ -1743,9 +1634,8 @@
             // Append to the submission modal work grid
             if (this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
                 this.submissionWorkGrid.append(workElement);
-                console.log('✅ Work item added to grid:', fileData.name);
             } else {
-                console.error('❌ CRITICAL: No submission work grid found!');
+                // No work grid found
             }
             
             // Setup fallback visibility for videos with metadata
@@ -1765,7 +1655,6 @@
                 }
             }, 100);
             
-            console.log('✅ renderWorkItem completed for:', fileData.name);
         }
         
         toggleWorkItemEditor(fileId) {
@@ -2021,10 +1910,8 @@
             if (this.modalBody && this.modalBody.length > 0) {
                 if (this.files.length > 0) {
                     this.modalBody.addClass('has-files');
-                    console.log('🎯 Added has-files class to regular modal body');
                 } else {
                     this.modalBody.removeClass('has-files');
-                    console.log('🎯 Removed has-files class from regular modal body');
                 }
             }
             
@@ -2032,7 +1919,6 @@
             if (this.submissionModalBody && this.submissionModalBody.length > 0) {
                 if (this.files.length > 0) {
                     this.submissionModalBody.addClass('has-files');
-                    console.log('🎯 Added has-files class to submission modal body');
                     
                     // Move upload area into the work grid as first item
                     if (this.submissionUploadArea && this.submissionWorkGrid && this.submissionWorkGrid.length > 0) {
@@ -2046,12 +1932,10 @@
                         // Move the upload area into the grid item wrapper
                         if (this.submissionUploadArea.parent()[0] !== uploadGridItem[0]) {
                             this.submissionUploadArea.detach().appendTo(uploadGridItem);
-                            console.log('🎯 Moved upload area into work grid');
                         }
                     }
                 } else {
                     this.submissionModalBody.removeClass('has-files');
-                    console.log('🎯 Removed has-files class from submission modal body');
                     
                     // Move upload area back to its original position
                     if (this.submissionUploadArea && this.submissionModalBody && this.submissionModalBody.length > 0) {
@@ -2060,7 +1944,6 @@
                             this.submissionUploadArea.detach().prependTo(originalParent);
                             // Remove the empty grid item wrapper
                             this.submissionWorkGrid.find('.cf7as-upload-grid-item').remove();
-                            console.log('🎯 Moved upload area back to original position');
                         }
                     }
                 }
@@ -2136,29 +2019,23 @@
         }
         
         getStatusIcon(status) {
-            console.log('🏷️ getStatusIcon called with status:', status);
             let icon;
             
             switch (status) {
                 case 'uploading':
                     icon = '<div class="cf7as-spinner"></div>';
-                    console.log('  → Uploading spinner generated');
                     break;
                 case 'uploaded':
                     icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><polyline points="20,6 9,17 4,12"></polyline></svg>';
-                    console.log('  → Uploaded checkmark generated');
                     break;
                 case 'error':
                     icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>';
-                    console.log('  → Error X icon generated');
                     break;
                 default:
                     icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="2"><circle cx="12" cy="12" r="3"></circle></svg>';
-                    console.log('  → Default pending circle generated');
                     break;
             }
             
-            console.log('  → Status icon HTML length:', icon.length);
             return icon;
         }
         
@@ -2347,9 +2224,6 @@
             const fileData = this.files.find(f => f.id === fileId);
             if (!fileData) return;
             
-            console.log('Uploading file:', fileData.name, 'Size:', this.formatBytes(fileData.size));
-            console.log('Chunked upload:', fileData.isChunked);
-            
             try {
                 fileData.status = 'uploading';
                 this.updateFileStatus(fileId);
@@ -2364,10 +2238,7 @@
                 fileData.progress = 100;
                 this.updateFileStatus(fileId);
                 
-                console.log('✅ Upload successful:', fileData.name);
-                
             } catch (error) {
-                console.error('❌ Upload failed:', error);
                 fileData.status = 'error';
                 fileData.error = error.message;
                 this.updateFileStatus(fileId);
@@ -2378,7 +2249,6 @@
         }
         
         async uploadFileRegular(fileData) {
-            console.log('Using regular upload for:', fileData.name);
             
             // Get presigned URL
             const presignedData = await this.getPresignedUrl(fileData.file);
@@ -2390,7 +2260,6 @@
         }
         
         async uploadFileChunked(fileData) {
-            console.log('Using chunked upload for:', fileData.name);
             
             // Initialize multipart upload
             await this.initializeMultipartUpload(fileData);
@@ -2406,7 +2275,6 @@
         }
         
         async initializeMultipartUpload(fileData) {
-            console.log('Initializing multipart upload for:', fileData.name);
             
             const restUrl = (typeof cf7as_uploader_config !== 'undefined') 
                 ? cf7as_uploader_config.rest_url 
@@ -2441,7 +2309,6 @@
             fileData.uploadId = data.data.uploadId;
             fileData.s3Key = data.data.key;
             
-            console.log('Multipart upload initialized:', fileData.uploadId);
         }
         
         prepareFileChunks(fileData) {
@@ -2452,8 +2319,6 @@
             fileData.totalChunks = totalChunks;
             fileData.chunks = [];
             fileData.currentChunk = 0;
-            
-            console.log(`Preparing ${totalChunks} chunks of ${this.formatBytes(chunkSize)} each`);
             
             for (let i = 0; i < totalChunks; i++) {
                 const start = i * chunkSize;
@@ -2471,7 +2336,6 @@
         }
         
         async uploadChunks(fileData) {
-            console.log(`Uploading ${fileData.chunks.length} chunks for:`, fileData.name);
             
             const restUrl = (typeof cf7as_uploader_config !== 'undefined') 
                 ? cf7as_uploader_config.rest_url 
@@ -2485,8 +2349,6 @@
             for (let i = 0; i < fileData.chunks.length; i++) {
                 const chunk = fileData.chunks[i];
                 fileData.currentChunk = i + 1;
-                
-                console.log(`Uploading chunk ${chunk.index}/${fileData.chunks.length} (${this.formatBytes(chunk.size)})`);
                 
                 try {
                     // Get presigned URL for this chunk
@@ -2533,15 +2395,11 @@
                         this.updateRealtimeProgress();
                     }
                     
-                    console.log(`✅ Chunk ${chunk.index} uploaded successfully, ETag:`, etag);
-                    
                 } catch (error) {
-                    console.error(`❌ Failed to upload chunk ${chunk.index}:`, error);
                     throw new Error(`Chunk ${chunk.index} upload failed: ${error.message}`);
                 }
             }
             
-            console.log('All chunks uploaded successfully');
         }
         
         async uploadChunkToS3(chunk, presignedUrl) {
@@ -2570,18 +2428,15 @@
                         const cleanETag = etag.replace(/"/g, '');
                         resolve(cleanETag);
                     } else {
-                        console.error('Chunk upload failed, status:', xhr.status, 'response:', xhr.responseText);
                         reject(new Error(`Chunk upload failed: ${xhr.status} ${xhr.statusText}`));
                     }
                 });
                 
                 xhr.addEventListener('error', () => {
-                    console.error('Chunk upload network error');
                     reject(new Error('Network error during chunk upload'));
                 });
                 
                 xhr.addEventListener('abort', () => {
-                    console.error('Chunk upload aborted');
                     reject(new Error('Chunk upload aborted'));
                 });
                 
@@ -2590,7 +2445,6 @@
                 
                 // CRITICAL: Do NOT set Content-Type header
                 // S3 presigned URL only signs 'host' header
-                console.log('Sending chunk PUT request to S3 with no explicit headers');
                 
                 // Send chunk data
                 xhr.send(chunk.blob);
@@ -2598,7 +2452,6 @@
         }
         
         async completeMultipartUpload(fileData) {
-            console.log('Completing multipart upload for:', fileData.name);
             
             const restUrl = (typeof cf7as_uploader_config !== 'undefined') 
                 ? cf7as_uploader_config.rest_url 
@@ -2642,7 +2495,6 @@
                 throw new Error(data.message || 'Failed to complete multipart upload');
             }
             
-            console.log('✅ Multipart upload completed successfully');
         }
         
         async getPresignedUrl(file) {
@@ -2652,10 +2504,6 @@
             const nonce = (typeof cf7as_uploader_config !== 'undefined') 
                 ? cf7as_uploader_config.nonce 
                 : '';
-            
-            console.log('Getting presigned URL for:', file.name);
-            console.log('REST URL:', restUrl);
-            console.log('Endpoint:', restUrl + 'cf7as/v1/presigned-url');
             
             const response = await fetch(restUrl + 'cf7as/v1/presigned-url', {
                 method: 'POST',
@@ -2703,21 +2551,17 @@
                 
                 xhr.addEventListener('load', () => {
                     if (xhr.status >= 200 && xhr.status < 300) {
-                        console.log('S3 upload successful, status:', xhr.status);
                         resolve();
                     } else {
-                        console.error('S3 upload failed, status:', xhr.status, 'response:', xhr.responseText);
                         reject(new Error(`S3 upload failed: ${xhr.status} ${xhr.statusText}`));
                     }
                 });
                 
                 xhr.addEventListener('error', () => {
-                    console.error('S3 upload network error');
                     reject(new Error('Network error during upload'));
                 });
                 
                 xhr.addEventListener('abort', () => {
-                    console.error('S3 upload aborted');
                     reject(new Error('Upload aborted'));
                 });
                 
@@ -2726,7 +2570,6 @@
                 
                 // CRITICAL: Do NOT set Content-Type header
                 // S3 presigned URL only signs 'host' header
-                console.log('Sending PUT request to S3 with no explicit headers');
                 
                 // Send raw file data
                 xhr.send(fileData.file);
@@ -2779,18 +2622,13 @@
             this.isUploading = true;
             this.uploadAllBtn.prop('disabled', true).text('Uploading...');
             
-            console.log('Starting upload of', pendingFiles.length, 'files');
-            
             try {
                 // Upload files one by one (could be made concurrent if needed)
                 for (const fileData of pendingFiles) {
                     await this.uploadFile(fileData.id);
                 }
                 
-                console.log('All uploads completed successfully');
-                
             } catch (error) {
-                console.error('Upload batch failed:', error);
                 throw error; // Re-throw to be caught by uploadAllThenSubmit
                 
             } finally {
@@ -2853,8 +2691,6 @@
                 currentFileIndex: 0
             };
             
-            console.log('Starting upload of', pendingFiles.length, 'files, total size:', this.formatBytes(totalSize));
-            
             try {
                 // Upload files one by one with progress tracking
                 for (let i = 0; i < pendingFiles.length; i++) {
@@ -2883,10 +2719,7 @@
                 // Final progress update
                 this.updateRealtimeProgress(true);
                 
-                console.log('All uploads completed successfully');
-                
             } catch (error) {
-                console.error('Upload batch failed:', error);
                 // Update upload controls visibility on error so user can retry
                 this.updateUploadControlsVisibility();
                 // Hide progress on error
@@ -3080,7 +2913,6 @@
         }
         
         removeFile(fileId) {
-            console.log('Removing file:', fileId);
             
             // Find the file data before removing it
             const fileData = this.files.find(f => f.id === fileId);
@@ -3102,7 +2934,7 @@
                         try {
                             window.URL.revokeObjectURL(img.attr('src'));
                         } catch (e) {
-                            console.warn('Failed to revoke object URL for image:', e);
+                            // Failed to revoke object URL
                         }
                     }
                     
@@ -3110,7 +2942,7 @@
                         try {
                             window.URL.revokeObjectURL(video.attr('src'));
                         } catch (e) {
-                            console.warn('Failed to revoke object URL for video:', e);
+                            // Failed to revoke object URL
                         }
                     }
                 }
@@ -3154,7 +2986,7 @@
                             try {
                                 window.URL.revokeObjectURL(img.attr('src'));
                             } catch (e) {
-                                console.warn('Failed to revoke object URL for image:', e);
+                                // Failed to revoke object URL
                             }
                         }
                         
@@ -3162,7 +2994,7 @@
                             try {
                                 window.URL.revokeObjectURL(video.attr('src'));
                             } catch (e) {
-                                console.warn('Failed to revoke object URL for video:', e);
+                                // Failed to revoke object URL
                             }
                         }
                     }
@@ -3182,11 +3014,9 @@
             // Ensure upload controls are updated after clearing files
             this.updateUploadControlsVisibility();
             
-            console.log('All files cleared');
         }
         
         showError(message, type = 'error') {
-            console.log(type === 'warning' ? 'Upload warning:' : 'Upload error:', message);
             
             // Create notification
             const iconSvg = type === 'warning' ? 
@@ -3250,11 +3080,9 @@
     
     // Initialize uploaders when DOM is ready
     $(document).ready(function() {
-        console.log('CF7 Artist Submissions Custom Uploader Script Loaded');
         
         // Find all uploader containers
         const containers = $('.cf7as-uploader');
-        console.log('Found', containers.length, 'uploader containers');
         
         containers.each(function() {
             const $container = $(this);
@@ -3267,7 +3095,6 @@
             // Initialize custom uploader
             new CF7ArtistSubmissionsUploader($container);
             
-            console.log('Custom uploader initialized for:', $container.attr('id'));
         });
     });
     

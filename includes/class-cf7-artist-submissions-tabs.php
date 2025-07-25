@@ -554,9 +554,10 @@ class CF7_Artist_Submissions_Tabs {
         $other_fields = array();
         
         foreach ($meta_keys as $key) {
-            // Skip internal meta, file fields, header fields, and any fields related to 'works' or 'files'
+            // Skip internal meta, file fields, header fields, uploader data fields, and any fields related to 'works' or 'files'
             if (substr($key, 0, 1) === '_' || 
                 substr($key, 0, 8) === 'cf7_file_' || 
+                substr($key, -5) === '_data' ||  // Skip uploader data fields
                 $key === 'cf7_submission_date' || 
                 $key === 'cf7_curator_notes' ||
                 $key === 'cf7_your-work-raw' ||
@@ -990,6 +991,10 @@ class CF7_Artist_Submissions_Tabs {
             if (self::is_image_file($file_ext)) {
                 echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
                 echo '<span class="dashicons dashicons-visibility"></span> ' . __('Preview', 'cf7-artist-submissions');
+                echo '</a>';
+            } elseif (self::is_video_file($file_ext)) {
+                echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Preview', 'cf7-artist-submissions');
                 echo '</a>';
             }
             
