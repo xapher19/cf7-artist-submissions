@@ -1,23 +1,26 @@
 /**
  * CF7 Artist Submissions - Advanced Media Lightbox System
  *
- * Comprehensive image gallery lightbox providing immersive media viewing experience
+ * Comprehensive media gallery lightbox providing immersive viewing experience
  * for artist submission portfolios with responsive design, keyboard navigation,
  * and seamless integration with submission management workflows.
  *
  * Features:
- * • Gallery navigation with automatic image collection
+ * • Gallery navigation with automatic media collection
+ * • Support for images (jpg, png, gif, webp, svg, etc.)
+ * • Support for videos (mp4, mov, webm, avi, mkv, mpeg)
  * • Keyboard navigation for accessibility support
  * • Touch-friendly controls for mobile devices
- * • Responsive image display with adaptive sizing
+ * • Responsive media display with adaptive sizing
  * • Loading states and error handling
  * • Multiple closure methods for user convenience
  * • Circular navigation with wraparound logic
  * • Focus management and screen reader support
  * • Hardware-accelerated transitions
  * • Cross-browser compatibility
- * • XSS prevention and secure image handling
+ * • XSS prevention and secure media handling
  * • Memory-efficient DOM manipulation
+ * • Video controls with metadata preloading
  *
  * @package CF7_Artist_Submissions
  * @subpackage MediaLightbox
@@ -100,56 +103,56 @@
         $(document).on('click.cf7lightbox', '[data-lightbox]', function(e) {
             e.preventDefault();
             const $this = $(this);
-            const imageSrc = $this.attr('href') || $this.data('src');
+            const mediaSrc = $this.attr('href') || $this.data('src');
             
-            if (!imageSrc) {
+            if (!mediaSrc) {
                 return;
             }
             
-            // Set current lightbox group and images
+            // Set current lightbox group and media files
             currentLightboxGroup = $this.data('lightbox');
             galleryImages = $('[data-lightbox="' + currentLightboxGroup + '"]').map(function() {
                 return $(this).attr('href') || $(this).data('src');
             }).get();
-            currentIndex = galleryImages.indexOf(imageSrc);
+            currentIndex = galleryImages.indexOf(mediaSrc);
             
-            // Show lightbox with the selected image
-            showLightbox(imageSrc);
+            // Show lightbox with the selected media
+            showLightbox(mediaSrc);
         });
         
         // Handle .lightbox-preview class clicks
         $(document).on('click.cf7lightbox', '.lightbox-preview', function(e) {
             e.preventDefault();
             const $this = $(this);
-            const imageSrc = $this.attr('href') || $this.data('src');
+            const mediaSrc = $this.attr('href') || $this.data('src');
             
-            if (!imageSrc) {
+            if (!mediaSrc) {
                 return;
             }
             
-            // For .lightbox-preview, treat as single image (no gallery)
+            // For .lightbox-preview, treat as single media (no gallery)
             currentLightboxGroup = 'single';
-            galleryImages = [imageSrc];
+            galleryImages = [mediaSrc];
             currentIndex = 0;
             
-            // Show lightbox with the selected image
-            showLightbox(imageSrc);
+            // Show lightbox with the selected media
+            showLightbox(mediaSrc);
         });
     }
 
     /**
-     * Show the lightbox with specified image.
-     * Creates modal overlay and displays the image with navigation controls.
+     * Show the lightbox with specified media file.
+     * Creates modal overlay and displays the media with navigation controls.
      * 
      * @since 1.0.0
      */
-    function showLightbox(imageSrc) {
+    function showLightbox(mediaSrc) {
         // Show the lightbox with flex display
         $lightboxOverlay.css('display', 'flex').addClass('active');
         $('body').addClass('cf7-lightbox-open');
         
-        // Load and show the image
-        showImage(imageSrc);
+        // Load and show the media
+        showMedia(mediaSrc);
     }
 
     /**
@@ -175,6 +178,7 @@
         $lightboxOverlay.css('display', 'none').removeClass('active');
         $('body').removeClass('cf7-lightbox-open');
         $lightboxContent.find('img').remove();
+        $lightboxContent.find('video').remove();
         $lightboxContent.find('.cf7-lightbox-loading').remove();
         $lightboxContent.find('.cf7-lightbox-error').remove();
     });
@@ -189,12 +193,12 @@
     // Gallery navigation with circular logic
     $lightboxNext.on('click', function() {
         currentIndex = (currentIndex + 1) % galleryImages.length;
-        showImage(galleryImages[currentIndex]);
+        showMedia(galleryImages[currentIndex]);
     });
     
     $lightboxPrev.on('click', function() {
         currentIndex = (currentIndex - 1 + galleryImages.length) % galleryImages.length;
-        showImage(galleryImages[currentIndex]);
+        showMedia(galleryImages[currentIndex]);
     });
     
     /**
@@ -214,43 +218,81 @@
             $lightboxClose.click();
         }
         
-        // Right arrow - next image (only in galleries)
+        // Right arrow - next media (only in galleries)
         if (e.keyCode === 39 && galleryImages.length > 1) {
             $lightboxNext.click();
         }
         
-        // Left arrow - previous image (only in galleries)
+        // Left arrow - previous media (only in galleries)
         if (e.keyCode === 37 && galleryImages.length > 1) {
             $lightboxPrev.click();
         }
     });
     
     // ============================================================================
-    // IMAGE DISPLAY SYSTEM
+    // MEDIA DISPLAY SYSTEM
     // ============================================================================
     
     /**
-     * Load and display image with loading states and error handling.
-     * Provides smooth transitions and user feedback during image loading process.
+     * Determine if a file URL represents a video based on its extension.
+     * 
+     * @param {string} url - The file URL to check
+     * @returns {boolean} True if the file is a video
+     * @since 1.0.0
+     */
+    function isVideoFile(url) {
+        const videoExtensions = ['mp4', 'mov', 'webm', 'avi', 'mkv', 'mpeg'];
+        const extension = url.split('.').pop().toLowerCase();
+        return videoExtensions.includes(extension);
+    }
+    
+    /**
+     * Load and display media (image or video) with loading states and error handling.
+     * Provides smooth transitions and user feedback during media loading process.
      * 
      * @since 1.0.0
      */
-    function showImage(imageSrc, updateNavigation = true) {
+    function showMedia(mediaSrc, updateNavigation = true) {
         // Show loading state
         $lightboxContent.find('img').remove();
+        $lightboxContent.find('video').remove();
+        $lightboxContent.find('.cf7-lightbox-error').remove();
         $lightboxContent.append('<div class="cf7-lightbox-loading">Loading...</div>');
         
-        // Load image
-        const img = new Image();
-        img.onload = function() {
-            $lightboxContent.find('.cf7-lightbox-loading').remove();
-            $lightboxContent.append('<img src="' + imageSrc + '" alt="Lightbox Image">');
-        };
-        img.onerror = function() {
-            $lightboxContent.find('.cf7-lightbox-loading').remove();
-            $lightboxContent.append('<div class="cf7-lightbox-error">Error loading image</div>');
-        };
-        img.src = imageSrc;
+        if (isVideoFile(mediaSrc)) {
+            // Handle video files
+            const video = document.createElement('video');
+            video.controls = true;
+            video.preload = 'metadata';
+            video.style.maxWidth = '100%';
+            video.style.maxHeight = '70vh';
+            video.style.width = 'auto';
+            video.style.height = 'auto';
+            
+            video.onloadedmetadata = function() {
+                $lightboxContent.find('.cf7-lightbox-loading').remove();
+                $lightboxContent.append(video);
+            };
+            
+            video.onerror = function() {
+                $lightboxContent.find('.cf7-lightbox-loading').remove();
+                $lightboxContent.append('<div class="cf7-lightbox-error">Error loading video</div>');
+            };
+            
+            video.src = mediaSrc;
+        } else {
+            // Handle image files
+            const img = new Image();
+            img.onload = function() {
+                $lightboxContent.find('.cf7-lightbox-loading').remove();
+                $lightboxContent.append('<img src="' + mediaSrc + '" alt="Lightbox Image" style="max-width: 100%; max-height: 90vh; width: auto; height: auto;">');
+            };
+            img.onerror = function() {
+                $lightboxContent.find('.cf7-lightbox-loading').remove();
+                $lightboxContent.append('<div class="cf7-lightbox-error">Error loading image</div>');
+            };
+            img.src = mediaSrc;
+        }
         
         // Update navigation visibility
         if (updateNavigation) {
@@ -260,7 +302,7 @@
     
     /**
      * Update navigation controls visibility based on gallery state.
-     * Manages previous/next button display for single images vs galleries.
+     * Manages previous/next button display for single media vs galleries.
      */
     function updateNavigationControls() {
         if (galleryImages.length <= 1) {
