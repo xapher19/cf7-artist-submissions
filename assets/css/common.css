@@ -843,3 +843,212 @@
         min-height: 36px;
     }
 }
+
+/* ============================================================================
+   ARTISTIC MEDIUMS FORM FIELD SECTION
+   ============================================================================ */
+
+/**
+ * Mediums Form Field
+ * 
+ * Custom Contact Form 7 field for selecting artistic mediums with 
+ * multiple checkbox interface and visual medium representation.
+ */
+
+.cf7as-mediums-wrapper {
+    margin: 15px 0;
+}
+
+.cf7as-mediums-label {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 14px;
+}
+
+.cf7as-mediums-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.cf7as-medium-checkbox {
+    display: flex;
+    align-items: center; /* Keep center alignment for vertical centering */
+    padding: 8px 12px;
+    background: var(--medium-bg, #f0f0f1);
+    color: var(--medium-text, #1d2327);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    font-size: 13px;
+    min-width: 0; /* Allow flex item to shrink */
+    min-height: 36px; /* Minimum height for wrapped text with better spacing */
+}
+
+.cf7as-medium-checkbox .cf7as-medium-name {
+    flex: 1;
+    min-width: 0; /* Allow text to shrink */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal; /* Allow text to wrap */
+    line-height: 1.3;
+    display: flex;
+    align-items: center; /* Center text vertically within its container */
+    min-height: 20px; /* Ensure minimum height for single line */
+}
+
+.cf7as-medium-checkbox input[type="checkbox"] {
+    flex-shrink: 0; /* Prevent checkbox from shrinking */
+    margin-right: 8px;
+    margin-left: 0;
+    align-self: center; /* Ensure checkbox stays centered regardless of text height */
+}
+
+.cf7as-medium-checkbox .cf7as-checkbox-mark {
+    flex-shrink: 0; /* Prevent checkmark from shrinking */
+    align-self: center; /* Center the checkmark */
+}
+
+.cf7as-medium-checkbox:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.cf7as-medium-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.cf7as-checkbox-mark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--medium-text, #1d2327);
+    border-radius: 3px;
+    margin-right: 8px;
+    position: relative;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark {
+    background-color: var(--medium-text, #1d2327);
+}
+
+.cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.cf7as-medium-name {
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.cf7as-mediums-error {
+    padding: 10px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    color: #856404;
+    font-size: 13px;
+}
+
+/* Validation states */
+.cf7as-mediums-wrapper.wpcf7-not-valid .cf7as-medium-checkbox {
+    border-color: #dc3232;
+    background-color: rgba(220, 50, 50, 0.05);
+}
+
+.wpcf7-not-valid-tip {
+    display: block;
+    color: #dc3232;
+    font-size: 12px;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Modal context mediums styling */
+.cf7as-submission-modal .cf7as-mediums-wrapper {
+    margin: 15px 0;
+}
+
+.cf7as-submission-modal .cf7as-mediums-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox {
+    display: flex;
+    align-items: center; /* Keep center alignment for vertical centering */
+    padding: 8px 12px;
+    background: var(--medium-bg, #f0f0f1);
+    color: var(--medium-text, #1d2327);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    font-size: 13px;
+    min-width: 0; /* Allow flex item to shrink */
+    min-height: 36px; /* Minimum height for wrapped text with better spacing */
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox .cf7as-medium-name {
+    flex: 1;
+    min-width: 0; /* Allow text to shrink */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: normal; /* Allow text to wrap */
+    line-height: 1.3;
+    display: flex;
+    align-items: center; /* Center text vertically within its container */
+    min-height: 20px; /* Ensure minimum height for single line */
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox:hover {
+    background: var(--medium-hover-bg, #e8e8e9);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox input[type="checkbox"] {
+    flex-shrink: 0; /* Prevent checkbox from shrinking */
+    margin-right: 8px;
+    margin-left: 0;
+    align-self: center; /* Ensure checkbox stays centered regardless of text height */
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox .cf7as-checkbox-mark {
+    flex-shrink: 0; /* Prevent checkmark from shrinking */
+    align-self: center; /* Center the checkmark */
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .cf7as-mediums-checkboxes {
+        grid-template-columns: 1fr;
+    }
+    
+    .cf7as-medium-checkbox {
+        padding: 10px 12px;
+    }
+    
+    .cf7as-submission-modal .cf7as-mediums-checkboxes {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+}

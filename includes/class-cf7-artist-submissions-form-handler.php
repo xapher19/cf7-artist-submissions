@@ -48,6 +48,87 @@ class CF7_Artist_Submissions_Form_Handler {
      */
     public function init() {
         add_action('wpcf7_before_send_mail', array($this, 'capture_submission'));
+        
+        // Register custom form tags
+        add_action('wpcf7_init', array($this, 'register_custom_form_tags'));
+        
+        // Enqueue frontend assets for custom form fields
+        add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
+        
+        // Enqueue admin assets for CF7 tag generator
+        add_action('admin_enqueue_scripts', array($this, 'enqueue_cf7_admin_assets'));
+    }
+    
+    /**
+     * Register custom Contact Form 7 form tags for artist submissions.
+     * 
+     * Adds the 'mediums' form tag for multiple checkbox selection of artistic mediums
+     * from the artistic_medium taxonomy. Integrates seamlessly with CF7 form builder
+     * and provides comprehensive medium selection capabilities.
+     * 
+     * @since 1.1.0
+     */
+    public function register_custom_form_tags() {
+        if (function_exists('wpcf7_add_form_tag')) {
+            wpcf7_add_form_tag(
+                array('mediums', 'mediums*'), 
+                array($this, 'render_mediums_form_tag'), 
+                array('name-attr' => true)
+            );
+        }
+        
+        // Register tag generator for form builder
+        if (function_exists('wpcf7_add_tag_generator')) {
+            add_action('wpcf7_admin_init', array($this, 'add_mediums_tag_generator'), 15);
+        }
+    }
+    
+    /**
+     * Enqueue frontend assets for custom form fields.
+     * 
+     * Loads necessary CSS for mediums form field styling on pages
+     * where Contact Form 7 forms are displayed.
+     * 
+     * @since 1.1.0
+     */
+    public function enqueue_frontend_assets() {
+        // Only enqueue if CF7 is active and we're not in admin
+        if (!function_exists('wpcf7_get_current_contact_form') || is_admin()) {
+            return;
+        }
+        
+        // Enqueue common styles for mediums form field
+        wp_enqueue_style(
+            'cf7as-frontend-common', 
+            CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/common.css', 
+            array(), 
+            CF7_ARTIST_SUBMISSIONS_VERSION
+        );
+    }
+    
+    /**
+     * Enqueue CF7 admin assets for tag generator functionality.
+     * 
+     * Loads JavaScript for the mediums tag generator in the CF7 form builder.
+     * 
+     * @since 1.1.0
+     */
+    public function enqueue_cf7_admin_assets() {
+        $screen = get_current_screen();
+        
+        // Only load on CF7 form edit pages
+        if (!$screen || $screen->post_type !== 'wpcf7_contact_form') {
+            return;
+        }
+        
+        // Enqueue tag generator JavaScript
+        wp_enqueue_script(
+            'cf7as-tag-generator',
+            CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/cf7-tag-generator.js',
+            array('jquery', 'wpcf7-admin'),
+            CF7_ARTIST_SUBMISSIONS_VERSION,
+            true
+        );
     }
     
     // ============================================================================
@@ -207,7 +288,17 @@ class CF7_Artist_Submissions_Form_Handler {
                 
                 // Handle array values (checkboxes/multiple selects)
                 if (is_array($field_value)) {
-                    $medium_terms = array_merge($medium_terms, $field_value);
+                    // For mediums field, values are term IDs, convert to term objects
+                    if ($field === 'mediums') {
+                        foreach ($field_value as $term_id) {
+                            $term = get_term($term_id, 'artistic_medium');
+                            if ($term && !is_wp_error($term)) {
+                                $medium_terms[] = $term->name;
+                            }
+                        }
+                    } else {
+                        $medium_terms = array_merge($medium_terms, $field_value);
+                    }
                 } else {
                     // Handle comma-separated values or single values
                     $values = array_map('trim', explode(',', $field_value));
@@ -225,6 +316,8 @@ class CF7_Artist_Submissions_Form_Handler {
             
             // Also store as post meta for backwards compatibility
             update_post_meta($post_id, 'cf7_artistic_mediums', implode(', ', $medium_terms));
+            
+            error_log('CF7AS Form Handler Debug - Assigned mediums: ' . implode(', ', $medium_terms));
         }
     }
     
@@ -387,5 +480,213 @@ class CF7_Artist_Submissions_Form_Handler {
         error_log('CF7AS File Storage Debug - Total files now stored for submission ' . $post_id . ': ' . $verification_count);
         
         return $stored_count;
+    }
+    
+    // ============================================================================
+    // CUSTOM FORM TAGS SECTION
+    // ============================================================================
+    
+    /**
+     * Render the mediums form tag with multiple checkbox selection.
+     * 
+     * Creates a multiple checkbox input field populated with artistic mediums
+     * from the artistic_medium taxonomy. Provides comprehensive medium selection
+     * interface with visual styling, validation support, and seamless CF7 integration.
+     * 
+     * @param object $tag The CF7 form tag object
+     * @return string HTML output for the mediums form field
+     * @since 1.1.0
+     */
+    public function render_mediums_form_tag($tag) {
+        if (empty($tag->name)) {
+            return '';
+        }
+        
+        // Get validation error and CSS classes
+        $validation_error = function_exists('wpcf7_get_validation_error') ? wpcf7_get_validation_error($tag->name) : '';
+        $class = function_exists('wpcf7_form_controls_class') ? wpcf7_form_controls_class($tag->type) : 'wpcf7-form-control';
+        
+        if ($validation_error) {
+            $class .= ' wpcf7-not-valid';
+        }
+        
+        // Check if field is required
+        $is_required = method_exists($tag, 'has_option') && $tag->has_option('required');
+        if ($is_required) {
+            $class .= ' wpcf7-validates-as-required';
+        }
+        
+        // Get artistic mediums from taxonomy
+        $mediums = get_terms(array(
+            'taxonomy' => 'artistic_medium',
+            'hide_empty' => false,
+            'orderby' => 'name',
+            'order' => 'ASC'
+        ));
+        
+        if (empty($mediums) || is_wp_error($mediums)) {
+            return '<div class="cf7as-mediums-error">No artistic mediums available. Please contact the administrator.</div>';
+        }
+        
+        // Build the HTML output
+        $html = '<div class="cf7as-mediums-wrapper ' . esc_attr($class) . '">';
+        
+        // Add field label if specified
+        if (method_exists($tag, 'get_option')) {
+            $label = $tag->get_option('label', '', true);
+            if (!empty($label)) {
+                $html .= '<div class="cf7as-mediums-label">' . esc_html($label) . '</div>';
+            }
+        }
+        
+        $html .= '<div class="cf7as-mediums-checkboxes">';
+        
+        foreach ($mediums as $medium) {
+            // Get medium colors for styling
+            $bg_color = get_term_meta($medium->term_id, 'medium_color', true);
+            $text_color = get_term_meta($medium->term_id, 'medium_text_color', true);
+            
+            $style_vars = '';
+            if ($bg_color && $text_color) {
+                $style_vars = ' style="--medium-bg: ' . esc_attr($bg_color) . '; --medium-text: ' . esc_attr($text_color) . ';"';
+            }
+            
+            $html .= '<label class="cf7as-medium-checkbox"' . $style_vars . '>';
+            $html .= '<input type="checkbox" name="' . esc_attr($tag->name) . '[]" value="' . esc_attr($medium->term_id) . '"';
+            
+            if ($is_required) {
+                $html .= ' required';
+            }
+            
+            $html .= '>';
+            $html .= '<span class="cf7as-checkbox-mark"></span>';
+            $html .= '<span class="cf7as-medium-name">' . esc_html($medium->name) . '</span>';
+            $html .= '</label>';
+        }
+        
+        $html .= '</div>'; // .cf7as-mediums-checkboxes
+        
+        // Add validation error if present
+        if ($validation_error) {
+            $html .= '<span class="wpcf7-not-valid-tip">' . esc_html($validation_error) . '</span>';
+        }
+        
+        $html .= '</div>'; // .cf7as-mediums-wrapper
+        
+        return $html;
+    }
+    
+    /**
+     * Add mediums tag generator to CF7 form builder interface.
+     * 
+     * Registers the mediums form tag generator to appear in the Contact Form 7
+     * form builder interface, allowing users to easily add mediums fields to forms.
+     * 
+     * @since 1.1.0
+     */
+    public function add_mediums_tag_generator() {
+        if (function_exists('wpcf7_add_tag_generator')) {
+            wpcf7_add_tag_generator(
+                'mediums',
+                __('Artistic Mediums', 'cf7-artist-submissions'),
+                'cf7as-mediums-tag-generator',
+                array($this, 'mediums_tag_generator')
+            );
+        }
+    }
+    
+    /**
+     * Render the mediums tag generator interface in CF7 form builder.
+     * 
+     * Creates the form builder interface for inserting mediums form tags
+     * with options for required fields and custom labels.
+     * 
+     * @param object $contact_form The CF7 contact form object
+     * @param array $args Arguments for the tag generator
+     * @since 1.1.0
+     */
+    public function mediums_tag_generator($contact_form, $args = '') {
+        $args = wp_parse_args($args, array());
+        $type = 'mediums';
+        
+        $description = __('Generate a form-tag for artistic mediums selection. Multiple checkboxes populated from the artistic_medium taxonomy.', 'cf7-artist-submissions');
+        ?>
+        <div class="control-box">
+            <fieldset>
+                <legend><?php echo esc_html($description); ?></legend>
+                
+                <table class="form-table">
+                    <tbody>
+                        <tr>
+                            <th scope="row">
+                                <label for="<?php echo esc_attr($args['content'] . '-name'); ?>"><?php echo esc_html(__('Name', 'cf7-artist-submissions')); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="name" class="tg-name oneline" id="<?php echo esc_attr($args['content'] . '-name'); ?>" />
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="<?php echo esc_attr($args['content'] . '-label'); ?>"><?php echo esc_html(__('Label', 'cf7-artist-submissions')); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="label" class="oneline option" id="<?php echo esc_attr($args['content'] . '-label'); ?>" />
+                                <p class="description"><?php echo esc_html(__('Optional label to display above the checkboxes.', 'cf7-artist-submissions')); ?></p>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row"><?php echo esc_html(__('Field Settings', 'cf7-artist-submissions')); ?></th>
+                            <td>
+                                <fieldset>
+                                    <legend class="screen-reader-text"><?php echo esc_html(__('Field Settings', 'cf7-artist-submissions')); ?></legend>
+                                    <label>
+                                        <input type="checkbox" name="required" class="option" />
+                                        <?php echo esc_html(__('Required field', 'cf7-artist-submissions')); ?>
+                                    </label>
+                                </fieldset>
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="<?php echo esc_attr($args['content'] . '-id'); ?>"><?php echo esc_html(__('Id attribute', 'cf7-artist-submissions')); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="id" class="idvalue oneline option" id="<?php echo esc_attr($args['content'] . '-id'); ?>" />
+                            </td>
+                        </tr>
+                        
+                        <tr>
+                            <th scope="row">
+                                <label for="<?php echo esc_attr($args['content'] . '-class'); ?>"><?php echo esc_html(__('Class attribute', 'cf7-artist-submissions')); ?></label>
+                            </th>
+                            <td>
+                                <input type="text" name="class" class="classvalue oneline option" id="<?php echo esc_attr($args['content'] . '-class'); ?>" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        </div>
+        
+        <div class="insert-box">
+            <input type="text" name="<?php echo esc_attr($type); ?>" class="tag code" readonly="readonly" onfocus="this.select()" />
+            
+            <div class="submitbox">
+                <input type="button" class="button button-primary insert-tag" value="<?php echo esc_attr(__('Insert Tag', 'cf7-artist-submissions')); ?>" />
+            </div>
+            
+            <br class="clear" />
+            
+            <p class="description mail-tag">
+                <label for="<?php echo esc_attr($args['content'] . '-mailtag'); ?>">
+                    <?php echo sprintf(esc_html(__('To use the value input through this field in a mail template, you need to insert the corresponding mail-tag (%s) into the template.', 'contact-form-7')), '<strong><span class="mail-tag"></span></strong>'); ?>
+                </label>
+                <input type="text" class="mail-tag code hidden" readonly="readonly" id="<?php echo esc_attr($args['content'] . '-mailtag'); ?>" />
+            </p>
+        </div>
+        <?php
     }
 }

@@ -46,11 +46,14 @@
         }
         
         init() {
-            // Only support form takeover mode going forward
-            this.setupFormTakeover();
-            
-            // Mark as initialized
-            this.container.addClass('custom-uploader-initialized');
+            // Wait for CF7 to fully process the form before taking over
+            // This ensures all form tags (including mediums) are rendered
+            setTimeout(() => {
+                this.setupFormTakeover();
+                
+                // Mark as initialized
+                this.container.addClass('custom-uploader-initialized');
+            }, 100);
         }
         
         setupFormIntegration() {
@@ -154,6 +157,20 @@
         createSubmissionModal(form) {
             // Parse original form to extract fields
             const tempDiv = $('<div>').html(this.originalFormContent);
+            
+            // Also check the current form state in case mediums were added after initial capture
+            const currentForm = this.container.closest('form');
+            if (currentForm.length) {
+                const currentFormHtml = currentForm.html();
+                const currentTempDiv = $('<div>').html(currentFormHtml);
+                const currentMediums = currentTempDiv.find('.cf7as-mediums-wrapper');
+                
+                // If we find mediums in current form but not in original, update tempDiv
+                if (currentMediums.length > 0 && tempDiv.find('.cf7as-mediums-wrapper').length === 0) {
+                    tempDiv.append(currentMediums.clone());
+                }
+            }
+            
             const formFields = this.extractFormFields(tempDiv);
             
             const modalHtml = `
@@ -260,12 +277,116 @@
             // Bind modal events
             this.bindSubmissionModalEvents(form);
             
-            // Show modal
-            this.showSubmissionModal();
+            // Show modal with safety checks to prevent DOM manipulation crashes
+            setTimeout(() => {
+                try {
+                    // Ensure modal exists and DOM is stable before proceeding
+                    if (document.readyState !== 'complete') {
+                        $(document).ready(() => this.showSubmissionModal());
+                        return;
+                    }
+                    
+                    this.showSubmissionModal();
+                } catch (error) {
+                    // Silently handle errors to prevent crashes
+                }
+            }, 50); // Small delay to ensure DOM stability
         }
         
         extractFormFields(tempDiv) {
             let fieldsHtml = '';
+            let artistStatementHtml = '';
+            let mediumsHtml = '';
+            
+            // First, extract the mediums field if it exists
+            const $mediumsWrapper = tempDiv.find('.cf7as-mediums-wrapper');
+            if ($mediumsWrapper.length) {
+                
+                // Extract label from the mediums wrapper
+                let mediumsLabel = ''; // Start empty
+                
+                // Method 1: Check for label within the wrapper (from shortcode label attribute)
+                const $mediumsLabelElement = $mediumsWrapper.find('.cf7as-mediums-label');
+                if ($mediumsLabelElement.length) {
+                    mediumsLabel = $mediumsLabelElement.text().trim();
+                }
+                
+                // Method 2: Check if mediums wrapper is inside a label tag (most common case)
+                if (!mediumsLabel) {
+                    const $parentLabel = $mediumsWrapper.closest('label');
+                    if ($parentLabel.length) {
+                        // Get the label text but exclude the mediums wrapper content
+                        const $labelClone = $parentLabel.clone();
+                        $labelClone.find('.cf7as-mediums-wrapper').remove();
+                        const labelText = $labelClone.text().trim();
+                        if (labelText) {
+                            mediumsLabel = labelText;
+                        }
+                    }
+                }
+                
+                // Method 3: Look for a preceding label or text that might indicate this field
+                if (!mediumsLabel) {
+                    const $precedingLabel = $mediumsWrapper.prev('label');
+                    if ($precedingLabel.length) {
+                        const labelText = $precedingLabel.text().trim();
+                        if (labelText && !$precedingLabel.find('input, textarea, select').length) {
+                            mediumsLabel = labelText;
+                        }
+                    }
+                }
+                
+                // Method 4: Check if mediums wrapper is inside a labeled container
+                if (!mediumsLabel) {
+                    const $parentWithLabel = $mediumsWrapper.closest('div').find('label').first();
+                    if ($parentWithLabel.length && !$parentWithLabel.find('input, textarea, select').length) {
+                        const parentLabelText = $parentWithLabel.text().trim();
+                        if (parentLabelText) {
+                            mediumsLabel = parentLabelText;
+                        }
+                    }
+                }
+                
+                // Clean up label text
+                if (mediumsLabel) {
+                    mediumsLabel = mediumsLabel.replace(/\*\s*$/, '').trim();
+                    // Remove common CF7 text patterns
+                    mediumsLabel = mediumsLabel.replace(/\s*\(required\)\s*$/i, '').trim();
+                }
+                
+                // Use fallback if still no label
+                if (!mediumsLabel) {
+                    mediumsLabel = 'Artistic Mediums';
+                }
+                
+                // Check if mediums field is required
+                const isMediumsRequired = $mediumsWrapper.hasClass('wpcf7-validates-as-required');
+                
+                // Get the checkboxes HTML but process it for consistent styling
+                const $checkboxes = $mediumsWrapper.find('input[type="checkbox"]');
+                let checkboxesHtml = '';
+                
+                $checkboxes.each(function() {
+                    const $checkbox = $(this);
+                    const $label = $checkbox.closest('label');
+                    checkboxesHtml += $label.prop('outerHTML');
+                });
+                
+                mediumsHtml = `
+                    <div class="cf7as-field-group cf7as-field-group-full-width">
+                        <label class="cf7as-main-label">${mediumsLabel}${isMediumsRequired ? ' *' : ''}</label>
+                        <div class="cf7as-mediums-wrapper ${isMediumsRequired ? 'wpcf7-validates-as-required' : ''}">
+                            <div class="cf7as-mediums-checkboxes">
+                                ${checkboxesHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // After creating the HTML, we'll need to handle text overflow when it's inserted into the DOM
+            } else {
+                // No mediums wrapper found - skip without logging
+            }
             
             // Find all form inputs, textareas, and selects
             tempDiv.find('input[type="text"], input[type="email"], input[type="tel"], input[type="url"], textarea, select').each(function() {
@@ -320,9 +441,10 @@
                     
                     const fieldGroupClass = isArtistStatement ? 'cf7as-field-group cf7as-field-group-full-width' : 'cf7as-field-group';
                     
+                    let fieldHtml = '';
                     if (fieldType === 'textarea') {
                         const textareaClass = isArtistStatement ? 'cf7as-textarea-large' : '';
-                        fieldsHtml += `
+                        fieldHtml = `
                             <div class="${fieldGroupClass}">
                                 <label for="${fieldName}">${fieldLabel}${isRequired ? ' *' : ''}</label>
                                 <textarea name="${fieldName}" id="${fieldName}" class="${textareaClass}" ${isRequired ? 'required' : ''}></textarea>
@@ -330,24 +452,32 @@
                         `;
                     } else if (fieldType === 'select') {
                         const options = $field.html();
-                        fieldsHtml += `
+                        fieldHtml = `
                             <div class="${fieldGroupClass}">
                                 <label for="${fieldName}">${fieldLabel}${isRequired ? ' *' : ''}</label>
                                 <select name="${fieldName}" id="${fieldName}" ${isRequired ? 'required' : ''}>${options}</select>
                             </div>
                         `;
                     } else {
-                        fieldsHtml += `
+                        fieldHtml = `
                             <div class="${fieldGroupClass}">
                                 <label for="${fieldName}">${fieldLabel}${isRequired ? ' *' : ''}</label>
                                 <input type="${fieldType}" name="${fieldName}" id="${fieldName}" ${isRequired ? 'required' : ''} />
                             </div>
                         `;
                     }
+                    
+                    // Separate artist statement fields to be placed after mediums
+                    if (isArtistStatement) {
+                        artistStatementHtml += fieldHtml;
+                    } else {
+                        fieldsHtml += fieldHtml;
+                    }
                 }
             });
             
-            return fieldsHtml;
+            // Combine fields in the correct order: regular fields, mediums, then artist statement
+            return fieldsHtml + mediumsHtml + artistStatementHtml;
         }
         
         bindSubmissionModalEvents(form) {
@@ -434,6 +564,11 @@
                 const fieldName = $field.attr('name') || '';
                 const isRequired = $field.attr('required') !== undefined;
                 
+                // Skip checkbox fields (handled separately)
+                if (fieldType === 'checkbox') {
+                    return;
+                }
+                
                 // Remove previous error state
                 $field.removeClass('cf7as-field-error');
                 
@@ -480,6 +615,22 @@
                     }
                 }
             });
+            
+            // Validate mediums checkboxes (if required)
+            const $mediumsWrapper = modal.find('.cf7as-mediums-wrapper');
+            if ($mediumsWrapper.length) {
+                const isRequired = $mediumsWrapper.hasClass('wpcf7-validates-as-required');
+                const checkedMediums = $mediumsWrapper.find('input[type="checkbox"]:checked');
+                
+                if (isRequired && checkedMediums.length === 0) {
+                    $mediumsWrapper.addClass('cf7as-field-error');
+                    const label = $mediumsWrapper.find('.cf7as-mediums-label').text() || 'Artistic Mediums';
+                    errors.push(`${label} selection is required.`);
+                    isValid = false;
+                } else {
+                    $mediumsWrapper.removeClass('cf7as-field-error');
+                }
+            }
             
             if (!isValid) {
                 const errorMessage = errors.length > 1 ? 
@@ -885,21 +1036,47 @@
             
             // Get form data
             const formData = {};
+            const checkboxData = {};
+            
             modal.find('.cf7as-step-content-1 input, .cf7as-step-content-1 textarea, .cf7as-step-content-1 select').each(function() {
                 const $field = $(this);
                 const name = $field.attr('name');
-                const value = $field.val();
-                if (name && value) {
-                    formData[name] = value;
+                const fieldType = $field.attr('type') || 'text';
+                
+                if (fieldType === 'checkbox') {
+                    if ($field.is(':checked')) {
+                        const baseName = name.replace('[]', '');
+                        if (!checkboxData[baseName]) {
+                            checkboxData[baseName] = [];
+                        }
+                        // Get the medium name from the label
+                        const mediumName = $field.closest('label').find('.cf7as-medium-name').text() || $field.val();
+                        checkboxData[baseName].push(mediumName);
+                    }
+                } else {
+                    const value = $field.val();
+                    if (name && value) {
+                        formData[name] = value;
+                    }
                 }
             });
             
             // Create summary HTML
             let summaryHtml = '<div class="cf7as-summary-section"><h4>Your Details</h4>';
+            
+            // Add regular form fields
             Object.keys(formData).forEach(key => {
                 const label = key.replace(/[\[\]]/g, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 summaryHtml += `<p><strong>${label}:</strong> ${formData[key]}</p>`;
             });
+            
+            // Add checkbox fields (like mediums)
+            Object.keys(checkboxData).forEach(key => {
+                const label = key.replace(/[\[\]]/g, '').replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const values = checkboxData[key].join(', ');
+                summaryHtml += `<p><strong>${label}:</strong> ${values}</p>`;
+            });
+            
             summaryHtml += '</div>';
             
             summaryHtml += '<div class="cf7as-summary-section"><h4>Uploaded Files</h4>';
@@ -937,6 +1114,19 @@
             this.submissionModal.find('.cf7as-step-content-1 input, .cf7as-step-content-1 textarea, .cf7as-step-content-1 select').each(function() {
                 const $field = $(this);
                 const name = $field.attr('name');
+                const fieldType = $field.attr('type') || 'text';
+                
+                // Handle checkbox fields (like mediums)
+                if (fieldType === 'checkbox') {
+                    if ($field.is(':checked')) {
+                        const value = $field.val();
+                        // For checkboxes, create individual hidden inputs for each checked value
+                        const hiddenInput = $(`<input type="hidden" name="${name}" value="${value}">`);
+                        form.append(hiddenInput);
+                    }
+                    return; // Skip regular processing for checkboxes
+                }
+                
                 const value = $field.val();
                 if (name && value) {
                     // Find existing field in original form or create hidden input
@@ -1103,27 +1293,36 @@
         }
         
         showSubmissionModal() {
-            // Ensure modal is properly positioned for fullscreen
-            this.submissionModal.css({
-                'position': 'fixed',
-                'top': '0',
-                'left': '0',
-                'width': '100vw',
-                'height': '100vh',
-                'margin': '0',
-                'padding': '0',
-                'display': 'flex'
-            }).hide().fadeIn(300);
-            
-            $('body').addClass('cf7as-submission-modal-open');
-            
-            // Prevent body scrolling
-            $('html, body').css({
-                'overflow': 'hidden',
-                'height': '100%',
-                'margin': '0',
-                'padding': '0'
-            });
+            try {
+                // Safety check - ensure modal exists
+                if (!this.submissionModal || !this.submissionModal.length) {
+                    return;
+                }
+                
+                // Ensure modal is properly positioned for fullscreen
+                this.submissionModal.css({
+                    'position': 'fixed',
+                    'top': '0',
+                    'left': '0',
+                    'width': '100vw',
+                    'height': '100vh',
+                    'margin': '0',
+                    'padding': '0',
+                    'display': 'flex'
+                }).hide().fadeIn(300);
+                
+                $('body').addClass('cf7as-submission-modal-open');
+                
+                // Prevent body scrolling
+                $('html, body').css({
+                    'overflow': 'hidden',
+                    'height': '100%',
+                    'margin': '0',
+                    'padding': '0'
+                });
+            } catch (error) {
+                // Silently handle errors to prevent crashes
+            }
         }
         
         closeSubmissionModal() {
