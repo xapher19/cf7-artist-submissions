@@ -242,7 +242,11 @@
      */
     function isVideoFile(url) {
         const videoExtensions = ['mp4', 'mov', 'webm', 'avi', 'mkv', 'mpeg'];
-        const extension = url.split('.').pop().toLowerCase();
+        
+        // Handle URLs with query parameters (like S3 presigned URLs)
+        const cleanUrl = url.split('?')[0];
+        const extension = cleanUrl.split('.').pop().toLowerCase();
+        
         return videoExtensions.includes(extension);
     }
     
@@ -269,14 +273,21 @@
             video.style.width = 'auto';
             video.style.height = 'auto';
             
+            // Add CORS attributes for S3 URLs
+            video.crossOrigin = 'anonymous';
+            
             video.onloadedmetadata = function() {
                 $lightboxContent.find('.cf7-lightbox-loading').remove();
                 $lightboxContent.append(video);
             };
             
-            video.onerror = function() {
+            video.oncanplay = function() {
+                // Video is ready to play
+            };
+            
+            video.onerror = function(e) {
                 $lightboxContent.find('.cf7-lightbox-loading').remove();
-                $lightboxContent.append('<div class="cf7-lightbox-error">Error loading video</div>');
+                $lightboxContent.append('<div class="cf7-lightbox-error">Error loading video (Code: ' + (video.error ? video.error.code : 'unknown') + ')</div>');
             };
             
             video.src = mediaSrc;
@@ -287,7 +298,7 @@
                 $lightboxContent.find('.cf7-lightbox-loading').remove();
                 $lightboxContent.append('<img src="' + mediaSrc + '" alt="Lightbox Image" style="max-width: 100%; max-height: 90vh; width: auto; height: auto;">');
             };
-            img.onerror = function() {
+            img.onerror = function(e) {
                 $lightboxContent.find('.cf7-lightbox-loading').remove();
                 $lightboxContent.append('<div class="cf7-lightbox-error">Error loading image</div>');
             };
