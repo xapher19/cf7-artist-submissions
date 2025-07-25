@@ -34,7 +34,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 .cf7as-submission-modal select {
     border: 2px solid transparent !important;
     border-radius: 8px !important;
-    background: #ffffff !important;
+    background: #fff !important;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
     font-size: 16px !important;
     line-height: 1.5 !important;
@@ -114,14 +114,6 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 /* Protect layout and grid elements from theme CSS - submission modal only */
 /* ===== COMPLETELY REDESIGNED WORK ITEMS DISPLAY ===== */
 
-/* Clean, modern work grid container */
-.cf7as-submission-modal .cf7as-work-content {
-    flex: 1 !important;
-    padding: 20px !important;
-    overflow-y: auto !important;
-    background: #f8f9fa !important;
-}
-
 .cf7as-submission-modal .cf7as-work-grid-container {
     width: 100% !important;
     max-width: 100% !important;
@@ -175,86 +167,15 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     flex-direction: column !important;
 }
 
-.cf7as-submission-modal .cf7as-work-filename {
-    font-size: 12px !important;
-    color: #666 !important;
-    margin-bottom: 8px !important;
-    word-wrap: break-word !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-}
-
 .cf7as-submission-modal .cf7as-work-size {
     font-size: 11px !important;
     color: #999 !important;
     margin-bottom: 10px !important;
 }
 
-/* Action buttons - clean and minimal */
-.cf7as-submission-modal .cf7as-work-actions {
-    display: flex !important;
-    gap: 8px !important;
-    margin-top: auto !important;
-}
-
-.cf7as-submission-modal .cf7as-work-upload-btn,
-.cf7as-submission-modal .cf7as-work-remove-btn {
-    flex: 1 !important;
-    padding: 6px 12px !important;
-    font-size: 11px !important;
-    border-radius: 4px !important;
-    border: 1px solid #ddd !important;
-    background: white !important;
-    color: #666 !important;
-    cursor: pointer !important;
-    transition: all 0.2s ease !important;
-}
-
-.cf7as-submission-modal .cf7as-work-upload-btn:hover {
-    background: #2271b1 !important;
-    color: white !important;
-    border-color: #2271b1 !important;
-}
-
-.cf7as-submission-modal .cf7as-work-remove-btn:hover {
-    background: #dc3545 !important;
-    color: white !important;
-    border-color: #dc3545 !important;
-}
-
-/* Status badge - top right corner */
-.cf7as-submission-modal .cf7as-work-status-badge {
-    position: absolute !important;
-    top: 8px !important;
-    right: 8px !important;
-    background: rgba(0,0,0,0.7) !important;
-    color: white !important;
-    padding: 4px 8px !important;
-    border-radius: 12px !important;
-    font-size: 10px !important;
-    font-weight: 500 !important;
-    z-index: 2 !important;
-}
-
 /* Error state */
 .cf7as-submission-modal .cf7as-work-item-error {
     border-color: #dc3545 !important;
-}
-
-.cf7as-submission-modal .cf7as-work-error-badge {
-    position: absolute !important;
-    top: 8px !important;
-    left: 8px !important;
-    background: #dc3545 !important;
-    color: white !important;
-    width: 20px !important;
-    height: 20px !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    z-index: 2 !important;
 }
 
 /* Progress overlay */
@@ -273,27 +194,6 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     background: #2271b1 !important;
     transition: width 0.3s ease !important;
     width: 0% !important;
-}
-
-/* Removed duplicate work item styles - now handled by enhanced styles below */
-
-/* Protect work status badge from theme interference */
-.cf7as-submission-modal .cf7as-work-status-badge {
-    position: absolute !important;
-    top: 8px !important;
-    right: 8px !important;
-    padding: 4px 8px !important;
-    border-radius: 12px !important;
-    font-size: 10px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    color: white !important;
-    z-index: 10 !important;
-    margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important; /* Will be set by status-specific classes */
 }
 
 /* Protect work status badge colors from theme interference */
@@ -410,7 +310,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     width: 90% !important;
     max-width: 1200px !important;
     height: 90% !important;
-    background: #ffffff !important;
+    background: #fff !important;
     border-radius: 16px !important;
     margin: 5% auto !important;
     padding: 0 !important;
@@ -438,7 +338,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     border-radius: 6px;
     padding: 40px 20px;
     text-align: center;
-    background: #ffffff;
+    background: #fff;
     transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     cursor: pointer;
     position: relative;
@@ -482,7 +382,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     justify-content: center;
     border-radius: 0;
     border: 2px dashed #d0d0d0;
-    background: #ffffff;
+    background: #fff;
 }
 
 /* When files are present in submission modal, make upload area compact */
@@ -674,19 +574,6 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     color: #135e96;
 }
 
-/* Work grid layout - main content area */
-.cf7as-submission-modal .cf7as-work-content {
-    flex: 1;
-    display: none; /* Hidden by default */
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-}
-
-.cf7as-submission-modal .cf7as-modal-body-inner.has-files .cf7as-work-content {
-    display: flex; /* Show when files are present */
-}
-
 /* Work grid container with maximum specificity */
 .cf7as-submission-modal .cf7as-work-grid-container {
     flex: 1 !important;
@@ -710,22 +597,6 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     min-height: 400px !important;
     width: 100% !important;
     max-width: none !important;
-}
-
-/* Enhanced work grid with maximum theme protection - submission modal only */
-.cf7as-submission-modal .cf7as-work-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
-    grid-auto-rows: auto !important;
-    gap: 20px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    list-style: none !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    justify-content: start !important;
-    align-items: start !important;
 }
 
 /* Ensure submission modal grid specifically supports multi-column layout */
@@ -810,8 +681,8 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     padding: 0 !important;
     box-sizing: border-box !important;
     flex-shrink: 0 !important; /* Prevent shrinking */
-    border-top-left-radius: 10px !important;
-    border-top-right-radius: 10px !important;
+    border-top-left-radius: 5px !important;
+    border-top-right-radius: 5px !important;
 }
 
 /* Loading state for thumbnails */
@@ -862,7 +733,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
     padding: 0 !important;
     border: none !important;
     border-radius: 0 !important;
-    background: #000000 !important;
+    background: #000 !important;
     position: relative !important;
     z-index: 2 !important;
     transition: opacity 0.3s ease !important;
@@ -870,7 +741,7 @@ body[class*="kahlo-core"] .cf7as-submission-intro p,
 
 /* File icon for non-image files and fallbacks */
 .cf7as-submission-modal .cf7as-work-preview .cf7as-file-icon {
-    color: #999999 !important;
+    color: #999 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -1208,7 +1079,7 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
 
 .cf7as-submission-modal .cf7as-work-title-display {
     font-weight: 600 !important;
-    color: #333333 !important;
+    color: #333 !important;
     font-size: 14px !important;
     margin: 0 0 4px 0 !important;
     padding: 0 !important;
@@ -1223,7 +1094,7 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
 
 .cf7as-submission-modal .cf7as-work-filename {
     font-size: 12px !important;
-    color: #666666 !important;
+    color: #666 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -1239,7 +1110,7 @@ html body .cf7as-modal .cf7as-work-preview .cf7as-file-icon:only-child,
     justify-content: space-between !important;
     align-items: center !important;
     font-size: 11px !important;
-    color: #888888 !important;
+    color: #888 !important;
     margin: 0 !important;
     padding: 0 !important;
     line-height: 1.2 !important;
@@ -1978,15 +1849,6 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
     animation: cf7as-spin 1s linear infinite;
 }
 
-@keyframes cf7as-spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
 /* ============================================================================
    MODAL INTERFACE STYLES
    ============================================================================ */
@@ -1995,7 +1857,7 @@ html body .cf7as-modal .cf7as-work-item.error .cf7as-progress-overlay .cf7as-pro
 .cf7as-upload-button-container {
     padding: 20px;
     text-align: center;
-    background: #ffffff;
+    background: #fff;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
 }
@@ -2518,7 +2380,7 @@ button.cf7as-upload-all-btn:disabled:hover {
 .cf7as-field-group:focus-within {
     border-color: #667eea;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-    background: #ffffff;
+    background: #fff;
 }
 
 .cf7as-field-group label {
@@ -2538,7 +2400,7 @@ button.cf7as-upload-all-btn:disabled:hover {
     border: 2px solid transparent;
     border-radius: 8px;
     font-size: 16px;
-    background: #ffffff;
+    background: #fff;
     transition: all 0.2s ease;
     font-family: inherit;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
