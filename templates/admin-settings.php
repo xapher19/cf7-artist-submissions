@@ -73,6 +73,11 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
                     <span class="dashicons dashicons-megaphone"></span>
                     <span class="tab-label"><?php _e('Open Calls', 'cf7-artist-submissions'); ?></span>
                 </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=aws" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'aws' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-cloud"></span>
+                    <span class="tab-label"><?php _e('AWS', 'cf7-artist-submissions'); ?></span>
+                </a>
                 <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=email" 
                    class="cf7-nav-tab <?php echo $current_tab === 'email' ? 'active' : ''; ?>">
                     <span class="dashicons dashicons-email-alt"></span>
@@ -117,6 +122,9 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
                 break;
             case 'open-calls':
                 include 'settings/open-calls-tab.php';
+                break;
+            case 'aws':
+                include 'settings/aws-tab.php';
                 break;
             case 'email':
                 include 'settings/email-tab.php';

@@ -50,6 +50,7 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-rest-endpoints.
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-metadata-manager.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-thumbnail-generator.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-zip-downloader.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-media-converter.php';
 
 /**
  * Main plugin initialization function.

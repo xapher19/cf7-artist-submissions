@@ -26,7 +26,17 @@
     'use strict';
     
     // Initialize profile editing
+        // Debounce flag to prevent rapid clicks
+    let editSaveButtonDebounce = false;
+    
     $(document).ready(function() {
+        // Reset any persisted edit mode on page load
+        $('.cf7-profile-tab-container').removeClass('edit-mode');
+        $('body').removeClass('cf7-edit-mode');
+        $('.cf7-edit-save-button').removeClass('save-mode').prop('disabled', false);
+        $('.cf7-edit-save-button .dashicons').removeClass('dashicons-saved dashicons-update').addClass('dashicons-edit');
+        
+        // Field editing and profile management
         initModernProfileEditing();
     });
 
@@ -89,9 +99,23 @@
         });
         
         // Edit/Save Profile Button (header button)
-        $(document).on('click', '.cf7-edit-save-button', function() {
+        $(document).on('click', '.cf7-edit-save-button', function(e) {
+            e.preventDefault(); // Prevent any default behavior
+            
+            // Debounce rapid clicks
+            if (editSaveButtonDebounce) {
+                return false;
+            }
+            editSaveButtonDebounce = true;
+            setTimeout(() => { editSaveButtonDebounce = false; }, 500);
+            
             const $container = $('.cf7-profile-tab-container');
             const $headerBtn = $('.cf7-edit-save-button');
+            
+            // Check if button is disabled (saving in progress)
+            if ($headerBtn.prop('disabled')) {
+                return false;
+            }
             
             if ($container.hasClass('edit-mode')) {
                 // Currently in edit mode, so save changes

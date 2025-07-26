@@ -1571,3 +1571,224 @@ span.status-rejected::before {
         font-weight: bold;
     }
 }
+
+/* ============================================================================
+   MEDIA CONVERSION SECTION
+   ============================================================================ */
+
+/**
+ * AWS Lambda & MediaConvert Integration Styles
+ * 
+ * Styling for media conversion progress, statistics, and testing interfaces
+ * in the settings panel. Provides visual feedback for conversion processes.
+ */
+
+/* Conversion Progress Bar */
+.cf7-conversion-progress {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+.cf7-progress-bar {
+    width: 100%;
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.cf7-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #007cba 0%, #005a8b 100%);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.cf7-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        transparent 100%
+    );
+    animation: cf7-progress-shine 2s infinite;
+}
+
+@keyframes cf7-progress-shine {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.cf7-progress-text {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    margin: 0;
+}
+
+/* Conversion Statistics Grid */
+.cf7-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.cf7-stat-item {
+    text-align: center;
+    padding: 15px 10px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.cf7-stat-item:hover {
+    border-color: #007cba;
+    box-shadow: 0 2px 8px rgba(0, 124, 186, 0.1);
+}
+
+.cf7-stat-item.cf7-stat-highlight {
+    background: linear-gradient(135deg, #007cba 0%, #005a8b 100%);
+    color: white;
+    border-color: #005a8b;
+}
+
+.cf7-stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+
+.cf7-stat-highlight .cf7-stat-number {
+    color: white;
+}
+
+.cf7-stat-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cf7-stat-highlight .cf7-stat-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Lambda Test Results */
+#lambda-test-result {
+    margin-top: 15px;
+}
+
+#lambda-test-result h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+#lambda-test-result h5 {
+    margin-top: 15px;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+#lambda-test-result ul,
+#lambda-test-result ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+#lambda-test-result li {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+#lambda-test-result code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: Monaco, Consolas, 'Courier New', monospace;
+    font-size: 12px;
+}
+
+/* Conversion Status Table */
+.cf7-conversion-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.cf7-conversion-table th,
+.cf7-conversion-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.cf7-conversion-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.cf7-conversion-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+/* Status Indicators */
+.cf7-status-pending { color: #f0b849; }
+.cf7-status-processing { color: #007cba; }
+.cf7-status-completed { color: #00a32a; }
+.cf7-status-failed { color: #d63638; }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .cf7-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .cf7-stat-item {
+        padding: 12px 8px;
+    }
+    
+    .cf7-stat-number {
+        font-size: 20px;
+    }
+    
+    .cf7-stat-label {
+        font-size: 11px;
+    }
+    
+    /* Stack conversion buttons vertically on mobile */
+    .cf7-form-row .cf7-test-btn {
+        display: block;
+        margin: 5px 0 !important;
+        width: 100%;
+        text-align: center;
+    }
+    
+    /* Make conversion status table scrollable */
+    .cf7-conversion-table-container {
+        overflow-x: auto;
+        margin: 10px 0;
+    }
+    
+    .cf7-conversion-table {
+        min-width: 600px;
+    }
+}

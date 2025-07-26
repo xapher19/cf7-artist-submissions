@@ -60,6 +60,7 @@ class CF7_Artist_Submissions_Tabs {
         
         // S3 and file handling AJAX actions
         add_action('wp_ajax_cf7as_download_zip', array(__CLASS__, 'ajax_download_zip'));
+        add_action('wp_ajax_cf7as_download_file', array(__CLASS__, 'ajax_download_file'));
         
         // Override the post edit page layout
         add_action('edit_form_after_title', array(__CLASS__, 'render_custom_page_layout'));
@@ -573,6 +574,10 @@ class CF7_Artist_Submissions_Tabs {
                 $key === 'cf7_your-pronouns' ||
                 $key === 'cf7_email' ||
                 $key === 'cf7_your-email' ||
+                $key === 'cf7_mediums' ||  // Skip duplicate mediums field
+                $key === 'cf7_artistic-mediums' ||  // Skip duplicate artistic mediums field
+                $key === 'cf7_artistic_mediums' ||  // Skip artistic mediums without hyphen
+                strpos($key, 'medium') !== false ||  // Skip any field containing 'medium'
                 strpos($key, 'work') !== false ||
                 strpos($key, 'files') !== false) {
                 continue;
@@ -922,6 +927,12 @@ class CF7_Artist_Submissions_Tabs {
         echo '<h4>' . __('Submitted Works', 'cf7-artist-submissions') . '</h4>';
         echo '<div class="cf7as-file-preview-grid">';
         
+        // Initialize media converter once for efficiency
+        $converter = null;
+        if (class_exists('CF7_Artist_Submissions_Media_Converter')) {
+            $converter = new CF7_Artist_Submissions_Media_Converter();
+        }
+        
         foreach ($files as $file) {
             $file_ext = strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION));
             $mime_type = $file->mime_type;
@@ -934,33 +945,65 @@ class CF7_Artist_Submissions_Tabs {
             // Use work title for display if available, otherwise use filename
             $display_title = !empty($work_title) ? $work_title : $file->original_name;
             
-            // Get S3 presigned URL for download (works reliably)
+            // Get S3 presigned URL for original file download
             if (!class_exists('CF7_Artist_Submissions_S3_Handler')) {
                 continue;
             }
             
             $s3_handler = new CF7_Artist_Submissions_S3_Handler();
-            $download_url = $s3_handler->get_presigned_download_url($file->s3_key);
+            $original_download_url = $s3_handler->get_presigned_download_url($file->s3_key);
             
-            if (!$download_url) {
+            if (!$original_download_url) {
                 continue;
+            }
+            
+            // Check for converted versions for viewing/preview
+            $preview_url = $original_download_url; // Fallback to original
+            $thumbnail_url = $original_download_url; // Fallback to original
+            
+            if ($converter && self::is_image_file($file_ext)) {
+                // Get converted versions for images
+                $converted_versions = $converter->get_converted_versions($file->s3_key);
+                
+                if (!empty($converted_versions)) {
+                    // Get best version for preview (medium or large)
+                    $preview_version = $converter->get_best_version_for_serving($file->s3_key, 'large');
+                    if (!$preview_version) {
+                        $preview_version = $converter->get_best_version_for_serving($file->s3_key, 'medium');
+                    }
+                    
+                    if ($preview_version && !empty($preview_version->converted_s3_key)) {
+                        $preview_url = $s3_handler->get_presigned_preview_url($preview_version->converted_s3_key);
+                        error_log("CF7AS Debug: Using converted preview for {$file->original_name}: {$preview_version->converted_s3_key}");
+                    }
+                    
+                    // Get thumbnail version
+                    $thumbnail_version = $converter->get_thumbnail_version($file->s3_key);
+                    if ($thumbnail_version && !empty($thumbnail_version->converted_s3_key)) {
+                        $thumbnail_url = $s3_handler->get_presigned_preview_url($thumbnail_version->converted_s3_key);
+                        error_log("CF7AS Debug: Using converted thumbnail for {$file->original_name}: {$thumbnail_version->converted_s3_key}");
+                    }
+                } else {
+                    error_log("CF7AS Debug: No converted versions found for {$file->original_name}, using original");
+                }
             }
             
             echo '<div class="cf7as-file-item">';
             
             // File preview/thumbnail
             if (self::is_image_file($file_ext)) {
-                // Use thumbnail if available for display, but use download URL for lightbox since that's working
-                $thumbnail_url = !empty($file->thumbnail_url) ? $file->thumbnail_url : $download_url;
+                // Use thumbnail URL for display, preview URL for lightbox
+                // Priority: converted thumbnail > converted medium > original
+                $display_thumbnail_url = $thumbnail_url;
                 
-                echo '<a href="' . esc_url($download_url) . '" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
-                echo '<img src="' . esc_url($thumbnail_url) . '" alt="' . esc_attr($display_title) . '" class="cf7as-file-thumbnail">';
+                echo '<a href="' . esc_url($preview_url) . '" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                echo '<img src="' . esc_url($display_thumbnail_url) . '" alt="' . esc_attr($display_title) . '" class="cf7as-file-thumbnail" loading="lazy">';
                 echo '</a>';
                 
             } elseif (self::is_video_file($file_ext)) {
-                // Inline video player for videos - use download URL since that's working
+                // Use preview URL for video display
                 echo '<video class="cf7as-video-preview" controls preload="metadata">';
-                echo '<source src="' . esc_url($download_url) . '" type="' . esc_attr($mime_type) . '">';
+                echo '<source src="' . esc_url($preview_url) . '" type="' . esc_attr($mime_type) . '">';
                 echo __('Your browser does not support the video tag.', 'cf7-artist-submissions');
                 echo '</video>';
                 
@@ -993,24 +1036,25 @@ class CF7_Artist_Submissions_Tabs {
             // File actions
             echo '<div class="cf7as-file-actions">';
             
-            // Preview button for images/videos/documents
+            // Preview button for images/videos/documents (use preview URL)
             if (self::is_image_file($file_ext)) {
-                echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                echo '<a href="' . esc_url($preview_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
                 echo '<span class="dashicons dashicons-visibility"></span> ' . __('Preview', 'cf7-artist-submissions');
                 echo '</a>';
             } elseif (self::is_video_file($file_ext)) {
-                echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                echo '<a href="' . esc_url($preview_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
                 echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Preview', 'cf7-artist-submissions');
                 echo '</a>';
             } elseif (self::is_document_file($file_ext)) {
-                echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '" data-document-type="' . esc_attr($file_ext) . '">';
+                echo '<a href="' . esc_url($original_download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '" data-document-type="' . esc_attr($file_ext) . '">';
                 echo '<span class="dashicons dashicons-media-document"></span> ' . __('Preview', 'cf7-artist-submissions');
                 echo '</a>';
             }
             
-            // Download button
-            echo '<a href="' . esc_url($download_url) . '" class="button button-small" download="' . esc_attr($file->original_name) . '">';
-            echo '<span class="dashicons dashicons-download"></span> ' . __('Download', 'cf7-artist-submissions');
+            // Download button (always uses original file)
+            $download_url = admin_url('admin-ajax.php?action=cf7as_download_file&file_id=' . $file->id . '&nonce=' . wp_create_nonce('cf7as_download_file'));
+            echo '<a href="' . esc_url($download_url) . '" class="button button-small">';
+            echo '<span class="dashicons dashicons-download"></span> ' . __('Download Original', 'cf7-artist-submissions');
             echo '</a>';
             
             echo '</div>'; // .cf7as-file-actions
@@ -1916,6 +1960,132 @@ class CF7_Artist_Submissions_Tabs {
             
         } catch (Exception $e) {
             wp_die(__('Error creating ZIP file: ', 'cf7-artist-submissions') . $e->getMessage());
+        }
+        
+        exit;
+    }
+
+    /**
+     * AJAX handler for downloading individual files
+     */
+    public static function ajax_download_file() {
+        error_log('CF7AS Debug: Download file AJAX handler called');
+        
+        // Verify nonce
+        $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
+        if (!wp_verify_nonce($nonce, 'cf7as_download_file')) {
+            error_log('CF7AS Error: Download file nonce verification failed');
+            wp_die(__('Security check failed', 'cf7-artist-submissions'));
+        }
+
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            error_log('CF7AS Error: Download file insufficient permissions');
+            wp_die(__('Insufficient permissions', 'cf7-artist-submissions'));
+        }
+
+        $file_id = isset($_GET['file_id']) ? intval($_GET['file_id']) : 0;
+        if (!$file_id) {
+            error_log('CF7AS Error: Download file invalid file ID: ' . $file_id);
+            wp_die(__('Invalid file ID', 'cf7-artist-submissions'));
+        }
+
+        error_log('CF7AS Debug: Download file - processing file ID: ' . $file_id);
+
+        global $wpdb;
+        
+        // Get file details - use the correct table name
+        $file = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}cf7as_files WHERE id = %d",
+            $file_id
+        ));
+
+        if (!$file) {
+            error_log('CF7AS Error: Download file - file not found in database for ID: ' . $file_id);
+            wp_die(__('File not found', 'cf7-artist-submissions'));
+        }
+
+        error_log('CF7AS Debug: Download file - found file: ' . $file->original_name . ', S3 key: ' . $file->s3_key);
+
+        try {
+            // Initialize S3 handler
+            if (!class_exists('CF7_Artist_Submissions_S3_Handler')) {
+                require_once plugin_dir_path(__FILE__) . 'class-s3-handler.php';
+            }
+            
+            $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+            $init_result = $s3_handler->init();
+            
+            if (!$init_result) {
+                error_log('CF7AS Error: Download file - S3 handler init failed');
+                wp_die(__('Error initializing S3 connection', 'cf7-artist-submissions'));
+            }
+
+            error_log('CF7AS Debug: Download file - S3 handler initialized successfully');
+
+            // Get the file from S3 using the S3 key
+            $s3_key = $file->s3_key ? $file->s3_key : $file->file_path; // fallback to file_path if s3_key is null
+            
+            error_log('CF7AS Debug: Download file - attempting to get file content for S3 key: ' . $s3_key);
+            
+            $file_content = $s3_handler->get_file_content($s3_key);
+            
+            if ($file_content === false) {
+                error_log('CF7AS Error: Download file - failed to get file content from S3 for key: ' . $s3_key);
+                wp_die(__('Error downloading file from S3', 'cf7-artist-submissions'));
+            }
+
+            error_log('CF7AS Debug: Download file - successfully retrieved file content, size: ' . strlen($file_content) . ' bytes');
+
+            // Set headers to force download
+            $filename = basename($file->original_name);
+            $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            
+            // Determine content type
+            $content_types = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'txt' => 'text/plain',
+                'zip' => 'application/zip',
+            ];
+            
+            $content_type = isset($content_types[$file_extension]) ? $content_types[$file_extension] : 'application/octet-stream';
+
+            // Clear any previous output and increase limits for large files
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
+            // Increase memory and time limits for large files
+            @ini_set('memory_limit', '512M');
+            @set_time_limit(300); // 5 minutes
+
+            // Set download headers
+            error_log('CF7AS Debug: Download file - setting headers for filename: ' . $filename . ', content type: ' . $content_type);
+            
+            header('Content-Type: ' . $content_type);
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . strlen($file_content));
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+
+            error_log('CF7AS Debug: Download file - headers set, outputting file content');
+
+            // Output the file
+            echo $file_content;
+            
+            error_log('CF7AS Debug: Download file - file content output complete');
+            
+        } catch (Exception $e) {
+            error_log('CF7AS Error: Download file exception: ' . $e->getMessage());
+            wp_die(__('Error downloading file: ', 'cf7-artist-submissions') . $e->getMessage());
         }
         
         exit;

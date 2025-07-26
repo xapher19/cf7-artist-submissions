@@ -481,6 +481,17 @@ class CF7_Artist_Submissions_Settings {
         $valid['aws_region'] = isset($input['aws_region']) ? sanitize_text_field($input['aws_region']) : 'us-east-1';
         $valid['s3_bucket'] = isset($input['s3_bucket']) ? sanitize_text_field($input['s3_bucket']) : '';
         
+        // Add media conversion configuration fields
+        $valid['enable_media_conversion'] = isset($input['enable_media_conversion']) ? 'on' : 'off';
+        $valid['lambda_function_name'] = isset($input['lambda_function_name']) ? sanitize_text_field($input['lambda_function_name']) : 'cf7as-image-converter';
+        $valid['mediaconvert_endpoint'] = isset($input['mediaconvert_endpoint']) ? esc_url_raw($input['mediaconvert_endpoint']) : '';
+        
+        // Add conversion settings checkboxes
+        $valid['convert_images'] = isset($input['convert_images']) ? 1 : 0;
+        $valid['convert_videos'] = isset($input['convert_videos']) ? 1 : 0;
+        $valid['generate_thumbnails'] = isset($input['generate_thumbnails']) ? 1 : 0;
+        $valid['create_multiple_sizes'] = isset($input['create_multiple_sizes']) ? 1 : 0;
+        
         // Log setting changes
         $this->log_settings_changes($old_options, $valid, 'general');
         

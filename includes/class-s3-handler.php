@@ -44,8 +44,13 @@ class CF7_Artist_Submissions_S3_Handler {
      * Initialize the S3 handler
      */
     public function init() {
+        // Initialize S3 client configuration
+        $init_result = $this->init_s3_client();
+        
         // Register CF7 form tag for custom uploader
         add_action('wpcf7_init', array($this, 'register_cf7_uploader_form_tag'));
+        
+        return $init_result;
     }
     
     /**
@@ -1062,5 +1067,47 @@ class CF7_Artist_Submissions_S3_Handler {
         $regionKey = hash_hmac('sha256', $region, $dateKey, true);
         $serviceKey = hash_hmac('sha256', $service, $regionKey, true);
         return hash_hmac('sha256', 'aws4_request', $serviceKey, true);
+    }
+    
+    /**
+     * Upload file content to S3 using presigned URL
+     * 
+     * @param string $s3_key S3 key for the file
+     * @param string $content File content
+     * @param string $content_type MIME type
+     * @return bool Success status
+     */
+    public function upload_file_content($s3_key, $content, $content_type) {
+        if (!$this->init_s3_client()) {
+            return false;
+        }
+        
+        $expires = 3600; // 1 hour
+        $signature_data = $this->create_signature_v4('PUT', $s3_key, $content_type, $expires, array(), array(), true);
+        
+        if (!$signature_data) {
+            return false;
+        }
+        
+        $url = "https://{$signature_data['host']}/{$s3_key}?{$signature_data['canonical_query']}";
+        
+        // Upload file using presigned URL
+        $response = wp_remote_request($url, array(
+            'method' => 'PUT',
+            'headers' => array(
+                'Content-Type' => $content_type,
+                'Content-Length' => strlen($content)
+            ),
+            'body' => $content,
+            'timeout' => 300 // 5 minutes
+        ));
+        
+        if (is_wp_error($response)) {
+            error_log('CF7AS S3Handler: Upload error: ' . $response->get_error_message());
+            return false;
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        return $status_code === 200;
     }
 }

@@ -8,3 +8,6 @@ UPDATE-SYSTEM.md
 
 # Standard Document Format documentation (development reference)
 SDF.md
+
+# Lambda functions directory (contains Node.js modules and deployment packages)
+lambda-functions/

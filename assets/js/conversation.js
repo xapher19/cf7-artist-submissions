@@ -90,96 +90,16 @@ jQuery(document).ready(function($) {
     });
     
     // ============================================================================
-    // MESSAGE COMPOSITION SYSTEM
+    // KEYBOARD SHORTCUTS
     // ============================================================================
-
-    /**
-     * Handle message type selection with template preview integration.
-     * 
-     * Manages switching between custom and template message modes with
-     * dynamic interface updates and real-time template preview generation.
-     * 
-     * @since 1.0.0
-     */
-    $('#message-type').on('change', function() {
-        var messageType = $(this).val();
-        var $customField = $('#custom-message-field');
-        var $templateField = $('#template-preview-field');
-        
-        if (messageType === 'custom') {
-            $customField.show();
-            $templateField.hide();
-        } else {
-            $customField.hide();
-            $templateField.show();
-            
-            // Load template preview
-            loadTemplatePreview(messageType);
-        }
-    });
-    
-    /**
-     * Dynamic template preview generation with comprehensive error handling.
-     * 
-     * Renders email templates with live submission data for accurate preview
-     * before sending. Includes comprehensive error handling and user feedback
-     * for template rendering failures or configuration issues.
-     * 
-     * @since 1.0.0
-     */
-    function loadTemplatePreview(templateId) {
-        var submissionId = $('#submission-id').val();
-        
-        // Check if cf7Conversations is available
-        if (typeof cf7Conversations === 'undefined') {
-            console.error('cf7Conversations object not found - template preview unavailable');
-            $('.preview-subject').text('Configuration error');
-            $('.preview-body').text('Please refresh the page and try again.');
-            return;
-        }
-        
-        $.ajax({
-            url: cf7Conversations.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'cf7_preview_email',
-                nonce: cf7Conversations.nonce,
-                template_id: templateId,
-                submission_id: submissionId
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('.preview-subject').html('<strong>Subject:</strong> ' + response.data.subject);
-                    $('.preview-body').html('<strong>Message:</strong><br>' + response.data.body.replace(/\n/g, '<br>'));
-                } else {
-                    // Handle error response safely
-                    let errorMessage = 'Error loading template';
-                    if (response.data) {
-                        if (typeof response.data === 'string') {
-                            errorMessage += ': ' + response.data;
-                        } else if (response.data.message) {
-                            errorMessage += ': ' + response.data.message;
-                        }
-                    }
-                    $('.preview-subject').text(errorMessage);
-                    $('.preview-body').text('');
-                }
-            },
-            error: function(xhr, status, error) {
-                $('.preview-subject').text('Error loading template');
-                $('.preview-body').text('Server communication error. Check console for details.');
-            }
-        });
-    }
     
     /**
      * Keyboard shortcut handler for efficient message sending.
      * 
      * Implements Ctrl+Enter shortcut for quick message dispatch without
-     * requiring mouse interaction. Enhances user productivity during
-     * conversation management by providing keyboard-driven workflow.
+     * requiring mouse interaction. Uses event delegation for dynamic elements.
      */
-    $('#message-body').on('keydown', function(e) {
+    $(document).on('keydown', '#message-body', function(e) {
         if (e.ctrlKey && e.which === 13) { // Ctrl+Enter
             $('#send-message-btn').trigger('click');
         }
@@ -189,8 +109,9 @@ jQuery(document).ready(function($) {
      * Handle message type selection with interface updates.
      * 
      * Manages switching between custom and template message modes.
+     * Uses event delegation to handle dynamically loaded elements.
      */
-    $('#message-type').on('change', function() {
+    $(document).on('change', '#message-type', function() {
         var messageType = $(this).val();
         var $customField = $('#custom-message-field');
         var $previewField = $('#template-preview-field');
@@ -210,7 +131,7 @@ jQuery(document).ready(function($) {
     /**
      * Load template preview with email nonce validation.
      * 
-     * Alternative template preview loader with enhanced error handling.
+     * Loads and displays email template preview with comprehensive error handling.
      */
     function loadTemplatePreview(templateId) {
         if (!templateId || templateId === 'custom') {
@@ -218,11 +139,19 @@ jQuery(document).ready(function($) {
         }
         
         var submissionId = $('#submission-id').val();
-        var emailNonce = $('#cf7-email-nonce').val();
+        
+        // Try both possible nonce field IDs (hyphen and underscore versions)
+        var emailNonce = $('#cf7-email-nonce').val() || $('#cf7_email_nonce').val();
         
         // Check if we have the email nonce
         if (!emailNonce) {
             $('#template-preview-content').html('<p>Error: Email nonce not found</p>');
+            return;
+        }
+        
+        // Check if cf7Conversations is available
+        if (typeof cf7Conversations === 'undefined') {
+            $('#template-preview-content').html('<p>Configuration error - please refresh the page and try again.</p>');
             return;
         }
         
@@ -237,15 +166,39 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 if (response.success && response.data) {
-                    $('#template-preview-content .preview-subject').html('<strong>Subject:</strong> ' + response.data.subject);
-                    $('#template-preview-content .preview-body').html('<strong>Body:</strong><br>' + response.data.body);
+                    // Try multiple selectors for backwards compatibility
+                    var $previewSubject = $('#template-preview-content .preview-subject');
+                    var $previewBody = $('#template-preview-content .preview-body');
+                    
+                    // Fallback to legacy selectors if new ones don't exist
+                    if ($previewSubject.length === 0) {
+                        $previewSubject = $('.preview-subject');
+                    }
+                    if ($previewBody.length === 0) {
+                        $previewBody = $('.preview-body');
+                    }
+                    
+                    // Update the preview content
+                    if ($previewSubject.length > 0) {
+                        $previewSubject.html('<strong>Subject:</strong> ' + response.data.subject);
+                    }
+                    if ($previewBody.length > 0) {
+                        $previewBody.html('<strong>Body:</strong><br>' + response.data.body);
+                    }
+                    
+                    // If neither selector worked, fall back to container
+                    if ($previewSubject.length === 0 && $previewBody.length === 0) {
+                        $('#template-preview-content').html(
+                            '<div class="preview-subject"><strong>Subject:</strong> ' + response.data.subject + '</div>' +
+                            '<div class="preview-body"><strong>Body:</strong><br>' + response.data.body + '</div>'
+                        );
+                    }
                 } else {
                     var errorMsg = response.data && response.data.message ? response.data.message : 'Unknown error';
                     $('#template-preview-content').html('<p>Error loading template preview: ' + errorMsg + '</p>');
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Template preview AJAX error:', xhr, status, error);
                 $('#template-preview-content').html('<p>Error loading template preview: ' + error + '</p>');
             }
         });
@@ -258,13 +211,9 @@ jQuery(document).ready(function($) {
     /**
      * Message delivery handler with comprehensive validation and feedback.
      * 
-     * Processes message sending with full validation, progress tracking,
-     * and error handling. Supports both custom and template message types
-     * with automatic conversation refresh after successful delivery.
-     * 
-     * @since 1.0.0
+     * Uses event delegation to handle dynamically loaded send button.
      */
-    $('#send-message-btn').on('click', function(e) {
+    $(document).on('click', '#send-message-btn', function(e) {
         e.preventDefault();
         
         var $btn = $(this);
@@ -284,7 +233,6 @@ jQuery(document).ready(function($) {
         // Check if cf7Conversations is available
         if (typeof cf7Conversations === 'undefined') {
             $status.text('JavaScript configuration error').addClass('error');
-            console.error('cf7Conversations object not found');
             return;
         }
         
@@ -331,7 +279,6 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX error:', xhr, status, error);
                 $status.text('Error sending message: ' + error).addClass('error');
             },
             complete: function() {
@@ -362,7 +309,6 @@ jQuery(document).ready(function($) {
         
         // Check if cf7Conversations is available
         if (typeof cf7Conversations === 'undefined') {
-            console.error('cf7Conversations object not found');
             alert('JavaScript configuration error - cf7Conversations not available');
             return;
         }
@@ -422,16 +368,10 @@ jQuery(document).ready(function($) {
                         }
                     }
                     showNotice('Error: ' + errorMessage, 'error');
-                    console.error('Manual check failed:', response.data);
                 }
             },
             error: function(xhr, status, error) {
                 clearTimeout(timeoutWarning);
-                console.error('AJAX Error:', {
-                    status: status,
-                    error: error,
-                    responseText: xhr.responseText
-                });
                 
                 if (status === 'timeout') {
                     showNotice('Request timed out. The server may still be processing your request.', 'error');
@@ -767,20 +707,27 @@ jQuery(document).ready(function($) {
         var currentStatus = $item.data('current-status');
         
         if (action === 'add-to-actions') {
-            // Debug logging for actions integration
-            
             // Use the global CF7_Actions interface for cross-tab functionality
             if (typeof window.CF7_Actions !== 'undefined' && typeof window.CF7_Actions.openModal === 'function') {
                 var messageText = $message.find('.message-content').first().text().trim();
                 var truncatedText = messageText.length > 100 ? messageText.substring(0, 100) + '...' : messageText;
                 
-                window.CF7_Actions.openModal({
-                    messageId: messageId,
-                    title: 'Follow up on message',
-                    description: 'Regarding: ' + truncatedText
-                });
+                try {
+                    window.CF7_Actions.openModal({
+                        messageId: messageId,
+                        title: 'Follow up on message',
+                        description: 'Regarding: ' + truncatedText
+                    });
+                } catch (error) {
+                    console.error('Error opening Actions modal:', error);
+                    showNotice('Error opening Actions modal. Please try again.', 'error');
+                }
             } else {
-                console.error('CF7_Actions not available. Available window properties:', Object.keys(window).filter(k => k.toLowerCase().includes('action')));
+                console.error('CF7_Actions not available or openModal not a function:', {
+                    CF7_Actions_exists: typeof window.CF7_Actions !== 'undefined',
+                    openModal_exists: typeof window.CF7_Actions?.openModal === 'function',
+                    CF7_Actions_keys: window.CF7_Actions ? Object.keys(window.CF7_Actions) : 'N/A'
+                });
                 showNotice('Actions system not available. Please refresh the page and try again.', 'error');
             }
         } else if (action === 'mark-read' || action === 'mark-unread') {
@@ -993,16 +940,8 @@ function clearAllMessages() {
     // Check if cf7Conversations is available
     if (typeof cf7Conversations === 'undefined') {
         showNotice('JavaScript configuration error - cf7Conversations not available', 'error');
-        console.error('cf7Conversations object not found');
         return;
     }
-    
-    // Debug logging
-    console.log('Clearing messages for submission:', {
-        submissionId: submissionId,
-        ajaxUrl: cf7Conversations.ajaxUrl,
-        nonce: cf7Conversations.nonce
-    });
     
     // Disable button and show loading
     confirmButton.prop('disabled', true).text('Clearing...');
@@ -1038,21 +977,11 @@ function clearAllMessages() {
                         errorMessage = 'Failed to clear messages: ' + response.data.message;
                     }
                 }
-                console.error('Clear messages failed:', response);
                 showNotice(errorMessage, 'error');
                 confirmButton.prop('disabled', false).text('Permanently Delete All Messages');
             }
         },
         error: function(xhr, status, error) {
-            console.error('Clear messages AJAX error:', {
-                xhr: xhr,
-                status: status,
-                error: error,
-                responseText: xhr.responseText,
-                readyState: xhr.readyState,
-                statusText: xhr.statusText
-            });
-            
             let errorMessage = 'Error clearing messages. Please try again.';
             
             // Try to get more specific error information

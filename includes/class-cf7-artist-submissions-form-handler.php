@@ -651,7 +651,19 @@ class CF7_Artist_Submissions_Form_Handler {
                 error_log('CF7AS File Storage Debug - Last query: ' . $wpdb->last_query);
             } else {
                 $stored_count++;
-                error_log('CF7AS File Storage Debug - Successfully inserted file record with ID: ' . $wpdb->insert_id);
+                $file_id = $wpdb->insert_id;
+                error_log('CF7AS File Storage Debug - Successfully inserted file record with ID: ' . $file_id);
+                
+                // Trigger media conversion for the uploaded file
+                $file_metadata = array(
+                    'submission_id' => (string) $post_id,
+                    'original_name' => $original_name,
+                    'mime_type' => $mime_type,
+                    'file_size' => isset($file['size']) ? intval($file['size']) : 0
+                );
+                
+                // Fire action hook for media conversion
+                do_action('cf7as_file_uploaded', $s3_key, $file_metadata);
             }
         }
         

@@ -87,7 +87,21 @@ class ActionsManager {
         // Add action button
         jQuery(document).on('click', '#cf7-add-action-btn', (e) => {
             e.preventDefault();
+            console.log('Add Action button clicked');
+            console.log('ActionsManager instance exists:', this instanceof ActionsManager);
+            console.log('showActionModal method exists:', typeof this.showActionModal === 'function');
             this.showActionModal();
+        });
+        
+        // Also try with a more general selector as backup
+        jQuery(document).on('click', '[data-action="add-action"], .cf7-add-action-btn', function(e) {
+            e.preventDefault();
+            console.log('Alternative Add Action button clicked');
+            if (window.actionsManager && typeof window.actionsManager.showActionModal === 'function') {
+                window.actionsManager.showActionModal();
+            } else {
+                console.error('ActionsManager not available');
+            }
         });
 
         // Filter buttons
@@ -155,6 +169,17 @@ class ActionsManager {
         jQuery(document).on('click', '.cf7-modal', (e) => {
             if (e.target === e.currentTarget) {
                 this.hideActionModal();
+            }
+        });
+
+        // Save Action button event handler (for PHP-generated modal)
+        jQuery(document).on('click', '#cf7-action-save', () => {
+            console.log('Save Action button clicked');
+            // Use global interface to avoid duplication, fallback to instance method
+            if (window.CF7_Actions && typeof window.CF7_Actions.saveAction === 'function') {
+                window.CF7_Actions.saveAction();
+            } else {
+                this.saveAction();
             }
         });
 
@@ -444,29 +469,30 @@ class ActionsManager {
      * @since 1.0.0
      */
     showActionModal(messageId = null) {
-        const modal = jQuery('#cf7-action-modal');
-        const form = jQuery('#cf7-action-form');
+        console.log('showActionModal called with messageId:', messageId);
         
-        // If modal doesn't exist, inject it immediately
-        if (modal.length === 0 || form.length === 0) {
-            this.injectModalHTML();
+        // Always use the cross-tab modal approach for consistency
+        // This ensures proper styling since the PHP modal has CSS issues
+        console.log('Using cross-tab modal approach for consistent styling...');
+        
+        // Remove any existing modal to start fresh
+        jQuery('#cf7-action-modal').remove();
+        
+        // Always inject a fresh modal with inline styles (like cross-tab modal)
+        this.injectModalHTML();
+        
+        // Use the newly injected elements
+        setTimeout(() => {
+            const injectedModal = jQuery('#cf7-action-modal');
+            const injectedForm = jQuery('#cf7-action-form');
             
-            // Use the newly injected elements
-            setTimeout(() => {
-                const injectedModal = jQuery('#cf7-action-modal');
-                const injectedForm = jQuery('#cf7-action-form');
-                
-                if (injectedModal.length > 0 && injectedForm.length > 0) {
-                    this.displayModal(injectedModal, injectedForm, messageId);
-                } else {
-                    alert('Unable to load action modal. Please refresh the page and try again.');
-                }
-            }, 50);
-            return;
-        }
-        
-        // Modal exists, show it directly
-        this.displayModal(modal, form, messageId);
+            if (injectedModal.length > 0 && injectedForm.length > 0) {
+                console.log('Using injected modal with inline styles');
+                this.displayModal(injectedModal, injectedForm, messageId);
+            } else {
+                alert('Unable to load action modal. Please refresh the page and try again.');
+            }
+        }, 50);
     }
 
     /**
@@ -474,6 +500,14 @@ class ActionsManager {
      * Handles form reset, field population, and user loading for modal display.
      */
     displayModal(modal, form, messageId = null) {
+        console.log('displayModal called with messageId:', messageId);
+        console.log('Modal element details before display:', {
+            exists: modal.length > 0,
+            display: modal.css('display'),
+            visibility: modal.css('visibility'),
+            opacity: modal.css('opacity')
+        });
+        
         // Reset form safely
         try {
             form[0].reset();
@@ -507,7 +541,21 @@ class ActionsManager {
         // Load assignable users
         this.loadAssignableUsers();
         
+        // Add the show class that the CSS expects
+        console.log('Adding show class and fading in modal...');
+        modal.addClass('show');
         modal.fadeIn(200);
+        
+        // Additional debugging
+        setTimeout(() => {
+            console.log('After modal display - checking final state:', {
+                isVisible: modal.is(':visible'),
+                display: modal.css('display'),
+                opacity: modal.css('opacity'),
+                visibility: modal.css('visibility'),
+                hasShowClass: modal.hasClass('show')
+            });
+        }, 250);
     }
 
     /**
@@ -515,67 +563,70 @@ class ActionsManager {
      * Removes modal from display and returns focus to triggering element.
      */
     hideActionModal() {
-        jQuery('#cf7-action-modal').fadeOut(200);
+        const modal = jQuery('#cf7-action-modal');
+        modal.removeClass('show');
+        modal.fadeOut(200);
     }
 
     /**
      * Inject modal HTML into document if not already present.
      * Creates modal structure and adds to DOM for first-time modal display.
+     * Uses inline styles for consistent cross-tab compatibility.
      */
     injectModalHTML() {
         const submissionId = jQuery('#post_ID').val() || '';
         
         const modalHTML = `
-            <!-- Add Action Modal -->
-            <div id="cf7-action-modal" class="cf7-modal" style="display: none;">
-                <div class="cf7-modal-content">
-                    <div class="cf7-modal-header">
-                        <h3 id="cf7-modal-title">Add New Action</h3>
-                        <button type="button" class="cf7-modal-close">&times;</button>
+            <!-- Add Action Modal with inline styles for consistency -->
+            <div id="cf7-action-modal" class="cf7-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999;">
+                <div class="cf7-modal-content" style="position: relative; background: white; margin: 5% auto; padding: 0; width: 90%; max-width: 600px; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div class="cf7-modal-header" style="padding: 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 id="cf7-modal-title" style="margin: 0; font-size: 18px;">Add New Action</h3>
+                        <button type="button" class="cf7-modal-close" style="background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
                     </div>
-                    <div class="cf7-modal-body">
+                    <div class="cf7-modal-body" style="padding: 20px;">
                         <form id="cf7-action-form">
                             <input type="hidden" id="cf7-action-id" name="action_id">
                             <input type="hidden" id="cf7-submission-id" name="submission_id" value="${submissionId}">
                             
-                            <div class="cf7-form-group">
-                                <label for="cf7-action-title">Title *</label>
-                                <input type="text" id="cf7-action-title" name="title" required>
+                            <div class="cf7-form-group" style="margin-bottom: 15px;">
+                                <label for="cf7-action-title" style="display: block; margin-bottom: 5px; font-weight: 600;">Title *</label>
+                                <input type="text" id="cf7-action-title" name="title" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             </div>
                             
-                            <div class="cf7-form-group">
-                                <label for="cf7-action-description">Description</label>
-                                <textarea id="cf7-action-description" name="description" rows="3"></textarea>
+                            <div class="cf7-form-group" style="margin-bottom: 15px;">
+                                <label for="cf7-action-description" style="display: block; margin-bottom: 5px; font-weight: 600;">Description</label>
+                                <textarea id="cf7-action-description" name="description" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
                             </div>
                             
-                            <div class="cf7-form-row">
-                                <div class="cf7-form-group">
-                                    <label for="cf7-action-priority">Priority</label>
-                                    <select id="cf7-action-priority" name="priority">
+                            <div class="cf7-form-row" style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="cf7-form-group" style="flex: 1;">
+                                    <label for="cf7-action-priority" style="display: block; margin-bottom: 5px; font-weight: 600;">Priority</label>
+                                    <select id="cf7-action-priority" name="priority" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                                         <option value="low">Low</option>
                                         <option value="medium" selected>Medium</option>
                                         <option value="high">High</option>
                                     </select>
                                 </div>
                                 
-                                <div class="cf7-form-group">
-                                    <label for="cf7-action-assignee">Assigned To</label>
-                                    <select id="cf7-action-assignee" name="assigned_to">
+                                <div class="cf7-form-group" style="flex: 1;">
+                                    <label for="cf7-action-assignee" style="display: block; margin-bottom: 5px; font-weight: 600;">Assigned To</label>
+                                    <select id="cf7-action-assignee" name="assigned_to" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                                         <option value="">Select User...</option>
                                     </select>
-                                    <div class="cf7-loading-users" style="display: none;">Loading users...</div>
+                                    <div class="cf7-loading-users" style="display: none; margin-top: 5px; font-size: 12px; color: #666;">Loading users...</div>
                                 </div>
                             </div>
                             
-                            <div class="cf7-form-group">
-                                <label for="cf7-action-due-date">Due Date</label>
-                                <input type="datetime-local" id="cf7-action-due-date" name="due_date">
+                            <div class="cf7-form-group" style="margin-bottom: 15px;">
+                                <label for="cf7-action-due-date" style="display: block; margin-bottom: 5px; font-weight: 600;">Due Date</label>
+                                <input type="datetime-local" id="cf7-action-due-date" name="due_date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                             </div>
                         </form>
                     </div>
-                    <div class="cf7-modal-footer">
-                        <button type="button" id="cf7-action-cancel" class="button">Cancel</button>
-                        <button type="button" id="cf7-action-save" class="button button-primary">Save Action</button>
+                    <div class="cf7-modal-footer" style="padding: 20px; border-top: 1px solid #ddd; text-align: right;">
+                        <button type="button" id="cf7-action-cancel" class="button" style="margin-right: 10px; padding: 8px 16px; border: 1px solid #ddd; background: #f7f7f7; cursor: pointer;">Cancel</button>
+                        <button type="button" id="cf7-action-save" class="button button-primary" style="padding: 8px 16px; background: #2271b1; color: white; border: 1px solid #2271b1; cursor: pointer;">Save Action</button>
                     </div>
                 </div>
             </div>
@@ -584,13 +635,10 @@ class ActionsManager {
         // Remove any existing modal first
         jQuery('#cf7-action-modal').remove();
         
-        // Append to the actions container or body
-        const container = jQuery('.cf7-actions-container');
-        if (container.length > 0) {
-            container.append(modalHTML);
-        } else {
-            jQuery('body').append(modalHTML);
-        }
+        // Append to body for consistent z-index behavior
+        jQuery('body').append(modalHTML);
+        
+        console.log('Modal HTML injected with inline styles for consistent display');
     }
 
     /**
@@ -899,35 +947,150 @@ jQuery(document).ready(function() {
     
     // Function to initialize ActionsManager
     function initializeActionsManager() {
-        if (jQuery('.cf7-actions-container').length > 0) {
+        console.log('initializeActionsManager called');
+        
+        const container = jQuery('.cf7-actions-container');
+        const button = jQuery('#cf7-add-action-btn');
+        
+        console.log('Initialization check:');
+        console.log('- Actions container found:', container.length);
+        console.log('- Add Action button found:', button.length);
+        console.log('- Existing actionsManager:', !!window.actionsManager);
+        console.log('- ActionsManager class available:', typeof ActionsManager !== 'undefined');
+        
+        if (container.length > 0 && button.length > 0) {
             if (!window.actionsManager) {
                 try {
+                    console.log('Creating new ActionsManager instance...');
                     window.actionsManager = new ActionsManager();
+                    console.log('ActionsManager created successfully');
+                    console.log('ActionsManager methods available:', {
+                        showActionModal: typeof window.actionsManager.showActionModal === 'function',
+                        loadActions: typeof window.actionsManager.loadActions === 'function',
+                        bindEvents: typeof window.actionsManager.bindEvents === 'function'
+                    });
                     return true;
                 } catch (error) {
                     console.error('Failed to initialize ActionsManager:', error);
                     return false;
                 }
             } else {
+                console.log('ActionsManager already exists');
                 return true;
             }
+        } else {
+            console.log('Missing required elements for ActionsManager initialization');
+            console.log('- Container missing:', container.length === 0);
+            console.log('- Button missing:', button.length === 0);
+            return false;
         }
-        return false;
     }
     
-        // Listen for the tab change event from tabs.js (primary initialization)
+    // Listen for the tab change event from tabs.js (primary initialization)
     jQuery(document).on('cf7_tab_changed', function(e, tabId) {
-        if (tabId === 'cf7-actions-tab') {
-            initializeActionsManager();
+        console.log('Tab changed to:', tabId);
+        if (tabId === 'cf7-actions-tab' || tabId === 'cf7-tab-actions') {
+            console.log('Actions tab activated, initializing...');
+            setTimeout(function() {
+                const success = initializeActionsManager();
+                if (!success) {
+                    console.log('Direct initialization failed, starting polling...');
+                    pollForElements();
+                }
+            }, 100);
         }
     });
     
+    // Also listen for generic tab activation events
+    jQuery(document).on('click', '[data-tab="actions"], [href="#cf7-tab-actions"]', function() {
+        console.log('Actions tab clicked, will initialize after delay...');
+        setTimeout(function() {
+            const success = initializeActionsManager();
+            if (!success) {
+                console.log('Click initialization failed, starting polling...');
+                pollForElements();
+            }
+        }, 200);
+    });
+    
+    // Listen for any clicks on elements that might activate the actions tab
+    jQuery(document).on('click', '[data-target="cf7-tab-actions"], .cf7-tab-actions, #cf7-tab-actions-link', function() {
+        console.log('Potential actions tab activator clicked...');
+        setTimeout(function() {
+            const success = initializeActionsManager();
+            if (!success) {
+                console.log('Generic click initialization failed, starting polling...');
+                pollForElements();
+            }
+        }, 300);
+    });
+    
+    // Check if we're already on the actions tab when the page loads
+    if (jQuery('#cf7-tab-actions').hasClass('active') || 
+        jQuery('#cf7-tab-actions').is(':visible') ||
+        jQuery('.cf7-actions-container').is(':visible')) {
+        console.log('Actions tab appears to be active on page load');
+        setTimeout(function() {
+            const success = initializeActionsManager();
+            if (!success) {
+                console.log('Page load initialization failed, starting polling...');
+                pollForElements();
+            }
+        }, 500);
+    }
+    
     // Also try to initialize immediately if we're already on the actions tab
     setTimeout(function() {
-        if (jQuery('.cf7-actions-container').length > 0) {
-            initializeActionsManager();
+        console.log('Delayed initialization check...');
+        const container = jQuery('.cf7-actions-container');
+        const button = jQuery('#cf7-add-action-btn');
+        console.log('Container found:', container.length);
+        console.log('Add Action button found:', button.length);
+        console.log('Actions tab content:', jQuery('#cf7-tab-actions').length);
+        console.log('Active tab content:', jQuery('.cf7-tab-content.active').attr('id'));
+        
+        if (container.length > 0 && button.length > 0) {
+            console.log('Both container and button found - initializing ActionsManager');
+            const success = initializeActionsManager();
+            console.log('ActionsManager initialization result:', success);
+        } else {
+            console.log('Missing elements - Container:', container.length, 'Button:', button.length);
+            
+            // If the tab is active but elements aren't ready, try polling for them
+            if (jQuery('#cf7-tab-actions').hasClass('active') || 
+                jQuery('#cf7-tab-actions').is(':visible') ||
+                jQuery('.cf7-tab-content.active').attr('id') === 'cf7-tab-actions') {
+                console.log('Actions tab is active but elements not ready, starting polling...');
+                pollForElements();
+            }
         }
-    }, 500);
+    }, 1000);
+    
+    // Polling function to wait for DOM elements to be ready
+    function pollForElements() {
+        let attempts = 0;
+        const maxAttempts = 20; // Poll for up to 10 seconds (20 * 500ms)
+        
+        const poll = setInterval(function() {
+            attempts++;
+            console.log(`Polling attempt ${attempts}/${maxAttempts} for Actions elements...`);
+            
+            const container = jQuery('.cf7-actions-container');
+            const button = jQuery('#cf7-add-action-btn');
+            
+            console.log(`Poll ${attempts}: Container=${container.length}, Button=${button.length}`);
+            
+            if (container.length > 0 && button.length > 0) {
+                console.log('Elements found via polling! Initializing ActionsManager...');
+                clearInterval(poll);
+                const success = initializeActionsManager();
+                console.log('Polling initialization result:', success);
+            } else if (attempts >= maxAttempts) {
+                console.warn('Max polling attempts reached. Elements still not found.');
+                clearInterval(poll);
+            }
+        }, 500);
+    }
 });
 
 // ============================================================================
@@ -960,17 +1123,20 @@ Object.assign(window.CF7_Actions, {
      * Simple initialization that creates ActionsManager if container exists.
      */
     init: function() {
+        console.log('CF7_Actions.init() called');
         
         // Simple initialization - just try to create ActionsManager if actions container exists
         if (jQuery('.cf7-actions-container').length > 0 && !window.actionsManager) {
             try {
                 window.actionsManager = new ActionsManager();
+                console.log('ActionsManager initialized successfully');
                 return true;
             } catch (error) {
                 console.error('Failed to initialize ActionsManager:', error);
                 return false;
             }
         }
+        console.log('ActionsManager initialization skipped - container not found or already exists');
         return false;
     },
     
@@ -985,12 +1151,17 @@ Object.assign(window.CF7_Actions, {
      * @since 1.0.0
      */
     openModal: function(options) {
+        console.log('CF7_Actions.openModal called with options:', options);
         
         // Remove any existing modal to start fresh
         jQuery('#cf7-action-modal').remove();
         
         // Always inject a fresh modal to avoid any state issues
-        this.createCompleteModal();
+        const modalCreated = this.createCompleteModal();
+        if (!modalCreated) {
+            console.error('Failed to create modal');
+            return false;
+        }
         
         // Short delay to ensure DOM is ready, then show
         setTimeout(() => {
@@ -1002,8 +1173,10 @@ Object.assign(window.CF7_Actions, {
     
     // Create complete modal with form included - no complex detection needed
     createCompleteModal: function() {
+        console.log('Creating complete modal...');
         
         const submissionId = jQuery('#post_ID').val() || '';
+        console.log('Found submission ID:', submissionId);
         
         const completeModalHTML = `
             <div id="cf7-action-modal" class="cf7-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999999;">
@@ -1060,20 +1233,34 @@ Object.assign(window.CF7_Actions, {
             </div>
         `;
         
+        // Ensure any existing modal is removed first
+        console.log('Checking for existing modals before creation...');
+        const existingModals = jQuery('#cf7-action-modal');
+        console.log('Found existing modals:', existingModals.length);
+        existingModals.remove();
+        
         // Append to body
         jQuery('body').append(completeModalHTML);
+        console.log('Modal HTML appended to body');
         
         // Bind handlers immediately
-        this.bindModalHandlers();
+        const handlersResult = this.bindModalHandlers();
+        console.log('Modal handlers bound:', handlersResult);
         
         return true;
     },
     
     // Show the fresh modal with options
     showFreshModal: function(options) {
+        console.log('showFreshModal called with options:', options);
         
         const modal = jQuery('#cf7-action-modal');
         const form = jQuery('#cf7-action-form');
+        
+        console.log('Modal elements found:', {
+            modal: modal.length,
+            form: form.length
+        });
         
         if (modal.length === 0 || form.length === 0) {
             console.error('Fresh modal or form not found - unexpected');
@@ -1083,11 +1270,13 @@ Object.assign(window.CF7_Actions, {
         
         // Reset form
         form[0].reset();
+        console.log('Form reset completed');
         
         // Set submission ID
         const postId = jQuery('#post_ID').val();
         if (postId) {
             jQuery('#cf7-submission-id').val(postId);
+            console.log('Submission ID set to:', postId);
         }
         
         // Add message_id if provided
@@ -1097,25 +1286,51 @@ Object.assign(window.CF7_Actions, {
                 form.append('<input type="hidden" id="cf7-message-id" name="message_id">');
             }
             jQuery('#cf7-message-id').val(options.messageId);
+            console.log('Message ID set to:', options.messageId);
         }
         
         // Pre-fill form data if provided
         if (options && options.title) {
             jQuery('#cf7-action-title').val(options.title);
+            console.log('Title pre-filled:', options.title);
         }
         if (options && options.description) {
             jQuery('#cf7-action-description').val(options.description);
+            console.log('Description pre-filled:', options.description);
         }
         
         // Set modal title
         const title = (options && options.messageId) ? 'Create Action from Message' : 'Create New Action';
         jQuery('#cf7-modal-title').text(title);
+        console.log('Modal title set to:', title);
         
         // Load assignable users for the dropdown
         this.loadAssignableUsersForModal();
         
         // Show the modal
-        modal.fadeIn(200);
+        console.log('About to show modal...');
+        console.log('Modal element details:', {
+            exists: modal.length > 0,
+            display: modal.css('display'),
+            visibility: modal.css('visibility'),
+            opacity: modal.css('opacity'),
+            zIndex: modal.css('z-index'),
+            position: modal.css('position')
+        });
+        
+        // Add the show class that the CSS expects
+        modal.addClass('show');
+        
+        modal.fadeIn(200, function() {
+            console.log('Modal fadeIn completed, should be visible now');
+            console.log('After fadeIn - Modal visibility details:', {
+                display: modal.css('display'),
+                visibility: modal.css('visibility'),
+                opacity: modal.css('opacity'),
+                isVisible: modal.is(':visible')
+            });
+        });
+        console.log('Modal fadeIn called, checking visibility:', modal.is(':visible'));
     },
     
     // Load assignable users for the modal dropdown
@@ -1180,13 +1395,17 @@ Object.assign(window.CF7_Actions, {
         
         // Modal close handlers
         jQuery(document).on('click.cf7-modal-simple', '.cf7-modal-close, #cf7-action-cancel', function() {
-            jQuery('#cf7-action-modal').fadeOut(200);
+            const modal = jQuery('#cf7-action-modal');
+            modal.removeClass('show');
+            modal.fadeOut(200);
         });
         
         // Close modal on outside click
         jQuery(document).on('click.cf7-modal-simple', '.cf7-modal', function(e) {
             if (e.target === e.currentTarget) {
-                jQuery('#cf7-action-modal').fadeOut(200);
+                const modal = jQuery('#cf7-action-modal');
+                modal.removeClass('show');
+                modal.fadeOut(200);
             }
         });
         
