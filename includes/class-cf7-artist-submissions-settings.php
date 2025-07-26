@@ -2076,8 +2076,6 @@ class CF7_Artist_Submissions_Settings {
         error_log('CF7 Settings Save - REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD']);
         error_log('CF7 Settings Save - DOING_AJAX defined: ' . (defined('DOING_AJAX') ? 'YES' : 'NO'));
         error_log('CF7 Settings Save - DOING_AJAX value: ' . (defined('DOING_AJAX') && DOING_AJAX ? 'TRUE' : 'FALSE'));
-        error_log('CF7 Settings Save - POST data: ' . print_r($_POST, true));
-        error_log('CF7 Settings Save - REQUEST data: ' . print_r($_REQUEST, true));
         
         // Basic error checking with debugging
         if (!isset($_POST) || empty($_POST)) {
@@ -2256,7 +2254,6 @@ class CF7_Artist_Submissions_Settings {
         
         // Verify nonce - accept both cf7_admin_nonce and cf7_artist_submissions_settings
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce') && !wp_verify_nonce($_POST['nonce'], 'cf7_artist_submissions_settings')) {
-            error_log('CF7 S3 Test - Nonce verification failed');
             wp_send_json_error(array('message' => 'Security check failed'));
             return;
         }
@@ -2278,9 +2275,6 @@ class CF7_Artist_Submissions_Settings {
         
         $aws_region = sanitize_text_field($_POST['aws_region']);
         $s3_bucket = sanitize_text_field($_POST['s3_bucket']);
-        error_log('CF7 S3 Test - AWS Secret: ' . (empty($aws_secret) ? 'EMPTY' : '***PROVIDED*** (length: ' . strlen($aws_secret) . ')'));
-        error_log('CF7 S3 Test - AWS Region: ' . $aws_region);
-        error_log('CF7 S3 Test - S3 Bucket: ' . $s3_bucket);
         
         if (empty($aws_key) || empty($aws_secret) || empty($aws_region) || empty($s3_bucket)) {
             wp_send_json_error(array('message' => 'All S3 fields are required'));
@@ -2303,14 +2297,6 @@ class CF7_Artist_Submissions_Settings {
             
             // Set test credentials in the format the S3 handler reads
             update_option('cf7_artist_submissions_options', $existing_options);
-            
-            // Debug: Log what we set in options
-            error_log('CF7 S3 Test - Set test options: ' . json_encode(array(
-                'aws_access_key' => substr($aws_key, 0, 6) . '***',
-                'aws_secret_key' => '***PROVIDED***',
-                'aws_region' => $aws_region,
-                's3_bucket' => $s3_bucket
-            )));
             
             // Test the connection by trying to list bucket contents (limited)
             $test_result = $s3_handler->test_connection();

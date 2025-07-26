@@ -49,8 +49,6 @@ class CF7_Artist_Submissions_Media_Converter {
         $this->s3_handler = new CF7_Artist_Submissions_S3_Handler();
         $init_result = $this->s3_handler->init(); // Initialize S3 handler with settings
         
-        error_log("CF7AS Debug: S3 handler init result: " . ($init_result ? 'SUCCESS' : 'FAILED'));
-        error_log("CF7AS Debug: S3 bucket name from handler: " . ($this->s3_handler->get_bucket_name() ?: 'NULL'));
         
         // Set up AWS MediaConvert and Lambda configuration
         $this->setup_aws_configuration();
@@ -66,8 +64,6 @@ class CF7_Artist_Submissions_Media_Converter {
         
         // Log when we receive the file upload trigger
         add_action('cf7as_file_uploaded', function($s3_key, $file_metadata) {
-            error_log("CF7AS Debug: File upload trigger received for: {$s3_key}");
-            error_log("CF7AS Debug: File metadata: " . json_encode($file_metadata));
         }, 5, 2);
         
         
@@ -266,45 +262,32 @@ class CF7_Artist_Submissions_Media_Converter {
      * @param array $file_metadata File metadata
      */
     public function trigger_conversion($s3_key, $file_metadata) {
-        error_log("CF7AS Debug: trigger_conversion called for S3 key: $s3_key");
-        error_log("CF7AS Debug: File metadata: " . json_encode($file_metadata));
         
         if (!$this->is_conversion_enabled()) {
-            error_log('CF7AS Debug: Conversion not enabled in is_conversion_enabled() check');
             return false;
         }
-        error_log('CF7AS Debug: Conversion is enabled');
         
         $file_type = $this->get_file_type($file_metadata['mime_type']);
-        error_log("CF7AS Debug: Detected file type: $file_type for MIME: {$file_metadata['mime_type']}");
         
         // Only convert images and videos
         if (!in_array($file_type, array('image', 'video'))) {
-            error_log('CF7AS Debug: Skipping conversion for file type: ' . $file_type . ' (only images and videos are converted)');
             return false;
         }
-        error_log("CF7AS Debug: File type $file_type is supported for conversion");
         
         // Create conversion job record
-        error_log("CF7AS Debug: Creating conversion job record...");
         $job_id = $this->create_conversion_job($s3_key, $file_metadata, $file_type);
         
         if (!$job_id) {
-            error_log('CF7AS Debug: Failed to create conversion job for ' . $s3_key);
             return false;
         }
-        error_log("CF7AS Debug: Created conversion job with ID: $job_id");
         
         // Trigger AWS service based on file type
         if ($file_type === 'image') {
-            error_log("CF7AS Debug: Triggering Lambda conversion for image file");
             return $this->trigger_lambda_conversion($job_id, $s3_key, $file_metadata);
         } elseif ($file_type === 'video') {
-            error_log("CF7AS Debug: Triggering MediaConvert for video file");
             return $this->trigger_mediaconvert_job($job_id, $s3_key, $file_metadata);
         }
         
-        error_log("CF7AS Debug: No conversion triggered - unsupported file type: $file_type");
         return false;
     }
     
@@ -332,9 +315,7 @@ class CF7_Artist_Submissions_Media_Converter {
         if (!$bucket_name) {
             $options = get_option('cf7_artist_submissions_options', array());
             $bucket_name = isset($options['s3_bucket']) ? $options['s3_bucket'] : '';
-            error_log("CF7AS Debug: S3 handler bucket was null, using direct option: " . ($bucket_name ?: 'STILL NULL'));
         }
-        error_log("CF7AS Debug: Final bucket name for Lambda payload: " . ($bucket_name ?: 'NULL'));
         
         $payload = array(
             'job_id' => $job_id,
@@ -374,10 +355,8 @@ class CF7_Artist_Submissions_Media_Converter {
      * @param array $response Lambda response data
      */
     private function process_lambda_response($job_id, $response) {
-        error_log("CF7AS Debug: Processing Lambda response for job {$job_id}");
         
         if (!is_array($response)) {
-            error_log("CF7AS Debug: Invalid response format for job {$job_id}");
             $this->update_job_status($job_id, 'failed', 'Invalid Lambda response format');
             return;
         }
@@ -386,7 +365,6 @@ class CF7_Artist_Submissions_Media_Converter {
         $response_body = isset($response['body']) ? json_decode($response['body'], true) : $response;
         
         if (!$response_body) {
-            error_log("CF7AS Debug: Could not parse response body for job {$job_id}");
             $this->update_job_status($job_id, 'failed', 'Could not parse Lambda response');
             return;
         }
@@ -395,8 +373,6 @@ class CF7_Artist_Submissions_Media_Converter {
         $converted_files = isset($response_body['converted_files']) ? $response_body['converted_files'] : array();
         $error_message = isset($response_body['error']) ? $response_body['error'] : '';
         
-        error_log("CF7AS Debug: Lambda response status: {$status}");
-        error_log("CF7AS Debug: Converted files count: " . count($converted_files));
         
         // Update job status
         $additional_data = array();
@@ -406,7 +382,6 @@ class CF7_Artist_Submissions_Media_Converter {
             
             // Store individual converted files
             $this->store_converted_files($job_id, $converted_files);
-            error_log("CF7AS Debug: Stored " . count($converted_files) . " converted files for job {$job_id}");
         }
         
         $this->update_job_status($job_id, $status, $error_message, $additional_data);
@@ -414,7 +389,6 @@ class CF7_Artist_Submissions_Media_Converter {
         // If completed successfully, update the original file record
         if ($status === 'completed' && !empty($converted_files)) {
             $this->update_original_file_record($job_id, $converted_files);
-            error_log("CF7AS Debug: Updated original file record for completed job {$job_id}");
         }
     }
     
@@ -484,8 +458,6 @@ class CF7_Artist_Submissions_Media_Converter {
      * @return array|false Response or false on failure
      */
     private function invoke_lambda_function($endpoint, $payload, $access_key, $secret_key) {
-        error_log("CF7AS Debug: Invoking Lambda function at: $endpoint");
-        error_log("CF7AS Debug: Lambda payload: " . json_encode($payload));
         
         $payload_json = json_encode($payload);
         
@@ -532,8 +504,6 @@ class CF7_Artist_Submissions_Media_Converter {
         $status_code = wp_remote_retrieve_response_code($response);
         $response_body = wp_remote_retrieve_body($response);
         
-        error_log("CF7AS Debug: Lambda response status: $status_code");
-        error_log("CF7AS Debug: Lambda response body: $response_body");
         
         if ($status_code === 200) {
             return json_decode($response_body, true);
@@ -684,7 +654,6 @@ class CF7_Artist_Submissions_Media_Converter {
     private function is_conversion_enabled() {
         $options = get_option('cf7_artist_submissions_options', array());
         $enabled = isset($options['enable_media_conversion']) && $options['enable_media_conversion'] === 'on';
-        error_log("CF7AS Debug: is_conversion_enabled() check - enable_media_conversion option: " . ($options['enable_media_conversion'] ?? 'NOT SET') . ", result: " . ($enabled ? 'TRUE' : 'FALSE'));
         return $enabled;
     }
     
@@ -884,16 +853,13 @@ class CF7_Artist_Submissions_Media_Converter {
     private function create_conversion_job($s3_key, $file_metadata, $file_type) {
         global $wpdb;
         
-        error_log("CF7AS Debug: create_conversion_job called with file_type: $file_type");
         
         $table_name = $wpdb->prefix . 'cf7as_conversion_jobs';
         
         // Ensure table exists
         $this->create_conversion_jobs_table();
-        error_log("CF7AS Debug: Conversion jobs table ensured: $table_name");
         
         $presets = $this->get_presets_for_type($file_type);
-        error_log("CF7AS Debug: Presets for $file_type: " . json_encode($presets));
         
         $insert_data = array(
             'original_s3_key' => $s3_key,
@@ -907,18 +873,14 @@ class CF7_Artist_Submissions_Media_Converter {
             'presets' => json_encode($presets)
         );
         
-        error_log("CF7AS Debug: Inserting job data: " . json_encode($insert_data));
         
         $result = $wpdb->insert($table_name, $insert_data);
         
         if ($result === false) {
-            error_log('CF7AS Debug: Failed to insert conversion job: ' . $wpdb->last_error);
-            error_log('CF7AS Debug: Last query: ' . $wpdb->last_query);
             return false;
         }
         
         $job_id = $wpdb->insert_id;
-        error_log("CF7AS Debug: Successfully created conversion job with ID: $job_id");
         return $job_id;
     }
     
@@ -1089,14 +1051,11 @@ class CF7_Artist_Submissions_Media_Converter {
             ));
             
             if (!$job_exists) {
-                error_log("CF7AS Debug: Invalid job ID $job_id in callback");
                 wp_die('Invalid job ID');
                 return;
             }
             
-            error_log("CF7AS Debug: Lambda callback accepted for job ID: $job_id");
         } elseif (!$has_valid_nonce) {
-            error_log("CF7AS Debug: Callback rejected - no valid nonce and no valid job ID");
             wp_die('Security check failed');
             return;
         }
@@ -1111,7 +1070,6 @@ class CF7_Artist_Submissions_Media_Converter {
             return;
         }
         
-        error_log("CF7AS Debug: Processing callback for job $job_id with status: $status");
         
         // Update job status
         $additional_data = array();
@@ -1121,7 +1079,6 @@ class CF7_Artist_Submissions_Media_Converter {
             
             // Store individual converted files
             $this->store_converted_files($job_id, $converted_files);
-            error_log("CF7AS Debug: Stored " . count($converted_files) . " converted files for job $job_id");
         }
         
         if ($progress > 0) {
@@ -1133,7 +1090,6 @@ class CF7_Artist_Submissions_Media_Converter {
         // If completed successfully, update the original file record
         if ($status === 'completed' && !empty($converted_files)) {
             $this->update_original_file_record($job_id, $converted_files);
-            error_log("CF7AS Debug: Updated original file record for completed job $job_id");
         }
         
         wp_send_json_success(array(
@@ -1354,14 +1310,12 @@ class CF7_Artist_Submissions_Media_Converter {
     public function process_existing_files($limit = 10) {
         global $wpdb;
         
-        error_log("CF7AS Debug: Starting process_existing_files with limit: $limit");
         
         $files_table = $wpdb->prefix . 'cf7as_files';
         
         // Check if the table exists
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$files_table'");
         if (!$table_exists) {
-            error_log("CF7AS Debug: Files table '$files_table' does not exist!");
             return array(
                 'processed' => 0,
                 'skipped' => 0,
@@ -1369,7 +1323,6 @@ class CF7_Artist_Submissions_Media_Converter {
                 'errors' => array("Files table '$files_table' does not exist")
             );
         }
-        error_log("CF7AS Debug: Files table '$files_table' exists");
         
         // Ensure the has_converted_versions column exists
         $column_exists = $wpdb->get_results("
@@ -1381,7 +1334,6 @@ class CF7_Artist_Submissions_Media_Converter {
         ");
         
         if (empty($column_exists)) {
-            error_log("CF7AS Debug: Adding missing has_converted_versions column");
             $wpdb->query("
                 ALTER TABLE $files_table 
                 ADD COLUMN has_converted_versions tinyint(1) DEFAULT 0
@@ -1390,7 +1342,6 @@ class CF7_Artist_Submissions_Media_Converter {
         
         // Get total count of files in table
         $total_files = $wpdb->get_var("SELECT COUNT(*) FROM $files_table");
-        error_log("CF7AS Debug: Total files in table: $total_files");
         
         // Get files that haven't been processed yet
         $query = $wpdb->prepare("
@@ -1401,18 +1352,14 @@ class CF7_Artist_Submissions_Media_Converter {
             LIMIT %d
         ", $limit);
         
-        error_log("CF7AS Debug: Query: " . $query);
         
         $files = $wpdb->get_results($query);
         $file_count = count($files);
-        error_log("CF7AS Debug: Found $file_count files to process");
         
         if ($file_count === 0) {
             // Let's check what files we do have
             $all_files = $wpdb->get_results("SELECT id, original_name, mime_type, has_converted_versions FROM $files_table ORDER BY created_at DESC LIMIT 5");
-            error_log("CF7AS Debug: Recent files in table:");
             foreach ($all_files as $file) {
-                error_log("CF7AS Debug: - ID: {$file->id}, Name: {$file->original_name}, MIME: {$file->mime_type}, Converted: " . ($file->has_converted_versions ?? 'NULL'));
             }
         }
         
@@ -1425,15 +1372,12 @@ class CF7_Artist_Submissions_Media_Converter {
         
         // Check if conversion is enabled
         if (!$this->is_conversion_enabled()) {
-            error_log("CF7AS Debug: Media conversion is not enabled!");
             $results['failed'] = $file_count;
             $results['errors'][] = "Media conversion is not enabled in settings";
             return $results;
         }
-        error_log("CF7AS Debug: Media conversion is enabled");
         
         foreach ($files as $file) {
-            error_log("CF7AS Debug: Processing file ID: {$file->id}, Name: {$file->original_name}, MIME: {$file->mime_type}");
             
             $file_metadata = array(
                 'submission_id' => $file->submission_id,
@@ -1442,14 +1386,11 @@ class CF7_Artist_Submissions_Media_Converter {
                 'file_size' => $file->file_size
             );
             
-            error_log("CF7AS Debug: File metadata: " . json_encode($file_metadata));
-            error_log("CF7AS Debug: S3 key: {$file->s3_key}");
             
             $success = $this->trigger_conversion($file->s3_key, $file_metadata);
             
             if ($success) {
                 $results['processed']++;
-                error_log("CF7AS Debug: Successfully processed file: {$file->original_name}");
                 
                 // Ensure has_converted_versions column exists before updating
                 $column_exists = $wpdb->get_results("
@@ -1474,19 +1415,15 @@ class CF7_Artist_Submissions_Media_Converter {
                 );
                 
                 if ($updated === false) {
-                    error_log("CF7AS Debug: Failed to update file record ID: {$file->id}");
                 } else {
-                    error_log("CF7AS Debug: Updated file record ID: {$file->id} to mark as processed");
                 }
             } else {
                 $results['failed']++;
                 $error_msg = "Failed to process file: {$file->original_name} (ID: {$file->id})";
                 $results['errors'][] = $error_msg;
-                error_log("CF7AS Debug: " . $error_msg);
             }
         }
         
-        error_log("CF7AS Debug: Process complete. Results: " . json_encode($results));
         return $results;
     }
     
@@ -1794,37 +1731,25 @@ class CF7_Artist_Submissions_Media_Converter {
      * AJAX handler for processing existing files
      */
     public function ajax_process_existing_files() {
-        error_log("CF7AS Debug: AJAX process_existing_files called");
         
         if (!current_user_can('manage_options')) {
-            error_log("CF7AS Debug: User lacks manage_options capability");
             wp_send_json_error('Insufficient permissions');
             return;
         }
         
         if (!wp_verify_nonce($_POST['nonce'] ?? '', 'cf7as_process_files')) {
-            error_log("CF7AS Debug: Nonce verification failed. Nonce: " . ($_POST['nonce'] ?? 'missing'));
             wp_send_json_error('Security check failed');
             return;
         }
         
         $limit = intval($_POST['limit'] ?? 10);
         $limit = max(1, min(50, $limit)); // Limit between 1 and 50
-        error_log("CF7AS Debug: Processing with limit: $limit");
         
         // Check AWS settings before processing
         $options = get_option('cf7_artist_submissions_options', array());
-        error_log("CF7AS Debug: AWS settings check:");
-        error_log("CF7AS Debug: - AWS Access Key: " . (empty($options['aws_access_key']) ? 'MISSING' : 'SET (' . strlen($options['aws_access_key']) . ' chars)'));
-        error_log("CF7AS Debug: - AWS Secret Key: " . (empty($options['aws_secret_key']) ? 'MISSING' : 'SET (' . strlen($options['aws_secret_key']) . ' chars)'));
-        error_log("CF7AS Debug: - AWS Region: " . ($options['aws_region'] ?? 'NOT SET'));
-        error_log("CF7AS Debug: - S3 Bucket: " . ($options['s3_bucket'] ?? 'NOT SET'));  
-        error_log("CF7AS Debug: - Lambda Function: " . ($options['lambda_function_name'] ?? 'NOT SET'));
-        error_log("CF7AS Debug: - Media Conversion Enabled: " . ($options['enable_media_conversion'] ?? 'NOT SET'));
         
         $results = $this->process_existing_files($limit);
         
-        error_log("CF7AS Debug: AJAX processing complete. Results: " . json_encode($results));
         wp_send_json_success($results);
     }
     
@@ -1882,16 +1807,13 @@ class CF7_Artist_Submissions_Media_Converter {
      * AJAX handler for resetting file conversion status
      */
     public function ajax_reset_file_status() {
-        error_log("CF7AS Debug: AJAX reset_file_status called");
         
         if (!current_user_can('manage_options')) {
-            error_log("CF7AS Debug: User lacks manage_options capability");
             wp_send_json_error('Insufficient permissions');
             return;
         }
         
         if (!wp_verify_nonce($_POST['nonce'] ?? '', 'cf7as_reset_files')) {
-            error_log("CF7AS Debug: Nonce verification failed");
             wp_send_json_error('Security check failed');
             return;
         }
@@ -1909,20 +1831,16 @@ class CF7_Artist_Submissions_Media_Converter {
         ");
         
         if (empty($column_exists)) {
-            error_log("CF7AS Debug: Adding missing has_converted_versions column");
             $add_column_result = $wpdb->query("
                 ALTER TABLE $files_table 
                 ADD COLUMN has_converted_versions tinyint(1) DEFAULT 0
             ");
             
             if ($add_column_result === false) {
-                error_log("CF7AS Debug: Failed to add column: " . $wpdb->last_error);
                 wp_send_json_error('Failed to add required database column: ' . $wpdb->last_error);
                 return;
             }
-            error_log("CF7AS Debug: Successfully added has_converted_versions column");
         } else {
-            error_log("CF7AS Debug: has_converted_versions column already exists");
         }
         
         // Now reset all files to not converted status
@@ -1934,13 +1852,11 @@ class CF7_Artist_Submissions_Media_Converter {
         ");
         
         if ($result === false) {
-            error_log("CF7AS Debug: Failed to reset file status: " . $wpdb->last_error);
             wp_send_json_error('Database update failed: ' . $wpdb->last_error);
             return;
         }
         
         $reset_count = $wpdb->rows_affected;
-        error_log("CF7AS Debug: Reset $reset_count files to unconverted status");
         
         // Also clear all pending and failed conversion jobs to allow fresh processing
         $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
@@ -1952,9 +1868,7 @@ class CF7_Artist_Submissions_Media_Converter {
         $cleared_jobs = 0;
         if ($jobs_result !== false) {
             $cleared_jobs = $wpdb->rows_affected;
-            error_log("CF7AS Debug: Cleared $cleared_jobs pending/failed conversion jobs");
         } else {
-            error_log("CF7AS Debug: Failed to clear conversion jobs: " . $wpdb->last_error);
         }
         
         // Also clear converted files records to allow fresh conversion
@@ -1967,9 +1881,7 @@ class CF7_Artist_Submissions_Media_Converter {
         $cleared_converted = 0;
         if ($converted_result !== false) {
             $cleared_converted = $wpdb->rows_affected;
-            error_log("CF7AS Debug: Cleared $cleared_converted converted file records");
         } else {
-            error_log("CF7AS Debug: Failed to clear converted files: " . $wpdb->last_error);
         }
         
         wp_send_json_success(array(

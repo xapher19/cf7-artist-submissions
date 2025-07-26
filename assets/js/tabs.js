@@ -82,7 +82,7 @@ jQuery(document).ready(function($) {
                         try {
                             window.actionsManager = new ActionsManager();
                         } catch (error) {
-                            console.error('Failed to create ActionsManager:', error);
+                            // ActionsManager initialization failed
                         }
                     }
                 }
@@ -92,8 +92,6 @@ jQuery(document).ready(function($) {
         // Re-initialize conversation interface and scroll to bottom
         if (tabId === 'cf7-tab-conversations') {
             setTimeout(function() {
-                // Debug: Log what we're looking for
-                
                 // Multiple attempts to find the conversation container
                 const conversationSelectors = [
                     '#cf7-message-thread',
@@ -244,14 +242,12 @@ function loadTabContent(tabId, callback) {
     const $ = jQuery;
     
     if (!window.cf7TabsAjax) {
-        console.warn('CF7 Tabs: AJAX configuration not found');
         return;
     }
     
     // Get post ID from localized data, fallback to DOM element
     const postId = window.cf7TabsAjax.post_id || $('#post_ID').val();
     if (!postId) {
-        console.warn('CF7 Tabs: Post ID not found');
         return;
     }
     

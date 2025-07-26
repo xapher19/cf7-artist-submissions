@@ -101,7 +101,6 @@ class CF7_Artist_Submissions_S3_Handler {
         }
         
         $atts['max_files'] = (!empty($max_files_from_tag) && $max_files_from_tag > 0) ? $max_files_from_tag : 20;
-        error_log("CF7 max_files debug - from tag: " . print_r($max_files_from_tag, true) . ", final: " . $atts['max_files']);
         
         // Fix max_size parameter parsing - try multiple methods too
         $max_size_from_tag = null;
@@ -160,7 +159,6 @@ class CF7_Artist_Submissions_S3_Handler {
         // Use test options if they exist and contain credentials
         if (!empty($test_options) && isset($test_options['aws_access_key']) && isset($test_options['aws_secret_key'])) {
             $options = array_merge($options, $test_options);
-            error_log('CF7AS S3 Init: Using test options for credentials');
         }
         
         $this->aws_access_key = isset($options['aws_access_key']) ? $options['aws_access_key'] : '';
@@ -168,13 +166,7 @@ class CF7_Artist_Submissions_S3_Handler {
         $this->aws_region = isset($options['aws_region']) ? $options['aws_region'] : 'us-east-1';
         $this->s3_bucket = isset($options['s3_bucket']) ? $options['s3_bucket'] : '';
         
-        error_log('CF7AS S3 Init: Access Key = ' . (empty($this->aws_access_key) ? 'EMPTY' : 'SET (length: ' . strlen($this->aws_access_key) . ')'));
-        error_log('CF7AS S3 Init: Secret Key = ' . (empty($this->aws_secret_key) ? 'EMPTY' : 'SET (length: ' . strlen($this->aws_secret_key) . ')'));
-        error_log('CF7AS S3 Init: Region = ' . $this->aws_region);
-        error_log('CF7AS S3 Init: Bucket = ' . (empty($this->s3_bucket) ? 'EMPTY' : $this->s3_bucket));
-        
         if (empty($this->aws_access_key) || empty($this->aws_secret_key) || empty($this->s3_bucket)) {
-            error_log('CF7AS S3 Init: Missing required credentials or bucket name');
             return false;
         }
         
@@ -214,18 +206,13 @@ class CF7_Artist_Submissions_S3_Handler {
      * @return string|false The presigned URL or false on failure
      */
     public function get_presigned_download_url($s3_key, $expires_in = 3600) {
-        error_log("CF7AS Debug: get_presigned_download_url called with S3 key: " . $s3_key);
-        
         if (!$this->init_s3_client()) {
-            error_log("CF7AS Debug: S3 client init failed for key: " . $s3_key);
             return false;
         }
         
         $signature_data = $this->create_signature_v4('GET', $s3_key, '', $expires_in, array(), array(), true);
         
         $url = "https://{$signature_data['host']}/{$s3_key}?{$signature_data['canonical_query']}";
-        
-        error_log("CF7AS Debug: Generated download URL: " . $url);
         
         return $url;
     }
@@ -858,9 +845,6 @@ class CF7_Artist_Submissions_S3_Handler {
         $encoded_path = implode('/', $encoded_parts);
         $url = "https://{$signature_data['host']}/{$encoded_path}?{$signature_data['canonical_query']}";
         
-        error_log('CF7AS S3 Multipart Init: S3 key = ' . $s3_key);
-        error_log('CF7AS S3 Multipart Init: Encoded path = ' . $encoded_path);
-        error_log('CF7AS S3 Multipart Init: Canonical query = ' . $signature_data['canonical_query']);
         
         $request_headers = array(
             'Authorization' => $signature_data['authorization_header'],
@@ -869,8 +853,6 @@ class CF7_Artist_Submissions_S3_Handler {
             'Host' => $signature_data['host']
         );
         
-        error_log('CF7AS S3 Multipart Init: Sending request to ' . $url);
-        error_log('CF7AS S3 Multipart Init: Headers - ' . print_r($request_headers, true));
         
         $response = wp_remote_post($url, array(
             'headers' => $request_headers,
@@ -885,7 +867,6 @@ class CF7_Artist_Submissions_S3_Handler {
         $status_code = wp_remote_retrieve_response_code($response);
         $body = wp_remote_retrieve_body($response);
         
-        error_log('CF7AS S3 Multipart Init Response: ' . $status_code . ' - ' . $body);
         
         if ($status_code !== 200) {
             error_log('CF7AS S3 Multipart Init HTTP Error: ' . $status_code . ' - ' . $body);
@@ -896,7 +877,6 @@ class CF7_Artist_Submissions_S3_Handler {
         if (function_exists('simplexml_load_string')) {
             $xml = simplexml_load_string($body);
             if ($xml && isset($xml->UploadId)) {
-                error_log('CF7AS S3 Multipart Init Success: UploadId = ' . (string) $xml->UploadId);
                 return array(
                     'uploadId' => (string) $xml->UploadId,
                     'key' => $s3_key
@@ -949,8 +929,6 @@ class CF7_Artist_Submissions_S3_Handler {
             return false;
         }
         
-        error_log('CF7AS S3 Complete: Starting completion for ' . $s3_key . ' with uploadId: ' . $upload_id);
-        error_log('CF7AS S3 Complete: Parts count: ' . count($parts));
         
         // Build XML body for complete request
         $xml = '<?xml version="1.0" encoding="UTF-8"?><CompleteMultipartUpload>';
@@ -962,7 +940,6 @@ class CF7_Artist_Submissions_S3_Handler {
         }
         $xml .= '</CompleteMultipartUpload>';
         
-        error_log('CF7AS S3 Complete: XML body: ' . $xml);
         
         // For completion request, we need to hash the actual content
         $content_hash = hash('sha256', $xml);
@@ -985,8 +962,6 @@ class CF7_Artist_Submissions_S3_Handler {
             'Content-Type' => 'text/xml'
         );
         
-        error_log('CF7AS S3 Complete: Sending request to ' . $url);
-        error_log('CF7AS S3 Complete: Headers - ' . print_r($request_headers, true));
         
         $response = wp_remote_post($url, array(
             'headers' => $request_headers,
@@ -1002,10 +977,8 @@ class CF7_Artist_Submissions_S3_Handler {
         $status_code = wp_remote_retrieve_response_code($response);
         $body = wp_remote_retrieve_body($response);
         
-        error_log('CF7AS S3 Complete Response: ' . $status_code . ' - ' . $body);
         
         if ($status_code === 200) {
-            error_log('CF7AS S3 Complete Success');
             return array(
                 'location' => "https://{$signature_data['host']}/{$s3_key}",
                 'key' => $s3_key

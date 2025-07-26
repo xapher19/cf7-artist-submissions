@@ -804,7 +804,6 @@
         }
         
         if (!postId) {
-            console.error('Could not determine post ID');
             return;
         }
         
@@ -961,8 +960,6 @@
                     
                 } else {
                     // Handle error
-                    console.error('Save failed:', response.data);
-                    
                     // Reset button state
                     $headerBtn.prop('disabled', false);
                     $headerBtn.find('.dashicons').removeClass('dashicons-update').addClass('dashicons-edit');
@@ -997,8 +994,6 @@
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX error:', error);
-                
                 // Reset button state
                 $headerBtn.prop('disabled', false);
                 $headerBtn.find('.dashicons').removeClass('dashicons-update').addClass('dashicons-edit');

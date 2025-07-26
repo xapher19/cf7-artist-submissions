@@ -901,7 +901,6 @@ class CF7_Artist_Submissions_Conversations {
         error_log('To: ' . $to_email);
         error_log('Subject: ' . $subject);
         error_log('WooCommerce template: ' . ($use_wc_template ? 'Yes' : 'No'));
-        error_log('Headers: ' . print_r($headers, true));
         
         $mail_sent = wp_mail($to_email, $subject, $email_body, $headers);
         
@@ -1020,7 +1019,6 @@ class CF7_Artist_Submissions_Conversations {
         
         // Enhanced logging for debugging
         error_log('CF7 Artist Submissions: Starting IMAP check');
-        error_log('CF7 Artist Submissions: IMAP settings - ' . print_r($imap_settings, true));
         
         if (empty($imap_settings['server']) || empty($imap_settings['username']) || empty($imap_settings['password'])) {
             error_log('CF7 Artist Submissions: IMAP not configured - missing required settings');
@@ -2945,7 +2943,6 @@ class CF7_Artist_Submissions_Conversations {
                                 description: '<?php _e("Regarding: ", "cf7-artist-submissions"); ?>' + truncatedText
                             });
                         } else {
-                            console.error('CF7_Actions.openModal not available');
                             alert('Actions system not available. Please make sure you are on a submission page.');
                         }
                     } else if (action === 'mark-read' || action === 'mark-unread') {

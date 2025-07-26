@@ -262,10 +262,6 @@ jQuery(document).ready(function($) {
         ajaxData.menu_label = $('#cf7_menu_label').val() || 'Artist Submissions';
         ajaxData.store_files = $('#cf7_store_files').is(':checked') ? 'yes' : '';
         
-        // Debug logging
-        console.log('General Tab - AJAX URL:', ajaxurl);
-        console.log('General Tab - AJAX Data:', ajaxData);
-        
         $.ajax({
             url: ajaxurl,
             type: 'POST',
@@ -273,7 +269,6 @@ jQuery(document).ready(function($) {
             processData: true,  // Keep jQuery's default processing
             contentType: 'application/x-www-form-urlencoded; charset=UTF-8',  // Explicit content type
             success: function(response, textStatus, xhr) {
-                console.log('General Tab - AJAX Response:', response);
                 if (response && response.success) {
                     showNotice('success', response.data.message || 'Settings saved successfully!');
                 } else {

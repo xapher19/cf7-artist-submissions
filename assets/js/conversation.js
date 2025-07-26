@@ -719,15 +719,9 @@ jQuery(document).ready(function($) {
                         description: 'Regarding: ' + truncatedText
                     });
                 } catch (error) {
-                    console.error('Error opening Actions modal:', error);
                     showNotice('Error opening Actions modal. Please try again.', 'error');
                 }
             } else {
-                console.error('CF7_Actions not available or openModal not a function:', {
-                    CF7_Actions_exists: typeof window.CF7_Actions !== 'undefined',
-                    openModal_exists: typeof window.CF7_Actions?.openModal === 'function',
-                    CF7_Actions_keys: window.CF7_Actions ? Object.keys(window.CF7_Actions) : 'N/A'
-                });
                 showNotice('Actions system not available. Please refresh the page and try again.', 'error');
             }
         } else if (action === 'mark-read' || action === 'mark-unread') {

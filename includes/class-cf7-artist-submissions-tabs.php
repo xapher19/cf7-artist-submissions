@@ -858,23 +858,17 @@ class CF7_Artist_Submissions_Tabs {
         global $wpdb;
         $table_name = $wpdb->prefix . 'cf7as_files';
         
-        error_log('CF7AS Tabs Debug - Querying files for submission_id: ' . $post->ID . ' (type: ' . gettype($post->ID) . ')');
-        error_log('CF7AS Tabs Debug - Table name: ' . $table_name);
         
         // Check if table exists, create if it doesn't
         $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
-        error_log('CF7AS Tabs Debug - Table exists: ' . ($table_exists ? 'Yes' : 'No'));
         
         if (!$table_exists && class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
-            error_log('CF7AS Tabs Debug - Creating missing files table...');
             CF7_Artist_Submissions_Metadata_Manager::create_files_table();
             $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
-            error_log('CF7AS Tabs Debug - Table created successfully: ' . ($table_exists ? 'Yes' : 'No'));
         }
         
         // Get total count of files in table
         $total_files = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
-        error_log('CF7AS Tabs Debug - Total files in table: ' . $total_files);
         
         // Check both string and integer versions
         $files = $wpdb->get_results($wpdb->prepare(
@@ -882,12 +876,9 @@ class CF7_Artist_Submissions_Tabs {
             (string) $post->ID, (int) $post->ID
         ));
         
-        error_log('CF7AS Tabs Debug - Found ' . count($files) . ' files for submission ' . $post->ID);
-        error_log('CF7AS Tabs Debug - Files data: ' . print_r($files, true));
         
         // Additional debug: Check what submission_ids are actually in the table
         $all_submission_ids = $wpdb->get_col("SELECT DISTINCT submission_id FROM {$table_name}");
-        error_log('CF7AS Tabs Debug - All submission_ids in table: ' . print_r($all_submission_ids, true));
         
         if (empty($files)) {
             echo '<div class="cf7as-file-preview-container">';
@@ -974,17 +965,14 @@ class CF7_Artist_Submissions_Tabs {
                     
                     if ($preview_version && !empty($preview_version->converted_s3_key)) {
                         $preview_url = $s3_handler->get_presigned_preview_url($preview_version->converted_s3_key);
-                        error_log("CF7AS Debug: Using converted preview for {$file->original_name}: {$preview_version->converted_s3_key}");
                     }
                     
                     // Get thumbnail version
                     $thumbnail_version = $converter->get_thumbnail_version($file->s3_key);
                     if ($thumbnail_version && !empty($thumbnail_version->converted_s3_key)) {
                         $thumbnail_url = $s3_handler->get_presigned_preview_url($thumbnail_version->converted_s3_key);
-                        error_log("CF7AS Debug: Using converted thumbnail for {$file->original_name}: {$thumbnail_version->converted_s3_key}");
                     }
                 } else {
-                    error_log("CF7AS Debug: No converted versions found for {$file->original_name}, using original");
                 }
             }
             
@@ -1969,7 +1957,6 @@ class CF7_Artist_Submissions_Tabs {
      * AJAX handler for downloading individual files
      */
     public static function ajax_download_file() {
-        error_log('CF7AS Debug: Download file AJAX handler called');
         
         // Verify nonce
         $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : '';
@@ -1990,7 +1977,6 @@ class CF7_Artist_Submissions_Tabs {
             wp_die(__('Invalid file ID', 'cf7-artist-submissions'));
         }
 
-        error_log('CF7AS Debug: Download file - processing file ID: ' . $file_id);
 
         global $wpdb;
         
@@ -2005,7 +1991,6 @@ class CF7_Artist_Submissions_Tabs {
             wp_die(__('File not found', 'cf7-artist-submissions'));
         }
 
-        error_log('CF7AS Debug: Download file - found file: ' . $file->original_name . ', S3 key: ' . $file->s3_key);
 
         try {
             // Initialize S3 handler
@@ -2021,12 +2006,10 @@ class CF7_Artist_Submissions_Tabs {
                 wp_die(__('Error initializing S3 connection', 'cf7-artist-submissions'));
             }
 
-            error_log('CF7AS Debug: Download file - S3 handler initialized successfully');
 
             // Get the file from S3 using the S3 key
             $s3_key = $file->s3_key ? $file->s3_key : $file->file_path; // fallback to file_path if s3_key is null
             
-            error_log('CF7AS Debug: Download file - attempting to get file content for S3 key: ' . $s3_key);
             
             $file_content = $s3_handler->get_file_content($s3_key);
             
@@ -2035,7 +2018,6 @@ class CF7_Artist_Submissions_Tabs {
                 wp_die(__('Error downloading file from S3', 'cf7-artist-submissions'));
             }
 
-            error_log('CF7AS Debug: Download file - successfully retrieved file content, size: ' . strlen($file_content) . ' bytes');
 
             // Set headers to force download
             $filename = basename($file->original_name);
@@ -2067,7 +2049,6 @@ class CF7_Artist_Submissions_Tabs {
             @set_time_limit(300); // 5 minutes
 
             // Set download headers
-            error_log('CF7AS Debug: Download file - setting headers for filename: ' . $filename . ', content type: ' . $content_type);
             
             header('Content-Type: ' . $content_type);
             header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -2076,12 +2057,10 @@ class CF7_Artist_Submissions_Tabs {
             header('Pragma: no-cache');
             header('Expires: 0');
 
-            error_log('CF7AS Debug: Download file - headers set, outputting file content');
 
             // Output the file
             echo $file_content;
             
-            error_log('CF7AS Debug: Download file - file content output complete');
             
         } catch (Exception $e) {
             error_log('CF7AS Error: Download file exception: ' . $e->getMessage());

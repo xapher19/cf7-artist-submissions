@@ -499,7 +499,6 @@
         performSafeAjaxTest: function($button, originalHtml, ajaxData, successCallback, errorCallback) {
             // Set safety timeout to ensure button always gets reset
             const safetyResetId = setTimeout(function() {
-                console.warn('CF7AdminInterface: Safety timeout triggered for', ajaxData.action);
                 CF7AdminInterface.resetButton($button, originalHtml);
                 // Clean up after safety timeout
                 setTimeout(function() {
@@ -528,7 +527,6 @@
                     }, 1000);
                 },
                 error: function(xhr, status, error) {
-                    console.error('CF7AdminInterface: AJAX error for', ajaxData.action, {xhr, status, error});
                     clearTimeout(safetyResetId);
                     
                     if (errorCallback) {
@@ -563,11 +561,6 @@
                 action: 'test_form_config',
                 nonce: cf7ArtistSubmissions.nonce
             }, null, function(xhr, status, error) {
-                console.error('Form config test AJAX error:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                });
                 CF7AdminInterface.showTestResults('Form configuration test failed: ' + error, false);
             });
         },
@@ -665,29 +658,17 @@
          * Validates AWS credentials, region configuration, and bucket permissions.
          */
         testS3Connection: function($button, originalHtml) {
-            console.log('CF7 S3 Test - Starting S3 connection test');
-            
             // Get S3 configuration values from form
             const awsKey = $('#aws_access_key').val();
             const awsSecret = $('#aws_secret_key').val();
             const awsRegion = $('#aws_region').val();
             const s3Bucket = $('#s3_bucket').val();
             
-            console.log('CF7 S3 Test - Form values:', {
-                awsKey: awsKey ? awsKey.substring(0, 6) + '***' : 'EMPTY',
-                awsSecret: awsSecret ? '***PROVIDED***' : 'EMPTY',
-                awsRegion: awsRegion,
-                s3Bucket: s3Bucket
-            });
-            
             if (!awsKey || !awsSecret || !awsRegion || !s3Bucket) {
-                console.log('CF7 S3 Test - Missing required fields');
                 this.resetButton($button, originalHtml);
                 this.showTestResults('Please fill in all S3 configuration fields before testing.', false);
                 return;
             }
-            
-            console.log('CF7 S3 Test - Making AJAX request with action: cf7_bypass_s3_test');
             
             this.performSafeAjaxTest($button, originalHtml, {
                 action: 'cf7_bypass_s3_test',
@@ -697,14 +678,11 @@
                 aws_region: awsRegion,
                 s3_bucket: s3Bucket
             }, function(response) {
-                console.log('CF7 S3 Test - AJAX Success Response:', response);
                 CF7AdminInterface.showTestResults(response.data.message, response.success);
                 if (response.success && response.data.details) {
                     $('#s3-test-result').html('<div class="notice notice-success"><p>' + response.data.message + '</p></div>').show();
                 }
             }, function(xhr, status, error) {
-                console.log('CF7 S3 Test - AJAX Error:', {xhr, status, error});
-                console.log('CF7 S3 Test - XHR Response Text:', xhr.responseText);
                 CF7AdminInterface.showTestResults('S3 connection test failed: ' + error, false);
             });
         },
@@ -739,7 +717,6 @@
         testTemplateEmail: function($button, originalHtml) {
             // Store button reference for safety reset
             const safetyResetId = setTimeout(function() {
-                console.warn('CF7AdminInterface: testTemplateEmail safety timeout triggered');
                 CF7AdminInterface.resetButton($button, originalHtml);
             }, 30000); // 30 second safety timeout
             

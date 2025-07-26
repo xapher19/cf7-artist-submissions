@@ -375,7 +375,6 @@ class CF7_Artist_Submissions_REST_Endpoints {
                     )
                 ));
             } else {
-                error_log('CF7AS REST - Failed to initiate multipart upload - S3 handler returned: ' . print_r($upload_data, true));
                 return new WP_Error('multipart_failed', 'Failed to initiate multipart upload', array('status' => 500));
             }
         } catch (Exception $e) {
@@ -421,7 +420,6 @@ class CF7_Artist_Submissions_REST_Endpoints {
             $parts = $request->get_param('parts');
             
             error_log('CF7AS REST - Complete multipart upload request: ' . $s3_key . ' (uploadId: ' . $upload_id . ')');
-            error_log('CF7AS REST - Parts data: ' . print_r($parts, true));
             
             // Validate required parameters
             if (empty($upload_id) || empty($s3_key) || empty($parts) || !is_array($parts)) {
@@ -442,7 +440,6 @@ class CF7_Artist_Submissions_REST_Endpoints {
                     )
                 ));
             } else {
-                error_log('CF7AS REST - Failed to complete multipart upload - S3 handler returned: ' . print_r($result, true));
                 return new WP_Error('complete_failed', 'Failed to complete multipart upload', array('status' => 500));
             }
         } catch (Exception $e) {

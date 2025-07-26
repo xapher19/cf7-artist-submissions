@@ -98,7 +98,6 @@ jQuery(document).ready(function($) {
             
             const template = $('#cf7-open-call-template').html();
             if (!template) {
-                console.error('CF7 Open Calls: Template not found');
                 return;
             }
             
@@ -299,6 +298,6 @@ jQuery(document).ready(function($) {
         }
     });
     
-    // Export to global scope for debugging
+    // Export to global scope
     window.CF7OpenCalls = CF7OpenCalls;
 });

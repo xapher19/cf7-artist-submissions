@@ -1354,7 +1354,6 @@ class CF7_Artist_Submissions_Actions {
         // Check SMTP configuration for logging
         $smtp_info = self::get_smtp_config_info();
         error_log('CF7 Actions: Sending daily summary with simplified headers');
-        error_log('CF7 Actions: Headers: ' . print_r($headers, true));
         
         // Apply email configuration filters
         add_filter('wp_mail_from', function($from) use ($from_email) {

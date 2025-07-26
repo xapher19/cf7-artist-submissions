@@ -121,7 +121,6 @@
             const formId = form.find('input[name="_wpcf7"]').val();
             
             if (!formId) {
-                console.warn('CF7AS: Form ID not found for takeover');
                 return;
             }
             
@@ -149,7 +148,6 @@
                     this.renderSubmissionInterface(form, openCall, formId);
                 })
                 .catch(error => {
-                    console.error('CF7AS: Error checking open call status:', error);
                     this.renderErrorState(form, 'Unable to load submission information. Please try again later.');
                 });
         }

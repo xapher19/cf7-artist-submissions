@@ -298,9 +298,6 @@ class CF7_Artist_Submissions_Form_Handler {
      * @since 1.0.0
      */
     public function capture_submission($contact_form) {
-        error_log('CF7AS Form Handler Debug - capture_submission triggered');
-        error_log('CF7AS Form Handler Debug - Form ID received: ' . $contact_form->id());
-        
         $current_form_id = $contact_form->id();
         $should_process = false;
         
@@ -312,7 +309,6 @@ class CF7_Artist_Submissions_Form_Handler {
                     intval($call_config['form_id']) === intval($current_form_id) &&
                     ($call_config['status'] ?? 'active') === 'active') {
                     $should_process = true;
-                    error_log('CF7AS Form Handler Debug - Form matches active open call: ' . ($call_config['title'] ?? 'Unnamed'));
                     break;
                 }
             }
@@ -325,38 +321,27 @@ class CF7_Artist_Submissions_Form_Handler {
             
             if ($legacy_form_id && intval($legacy_form_id) === intval($current_form_id)) {
                 $should_process = true;
-                error_log('CF7AS Form Handler Debug - Form matches legacy configuration');
             }
         }
         
         // Only process if form is configured
         if (!$should_process) {
-            error_log('CF7AS Form Handler Debug - Form not configured for processing, skipping');
             return;
         }
         
-        error_log('CF7AS Form Handler Debug - Form configured for processing, proceeding');
-        
         if (!class_exists('WPCF7_Submission')) {
-            error_log('CF7AS Form Handler Debug - WPCF7_Submission class not found');
             return;
         }
         
         $submission = WPCF7_Submission::get_instance();
         if (!$submission) {
-            error_log('CF7AS Form Handler Debug - No submission instance available');
             return;
         }
-        
-        error_log('CF7AS Form Handler Debug - Submission instance obtained successfully');
         
         $posted_data = $submission->get_posted_data();
         if (empty($posted_data)) {
-            error_log('CF7AS Form Handler Debug - No posted data available');
             return;
         }
-        
-        error_log('CF7AS Form Handler Debug - Posted data retrieved successfully');
         
         // Prepare title from artist-name field or use a default
         $title = '';
@@ -372,8 +357,6 @@ class CF7_Artist_Submissions_Form_Handler {
             $title = 'Submission ' . date('Y-m-d H:i:s');
         }
         
-        error_log('CF7AS Form Handler Debug - Creating post with title: ' . $title);
-        
         // Create post
         $post_id = wp_insert_post(array(
             'post_title'   => sanitize_text_field($title),
@@ -382,15 +365,11 @@ class CF7_Artist_Submissions_Form_Handler {
         ));
         
         if (is_wp_error($post_id)) {
-            error_log('CF7AS Form Handler Debug - Failed to create post: ' . $post_id->get_error_message());
             return;
         }
         
-        error_log('CF7AS Form Handler Debug - Post created successfully with ID: ' . $post_id);
-        
         // Set initial status
         wp_set_object_terms($post_id, 'New', 'submission_status');
-        error_log('CF7AS Form Handler Debug - Set initial status to New');
         
         // Save form data as post meta
         $meta_count = 0;
@@ -412,33 +391,23 @@ class CF7_Artist_Submissions_Form_Handler {
             $meta_count++;
         }
         
-        error_log('CF7AS Form Handler Debug - Saved ' . $meta_count . ' meta fields for post ' . $post_id);
-        
         // Handle artistic medium tags
-        error_log('CF7AS Form Handler Debug - Processing medium tags');
         $this->process_medium_tags($post_id, $posted_data);
         
         // Handle text medium tags
-        error_log('CF7AS Form Handler Debug - Processing text medium tags');
         $this->process_text_medium_tags($post_id, $posted_data);
         
         // Handle open call assignment
-        error_log('CF7AS Form Handler Debug - Processing open call assignment');
         $this->process_open_call_assignment($post_id, $posted_data);
         
         // Process S3 uploaded files data (from custom uploader)
-        error_log('CF7AS Form Handler Debug - About to process S3 uploaded files');
         $this->process_s3_uploaded_files($posted_data, $post_id);
         
         // Save submission date
         update_post_meta($post_id, 'cf7_submission_date', current_time('mysql'));
-        error_log('CF7AS Form Handler Debug - Saved submission date');
         
         // Fire submission created action for logging and email triggers
-        error_log('CF7AS Form Handler Debug - Firing submission created action');
         do_action('cf7_artist_submission_created', $post_id);
-        
-        error_log('CF7AS Form Handler Debug - Submission processing completed for post ID: ' . $post_id);
     }
     
     // ============================================================================
@@ -500,7 +469,6 @@ class CF7_Artist_Submissions_Form_Handler {
             // Also store as post meta for backwards compatibility
             update_post_meta($post_id, 'cf7_artistic_mediums', implode(', ', $medium_terms));
             
-            error_log('CF7AS Form Handler Debug - Assigned mediums: ' . implode(', ', $medium_terms));
         }
     }
     
@@ -509,13 +477,10 @@ class CF7_Artist_Submissions_Form_Handler {
      */
     private function process_s3_uploaded_files($posted_data, $post_id) {
         if (empty($posted_data)) {
-            error_log('CF7AS Form Handler Debug - No posted data received');
             return;
         }
 
         // Log the full posted data for debugging
-        error_log('CF7AS Form Handler Debug - Full posted data: ' . print_r($posted_data, true));
-        error_log('CF7AS Form Handler Debug - Processing files for post ID: ' . $post_id);
 
         $found_file_fields = 0;
         $processed_files = 0;
@@ -527,16 +492,13 @@ class CF7_Artist_Submissions_Form_Handler {
             if (substr($field_name, -5) === '_data' && !empty($field_value)) {
                 $found_file_fields++;
                 $processed_fields[] = $field_name; // Mark this field as processed
-                error_log('CF7AS Form Handler Debug - Found uploader data field: ' . $field_name . ' with value: ' . $field_value);
                 
                 // Parse the JSON data
                 $file_data = json_decode($field_value, true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($file_data)) {
-                    error_log('CF7AS Form Handler Debug - Successfully parsed JSON data: ' . print_r($file_data, true));
                     $files_stored = $this->store_s3_files_in_database($file_data, $post_id, $field_name);
                     $processed_files += $files_stored;
                 } else {
-                    error_log('CF7AS Form Handler Debug - Failed to parse JSON for field ' . $field_name . '. JSON Error: ' . json_last_error_msg());
                 }
             }
         }
@@ -546,7 +508,6 @@ class CF7_Artist_Submissions_Form_Handler {
         foreach ($posted_data as $field_name => $field_value) {
             // Skip fields we've already processed in the first pass
             if (in_array($field_name, $processed_fields)) {
-                error_log('CF7AS Form Handler Debug - Skipping already processed field: ' . $field_name);
                 continue;
             }
             
@@ -557,23 +518,19 @@ class CF7_Artist_Submissions_Form_Handler {
             }
         }
 
-        error_log('CF7AS Form Handler Debug - Found traditional file fields (after deduplication): ' . print_r($file_data_fields, true));
 
         foreach ($file_data_fields as $field) {
             if (!empty($posted_data[$field]) && is_string($posted_data[$field])) {
                 $found_file_fields++;
-                error_log('CF7AS Form Handler Debug - Processing traditional field: ' . $field);
                 $file_data = json_decode($posted_data[$field], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($file_data)) {
                     $files_stored = $this->store_s3_files_in_database($file_data, $post_id, $field);
                     $processed_files += $files_stored;
                 } else {
-                    error_log('CF7AS Form Handler Debug - Traditional field ' . $field . ' is not valid JSON: ' . $posted_data[$field]);
                 }
             }
         }
 
-        error_log('CF7AS Form Handler Debug - Summary: Found ' . $found_file_fields . ' file fields, processed ' . $processed_files . ' files');
     }
     
     /**
@@ -584,12 +541,8 @@ class CF7_Artist_Submissions_Form_Handler {
         $table_name = $wpdb->prefix . 'cf7as_files';
         $stored_count = 0;
         
-        error_log('CF7AS File Storage Debug - Attempting to store files for post ID: ' . $post_id . ' from field: ' . $field_name);
-        error_log('CF7AS File Storage Debug - Table name: ' . $table_name);
-        error_log('CF7AS File Storage Debug - Files to process: ' . print_r($file_data, true));
         
         if (!is_array($file_data)) {
-            error_log('CF7AS File Storage Debug - File data is not an array for field: ' . $field_name);
             return $stored_count;
         }
         
@@ -604,11 +557,8 @@ class CF7_Artist_Submissions_Form_Handler {
                         (isset($file['file_type']) ? $file['file_type'] :
                         (isset($file['mime_type']) ? $file['mime_type'] : 'application/octet-stream'));
             
-            error_log('CF7AS File Storage Debug - Processing file: ' . print_r($file, true));
-            error_log('CF7AS File Storage Debug - Extracted values - s3_key: ' . $s3_key . ', name: ' . $original_name . ', type: ' . $mime_type);
             
             if (!$s3_key || !$original_name) {
-                error_log('CF7AS File Storage Debug - Skipping file due to missing s3_key or original_name');
                 continue; // Skip invalid file data
             }
             
@@ -620,7 +570,6 @@ class CF7_Artist_Submissions_Form_Handler {
             ));
             
             if ($existing_file) {
-                error_log('CF7AS File Storage Debug - Skipping duplicate file with S3 key: ' . $s3_key . ' (existing ID: ' . $existing_file . ')');
                 continue; // Skip duplicate file
             }
             
@@ -642,17 +591,13 @@ class CF7_Artist_Submissions_Form_Handler {
                 update_post_meta($post_id, 'cf7_work_statement_' . sanitize_key($original_name), sanitize_textarea_field($file['work_statement']));
             }
             
-            error_log('CF7AS File Storage Debug - Insert data: ' . print_r($insert_data, true));
             
             $result = $wpdb->insert($table_name, $insert_data);
             
             if ($result === false) {
-                error_log('CF7AS File Storage Debug - Failed to insert file record: ' . $wpdb->last_error);
-                error_log('CF7AS File Storage Debug - Last query: ' . $wpdb->last_query);
             } else {
                 $stored_count++;
                 $file_id = $wpdb->insert_id;
-                error_log('CF7AS File Storage Debug - Successfully inserted file record with ID: ' . $file_id);
                 
                 // Trigger media conversion for the uploaded file
                 $file_metadata = array(
@@ -672,7 +617,6 @@ class CF7_Artist_Submissions_Form_Handler {
             "SELECT COUNT(*) FROM {$table_name} WHERE submission_id = %s",
             (string) $post_id
         ));
-        error_log('CF7AS File Storage Debug - Total files now stored for submission ' . $post_id . ': ' . $verification_count);
         
         return $stored_count;
     }
@@ -947,7 +891,6 @@ class CF7_Artist_Submissions_Form_Handler {
             // Also store as post meta for backwards compatibility
             update_post_meta($post_id, 'cf7_text_mediums', implode(', ', $text_medium_terms));
             
-            error_log('CF7AS Form Handler Debug - Assigned ' . count($text_medium_terms) . ' text medium terms to post ' . $post_id);
         }
     }
     
@@ -1088,7 +1031,6 @@ class CF7_Artist_Submissions_Form_Handler {
             update_post_meta($post_id, 'cf7_open_call', $open_call_term->name);
             update_post_meta($post_id, 'cf7_open_call_slug', $open_call_term->slug);
             
-            error_log('CF7AS Form Handler Debug - Assigned open call "' . $open_call_term->name . '" to post ' . $post_id);
         }
     }
 }

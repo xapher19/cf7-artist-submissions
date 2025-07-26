@@ -85,13 +85,11 @@
         init() {
             // Check if required globals are available
             if (typeof ajaxurl === 'undefined') {
-                console.error('ajaxurl is not defined');
                 this.showToast('AJAX URL not available', 'error');
                 return;
             }
             
             if (typeof cf7_dashboard === 'undefined') {
-                console.error('cf7_dashboard object is not defined');
                 this.showToast('Dashboard configuration not available', 'error');
                 return;
             }

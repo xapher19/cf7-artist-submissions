@@ -19,12 +19,6 @@ $required = !empty($args['required']) ? ' required' : '';
 $max_files = !empty($args['max_files']) ? intval($args['max_files']) : 20;
 $max_size = (!empty($args['max_size']) && intval($args['max_size']) > 0) ? intval($args['max_size']) : 5120; // 5GB in MB
 $form_takeover = !empty($args['form_takeover']) ? true : false;
-
-// Debug logging for troubleshooting
-error_log("Custom uploader template debug - max_files from args: " . print_r($args['max_files'] ?? 'NOT_SET', true));
-error_log("Custom uploader template debug - final max_files: " . $max_files);
-error_log("Custom uploader template debug - max_size from args: " . print_r($args['max_size'] ?? 'NOT_SET', true));
-error_log("Custom uploader template debug - final max_size: " . $max_size);
 ?>
 
 <div class="cf7as-uploader-container">
@@ -32,7 +26,6 @@ error_log("Custom uploader template debug - final max_size: " . $max_size);
     <div id="<?php echo esc_attr($field_id); ?>" class="cf7as-uploader"
          data-max-files="<?php echo esc_attr($max_files); ?>"
          data-max-size="<?php echo esc_attr($max_size * 1024 * 1024); ?>"
-         data-debug-max-size-mb="<?php echo esc_attr($max_size); ?>"
          <?php if ($form_takeover): ?>data-form-takeover="true"<?php endif; ?>>
         <!-- Custom uploader will be initialized here by JavaScript -->
         <div class="cf7as-loading-placeholder">
