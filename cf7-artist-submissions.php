@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CF7 Artist Submissions
  * Description: Professional artist submission management system with modern dashboard, advanced field editing, task management, and conversation system for Contact Form 7.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: Pup and Tiger
  * Requires at least: 5.6
  * Requires PHP: 7.4
@@ -12,7 +12,7 @@
  * Network: false
  *
  * @package CF7_Artist_Submissions
- * @version 1.0.1
+ * @version 1.1.0
  * @author Pup and Tiger
  * @copyright 2025 Pup and Tiger
  */
@@ -22,13 +22,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// Define plugin constants
-define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.0.1');
+// Plugin constants
+define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.1.0');
+define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
 
-// Include required files
+// Include class files
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-post-type.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-form-handler.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-admin.php';
@@ -42,6 +42,13 @@ require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-subm
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-pdf-export.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-updater.php';
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-add-submission.php';
+
+// S3 Integration Classes
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-s3-handler.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-rest-endpoints.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-metadata-manager.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-thumbnail-generator.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-zip-downloader.php';
 
 /**
  * Main plugin initialization function.
@@ -99,9 +106,29 @@ function cf7_artist_submissions_init() {
     // Initialize Actions System
     CF7_Artist_Submissions_Actions::init();
     
+    // Initialize S3 Handler
+    if (class_exists('CF7_Artist_Submissions_S3_Handler')) {
+        $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+        $s3_handler->init();
+    }
+    
+    // Initialize REST Endpoints
+    if (class_exists('CF7_Artist_Submissions_REST_Endpoints')) {
+        $rest_endpoints = new CF7_Artist_Submissions_REST_Endpoints();
+        $rest_endpoints->init();
+    }
+    
+    // Initialize Metadata Manager
+    if (class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+        CF7_Artist_Submissions_Metadata_Manager::init();
+    }
+    
     // Initialize Dashboard
     $dashboard = new CF7_Artist_Submissions_Dashboard();
     $dashboard->init();
+    
+    // Enqueue Uppy assets on frontend for CF7 forms
+    add_action('wp_enqueue_scripts', 'cf7_artist_submissions_enqueue_uploader_assets');
     
     // Initialize PDF Export
     if (is_admin()) {
@@ -158,6 +185,9 @@ function cf7_artist_submissions_activate() {
     // Create actions table
     CF7_Artist_Submissions_Actions::create_table();
     
+    // Create S3 files table
+    CF7_Artist_Submissions_Metadata_Manager::create_files_table();
+    
     // Flush rewrite rules
     flush_rewrite_rules();
 }
@@ -170,4 +200,47 @@ register_deactivation_hook(__FILE__, 'cf7_artist_submissions_deactivate');
 function cf7_artist_submissions_deactivate() {
     // Flush rewrite rules
     flush_rewrite_rules();
+}
+
+/**
+ * Enqueue Custom S3 Uploader assets for Contact Form 7 forms
+ */
+function cf7_artist_submissions_enqueue_uploader_assets() {
+    // Only enqueue on pages that might have CF7 forms
+    if (is_admin()) {
+        return;
+    }
+    
+    // Enqueue Custom Uploader CSS
+    wp_enqueue_style(
+        'cf7as-custom-uploader',
+        CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/custom-uploader.css',
+        array(),
+        CF7_ARTIST_SUBMISSIONS_VERSION
+    );
+    
+    // Enqueue Custom Uploader JavaScript
+    wp_enqueue_script(
+        'cf7as-custom-uploader',
+        CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/custom-uploader.js',
+        array('jquery'),
+        CF7_ARTIST_SUBMISSIONS_VERSION,
+        true
+    );
+    
+    // Localize script with REST API data and plugin configuration
+    wp_localize_script('cf7as-custom-uploader', 'cf7as_uploader_config', array(
+        'plugin_url' => CF7_ARTIST_SUBMISSIONS_PLUGIN_URL,
+        'rest_url' => rest_url(),
+        'nonce' => wp_create_nonce('wp_rest'),
+        'ajax_url' => admin_url('admin-ajax.php'),
+    ));
+    
+    // Keep lightbox CSS for other features
+    wp_enqueue_style(
+        'cf7as-lightbox',
+        CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/lightbox.css',
+        array(),
+        CF7_ARTIST_SUBMISSIONS_VERSION
+    );
 }

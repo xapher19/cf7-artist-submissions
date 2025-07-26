@@ -158,6 +158,18 @@ function initializeTabs() {
         // Store active tab in localStorage
         localStorage.setItem('cf7_active_tab', tabId);
         
+        // Load AJAX content for tabs that don't have static content
+        // Profile tab has static content, others need AJAX loading
+        if (tabId !== 'cf7-tab-profile') {
+            const $tabContent = $('#' + tabId);
+            const currentContent = $tabContent.html().trim();
+            
+            // Only load if tab is empty or contains just comments
+            if (!currentContent || currentContent.includes('<!-- Content loaded via AJAX -->')) {
+                loadTabContent(tabId);
+            }
+        }
+        
         $(document).trigger('cf7_tab_changed', [tabId]);
     });
     
@@ -222,7 +234,8 @@ function loadTabContent(tabId, callback) {
         return;
     }
     
-    const postId = $('#post_ID').val();
+    // Get post ID from localized data, fallback to DOM element
+    const postId = window.cf7TabsAjax.post_id || $('#post_ID').val();
     if (!postId) {
         console.warn('CF7 Tabs: Post ID not found');
         return;
