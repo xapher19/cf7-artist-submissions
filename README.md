@@ -382,19 +382,33 @@ This plugin is licensed under the GPL v2 or later.
 
 ## 📅 Changelog
 
-### 1.1.0 - S3 Integration & Modernization (July 2025)
-- **NEW:** Complete Amazon S3 integration with secure file storage
-- **NEW:** Modern drag-and-drop file upload interface
-- **NEW:** Chunked upload support for large files up to 5GB per file
-- **NEW:** Presigned URLs for secure S3 file access
-- **NEW:** Form takeover mode with guided 3-step submission process
-- **NEW:** Artistic mediums form tag with color-coded checkboxes
-- **NEW:** ZIP download functionality for bulk file retrieval
-- **NEW:** File metadata database with comprehensive tracking
-- **IMPROVED:** Standalone operation - no external dependencies required
-- **ENHANCED:** File preview system with lightbox galleries
-- **ENHANCED:** Progress tracking with detailed upload status
-- **OPTIMIZED:** Shared hosting compatibility
+### 1.1.0 - Major Feature Release (July 26, 2025)
+**🎯 Form Experience Revolution**
+- **NEW:** **Form Takeover Mode** - Complete multi-step submission experience with guided 3-step workflow
+- **NEW:** **Artistic Mediums Selection** - Custom checkbox form tag with color-coded visual styling
+- **NEW:** **Enhanced Drag-and-Drop** - Improved stability and responsiveness with smart drag counter management
+- **NEW:** **Advanced Form Validation** - Enhanced upload process with duplicate file detection
+
+**🎥 Media & File Management**
+- **NEW:** **Video File Support** - Comprehensive video handling in lightbox with embedded players
+- **NEW:** **Enhanced Lightbox** - Navigation controls, improved styling, and optimized image handling
+- **NEW:** **ZIP Downloads with Artist Names** - Bulk file downloads now include artist identification
+- **NEW:** **Thumbnail Generation** - Automatic preview generation for uploaded files
+- **NEW:** **Video URL Support** - Support for video files with query parameters and S3 CORS compatibility
+
+**⚡ Performance & UX Improvements**
+- **ENHANCED:** **Compact Uploader Design** - Immediate drag area collapse for cleaner interface
+- **ENHANCED:** **AJAX Tab Loading** - Improved performance for tab content switching
+- **ENHANCED:** **Upload Progress Tracking** - Detailed status updates during file uploads
+- **ENHANCED:** **Form Handler Optimization** - Better file submission debugging and processing
+
+**🛠️ Technical Enhancements**
+- **IMPROVED:** **REST API Endpoints** - Enhanced file operation handling
+- **IMPROVED:** **S3 Handler** - Better integration and error handling
+- **IMPROVED:** **Metadata Management** - Comprehensive file tracking and organization
+- **IMPROVED:** **Documentation** - Updated setup guides and troubleshooting
+- **FIXED:** **Cross-browser Compatibility** - Resolved drag-and-drop issues across different browsers
+- **FIXED:** **File Upload Stability** - Enhanced error handling and recovery
 
 ### 1.0.1 - Enhancement Release
 - **New:** Custom add submission interface
