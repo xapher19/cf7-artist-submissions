@@ -1,13 +1,25 @@
 <?php
 /**
- * CF7 Artist Submissions - REST API Endpoints
+ * CF7 Artist Submissions - WordPress REST API Integration System
  *
- * Handles REST API endpoints for custom S3 file uploads, metadata management,
- * and admin file operations for the CF7 Artist Submissions plugin.
+ * Comprehensive REST API endpoint system providing secure file upload operations,
+ * metadata management, admin file operations, and AJAX communication interfaces
+ * with advanced authentication, validation, and error handling capabilities.
+ *
+ * Features:
+ * • Custom REST API endpoints for S3 file operations and metadata management
+ * • Secure multipart upload handling with chunking and validation
+ * • Admin file management operations (download, delete, metadata updates)
+ * • WordPress authentication and capability checking integration
+ * • Comprehensive input validation and sanitization with security measures
+ * • Error handling and logging for debugging and maintenance
+ * • CORS support for cross-origin requests and frontend integration
+ * • Rate limiting and abuse prevention for secure API access
  *
  * @package CF7_Artist_Submissions
- * @subpackage RestEndpoints
+ * @subpackage RestAPIIntegration
  * @since 1.1.0
+ * @version 1.1.0
  */
 
 /**

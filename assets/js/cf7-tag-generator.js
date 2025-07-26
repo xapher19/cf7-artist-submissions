@@ -1,10 +1,24 @@
 /**
- * CF7 Artist Submissions - Tag Generator JavaScript
+ * CF7 Artist Submissions - Contact Form 7 Tag Generator System
  * 
- * Handles the mediums tag generator functionality in the Contact Form 7 form builder.
+ * Comprehensive tag generator functionality for Contact Form 7 form builder
+ * integration, providing seamless mediums field creation with real-time preview,
+ * form field generation, and WordPress admin interface compatibility.
+ * 
+ * Features:
+ * • Contact Form 7 tag generator integration with native form builder
+ * • Real-time tag preview with live form field generation
+ * • Mediums checkbox field generation with validation and styling
+ * • Mail tag generation for email template integration
+ * • Form field validation with required field support
+ * • WordPress admin interface integration with CF7 styling
+ * • Event-driven updates with real-time form synchronization
+ * • Security validation with input sanitization
  * 
  * @package CF7_Artist_Submissions
+ * @subpackage ContactForm7Integration
  * @since 1.1.0
+ * @version 1.1.0
  */
 
 (function($) {

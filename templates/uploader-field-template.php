@@ -5,7 +5,7 @@
  * Template for rendering the custom drag-and-drop file upload interface in Contact Form 7 forms.
  * 
  * @package CF7_Artist_Submissions
- * @since 1.2.0
+ * @since 1.1.0
  */
 
 // Prevent direct access

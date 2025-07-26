@@ -1,13 +1,25 @@
 <?php
 /**
- * CF7 Artist Submissions - ZIP Downloader
+ * CF7 Artist Submissions - Advanced ZIP Archive Generation System
  *
- * Generates ZIP archives of submission files on-demand for admin download.
- * Downloads original uncompressed files from S3 and streams ZIP to admin users.
+ * Comprehensive ZIP archive generation system providing on-demand file packaging,
+ * S3 integration, streaming downloads, and memory-efficient processing for
+ * bulk file downloads with administrative access controls and error handling.
+ *
+ * Features:
+ * • On-demand ZIP archive generation for submission file collections
+ * • S3 integration with original file downloads and streaming processing
+ * • Memory-efficient ZIP streaming without temporary local storage
+ * • Administrative access controls with WordPress capability checking
+ * • Progress tracking and user feedback for large archive operations
+ * • Error handling and recovery for failed downloads and corrupted files
+ * • Filename sanitization and duplicate handling for archive integrity
+ * • Performance optimization for large file collections and bandwidth management
  *
  * @package CF7_Artist_Submissions
- * @subpackage ZipDownloader
+ * @subpackage ZIPArchiveGeneration
  * @since 1.1.0
+ * @version 1.1.0
  */
 
 /**

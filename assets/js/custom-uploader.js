@@ -5,7 +5,7 @@
  * No external dependencies except jQuery.
  * 
  * @package CF7_Artist_Submissions
- * @since 1.2.0
+ * @since 1.1.0
  */
 
 (function($) {

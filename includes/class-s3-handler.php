@@ -1,13 +1,25 @@
 <?php
 /**
- * CF7 Artist Submissions - Amazon S3 Handler
+ * CF7 Artist Submissions - Amazon S3 Integration Management System
  *
- * Handles all Amazon S3 operations including file uploads, presigned URLs,
- * thumbnail management, and secure file downloads for the CF7 Artist Submissions plugin.
+ * Comprehensive Amazon S3 integration system providing secure file uploads,
+ * presigned URL generation, thumbnail management, and ZIP archive downloads
+ * with multipart upload support for large files and advanced security measures.
+ *
+ * Features:
+ * • Secure multipart file uploads with chunking for large files (>50MB)
+ * • Presigned URL generation for secure file access and downloads
+ * • Thumbnail generation and management for image files
+ * • ZIP archive creation and streaming for bulk downloads
+ * • Advanced AWS signature V4 authentication and security
+ * • Error handling and retry mechanisms for reliable uploads
+ * • Memory-efficient file processing and streaming
+ * • WordPress integration with settings and error logging
  *
  * @package CF7_Artist_Submissions
- * @subpackage S3Handler
+ * @subpackage S3Integration
  * @since 1.1.0
+ * @version 1.1.0
  */
 
 /**

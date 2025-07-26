@@ -1,13 +1,25 @@
 <?php
 /**
- * CF7 Artist Submissions - Thumbnail Generator
+ * CF7 Artist Submissions - Advanced Thumbnail Generation System
  *
- * Handles thumbnail generation and management for uploaded files.
- * Initiates thumbnail creation links and manages display versions.
+ * Comprehensive thumbnail generation and management system providing automated
+ * image processing, S3 integration, fallback handling, and optimized display
+ * versions for artist submission files with performance optimization.
+ *
+ * Features:
+ * • Automated thumbnail generation for images with multiple size variants
+ * • S3 integration for thumbnail storage and presigned URL generation
+ * • Fallback thumbnail handling for unsupported file types
+ * • Performance-optimized image processing with memory management
+ * • WordPress media library integration for local thumbnail support
+ * • Batch processing capabilities for multiple files
+ * • Error handling and logging for debugging and maintenance
+ * • Cache management for improved performance and reduced API calls
  *
  * @package CF7_Artist_Submissions
- * @subpackage ThumbnailGenerator
+ * @subpackage ThumbnailGeneration
  * @since 1.1.0
+ * @version 1.1.0
  */
 
 /**

@@ -1,13 +1,25 @@
 <?php
 /**
- * CF7 Artist Submissions - Metadata Manager
+ * CF7 Artist Submissions - Database Metadata Management System
  *
- * Handles file metadata storage and retrieval in the database for the
- * CF7 Artist Submissions plugin with S3 integration.
+ * Comprehensive database metadata management system providing secure file metadata
+ * storage, retrieval, and management operations for artist submission files with
+ * S3 integration, thumbnail management, and comprehensive database operations.
+ *
+ * Features:
+ * • Database metadata storage and retrieval for uploaded files
+ * • S3 key management and file association tracking
+ * • Thumbnail URL storage and management with fallback support
+ * • File metadata validation and sanitization with security measures
+ * • Database table creation and schema management
+ * • WordPress integration with hooks and database optimization
+ * • Error handling and logging for debugging and maintenance
+ * • Performance optimization with indexed queries and caching
  *
  * @package CF7_Artist_Submissions
- * @subpackage MetadataManager
+ * @subpackage DatabaseMetadataManagement
  * @since 1.1.0
+ * @version 1.1.0
  */
 
 /**
