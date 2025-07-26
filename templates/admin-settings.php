@@ -68,6 +68,11 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
                     <span class="dashicons dashicons-admin-generic"></span>
                     <span class="tab-label"><?php _e('General', 'cf7-artist-submissions'); ?></span>
                 </a>
+                <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=open-calls" 
+                   class="cf7-nav-tab <?php echo $current_tab === 'open-calls' ? 'active' : ''; ?>">
+                    <span class="dashicons dashicons-megaphone"></span>
+                    <span class="tab-label"><?php _e('Open Calls', 'cf7-artist-submissions'); ?></span>
+                </a>
                 <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=email" 
                    class="cf7-nav-tab <?php echo $current_tab === 'email' ? 'active' : ''; ?>">
                     <span class="dashicons dashicons-email-alt"></span>
@@ -109,6 +114,9 @@ $current_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'genera
         switch ($current_tab) {
             case 'general':
                 include 'settings/general-tab.php';
+                break;
+            case 'open-calls':
+                include 'settings/open-calls-tab.php';
                 break;
             case 'email':
                 include 'settings/email-tab.php';

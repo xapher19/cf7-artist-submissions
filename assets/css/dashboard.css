@@ -1694,6 +1694,153 @@
     margin: 0.5rem 0;
 }
 
+/* ===== CALL FILTER (CLEAN) ===== */
+.cf7-call-filter-wrapper {
+    position: relative;
+    min-width: 140px;
+    order: 3;
+}
+
+.cf7-call-filter-dropdown {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    z-index: 1;
+}
+
+.cf7-call-filter-dropdown.open {
+    z-index: 9999;
+}
+
+.cf7-call-filter-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 44px;
+    position: relative;
+}
+
+.cf7-call-filter-display:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cf7-call-filter-dropdown.open .cf7-call-filter-display {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cf7-call-text {
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    flex: 1;
+}
+
+.cf7-call-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.cf7-call-arrow {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+    color: #9ca3af;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    flex-shrink: 0;
+}
+
+.cf7-call-filter-dropdown.open .cf7-call-arrow {
+    transform: rotate(180deg);
+}
+
+.cf7-call-filter-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    margin-top: 0.25rem;
+}
+
+.cf7-call-filter-dropdown.open .cf7-call-filter-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.cf7-call-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border: none;
+    background: white;
+    width: 100%;
+    text-align: left;
+    font-size: 0.875rem;
+}
+
+.cf7-call-filter-option:hover {
+    background: #f8fafc;
+}
+
+.cf7-call-filter-option.active {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.cf7-call-filter-option:first-child {
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.cf7-call-filter-option:last-child {
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}
+
+.cf7-call-filter-option .cf7-call-icon {
+    flex-shrink: 0;
+}
+
+.cf7-call-filter-option .cf7-call-label {
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Call filter separator */
+.cf7-call-filter-separator {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 0.5rem 0;
+}
+
 /* ===== COMPACT CALENDAR DATE PICKER ===== */
 .cf7-calendar-date-picker {
     position: relative;

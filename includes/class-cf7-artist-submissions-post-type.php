@@ -50,6 +50,8 @@ class CF7_Artist_Submissions_Post_Type {
         add_action('init', array($this, 'register_post_type'));
         add_action('init', array($this, 'register_taxonomy'));
         add_action('init', array($this, 'register_mediums_taxonomy'));
+        add_action('init', array($this, 'register_calls_taxonomy'));
+        add_action('init', array($this, 'register_text_mediums_taxonomy'));
         add_filter('manage_cf7_submission_posts_columns', array($this, 'set_custom_columns'));
         add_action('manage_cf7_submission_posts_custom_column', array($this, 'custom_column_content'), 10, 2);
         
@@ -292,6 +294,147 @@ class CF7_Artist_Submissions_Post_Type {
         }
     }
     
+    /**
+     * Register open calls taxonomy for multiple submission categories.
+     * 
+     * Creates hierarchical taxonomy for organizing multiple open calls with
+     * unique CF7 forms. Enables call set functionality where each call can
+     * have its own form, deadlines, and requirements while maintaining
+     * unified submission management interface.
+     * 
+     * @since 1.2.0
+     */
+    public function register_calls_taxonomy() {
+        $labels = array(
+            'name'                       => __('Open Calls', 'cf7-artist-submissions'),
+            'singular_name'              => __('Open Call', 'cf7-artist-submissions'),
+            'search_items'               => __('Search Open Calls', 'cf7-artist-submissions'),
+            'popular_items'              => __('Popular Open Calls', 'cf7-artist-submissions'),
+            'all_items'                  => __('All Open Calls', 'cf7-artist-submissions'),
+            'parent_item'                => __('Parent Open Call', 'cf7-artist-submissions'),
+            'parent_item_colon'          => __('Parent Open Call:', 'cf7-artist-submissions'),
+            'edit_item'                  => __('Edit Open Call', 'cf7-artist-submissions'),
+            'update_item'                => __('Update Open Call', 'cf7-artist-submissions'),
+            'add_new_item'               => __('Add New Open Call', 'cf7-artist-submissions'),
+            'new_item_name'              => __('New Open Call Name', 'cf7-artist-submissions'),
+            'separate_items_with_commas' => __('Separate open calls with commas', 'cf7-artist-submissions'),
+            'add_or_remove_items'        => __('Add or remove open calls', 'cf7-artist-submissions'),
+            'choose_from_most_used'      => __('Choose from most used open calls', 'cf7-artist-submissions'),
+            'not_found'                  => __('No open calls found.', 'cf7-artist-submissions'),
+            'menu_name'                  => __('Open Calls', 'cf7-artist-submissions'),
+        );
+        
+        $args = array(
+            'hierarchical'          => true, // Allow nesting if needed
+            'labels'                => $labels,
+            'show_ui'               => true,
+            'show_admin_column'     => true,
+            'show_in_menu'          => true, // Show in admin navigation
+            'query_var'             => true,
+            'rewrite'               => array('slug' => 'open-call'),
+            'show_tagcloud'         => false,
+            'meta_box_cb'           => 'post_categories_meta_box', // Use category-style meta box
+            'capabilities'          => array(
+                'manage_terms' => 'manage_categories',
+                'edit_terms'   => 'manage_categories',
+                'delete_terms' => 'manage_categories',
+                'assign_terms' => 'edit_posts',
+            ),
+        );
+        
+        register_taxonomy('open_call', 'cf7_submission', $args);
+        
+        // Create default open call if none exist
+        if (!get_terms(array('taxonomy' => 'open_call', 'hide_empty' => false))) {
+            wp_insert_term('General Submissions', 'open_call', array(
+                'slug' => 'general-submissions',
+                'description' => 'Default category for general artist submissions'
+            ));
+        }
+    }
+    
+    /**
+     * Register text-based mediums taxonomy for literary and text submissions.
+     * 
+     * Creates separate taxonomy for text-based artistic mediums to distinguish
+     * from visual mediums. Enables proper categorization for literary works,
+     * poetry, creative writing, and other text-based artistic expressions
+     * with appropriate medium classifications.
+     * 
+     * @since 1.2.0
+     */
+    public function register_text_mediums_taxonomy() {
+        $labels = array(
+            'name'                       => __('Text Mediums', 'cf7-artist-submissions'),
+            'singular_name'              => __('Text Medium', 'cf7-artist-submissions'),
+            'search_items'               => __('Search Text Mediums', 'cf7-artist-submissions'),
+            'popular_items'              => __('Popular Text Mediums', 'cf7-artist-submissions'),
+            'all_items'                  => __('All Text Mediums', 'cf7-artist-submissions'),
+            'parent_item'                => null,
+            'parent_item_colon'          => null,
+            'edit_item'                  => __('Edit Text Medium', 'cf7-artist-submissions'),
+            'update_item'                => __('Update Text Medium', 'cf7-artist-submissions'),
+            'add_new_item'               => __('Add New Text Medium', 'cf7-artist-submissions'),
+            'new_item_name'              => __('New Text Medium Name', 'cf7-artist-submissions'),
+            'separate_items_with_commas' => __('Separate text mediums with commas', 'cf7-artist-submissions'),
+            'add_or_remove_items'        => __('Add or remove text mediums', 'cf7-artist-submissions'),
+            'choose_from_most_used'      => __('Choose from most used text mediums', 'cf7-artist-submissions'),
+            'not_found'                  => __('No text mediums found.', 'cf7-artist-submissions'),
+            'menu_name'                  => __('Text Mediums', 'cf7-artist-submissions'),
+        );
+        
+        $args = array(
+            'hierarchical'          => false, // Tag-like behavior
+            'labels'                => $labels,
+            'show_ui'               => true,
+            'show_admin_column'     => false, // Don't show by default in admin columns
+            'show_in_menu'          => false, // Hide from admin navigation menu
+            'query_var'             => true,
+            'rewrite'               => array('slug' => 'text-medium'),
+            'show_tagcloud'         => true,
+            'meta_box_cb'           => 'post_tags_meta_box', // Use default tag-style meta box
+        );
+        
+        register_taxonomy('text_medium', 'cf7_submission', $args);
+        
+        // Add comprehensive text-based mediums as default terms with unique colors
+        $default_text_mediums = array(
+            'Poetry' => array('bg' => '#E53E3E', 'text' => '#FFFFFF'),           // Red
+            'Short Fiction' => array('bg' => '#3182CE', 'text' => '#FFFFFF'),    // Blue
+            'Creative Nonfiction' => array('bg' => '#38A169', 'text' => '#FFFFFF'), // Green
+            'Essays' => array('bg' => '#805AD5', 'text' => '#FFFFFF'),           // Purple
+            'Scripts/Screenplays' => array('bg' => '#D69E2E', 'text' => '#FFFFFF'), // Yellow
+            'Flash Fiction' => array('bg' => '#C53030', 'text' => '#FFFFFF'),    // Red variant
+            'Monologues' => array('bg' => '#DD6B20', 'text' => '#FFFFFF'),       // Orange
+            'Spoken Word' => array('bg' => '#319795', 'text' => '#FFFFFF'),      // Teal
+            'Literary Criticism' => array('bg' => '#4A5568', 'text' => '#FFFFFF'), // Gray
+            'Experimental Writing' => array('bg' => '#B83280', 'text' => '#FFFFFF'), // Pink
+            'Journalism' => array('bg' => '#2B6CB0', 'text' => '#FFFFFF'),       // Blue variant
+            'Academic Writing' => array('bg' => '#553C9A', 'text' => '#FFFFFF'), // Purple variant
+            'Memoir' => array('bg' => '#2F855A', 'text' => '#FFFFFF'),           // Green variant
+            'Biography' => array('bg' => '#B7791F', 'text' => '#FFFFFF'),        // Yellow variant
+            'Letters/Correspondence' => array('bg' => '#C05621', 'text' => '#FFFFFF'), // Orange variant
+        );
+        
+        foreach ($default_text_mediums as $medium => $colors) {
+            if (!term_exists($medium, 'text_medium')) {
+                $term = wp_insert_term($medium, 'text_medium');
+                if (!is_wp_error($term)) {
+                    // Add color meta to the term
+                    add_term_meta($term['term_id'], 'medium_color', $colors['bg'], true);
+                    add_term_meta($term['term_id'], 'medium_text_color', $colors['text'], true);
+                }
+            } else {
+                // Update existing term with colors
+                $existing_term = get_term_by('name', $medium, 'text_medium');
+                if ($existing_term) {
+                    update_term_meta($existing_term->term_id, 'medium_color', $colors['bg']);
+                    update_term_meta($existing_term->term_id, 'medium_text_color', $colors['text']);
+                }
+            }
+        }
+    }
+    
     // ============================================================================
     // ADMIN INTERFACE SECTION
     // ============================================================================
@@ -342,8 +485,10 @@ class CF7_Artist_Submissions_Post_Type {
             'cb' => '<input type="checkbox" />',
             'title' => __('Name', 'cf7-artist-submissions'),
             'submission_date' => __('Submission Date', 'cf7-artist-submissions'),
+            'open_call' => __('Open Call', 'cf7-artist-submissions'),
             'status' => __('Status', 'cf7-artist-submissions'),
             'artistic_mediums' => __('Artistic Mediums', 'cf7-artist-submissions'),
+            'text_mediums' => __('Text Mediums', 'cf7-artist-submissions'),
             'notes' => __('Curator Notes', 'cf7-artist-submissions'),
         );
         return $columns;
@@ -419,6 +564,17 @@ class CF7_Artist_Submissions_Post_Type {
                 }
                 break;
                 
+            case 'open_call':
+                $terms = get_the_terms($post_id, 'open_call');
+                if (!empty($terms) && !is_wp_error($terms)) {
+                    $call = $terms[0]->name;
+                    $call_slug = sanitize_html_class(strtolower(str_replace(' ', '-', $call)));
+                    echo '<span class="open-call call-' . $call_slug . '">' . esc_html($call) . '</span>';
+                } else {
+                    echo '<span class="open-call call-general">General Submissions</span>';
+                }
+                break;
+                
             case 'status':
                 $terms = get_the_terms($post_id, 'submission_status');
                 if (!empty($terms)) {
@@ -457,6 +613,36 @@ class CF7_Artist_Submissions_Post_Type {
                     echo '<div class="mediums-content">' . $all_mediums . '</div>';
                 } else {
                     echo '<span class="no-mediums">—</span>';
+                }
+                break;
+                
+            case 'text_mediums':
+                $terms = get_the_terms($post_id, 'text_medium');
+                if (!empty($terms) && !is_wp_error($terms)) {
+                    $medium_tags = array();
+                    foreach ($terms as $term) {
+                        $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+                        $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+                        
+                        if ($bg_color && $text_color) {
+                            $style = ' style="background-color: ' . esc_attr($bg_color) . '; color: ' . esc_attr($text_color) . '; border: 1px solid ' . esc_attr($text_color) . '; padding: 2px 6px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-weight: 500;"';
+                        } else {
+                            $style = ' style="background-color: #805AD5; color: #fff; border: 1px solid #553C9A; padding: 2px 6px; border-radius: 3px; font-size: 11px; white-space: nowrap; font-weight: 500;"';
+                        }
+                        $medium_tags[] = '<span class="text-medium-tag" data-color="' . esc_attr($bg_color) . '"' . $style . '>' . esc_html($term->name) . '</span>';
+                    }
+                    $all_mediums = implode(' ', $medium_tags);
+                    
+                    // Truncate if too many tags
+                    if (count($medium_tags) > 3) {
+                        $visible_tags = array_slice($medium_tags, 0, 3);
+                        $remaining_count = count($medium_tags) - 3;
+                        $all_mediums = implode(' ', $visible_tags) . ' <span style="color: #666; font-size: 11px;">+' . $remaining_count . ' more</span>';
+                    }
+                    
+                    echo '<div class="text-mediums-content">' . $all_mediums . '</div>';
+                } else {
+                    echo '<span class="no-text-mediums">—</span>';
                 }
                 break;
                 

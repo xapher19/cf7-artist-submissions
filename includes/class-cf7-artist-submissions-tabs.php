@@ -348,17 +348,23 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render submitted works tab with lightbox gallery integration.
-     * Displays artist submissions with professional image preview capabilities.
+     * Render submitted works tab with lightbox gallery integration and PDF viewer.
+     * Displays artist submissions with professional image preview capabilities and inline file viewing.
      */
     public static function render_works_tab($post) {
         ?>
         <div class="cf7-tab-section">
             <h3 class="cf7-tab-section-title"><?php _e('Submitted Works', 'cf7-artist-submissions'); ?></h3>
-            <?php 
-            // Render the files content (copied from original meta box)
-            self::render_submitted_files($post);
-            ?>
+            
+            <!-- File Gallery Section -->
+            <div class="cf7-works-gallery-section">
+                <?php self::render_submitted_files($post); ?>
+            </div>
+            
+            <!-- PDF/Document Viewer Section -->
+            <div class="cf7-works-viewer-section">
+                <?php self::render_integrated_file_viewer($post); ?>
+            </div>
         </div>
         <?php
     }
@@ -987,7 +993,7 @@ class CF7_Artist_Submissions_Tabs {
             // File actions
             echo '<div class="cf7as-file-actions">';
             
-            // Preview button for images/videos
+            // Preview button for images/videos/documents
             if (self::is_image_file($file_ext)) {
                 echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
                 echo '<span class="dashicons dashicons-visibility"></span> ' . __('Preview', 'cf7-artist-submissions');
@@ -995,6 +1001,10 @@ class CF7_Artist_Submissions_Tabs {
             } elseif (self::is_video_file($file_ext)) {
                 echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
                 echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Preview', 'cf7-artist-submissions');
+                echo '</a>';
+            } elseif (self::is_document_file($file_ext)) {
+                echo '<a href="' . esc_url($download_url) . '" class="button button-small" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '" data-document-type="' . esc_attr($file_ext) . '">';
+                echo '<span class="dashicons dashicons-media-document"></span> ' . __('Preview', 'cf7-artist-submissions');
                 echo '</a>';
             }
             
@@ -1024,10 +1034,12 @@ class CF7_Artist_Submissions_Tabs {
         return in_array($extension, array('mp4', 'mov', 'webm', 'avi', 'mkv', 'mpeg'));
     }
     
+    private static function is_document_file($extension) {
+        return in_array($extension, array('doc', 'docx', 'txt', 'rtf'));
+    }
+    
     private static function get_file_icon($extension) {
         switch ($extension) {
-            case 'pdf':
-                return '<span class="dashicons dashicons-pdf"></span>';
             case 'doc':
             case 'docx':
                 return '<span class="dashicons dashicons-media-document"></span>';
@@ -1049,6 +1061,121 @@ class CF7_Artist_Submissions_Tabs {
         }
     }
     
+    /**
+     * Render integrated file viewer for PDFs and documents.
+     * Provides inline viewing capabilities for submitted files using PDF viewer functionality.
+     */
+    public static function render_integrated_file_viewer($post) {
+        // Check if PDF viewer class is available
+        if (!class_exists('CF7_Artist_Submissions_PDF_Viewer')) {
+            return;
+        }
+        
+        $pdf_viewer = new CF7_Artist_Submissions_PDF_Viewer();
+        
+        // Get all file fields from submission (both S3 files and legacy metadata)
+        $file_fields = $pdf_viewer->get_submission_files($post->ID);
+        $text_content = $pdf_viewer->get_text_submission_content($post->ID);
+        
+        // Only show viewer if there are viewable files or text content
+        if (empty($file_fields) && empty($text_content)) {
+            return;
+        }
+        
+        echo '<div class="cf7-integrated-file-viewer">';
+        echo '<h4>' . __('File Viewer', 'cf7-artist-submissions') . '</h4>';
+        echo '<p class="description">' . __('Click on a file below to view it inline.', 'cf7-artist-submissions') . '</p>';
+        
+        echo '<div class="cf7-submission-viewer-container">';
+        
+        if (!empty($file_fields) || !empty($text_content)) {
+            echo '<div class="cf7-viewer-tabs">';
+            
+            $tab_index = 0;
+            
+            // File tabs
+            foreach ($file_fields as $field_name => $files) {
+                if (!empty($files)) {
+                    foreach ($files as $file_index => $file_info) {
+                        $tab_id = 'file_' . $field_name . '_' . $file_index;
+                        $active_class = ($tab_index === 0) ? ' active' : '';
+                        
+                        echo '<div class="cf7-viewer-tab' . $active_class . '" data-tab="' . $tab_id . '">';
+                        echo '<span class="cf7-file-icon ' . $pdf_viewer->get_file_icon_class($file_info['type']) . '"></span>';
+                        echo '<span class="cf7-file-name">' . esc_html($file_info['name']) . '</span>';
+                        echo '</div>';
+                        
+                        $tab_index++;
+                    }
+                }
+            }
+            
+            // Text content tab
+            if (!empty($text_content)) {
+                $active_class = ($tab_index === 0) ? ' active' : '';
+                echo '<div class="cf7-viewer-tab' . $active_class . '" data-tab="text_content">';
+                echo '<span class="cf7-file-icon cf7-icon-text"></span>';
+                echo '<span class="cf7-file-name">Text Submission</span>';
+                echo '</div>';
+            }
+            
+            echo '</div>';
+            
+            echo '<div class="cf7-viewer-content">';
+            
+            $tab_index = 0;
+            
+            // File content panels
+            foreach ($file_fields as $field_name => $files) {
+                if (!empty($files)) {
+                    foreach ($files as $file_index => $file_info) {
+                        $tab_id = 'file_' . $field_name . '_' . $file_index;
+                        $active_class = ($tab_index === 0) ? ' active' : '';
+                        
+                        echo '<div class="cf7-viewer-panel' . $active_class . '" data-panel="' . $tab_id . '">';
+                        echo '<div class="cf7-viewer-header">';
+                        echo '<h4>' . esc_html($file_info['name']) . '</h4>';
+                        echo '<div class="cf7-viewer-actions">';
+                        
+                        if (isset($file_info['url'])) {
+                            echo '<a href="' . esc_url($file_info['url']) . '" target="_blank" class="cf7-btn cf7-btn-secondary">';
+                            echo '<span class="dashicons dashicons-external"></span> Open in New Tab</a>';
+                        }
+                        
+                        echo '</div>';
+                        echo '</div>';
+                        
+                        echo '<div class="cf7-viewer-body" data-file-id="' . esc_attr($file_info['id']) . '" data-file-type="' . esc_attr($file_info['type']) . '">';
+                        echo '<div class="cf7-viewer-loading">Loading preview...</div>';
+                        echo '</div>';
+                        
+                        echo '</div>';
+                        
+                        $tab_index++;
+                    }
+                }
+            }
+            
+            // Text content panel
+            if (!empty($text_content)) {
+                $active_class = ($tab_index === 0) ? ' active' : '';
+                echo '<div class="cf7-viewer-panel' . $active_class . '" data-panel="text_content">';
+                echo '<div class="cf7-viewer-header">';
+                echo '<h4>Text Submission</h4>';
+                echo '</div>';
+                echo '<div class="cf7-viewer-body cf7-text-content">';
+                echo '<div class="cf7-text-viewer">' . nl2br(esc_html($text_content)) . '</div>';
+                echo '</div>';
+                echo '</div>';
+            }
+            
+            echo '</div>';
+        }
+        
+        echo '</div>'; // .cf7-submission-viewer-container
+        echo '</div>'; // .cf7-integrated-file-viewer
+    }
+
     /**
      * Render curator notes interface with independent saving functionality.
      * Provides private note-taking system with auto-save and audit trail integration.

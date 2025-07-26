@@ -2142,3 +2142,266 @@ nav.cf7-settings-nav:not(.cf7-settings-header-card .cf7-settings-nav) {
     outline: 2px solid #667eea;
     outline-offset: 2px;
 }
+
+/* ============================================================================
+   OPEN CALLS SETTINGS SECTION
+   ============================================================================ */
+
+/**
+ * Open Calls Container - provides structure for multiple call configurations
+ */
+.cf7-open-calls-container {
+    margin: 20px 0;
+}
+
+/**
+ * Open Calls Form Fields - ensure proper styling for all input types
+ */
+.cf7-open-calls-container .cf7-field-input,
+.cf7-open-calls-container .cf7-field-textarea,
+.cf7-open-calls-container .cf7-field-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    background: white;
+    box-sizing: border-box;
+}
+
+.cf7-open-calls-container .cf7-field-input:focus,
+.cf7-open-calls-container .cf7-field-textarea:focus,
+.cf7-open-calls-container .cf7-field-select:focus {
+    outline: none;
+    border-color: #2271b1;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.1);
+}
+
+.cf7-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.cf7-section-header h3 {
+    margin: 0;
+    color: #374151;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+/**
+ * Individual Open Call Item - card-based design for each call configuration
+ */
+.cf7-open-call-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.cf7-open-call-item:hover {
+    border-color: #cbd5e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.cf7-call-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.cf7-call-header:hover {
+    background: #f8fafc;
+}
+
+.cf7-call-title {
+    margin: 0;
+    font-size: 1em;
+    color: #374151;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf7-call-title .dashicons {
+    color: #667eea;
+    font-size: 18px;
+}
+
+.cf7-call-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.cf7-call-content {
+    padding: 20px;
+    background: #fff;
+}
+
+/**
+ * Section Divider - visual separation between configuration sections
+ */
+.cf7-section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent);
+    margin: 30px 0;
+}
+
+/**
+ * Three Column Grid - for dates and status fields
+ */
+.cf7-field-grid.three-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+}
+
+/**
+ * Toggle and Remove Button Styles - specialized for call management
+ */
+.cf7-toggle-call {
+    min-width: 32px;
+}
+
+.cf7-toggle-call .dashicons {
+    transition: transform 0.2s ease;
+}
+
+.cf7-remove-call:hover {
+    background-color: #fee2e2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+/**
+ * Responsive Design - mobile and tablet adaptations
+ */
+@media (max-width: 768px) {
+    .cf7-field-grid.three-cols {
+        grid-template-columns: 1fr;
+    }
+    
+    .cf7-section-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .cf7-call-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .cf7-call-actions {
+        justify-content: center;
+    }
+    
+    .cf7-call-title {
+        justify-content: center;
+    }
+}
+
+/**
+ * Status Indicators - visual feedback for call status
+ */
+.cf7-open-call-item[data-status="active"] .cf7-call-header {
+    border-left: 4px solid #10b981;
+}
+
+.cf7-open-call-item[data-status="inactive"] .cf7-call-header {
+    border-left: 4px solid #6b7280;
+}
+
+.cf7-open-call-item[data-status="draft"] .cf7-call-header {
+    border-left: 4px solid #f59e0b;
+}
+
+/**
+ * Form Field Enhancements - specific to open calls configuration
+ */
+.cf7-open-calls-container .cf7-field-input[type="date"] {
+    width: 100%;
+}
+
+.cf7-open-calls-container .cf7-field-input[name*="[status]"] {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 8px center;
+    background-repeat: no-repeat;
+    background-size: 16px 12px;
+    padding-right: 36px;
+}
+
+/**
+ * Interactive States - enhanced feedback for user interactions
+ */
+.cf7-call-content {
+    padding: 20px;
+    background: #fff;
+    transition: all 0.3s ease;
+}
+
+.cf7-call-content.expanded {
+    display: block;
+    max-height: none;
+    padding: 20px;
+}
+
+.cf7-open-call-item.collapsed .cf7-call-content {
+    display: none;
+    max-height: 0;
+    overflow: hidden;
+    padding: 0 20px;
+}
+
+/**
+ * Add Button Enhancement - prominent styling for adding new calls
+ */
+#cf7-add-open-call {
+    position: relative;
+    overflow: hidden;
+}
+
+#cf7-add-open-call::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
+}
+
+#cf7-add-open-call:hover::after {
+    left: 100%;
+}
+
+/**
+ * Notice Enhancements - improved styling for existing terms notice
+ */
+.cf7-notice.cf7-notice-info ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.cf7-notice.cf7-notice-info li {
+    margin: 5px 0;
+}
+
+.cf7-notice.cf7-notice-info li strong {
+    color: #374151;
+}

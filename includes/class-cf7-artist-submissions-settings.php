@@ -328,6 +328,9 @@ class CF7_Artist_Submissions_Settings {
         
         wp_enqueue_script('cf7-admin-js', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/admin.js', array('jquery'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
         
+        // Enqueue open calls JavaScript for settings page
+        wp_enqueue_script('cf7-open-calls-js', CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/open-calls.js', array('jquery', 'cf7-admin-js'), CF7_ARTIST_SUBMISSIONS_VERSION, true);
+        
         // Localize script for AJAX
         wp_localize_script('cf7-admin-js', 'cf7_admin_ajax', array(
             'nonce' => wp_create_nonce('cf7_admin_nonce'),
@@ -395,6 +398,7 @@ class CF7_Artist_Submissions_Settings {
      */
     public function register_settings() {
         register_setting('cf7_artist_submissions_options', 'cf7_artist_submissions_options', array($this, 'validate_options'));
+        register_setting('cf7_artist_submissions_open_calls', 'cf7_artist_submissions_open_calls', array($this, 'validate_open_calls_options'));
         register_setting('cf7_artist_submissions_email_options', 'cf7_artist_submissions_email_options', array($this, 'validate_email_options'));
         register_setting('cf7_artist_submissions_imap_options', 'cf7_artist_submissions_imap_options', array($this, 'validate_imap_options'));
     }
@@ -555,6 +559,200 @@ class CF7_Artist_Submissions_Settings {
         $this->log_settings_changes($audit_old, $audit_new, 'imap');
         
         return $valid;
+    }
+
+    /**
+     * Validate open calls settings with comprehensive data processing.
+     * 
+     * Validates open call configurations, Contact Form 7 assignments, and
+     * automatically creates/updates taxonomy terms based on configuration.
+     * Processes titles, descriptions, dates, and form associations with
+     * comprehensive error handling and data sanitization.
+     * 
+     * @since 1.2.0
+     */
+    public function validate_open_calls_options($input) {
+        $valid = array();
+        $old_options = get_option('cf7_artist_submissions_open_calls', array());
+        
+        // Validate auto-create terms option
+        $valid['auto_create_terms'] = isset($input['auto_create_terms']) ? true : false;
+        
+        // Validate calls array
+        $valid['calls'] = array();
+        
+        if (isset($input['calls']) && is_array($input['calls'])) {
+            foreach ($input['calls'] as $index => $call) {
+                $valid_call = array();
+                
+                // Validate title (required)
+                $valid_call['title'] = isset($call['title']) ? sanitize_text_field($call['title']) : '';
+                
+                // Skip empty calls
+                if (empty($valid_call['title'])) {
+                    continue;
+                }
+                
+                // Preserve term_id if it exists (for tracking existing terms)
+                $valid_call['term_id'] = isset($call['term_id']) ? intval($call['term_id']) : 0;
+                
+                // Validate call type
+                $allowed_call_types = array('visual_arts', 'text_based');
+                $valid_call['call_type'] = isset($call['call_type']) && in_array($call['call_type'], $allowed_call_types) 
+                    ? sanitize_text_field($call['call_type']) 
+                    : '';
+                
+                // Validate form ID
+                $valid_call['form_id'] = isset($call['form_id']) ? intval($call['form_id']) : 0;
+                
+                // Validate description
+                $valid_call['description'] = isset($call['description']) ? sanitize_textarea_field($call['description']) : '';
+                
+                // Validate dates
+                $valid_call['start_date'] = isset($call['start_date']) ? sanitize_text_field($call['start_date']) : '';
+                $valid_call['end_date'] = isset($call['end_date']) ? sanitize_text_field($call['end_date']) : '';
+                
+                // Validate status
+                $allowed_statuses = array('active', 'inactive', 'draft');
+                $valid_call['status'] = isset($call['status']) && in_array($call['status'], $allowed_statuses) 
+                    ? sanitize_text_field($call['status']) 
+                    : 'active';
+                
+                // Validate dashboard tag
+                $valid_call['dashboard_tag'] = isset($call['dashboard_tag']) ? sanitize_text_field($call['dashboard_tag']) : '';
+                // Trim and limit to 20 characters
+                if (!empty($valid_call['dashboard_tag'])) {
+                    $valid_call['dashboard_tag'] = trim(substr($valid_call['dashboard_tag'], 0, 20));
+                }
+                
+                // Validate form exists if specified
+                if ($valid_call['form_id'] > 0 && class_exists('WPCF7_ContactForm')) {
+                    $form = WPCF7_ContactForm::get_instance($valid_call['form_id']);
+                    if (!$form || !$form->id()) {
+                        add_settings_error(
+                            'cf7_artist_submissions_open_calls',
+                            'invalid_form',
+                            sprintf(__('Contact Form 7 form #%d not found for open call "%s".', 'cf7-artist-submissions'), 
+                                $valid_call['form_id'], $valid_call['title'])
+                        );
+                        $valid_call['form_id'] = 0;
+                    }
+                }
+                
+                $valid['calls'][] = $valid_call;
+            }
+        }
+        
+        // Auto-create taxonomy terms if enabled
+        if ($valid['auto_create_terms'] && !empty($valid['calls'])) {
+            $valid['calls'] = $this->sync_open_call_taxonomy_terms($valid['calls']);
+        }
+        
+        // Log settings changes for audit trail
+        $audit_old = array();
+        $audit_new = array();
+        
+        if (!empty($old_options['calls'])) {
+            $audit_old['calls_count'] = count($old_options['calls']);
+        }
+        if (!empty($valid['calls'])) {
+            $audit_new['calls_count'] = count($valid['calls']);
+            $audit_new['call_titles'] = array_column($valid['calls'], 'title');
+        }
+        
+        $this->log_settings_changes($audit_old, $audit_new, 'open_calls');
+        
+        return $valid;
+    }
+
+    /**
+     * Synchronize open call taxonomy terms with settings configuration.
+     * 
+     * Creates or updates open call taxonomy terms based on configured calls.
+     * Maintains consistency between settings and taxonomy structure while
+     * preserving existing term relationships and submission associations.
+     * Uses term_id tracking to properly update existing terms when titles change.
+     * 
+     * @since 1.2.0
+     * @param array $calls Array of call configurations
+     * @return array Updated calls array with term_id populated
+     */
+    private function sync_open_call_taxonomy_terms($calls) {
+        if (!taxonomy_exists('open_call')) {
+            return $calls;
+        }
+        
+        foreach ($calls as $index => $call) {
+            if (empty($call['title'])) {
+                continue;
+            }
+            
+            $term_id = null;
+            $existing_term = null;
+            
+            // First, try to find existing term by term_id if provided
+            if (!empty($call['term_id'])) {
+                $existing_term = get_term($call['term_id'], 'open_call');
+                if (!is_wp_error($existing_term) && $existing_term) {
+                    $term_id = $existing_term->term_id;
+                }
+            }
+            
+            // If no term found by ID, try to find by name (for backward compatibility)
+            if (!$term_id) {
+                $existing_term = get_term_by('name', $call['title'], 'open_call');
+                if ($existing_term) {
+                    $term_id = $existing_term->term_id;
+                }
+            }
+            
+            if ($term_id) {
+                // Update existing term
+                $update_args = array(
+                    'name' => $call['title'],
+                    'slug' => sanitize_title($call['title']),
+                    'description' => $call['description'] ?? ''
+                );
+                
+                $result = wp_update_term($term_id, 'open_call', $update_args);
+                
+                if (!is_wp_error($result)) {
+                    // Update term meta
+                    update_term_meta($term_id, 'form_id', $call['form_id']);
+                    update_term_meta($term_id, 'start_date', $call['start_date']);
+                    update_term_meta($term_id, 'end_date', $call['end_date']);  
+                    update_term_meta($term_id, 'status', $call['status']);
+                    update_term_meta($term_id, 'call_type', $call['call_type']);
+                    
+                    // Update the calls array with the term_id for future reference
+                    $calls[$index]['term_id'] = $term_id;
+                }
+            } else {
+                // Create new term
+                $term_args = array(
+                    'slug' => sanitize_title($call['title']),
+                    'description' => $call['description'] ?? ''
+                );
+                
+                $result = wp_insert_term($call['title'], 'open_call', $term_args);
+                
+                if (!is_wp_error($result)) {
+                    $term_id = $result['term_id'];
+                    
+                    // Add term meta for additional data
+                    add_term_meta($term_id, 'form_id', $call['form_id'], true);
+                    add_term_meta($term_id, 'start_date', $call['start_date'], true);
+                    add_term_meta($term_id, 'end_date', $call['end_date'], true);
+                    add_term_meta($term_id, 'status', $call['status'], true);
+                    add_term_meta($term_id, 'call_type', $call['call_type'], true);
+                    
+                    // Update the calls array with the new term_id
+                    $calls[$index]['term_id'] = $term_id;
+                }
+            }
+        }
+        
+        return $calls;
     }
     
     

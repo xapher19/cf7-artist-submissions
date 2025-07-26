@@ -216,7 +216,44 @@ Port: 993 (SSL) or 143 (STARTTLS)
 
 **Test plus addressing** by sending an email to: `youremail+test@yourdomain.com`
 
-### 4. Artistic Mediums Setup
+### 4. Asset Loading Configuration
+
+The plugin uses a **shortcode-based asset loading system** to prevent conflicts with other plugins and themes. Scripts and styles are only loaded on pages where you explicitly add the shortcode.
+
+#### Asset Loading Shortcode
+
+Add this shortcode to any page that contains CF7 forms with CF7AS custom fields:
+
+```
+[cf7as_load_assets]
+```
+
+#### When to Use the Shortcode
+
+Add the `[cf7as_load_assets]` shortcode to pages that contain:
+- CF7 forms with custom uploader fields
+- CF7 forms with mediums fields
+- CF7 forms with takeover functionality
+- Any other CF7AS custom fields
+
+#### Where to Place the Shortcode
+
+You can place the shortcode anywhere on the page:
+- At the top of the page content
+- Before your CF7 form shortcode
+- In a widget or footer
+- The exact location doesn't matter - it just needs to be present on the page
+
+#### Assets Loaded
+
+When the shortcode is used, the following assets are loaded:
+- **CSS**: `common.css`, `custom-uploader.css`, `lightbox.css`
+- **JavaScript**: `custom-uploader.js` with REST API configuration
+- **Admin Assets**: Automatically loaded in WordPress admin areas
+
+**Note**: Admin assets are loaded separately and automatically on relevant admin pages (submission management, dashboard, settings).
+
+### 5. Artistic Mediums Setup
 
 1. **Navigate to** Artist Submissions > Artistic Mediums
 2. **Add medium terms** (e.g., "Oil Painting", "Digital Art", "Sculpture")
@@ -237,7 +274,7 @@ Port: 993 (SSL) or 143 (STARTTLS)
 
 ### Managing Submissions
 1. **Profile Tab**: View and edit all submission details inline
-2. **Works Tab**: Browse artwork gallery with lightbox preview
+2. **Works Tab**: Browse artwork gallery with lightbox preview and integrated file viewer for PDFs and documents
 3. **Conversations Tab**: Send messages and track email threads
 4. **Actions Tab**: Create tasks, set deadlines, assign team members
 5. **Curator Notes Tab**: Add private internal notes
@@ -575,7 +612,7 @@ Test plus addressing by sending an email to: `youremail+test@yourdomain.com`
 
 ### Managing Submissions
 1. **Profile Tab**: View and edit all submission details inline
-2. **Works Tab**: Browse artwork gallery with lightbox preview
+2. **Works Tab**: Browse artwork gallery with lightbox preview and integrated file viewer for PDFs and documents
 3. **Conversations Tab**: Send messages and track email threads
 4. **Actions Tab**: Create tasks, set deadlines, assign team members
 5. **Curator Notes Tab**: Add private internal notes

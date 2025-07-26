@@ -8,6 +8,65 @@
  * @since 1.1.0
  */
 
+/* ===================================================================
+   MEDIUM CHECKBOX STYLES - ENSURE THEY WORK IN MODAL
+   =================================================================== */
+
+/* Medium checkbox styling for modal context */
+.cf7as-submission-modal .cf7as-checkbox-mark {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #1d2327;
+    border-radius: 3px;
+    margin-right: 8px;
+    position: relative;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.2s ease;
+}
+
+.cf7as-submission-modal .cf7as-checkbox-mark.checked {
+    background-color: #1d2327 !important;
+}
+
+.cf7as-submission-modal .cf7as-checkbox-mark.checked::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 4px !important;
+    top: 1px !important;
+    width: 4px !important;
+    height: 8px !important;
+    border: solid white !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg) !important;
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark {
+    background-color: #1d2327 !important;
+}
+
+.cf7as-submission-modal .cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 4px !important;
+    top: 1px !important;
+    width: 4px !important;
+    height: 8px !important;
+    border: solid white !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg) !important;
+}
+
+/* ===================================================================
+   ORIGINAL STYLES
+   =================================================================== */
+
 /* Submission intro text centering */
 .cf7as-submission-intro p {
     text-align: center;
@@ -3023,4 +3082,104 @@ body.cf7as-submission-modal-open {
         margin-left: 0 !important;
         width: 100% !important;
     }
+}
+
+/* ===================================================================
+   OPEN CALL TIMING AND STATUS STYLES
+   Styles for deadline enforcement and status messaging
+   =================================================================== */
+
+/* Loading state for form takeover */
+.cf7as-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+}
+
+.cf7as-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007cba;
+    border-radius: 50%;
+    animation: cf7as-spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes cf7as-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Status message styling */
+.cf7as-status-message {
+    background: #f0f6ff;
+    border: 1px solid #c3d9ff;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    color: #0066cc;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Submission unavailable state */
+.cf7as-submission-unavailable {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.cf7as-message.cf7as-error {
+    background: #fff2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 24px;
+    color: #dc2626;
+}
+
+.cf7as-message.cf7as-error h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #b91c1c;
+}
+
+.cf7as-message.cf7as-error p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Disabled submit button state */
+.cf7as-submit-work-btn.cf7as-submit-disabled {
+    background: #f3f4f6 !important;
+    color: #9ca3af !important;
+    border-color: #d1d5db !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+}
+
+.cf7as-submit-work-btn.cf7as-submit-disabled:hover {
+    background: #f3f4f6 !important;
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+.cf7as-submit-work-btn.cf7as-submit-disabled .cf7as-btn-icon svg {
+    opacity: 0.5;
+}
+
+/* Active submit button enhancements */
+.cf7as-submit-work-btn.cf7as-submit-active {
+    background: linear-gradient(135deg, #007cba 0%, #005a87 100%);
+    border-color: #005a87;
+}
+
+.cf7as-submit-work-btn.cf7as-submit-active:hover {
+    background: linear-gradient(135deg, #005a87 0%, #004466 100%);
 }

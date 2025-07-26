@@ -405,9 +405,9 @@ class CF7_Artist_Submissions_Add_Submission {
                 <!-- File Upload Section -->
                 <div class="cf7-add-form-section">
                     <h3><?php _e('Artwork Files', 'cf7-artist-submissions'); ?></h3>
-                    <p class="description"><?php _e('Upload images or documents of your artwork. Multiple files are supported.', 'cf7-artist-submissions'); ?></p>
+                    <p class="description"><?php _e('Upload images or editable documents of your artwork. Multiple files are supported.', 'cf7-artist-submissions'); ?></p>
                     <div class="cf7-add-file-upload" id="cf7-file-upload-area">
-                        <input type="file" id="artwork_files" name="artwork_files[]" multiple accept="image/*,.pdf,.doc,.docx" style="display: none;">
+                        <input type="file" id="artwork_files" name="artwork_files[]" multiple accept="image/*,.doc,.docx" style="display: none;">
                         <div class="cf7-upload-text">
                             <p><strong><?php _e('Click to select files or drag and drop', 'cf7-artist-submissions'); ?></strong></p>
                             <p><?php _e('Supported formats: Images (JPG, PNG, GIF), PDF, Word documents', 'cf7-artist-submissions'); ?></p>

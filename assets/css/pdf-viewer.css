@@ -1,0 +1,370 @@
+/**
+ * CF7 Artist Submissions - PDF Viewer Styles
+ * 
+ * Comprehensive styling for PDF and text submission viewing interface
+ * with modern design, responsive layout, and integrated file management.
+ * 
+ * @package CF7_Artist_Submissions
+ * @subpackage PDFViewer
+ * @since 1.2.0
+ */
+
+/* =============================================================================
+   PDF VIEWER CONTAINER
+   ============================================================================= */
+
+.cf7-submission-viewer-container {
+    background: #ffffff;
+    border: 1px solid #e1e5e9;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+/* =============================================================================
+   VIEWER TABS
+   ============================================================================= */
+
+.cf7-viewer-tabs {
+    display: flex;
+    border-bottom: 1px solid #e1e5e9;
+    background: #f8f9fa;
+    overflow-x: auto;
+    min-height: 48px;
+}
+
+.cf7-viewer-tab {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.cf7-viewer-tab:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.cf7-viewer-tab.active {
+    background: #ffffff;
+    color: #0073aa;
+    border-bottom-color: #0073aa;
+}
+
+.cf7-viewer-tab .cf7-file-icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.cf7-file-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* File Type Icons */
+.cf7-icon-pdf:before {
+    content: "\f443";
+    font-family: dashicons;
+    color: #d32f2f;
+}
+
+.cf7-icon-image:before {
+    content: "\f128";
+    font-family: dashicons;
+    color: #388e3c;
+}
+
+.cf7-icon-document:before {
+    content: "\f473";
+    font-family: dashicons;
+    color: #1976d2;
+}
+
+.cf7-icon-text:before {
+    content: "\f478";
+    font-family: dashicons;
+    color: #7b1fa2;
+}
+
+.cf7-icon-file:before {
+    content: "\f481";
+    font-family: dashicons;
+    color: #616161;
+}
+
+/* =============================================================================
+   VIEWER CONTENT
+   ============================================================================= */
+
+.cf7-viewer-content {
+    position: relative;
+    min-height: 400px;
+}
+
+.cf7-viewer-panel {
+    display: none;
+    padding: 0;
+}
+
+.cf7-viewer-panel.active {
+    display: block;
+}
+
+.cf7-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.cf7-viewer-header h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.cf7-viewer-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cf7-viewer-body {
+    padding: 20px;
+    min-height: 500px;
+    background: #ffffff;
+}
+
+/* =============================================================================
+   PDF VIEWER
+   ============================================================================= */
+
+.cf7-pdf-viewer {
+    width: 100%;
+    height: 100%;
+}
+
+.cf7-pdf-embed-container {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cf7-pdf-embed-container embed {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.cf7-pdf-fallback {
+    text-align: center;
+    padding: 40px 20px;
+    background: #f8f9fa;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+}
+
+.cf7-pdf-fallback p {
+    margin-bottom: 20px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+/* =============================================================================
+   TEXT VIEWER
+   ============================================================================= */
+
+.cf7-text-content {
+    padding: 0;
+}
+
+.cf7-text-viewer {
+    background: #ffffff;
+    border: 1px solid #e1e5e9;
+    border-radius: 4px;
+    padding: 24px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #212529;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+/* Text formatting */
+.cf7-text-viewer p {
+    margin-bottom: 16px;
+}
+
+.cf7-text-viewer p:last-child {
+    margin-bottom: 0;
+}
+
+/* =============================================================================
+   LOADING STATES
+   ============================================================================= */
+
+.cf7-viewer-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.cf7-viewer-loading:before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e1e5e9;
+    border-top-color: #0073aa;
+    border-radius: 50%;
+    animation: cf7-spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes cf7-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* =============================================================================
+   NO FILES MESSAGE
+   ============================================================================= */
+
+.cf7-no-files-message {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6c757d;
+}
+
+.cf7-no-files-message p {
+    margin: 0;
+    font-size: 16px;
+}
+
+/* =============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    .cf7-viewer-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .cf7-viewer-tab {
+        min-width: 120px;
+        font-size: 13px;
+        padding: 10px 12px;
+    }
+    
+    .cf7-viewer-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
+    }
+    
+    .cf7-viewer-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .cf7-viewer-body {
+        padding: 16px;
+    }
+    
+    .cf7-pdf-embed-container {
+        height: 400px;
+    }
+    
+    .cf7-text-viewer {
+        padding: 16px;
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7-viewer-tab {
+        min-width: 100px;
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+    
+    .cf7-file-name {
+        max-width: 80px;
+    }
+    
+    .cf7-pdf-embed-container {
+        height: 300px;
+    }
+    
+    .cf7-text-viewer {
+        max-height: 400px;
+        font-size: 14px;
+    }
+}
+
+/* =============================================================================
+   BUTTON INTEGRATION
+   ============================================================================= */
+
+.cf7-viewer-actions .cf7-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    text-decoration: none;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cf7-viewer-actions .cf7-btn-primary {
+    background: #0073aa;
+    color: #ffffff;
+    border-color: #0073aa;
+}
+
+.cf7-viewer-actions .cf7-btn-primary:hover {
+    background: #005a87;
+    border-color: #005a87;
+}
+
+.cf7-viewer-actions .cf7-btn-secondary {
+    background: #ffffff;
+    color: #6c757d;
+    border-color: #e1e5e9;
+}
+
+.cf7-viewer-actions .cf7-btn-secondary:hover {
+    background: #f8f9fa;
+    color: #495057;
+    border-color: #ced4da;
+}
+
+.cf7-viewer-actions .cf7-btn .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}

@@ -389,6 +389,41 @@ class CF7_Artist_Submissions_Dashboard {
                                 </div>
                             </div>
                             
+                            <!-- Open Call filter dropdown -->
+                            <div class="cf7-call-filter-wrapper">
+                                <div class="cf7-call-filter-dropdown" data-current="">
+                                    <div class="cf7-call-filter-display">
+                                        <span class="cf7-call-icon dashicons dashicons-megaphone" style="color: #718096;"></span>
+                                        <span class="cf7-call-text">All Calls</span>
+                                        <span class="cf7-call-arrow dashicons dashicons-arrow-down-alt2"></span>
+                                    </div>
+                                    <div class="cf7-call-filter-menu">
+                                        <div class="cf7-call-filter-option active" data-value="" data-icon="dashicons-megaphone" data-color="#718096">
+                                            <span class="cf7-call-icon dashicons dashicons-megaphone" style="color: #718096;"></span>
+                                            <span class="cf7-call-label">All Calls</span>
+                                        </div>
+                                        <?php
+                                        // Get all open calls
+                                        $open_calls = get_terms(array(
+                                            'taxonomy' => 'open_call',
+                                            'hide_empty' => false,
+                                            'orderby' => 'name',
+                                            'order' => 'ASC'
+                                        ));
+                                        
+                                        if (!empty($open_calls) && !is_wp_error($open_calls)) {
+                                            foreach ($open_calls as $call) {
+                                                echo '<div class="cf7-call-filter-option" data-value="' . esc_attr($call->slug) . '" data-icon="dashicons-portfolio" data-color="#4299e1">';
+                                                echo '<span class="cf7-call-icon dashicons dashicons-portfolio" style="color: #4299e1;"></span>';
+                                                echo '<span class="cf7-call-label">' . esc_html($call->name) . '</span>';
+                                                echo '</div>';
+                                            }
+                                        }
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <!-- Date filter calendar trigger -->
                             <div class="cf7-calendar-date-picker">
                                 <div class="cf7-calendar-trigger" tabindex="0" role="button" aria-label="Select date range" title="Filter by date">
@@ -580,6 +615,7 @@ class CF7_Artist_Submissions_Dashboard {
         $per_page = intval($_POST['per_page'] ?? 10);
         $search = sanitize_text_field($_POST['search'] ?? '');
         $status = sanitize_text_field($_POST['status'] ?? '');
+        $open_call = sanitize_text_field($_POST['open_call'] ?? '');
         $date_from = sanitize_text_field($_POST['date_from'] ?? '');
         $date_to = sanitize_text_field($_POST['date_to'] ?? '');
         
@@ -588,11 +624,21 @@ class CF7_Artist_Submissions_Dashboard {
             'post_status' => 'publish',
             'posts_per_page' => $per_page,
             'paged' => $page,
-            'meta_query' => array()
+            'meta_query' => array(),
+            'tax_query' => array()
         );
         
         if (!empty($search)) {
             $args['s'] = $search;
+        }
+        
+        // Add open call filtering
+        if (!empty($open_call)) {
+            $args['tax_query'][] = array(
+                'taxonomy' => 'open_call',
+                'field' => 'slug',
+                'terms' => $open_call
+            );
         }
         
         if (!empty($status)) {
@@ -630,14 +676,17 @@ class CF7_Artist_Submissions_Dashboard {
                 }
             } else {
                 // Regular status filter
-                $args['tax_query'] = array(
-                    array(
-                        'taxonomy' => 'submission_status',
-                        'field' => 'slug',
-                        'terms' => $status
-                    )
+                $args['tax_query'][] = array(
+                    'taxonomy' => 'submission_status',
+                    'field' => 'slug',
+                    'terms' => $status
                 );
             }
+        }
+        
+        // Set tax_query relation if we have multiple taxonomy filters
+        if (count($args['tax_query']) > 1) {
+            $args['tax_query']['relation'] = 'AND';
         }
         
         // Add date filtering
@@ -711,6 +760,27 @@ class CF7_Artist_Submissions_Dashboard {
             WHERE submission_id = %d AND status = 'pending'
         ", $post->ID));
         
+        // Get open call information
+        $call_terms = wp_get_object_terms($post->ID, 'open_call');
+        $open_call = !empty($call_terms) ? $call_terms[0]->name : 'General Submissions';
+        $open_call_slug = !empty($call_terms) ? $call_terms[0]->slug : 'general-submissions';
+        
+        // Get dashboard tag if available
+        $dashboard_display_name = $open_call;
+        if (!empty($call_terms)) {
+            $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+            if (!empty($open_calls_options['calls'])) {
+                foreach ($open_calls_options['calls'] as $call_config) {
+                    if (isset($call_config['title']) && $call_config['title'] === $open_call) {
+                        if (!empty($call_config['dashboard_tag'])) {
+                            $dashboard_display_name = $call_config['dashboard_tag'];
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        
         return array(
             'id' => $post->ID,
             'title' => $post->post_title ?: 'Untitled Submission',
@@ -718,9 +788,12 @@ class CF7_Artist_Submissions_Dashboard {
             'time' => get_the_date('g:i a', $post),
             'status' => $status_slug, // Use slug for CSS classes
             'status_label' => $status, // Human readable label
+            'open_call' => $dashboard_display_name, // Use dashboard tag if available, otherwise full name
+            'open_call_slug' => $open_call_slug,
             'artist_name' => get_post_meta($post->ID, 'cf7_artist-name', true) ?: 'Unknown Artist',
             'email' => get_post_meta($post->ID, 'cf7_email', true) ?: get_post_meta($post->ID, 'your-email', true) ?: 'No email',
             'mediums' => $this->get_submission_mediums($post->ID),
+            'text_mediums' => $this->get_submission_text_mediums($post->ID),
             'notes' => get_post_meta($post->ID, 'cf7_curator_notes', true),
             'view_url' => get_edit_post_link($post->ID),
             'edit_url' => get_edit_post_link($post->ID),
@@ -1775,6 +1848,38 @@ class CF7_Artist_Submissions_Dashboard {
                 'name' => $term->name,
                 'slug' => $term->slug,
                 'bg_color' => $bg_color ?: '#6b7280',
+                'text_color' => $text_color ?: '#ffffff'
+            );
+        }
+        
+        return $mediums;
+    }
+    
+    /**
+     * Get text mediums for submission with color metadata.
+     * 
+     * Retrieves text medium taxonomy terms with associated color styling
+     * for dashboard display and submission categorization. Provides
+     * comprehensive text medium information with visual presentation data.
+     * 
+     * @since 1.2.0
+     */
+    private function get_submission_text_mediums($post_id) {
+        $terms = get_the_terms($post_id, 'text_medium');
+        
+        if (empty($terms) || is_wp_error($terms)) {
+            return array();
+        }
+        
+        $mediums = array();
+        foreach ($terms as $term) {
+            $bg_color = get_term_meta($term->term_id, 'medium_color', true);
+            $text_color = get_term_meta($term->term_id, 'medium_text_color', true);
+            
+            $mediums[] = array(
+                'name' => $term->name,
+                'slug' => $term->slug,
+                'bg_color' => $bg_color ?: '#805AD5',
                 'text_color' => $text_color ?: '#ffffff'
             );
         }

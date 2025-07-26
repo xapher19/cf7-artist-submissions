@@ -251,7 +251,6 @@ class CF7_Artist_Submissions_Thumbnail_Generator {
      */
     public function is_document($mime_type) {
         $document_types = array(
-            'application/pdf',
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'text/plain',

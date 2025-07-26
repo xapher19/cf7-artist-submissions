@@ -55,6 +55,20 @@ jQuery(document).ready(function($) {
             setTimeout(initLightbox, 100);
         }
         
+                    // Special handling for Works tab
+            if (currentTab === 'works' && $('#cf7-integrated-file-viewer').length > 0) {
+                // Initialize PDF viewer for integrated file viewer
+                setTimeout(function() {
+                    if (typeof window.initPDFViewer === 'function') {
+                        window.initPDFViewer();
+                    }
+                    // Also initialize lightbox for the integrated viewer
+                    if (typeof window.initLightbox === 'function') {
+                        window.initLightbox();
+                    }
+                }, 100);
+            }
+        
         // Initialize actions manager for the actions tab
         if (tabId === 'cf7-tab-actions') {
             // Initialize actions manager for the actions tab

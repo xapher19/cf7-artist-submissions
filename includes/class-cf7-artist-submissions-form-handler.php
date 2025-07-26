@@ -57,6 +57,10 @@ class CF7_Artist_Submissions_Form_Handler {
         
         // Enqueue admin assets for CF7 tag generator
         add_action('admin_enqueue_scripts', array($this, 'enqueue_cf7_admin_assets'));
+        
+        // Register AJAX handlers for open call information
+        add_action('wp_ajax_cf7as_get_open_call_info', array($this, 'ajax_get_open_call_info'));
+        add_action('wp_ajax_nopriv_cf7as_get_open_call_info', array($this, 'ajax_get_open_call_info'));
     }
     
     /**
@@ -84,29 +88,19 @@ class CF7_Artist_Submissions_Form_Handler {
     }
     
     /**
-     * Enqueue frontend assets for custom form fields.
+     * Conditionally enqueue frontend assets only when needed.
      * 
-     * Loads necessary CSS for mediums form field styling on pages
-     * where Contact Form 7 forms are displayed.
+     * Note: Common CSS is now handled by the main conditional loading system
+     * in the main plugin file, so this method is kept for compatibility but
+     * doesn't need to load assets anymore.
      * 
      * @since 1.1.0
      */
     public function enqueue_frontend_assets() {
-        // Only enqueue if CF7 is active and we're not in admin
-        if (!function_exists('wpcf7_get_current_contact_form') || is_admin()) {
-            return;
-        }
-        
-        // Enqueue common styles for mediums form field
-        wp_enqueue_style(
-            'cf7as-frontend-common', 
-            CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/css/common.css', 
-            array(), 
-            CF7_ARTIST_SUBMISSIONS_VERSION
-        );
-    }
-    
-    /**
+        // Assets are now handled by the main conditional loading system
+        // This method is kept for backward compatibility
+        return;
+    }    /**
      * Enqueue CF7 admin assets for tag generator functionality.
      * 
      * Loads JavaScript for the mediums tag generator in the CF7 form builder.
@@ -136,6 +130,164 @@ class CF7_Artist_Submissions_Form_Handler {
     // ============================================================================
     
     /**
+     * Get open call information by Contact Form 7 ID.
+     * 
+     * Retrieves open call configuration, timing, and status information
+     * for a specific Contact Form 7 form to determine if submissions
+     * are currently allowed.
+     * 
+     * @since 1.2.0
+     * @param int $form_id The Contact Form 7 form ID
+     * @return array|null Open call configuration or null if not found
+     */
+    public function get_open_call_by_form_id($form_id) {
+        $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+        
+        if (empty($open_calls_options['calls'])) {
+            return null;
+        }
+        
+        foreach ($open_calls_options['calls'] as $call_config) {
+            if (!empty($call_config['form_id']) && 
+                intval($call_config['form_id']) === intval($form_id)) {
+                
+                // Add computed status based on timing
+                $now = current_time('timestamp');
+                $start_time = !empty($call_config['start_date']) ? strtotime($call_config['start_date'] . ' 00:00:00') : null;
+                $end_time = !empty($call_config['end_date']) ? strtotime($call_config['end_date'] . ' 23:59:59') : null;
+                
+                $call_config['is_open'] = true; // Default to open
+                $call_config['status_message'] = '';
+                
+                // Ensure call_type is set with default
+                if (empty($call_config['call_type'])) {
+                    $call_config['call_type'] = 'visual_arts'; // Default to visual arts
+                }
+                
+                // Check if not yet open
+                if ($start_time && $now < $start_time) {
+                    $call_config['is_open'] = false;
+                    $call_config['status_message'] = 'This call opens on ' . date('F j, Y', $start_time);
+                }
+                // Check if closed
+                elseif ($end_time && $now > $end_time) {
+                    $call_config['is_open'] = false;
+                    $call_config['status_message'] = 'This call closed on ' . date('F j, Y', $end_time);
+                }
+                // Check if active but has dates
+                elseif ($start_time && $end_time) {
+                    $call_config['status_message'] = 'Open until ' . date('F j, Y', $end_time);
+                }
+                elseif ($end_time) {
+                    $call_config['status_message'] = 'Open until ' . date('F j, Y', $end_time);
+                }
+                
+                return $call_config;
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * AJAX handler to get open call timing information for frontend.
+     * 
+     * Provides open call status and timing information to JavaScript
+     * for form takeover functionality and deadline enforcement.
+     * 
+     * @since 1.2.0
+     */
+    public function ajax_get_open_call_info() {
+        // Verify nonce for security
+        if (!check_ajax_referer('cf7as_nonce', 'nonce', false)) {
+            wp_send_json_error('Invalid security token');
+            return;
+        }
+        
+        $form_id = isset($_POST['form_id']) ? intval($_POST['form_id']) : 0;
+        
+        if (!$form_id) {
+            wp_send_json_error('Form ID is required');
+            return;
+        }
+        
+        $open_call = $this->get_open_call_by_form_id($form_id);
+        
+        if (!$open_call) {
+            // Check if it's a legacy form configuration
+            $options = get_option('cf7_artist_submissions_options', array());
+            $legacy_form_id = !empty($options['form_id']) ? $options['form_id'] : '';
+            
+            if ($legacy_form_id && intval($legacy_form_id) === intval($form_id)) {
+                // Get visual arts mediums for legacy forms
+                $mediums = get_terms(array(
+                    'taxonomy' => 'artistic_medium',
+                    'hide_empty' => false,
+                    'orderby' => 'name',
+                    'order' => 'ASC'
+                ));
+                
+                $mediums_data = array();
+                if (!empty($mediums) && !is_wp_error($mediums)) {
+                    foreach ($mediums as $medium) {
+                        $bg_color = get_term_meta($medium->term_id, 'medium_color', true);
+                        $text_color = get_term_meta($medium->term_id, 'medium_text_color', true);
+                        
+                        $mediums_data[] = array(
+                            'term_id' => $medium->term_id,
+                            'name' => $medium->name,
+                            'bg_color' => $bg_color,
+                            'text_color' => $text_color
+                        );
+                    }
+                }
+                
+                wp_send_json_success(array(
+                    'is_open' => true,
+                    'status_message' => '',
+                    'title' => 'Submit Your Work',
+                    'call_type' => 'visual_arts', // Default for legacy forms
+                    'mediums' => $mediums_data
+                ));
+                return;
+            }
+            
+            wp_send_json_error('Form not configured for submissions');
+            return;
+        }
+        
+        // Add mediums data to open call response
+        $call_type = isset($open_call['call_type']) ? $open_call['call_type'] : 'visual_arts';
+        $taxonomy = ($call_type === 'text_based') ? 'text_medium' : 'artistic_medium';
+        
+        $mediums = get_terms(array(
+            'taxonomy' => $taxonomy,
+            'hide_empty' => false,
+            'orderby' => 'name',
+            'order' => 'ASC'
+        ));
+        
+        $mediums_data = array();
+        if (!empty($mediums) && !is_wp_error($mediums)) {
+            foreach ($mediums as $medium) {
+                $bg_color = get_term_meta($medium->term_id, 'medium_color', true);
+                $text_color = get_term_meta($medium->term_id, 'medium_text_color', true);
+                
+                $mediums_data[] = array(
+                    'term_id' => $medium->term_id,
+                    'name' => $medium->name,
+                    'bg_color' => $bg_color,
+                    'text_color' => $text_color
+                );
+            }
+        }
+        
+        $open_call['mediums'] = $mediums_data;
+        
+        wp_send_json_success($open_call);
+    }
+
+    /**
      * Capture and process Contact Form 7 submissions with comprehensive data handling.
      * 
      * Intercepts submissions from configured Contact Form 7 forms and processes them
@@ -149,18 +301,41 @@ class CF7_Artist_Submissions_Form_Handler {
         error_log('CF7AS Form Handler Debug - capture_submission triggered');
         error_log('CF7AS Form Handler Debug - Form ID received: ' . $contact_form->id());
         
-        $options = get_option('cf7_artist_submissions_options', array());
-        $form_id = !empty($options['form_id']) ? $options['form_id'] : '';
+        $current_form_id = $contact_form->id();
+        $should_process = false;
         
-        error_log('CF7AS Form Handler Debug - Configured form ID: ' . $form_id);
+        // Check if this form is configured in open calls
+        $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+        if (!empty($open_calls_options['calls'])) {
+            foreach ($open_calls_options['calls'] as $call_config) {
+                if (!empty($call_config['form_id']) && 
+                    intval($call_config['form_id']) === intval($current_form_id) &&
+                    ($call_config['status'] ?? 'active') === 'active') {
+                    $should_process = true;
+                    error_log('CF7AS Form Handler Debug - Form matches active open call: ' . ($call_config['title'] ?? 'Unnamed'));
+                    break;
+                }
+            }
+        }
         
-        // Only process the selected form
-        if ($contact_form->id() != $form_id) {
-            error_log('CF7AS Form Handler Debug - Form ID mismatch, skipping processing');
+        // If not found in open calls, check legacy general form configuration
+        if (!$should_process) {
+            $options = get_option('cf7_artist_submissions_options', array());
+            $legacy_form_id = !empty($options['form_id']) ? $options['form_id'] : '';
+            
+            if ($legacy_form_id && intval($legacy_form_id) === intval($current_form_id)) {
+                $should_process = true;
+                error_log('CF7AS Form Handler Debug - Form matches legacy configuration');
+            }
+        }
+        
+        // Only process if form is configured
+        if (!$should_process) {
+            error_log('CF7AS Form Handler Debug - Form not configured for processing, skipping');
             return;
         }
         
-        error_log('CF7AS Form Handler Debug - Form ID matches, proceeding with processing');
+        error_log('CF7AS Form Handler Debug - Form configured for processing, proceeding');
         
         if (!class_exists('WPCF7_Submission')) {
             error_log('CF7AS Form Handler Debug - WPCF7_Submission class not found');
@@ -242,6 +417,14 @@ class CF7_Artist_Submissions_Form_Handler {
         // Handle artistic medium tags
         error_log('CF7AS Form Handler Debug - Processing medium tags');
         $this->process_medium_tags($post_id, $posted_data);
+        
+        // Handle text medium tags
+        error_log('CF7AS Form Handler Debug - Processing text medium tags');
+        $this->process_text_medium_tags($post_id, $posted_data);
+        
+        // Handle open call assignment
+        error_log('CF7AS Form Handler Debug - Processing open call assignment');
+        $this->process_open_call_assignment($post_id, $posted_data);
         
         // Process S3 uploaded files data (from custom uploader)
         error_log('CF7AS Form Handler Debug - About to process S3 uploaded files');
@@ -688,5 +871,212 @@ class CF7_Artist_Submissions_Form_Handler {
             </p>
         </div>
         <?php
+    }
+    
+    /**
+     * Process text medium tags for literary and text-based submissions.
+     * 
+     * Handles assignment of text medium taxonomy terms to submissions
+     * based on form field data. Supports various field name patterns
+     * for text-based artistic mediums.
+     * 
+     * @since 1.2.0
+     */
+    private function process_text_medium_tags($post_id, $posted_data) {
+        // Look for fields that might contain text medium information
+        $text_medium_fields = array(
+            'text-medium',
+            'text_medium',
+            'text-mediums',
+            'text_mediums',
+            'literary-medium',
+            'literary_medium',
+            'writing-type',
+            'writing_type',
+            'genre',
+            'genres'
+        );
+        
+        $text_medium_terms = array();
+        
+        // Check each possible field name
+        foreach ($text_medium_fields as $field) {
+            if (isset($posted_data[$field]) && !empty($posted_data[$field])) {
+                $field_value = $posted_data[$field];
+                
+                // Handle array values (checkboxes/multiple selects)
+                if (is_array($field_value)) {
+                    // For text-mediums field, values are term IDs, convert to term objects
+                    if ($field === 'text-mediums' || $field === 'text_mediums') {
+                        foreach ($field_value as $term_id) {
+                            $term = get_term($term_id, 'text_medium');
+                            if ($term && !is_wp_error($term)) {
+                                $text_medium_terms[] = $term->name;
+                            }
+                        }
+                    } else {
+                        $text_medium_terms = array_merge($text_medium_terms, $field_value);
+                    }
+                } else {
+                    // Handle comma-separated values or single values
+                    $values = array_map('trim', explode(',', $field_value));
+                    $text_medium_terms = array_merge($text_medium_terms, $values);
+                }
+            }
+        }
+        
+        // Clean and validate terms
+        $text_medium_terms = array_filter(array_map('sanitize_text_field', $text_medium_terms));
+        
+        if (!empty($text_medium_terms)) {
+            // Set the text medium terms for this submission
+            wp_set_object_terms($post_id, $text_medium_terms, 'text_medium');
+            
+            // Also store as post meta for backwards compatibility
+            update_post_meta($post_id, 'cf7_text_mediums', implode(', ', $text_medium_terms));
+            
+            error_log('CF7AS Form Handler Debug - Assigned ' . count($text_medium_terms) . ' text medium terms to post ' . $post_id);
+        }
+    }
+    
+    /**
+     * Process open call assignment for submissions.
+     * 
+     * Assigns submissions to appropriate open call categories based on
+     * form data or configuration. Supports automatic assignment based
+     * on form ID or explicit field selection.
+     * 
+     * @since 1.2.0
+     */
+    private function process_open_call_assignment($post_id, $posted_data) {
+        $open_call_term = null;
+        
+        // Check if there's an explicit open call field in the form
+        $open_call_fields = array(
+            'open-call',
+            'open_call',
+            'call',
+            'submission-call',
+            'submission_call'
+        );
+        
+        foreach ($open_call_fields as $field) {
+            if (isset($posted_data[$field]) && !empty($posted_data[$field])) {
+                $field_value = $posted_data[$field];
+                
+                if (is_array($field_value)) {
+                    $field_value = $field_value[0]; // Take first value if array
+                }
+                
+                // Try to find the term by slug or name
+                $term = get_term_by('slug', sanitize_title($field_value), 'open_call');
+                if (!$term) {
+                    $term = get_term_by('name', $field_value, 'open_call');
+                }
+                
+                if ($term && !is_wp_error($term)) {
+                    $open_call_term = $term;
+                    break;
+                }
+            }
+        }
+        
+        // If no explicit open call field, try to determine from form configuration
+        if (!$open_call_term) {
+            // Get the form ID that processed this submission from CF7
+            $current_form_id = null;
+            
+            // Try to get form ID from CF7 contact form instance
+            if (class_exists('WPCF7_ContactForm')) {
+                $submission = WPCF7_Submission::get_instance();
+                if ($submission) {
+                    $contact_form = $submission->get_contact_form();
+                    if ($contact_form) {
+                        $current_form_id = $contact_form->id();
+                    }
+                }
+            }
+            
+            // Look up form ID in open calls configuration
+            if ($current_form_id) {
+                $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+                
+                if (!empty($open_calls_options['calls'])) {
+                    foreach ($open_calls_options['calls'] as $call_config) {
+                        if (!empty($call_config['form_id']) && 
+                            intval($call_config['form_id']) === intval($current_form_id) &&
+                            !empty($call_config['title']) &&
+                            ($call_config['status'] ?? 'active') === 'active') {
+                            
+                            // Find the corresponding taxonomy term
+                            $term = get_term_by('name', $call_config['title'], 'open_call');
+                            if ($term && !is_wp_error($term)) {
+                                $open_call_term = $term;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Fallback to legacy form ID configuration
+            if (!$open_call_term) {
+                $options = get_option('cf7_artist_submissions_options', array());
+                $legacy_form_id = !empty($options['form_id']) ? $options['form_id'] : '';
+                
+                if ($legacy_form_id && intval($legacy_form_id) === intval($current_form_id)) {
+                    // Look for general submissions or first available call
+                    $all_calls = get_terms(array(
+                        'taxonomy' => 'open_call',
+                        'hide_empty' => false,
+                        'orderby' => 'name',
+                        'order' => 'ASC'
+                    ));
+                    
+                    if (!empty($all_calls) && !is_wp_error($all_calls)) {
+                        // Prefer "General Submissions" if it exists
+                        foreach ($all_calls as $call) {
+                            if (strtolower($call->slug) === 'general-submissions') {
+                                $open_call_term = $call;
+                                break;
+                            }
+                        }
+                        
+                        // Otherwise use first available
+                        if (!$open_call_term) {
+                            $open_call_term = $all_calls[0];
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fallback to default "General Submissions" if no specific call found
+        if (!$open_call_term) {
+            $open_call_term = get_term_by('slug', 'general-submissions', 'open_call');
+            
+            // Create default term if it doesn't exist
+            if (!$open_call_term) {
+                $result = wp_insert_term('General Submissions', 'open_call', array(
+                    'slug' => 'general-submissions',
+                    'description' => 'Default category for general artist submissions'
+                ));
+                
+                if (!is_wp_error($result)) {
+                    $open_call_term = get_term($result['term_id'], 'open_call');
+                }
+            }
+        }
+        
+        // Assign the open call term
+        if ($open_call_term && !is_wp_error($open_call_term)) {
+            wp_set_object_terms($post_id, array($open_call_term->term_id), 'open_call');
+            
+            // Also store as post meta for easy access
+            update_post_meta($post_id, 'cf7_open_call', $open_call_term->name);
+            update_post_meta($post_id, 'cf7_open_call_slug', $open_call_term->slug);
+            
+            error_log('CF7AS Form Handler Debug - Assigned open call "' . $open_call_term->name . '" to post ' . $post_id);
+        }
     }
 }

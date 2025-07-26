@@ -215,6 +215,42 @@
                 if (!$(e.target).closest('.cf7-status-filter-dropdown').length) {
                     $('.cf7-status-filter-dropdown').removeClass('open');
                 }
+                if (!$(e.target).closest('.cf7-call-filter-dropdown').length) {
+                    $('.cf7-call-filter-dropdown').removeClass('open');
+                }
+            });
+            
+            // Open Call filter options
+            $(document).on('click', '.cf7-call-filter-option', (e) => {
+                e.preventDefault();
+                const $option = $(e.currentTarget);
+                const value = $option.data('value');
+                const label = $option.find('.cf7-call-label').text();
+                const icon = $option.data('icon');
+                const color = $option.data('color');
+
+                // Update active state
+                $('.cf7-call-filter-option').removeClass('active');
+                $option.addClass('active');
+
+                $('.cf7-call-filter-display .cf7-call-icon')
+                    .attr('class', `cf7-call-icon dashicons ${icon}`)
+                    .css('color', color);
+                $('.cf7-call-filter-display .cf7-call-text').text(label);
+
+                // Store current filter value
+                $('.cf7-call-filter-dropdown').attr('data-current', value);
+
+                $('.cf7-call-filter-dropdown').removeClass('open');
+                this.currentPage = 1;
+                this.updateActiveFiltersDisplay();
+                this.loadSubmissions();
+            });
+
+            // Call filter dropdown toggle - only on display, not options
+            $(document).on('click', '.cf7-call-filter-display', (e) => {
+                e.stopPropagation();
+                $('.cf7-call-filter-dropdown').toggleClass('open');
             });
 
             // Per page selector
@@ -831,6 +867,7 @@
             this.showSubmissionsLoading();
 
             const statusValue = $('.cf7-status-filter-dropdown').attr('data-current');
+            const callValue = $('.cf7-call-filter-dropdown').attr('data-current');
             const data = {
                 action: 'cf7_dashboard_load_submissions',
                 nonce: cf7_dashboard.nonce,
@@ -838,6 +875,7 @@
                 per_page: this.perPage,
                 search: $('#cf7-search-input').val(),
                 status: statusValue || '',
+                open_call: callValue || '',
                 date_from: $('#cf7-date-from').val(),
                 date_to: $('#cf7-date-to').val(),
                 orderby: $('.cf7-order-filter').val()
@@ -1539,7 +1577,7 @@
                             <a href="${submission.view_url}">${submission.title}</a>
                         </div>
                         <div class="cf7-submission-meta">
-                            ${submission.email} • ID: ${submission.id}
+                            ${submission.email} • ID: ${submission.id} • ${submission.open_call}
                         </div>
                         ${this.renderMediumTags(submission.mediums)}
                     </div>
@@ -1619,13 +1657,14 @@
         buildEmptyState() {
             const searchTerm = $('#cf7-search-input').val();
             const statusFilter = $('.cf7-status-filter-dropdown').attr('data-current') || '';
+            const callFilter = $('.cf7-call-filter-dropdown').attr('data-current') || '';
             const dateFrom = $('#cf7-date-from').val();
             const dateTo = $('#cf7-date-to').val();
             
             let message = 'No submissions found';
             let suggestion = 'Try adjusting your search or filter criteria.';
             
-            const hasFilters = searchTerm || statusFilter || dateFrom || dateTo;
+            const hasFilters = searchTerm || statusFilter || dateFrom || dateTo || callFilter;
             
             if (hasFilters) {
                 const filterParts = [];
@@ -3056,6 +3095,31 @@
             .css('color', '#718096');
         $display.find('.cf7-status-text').text('All Statuses');
         
+        // Reset call dropdown to "All Calls"
+        const $callDropdown = $('.cf7-call-filter-dropdown');
+        
+        // Step 1: Remove the data-current attribute completely, then set it to empty
+        $callDropdown.removeAttr('data-current');
+        $callDropdown.attr('data-current', '');
+        $callDropdown.removeClass('open');
+        
+        // Step 2: Clear all active states explicitly  
+        $('.cf7-call-filter-option').each(function() {
+            $(this).removeClass('active');
+        });
+        
+        // Step 3: Set the "All Calls" option as active
+        const $allCallOption = $('.cf7-call-filter-option[data-value=""]');
+        $allCallOption.addClass('active');
+        
+        // Step 4: Update display to match exactly what "All Calls" should show
+        const $callDisplay = $('.cf7-call-filter-display');
+        $callDisplay.find('.cf7-call-icon')
+            .removeClass()
+            .addClass('cf7-call-icon dashicons dashicons-megaphone')
+            .css('color', '#718096');
+        $callDisplay.find('.cf7-call-text').text('All Calls');
+        
         // Reset page
         this.currentPage = 1;
         
@@ -3101,6 +3165,29 @@
                     .addClass('cf7-status-icon dashicons dashicons-category')
                     .css('color', '#718096');
                 $display.find('.cf7-status-text').text('All Statuses');
+                break;
+            case 'call':
+                const $callDropdown = $('.cf7-call-filter-dropdown');
+                
+                // Remove and reset data-current attribute
+                $callDropdown.removeAttr('data-current');
+                $callDropdown.attr('data-current', '');
+                $callDropdown.removeClass('open');
+                
+                // Clear all active states explicitly
+                $('.cf7-call-filter-option').each(function() {
+                    $(this).removeClass('active');
+                });
+                
+                // Set "All Calls" as active
+                $('.cf7-call-filter-option[data-value=""]').addClass('active');
+                
+                const $callDisplay = $('.cf7-call-filter-display');
+                $callDisplay.find('.cf7-call-icon')
+                    .removeClass()
+                    .addClass('cf7-call-icon dashicons dashicons-megaphone')
+                    .css('color', '#718096');
+                $callDisplay.find('.cf7-call-text').text('All Calls');
                 break;
             case 'date':
                 $('#cf7-date-from').val('');
@@ -3155,6 +3242,20 @@
                 </span>
             `;
             $activeFilters.append(statusTag);
+        }
+        
+        // Check for call filter
+        const activeCall = $('.cf7-call-filter-dropdown').attr('data-current') || '';
+        if (activeCall && activeCall !== '') {
+            hasActiveFilters = true;
+            const callLabel = $('.cf7-call-filter-option.active .cf7-call-label').text();
+            const callTag = `
+                <span class="cf7-filter-tag" data-filter-type="call">
+                    Call: ${callLabel}
+                    <span class="cf7-filter-remove" onclick="CF7Dashboard.clearSpecificFilter('call')">×</span>
+                </span>
+            `;
+            $activeFilters.append(callTag);
         }
         
         // Check for date filter

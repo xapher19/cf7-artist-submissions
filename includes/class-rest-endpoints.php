@@ -583,7 +583,6 @@ class CF7_Artist_Submissions_REST_Endpoints {
             'video/x-msvideo',
             'video/x-matroska', 
             'video/mpeg',
-            'application/pdf', 
             'application/msword',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'text/plain', 

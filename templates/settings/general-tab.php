@@ -44,7 +44,7 @@ $options = get_option('cf7_artist_submissions_options', array());
             <?php _e('Basic Configuration', 'cf7-artist-submissions'); ?>
         </h2>
         <p class="cf7-card-description">
-            <?php _e('Configure the core settings for your artist submission system.', 'cf7-artist-submissions'); ?>
+            <?php _e('Configure the core settings for your artist submission system, including default forms, menu labels, and file storage options. Use the Open Calls tab to set up multiple submission categories.', 'cf7-artist-submissions'); ?>
         </p>
     </div>
 
@@ -65,7 +65,7 @@ $options = get_option('cf7_artist_submissions_options', array());
                     <div class="cf7-field-group">
                         <label class="cf7-field-label" for="cf7_form_id">
                             <span class="dashicons dashicons-forms"></span>
-                            <?php _e('Contact Form 7 Form', 'cf7-artist-submissions'); ?>
+                            <?php _e('Default Contact Form 7 Form', 'cf7-artist-submissions'); ?>
                         </label>
                         <select id="cf7_form_id" name="cf7_artist_submissions_options[form_id]" class="cf7-field-input">
                             <option value=""><?php _e('Select a form...', 'cf7-artist-submissions'); ?></option>
@@ -76,7 +76,7 @@ $options = get_option('cf7_artist_submissions_options', array());
                             <?php endforeach; ?>
                         </select>
                         <p class="cf7-field-help">
-                            <?php _e('Select the Contact Form 7 form that will be used for artist submissions.', 'cf7-artist-submissions'); ?>
+                            <?php _e('Select the default Contact Form 7 form for artist submissions. You can configure additional forms for specific open calls in the Open Calls settings tab.', 'cf7-artist-submissions'); ?>
                         </p>
                     </div>
 
@@ -113,6 +113,23 @@ $options = get_option('cf7_artist_submissions_options', array());
                     <p class="cf7-field-help">
                         <?php _e('Store uploaded files locally. When disabled, files will be deleted after processing to save disk space.', 'cf7-artist-submissions'); ?>
                     </p>
+                </div>
+
+                <!-- Open Calls Information Notice -->
+                <div class="cf7-notice cf7-notice-info">
+                    <span class="dashicons dashicons-megaphone"></span>
+                    <div>
+                        <strong><?php _e('New: Multiple Open Calls Support', 'cf7-artist-submissions'); ?></strong>
+                        <p><?php _e('You can now configure multiple open calls, each with their own Contact Form 7 forms, in the', 'cf7-artist-submissions'); ?> 
+                           <a href="?post_type=cf7_submission&page=cf7-artist-submissions-settings&tab=open-calls"><?php _e('Open Calls settings tab', 'cf7-artist-submissions'); ?></a>. 
+                           <?php _e('The form selected above will serve as the default for general submissions.', 'cf7-artist-submissions'); ?></p>
+                        <ul style="margin: 10px 0 0 20px; color: #666;">
+                            <li><?php _e('Assign different CF7 forms to specific open calls', 'cf7-artist-submissions'); ?></li>
+                            <li><?php _e('Manage call titles, descriptions, and deadlines', 'cf7-artist-submissions'); ?></li>
+                            <li><?php _e('Filter submissions by open call in the dashboard', 'cf7-artist-submissions'); ?></li>
+                            <li><?php _e('Support for both visual and text-based mediums', 'cf7-artist-submissions'); ?></li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <!-- Amazon S3 Configuration Section -->

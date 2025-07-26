@@ -179,6 +179,8 @@
         $('body').removeClass('cf7-lightbox-open');
         $lightboxContent.find('img').remove();
         $lightboxContent.find('video').remove();
+        $lightboxContent.find('iframe').remove();
+        $lightboxContent.find('.cf7-lightbox-document').remove();
         $lightboxContent.find('.cf7-lightbox-loading').remove();
         $lightboxContent.find('.cf7-lightbox-error').remove();
     });
@@ -251,7 +253,24 @@
     }
     
     /**
-     * Load and display media (image or video) with loading states and error handling.
+     * Determine if a file URL represents a document based on its extension.
+     * 
+     * @param {string} url - The file URL to check
+     * @returns {boolean} True if the file is a document
+     * @since 1.2.0
+     */
+    function isDocumentFile(url) {
+        const documentExtensions = ['doc', 'docx', 'txt', 'rtf'];
+        
+        // Handle URLs with query parameters (like S3 presigned URLs)
+        const cleanUrl = url.split('?')[0];
+        const extension = cleanUrl.split('.').pop().toLowerCase();
+        
+        return documentExtensions.includes(extension);
+    }
+    
+    /**
+     * Load and display media (image, video, or document) with loading states and error handling.
      * Provides smooth transitions and user feedback during media loading process.
      * 
      * @since 1.0.0
@@ -260,6 +279,8 @@
         // Show loading state
         $lightboxContent.find('img').remove();
         $lightboxContent.find('video').remove();
+        $lightboxContent.find('iframe').remove();
+        $lightboxContent.find('.cf7-lightbox-document').remove();
         $lightboxContent.find('.cf7-lightbox-error').remove();
         $lightboxContent.append('<div class="cf7-lightbox-loading">Loading...</div>');
         
@@ -291,6 +312,48 @@
             };
             
             video.src = mediaSrc;
+        } else if (isDocumentFile(mediaSrc)) {
+            // Handle document files
+            const cleanUrl = mediaSrc.split('?')[0];
+            const extension = cleanUrl.split('.').pop().toLowerCase();
+            const fileName = cleanUrl.split('/').pop();
+            
+            $lightboxContent.find('.cf7-lightbox-loading').remove();
+            
+            // Create document preview interface
+            const documentPreview = $(`
+                <div class="cf7-lightbox-document" style="text-align: center; padding: 40px 20px;">
+                    <div class="cf7-document-icon" style="font-size: 64px; color: #666; margin-bottom: 20px;">
+                        ${extension === 'txt' ? '📄' : extension === 'rtf' ? '📄' : '📝'}
+                    </div>
+                    <h3 style="margin-bottom: 15px; color: #333;">${fileName}</h3>
+                    <p style="color: #666; margin-bottom: 25px;">
+                        ${extension.toUpperCase()} Document
+                        ${extension === 'txt' ? ' - Plain Text' : 
+                          extension === 'rtf' ? ' - Rich Text Format' :
+                          extension === 'doc' ? ' - Microsoft Word Document' :
+                          extension === 'docx' ? ' - Microsoft Word Document' : ''}
+                    </p>
+                    <div class="cf7-document-actions" style="margin-top: 20px;">
+                        <a href="${mediaSrc}" class="cf7-document-download" download="${fileName}" 
+                           style="display: inline-block; background: #0073aa; color: white; padding: 12px 24px; 
+                                  text-decoration: none; border-radius: 6px; margin: 0 10px; font-weight: 500;">
+                            📥 Download Document
+                        </a>
+                        <a href="${mediaSrc}" target="_blank" class="cf7-document-open"
+                           style="display: inline-block; background: #666; color: white; padding: 12px 24px; 
+                                  text-decoration: none; border-radius: 6px; margin: 0 10px; font-weight: 500;">
+                            🔗 Open in New Tab
+                        </a>
+                    </div>
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 6px; color: #666; font-size: 14px;">
+                        <strong>Preview Note:</strong> Document preview is not available for security reasons. 
+                        Please download or open the document to view its contents.
+                    </div>
+                </div>
+            `);
+            
+            $lightboxContent.append(documentPreview);
         } else {
             // Handle image files
             const img = new Image();

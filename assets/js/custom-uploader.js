@@ -24,7 +24,6 @@
                 allowedTypes: [
                     'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
                     'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
-                    'application/pdf',
                     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'text/plain', 'application/rtf'
                 ],
@@ -119,40 +118,172 @@
         }
         
         replaceFormWithSubmissionButton(form) {
-            const formHtml = `
+            const formId = form.find('input[name="_wpcf7"]').val();
+            
+            if (!formId) {
+                console.warn('CF7AS: Form ID not found for takeover');
+                return;
+            }
+            
+            // Create loading state
+            const loadingHtml = `
                 <div class="cf7as-form-takeover">
-                    <div class="cf7as-submission-intro">
-                        <h2>Ready to Submit Your Work?</h2>
-                        <p>Click the button below to begin your submission process. You'll be able to fill out your details and upload your artwork files.</p>
-                    </div>
-                    <div class="cf7as-submission-button-container">
-                        <button type="button" class="cf7as-submit-work-btn">
-                            <span class="cf7as-btn-icon">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="7,10 12,5 17,10"></polyline>
-                                    <line x1="12" y1="5" x2="12" y2="15"></line>
-                                </svg>
-                            </span>
-                            Submit My Work
-                        </button>
+                    <div class="cf7as-loading">
+                        <div class="cf7as-spinner"></div>
+                        <p>Loading submission information...</p>
                     </div>
                 </div>
             `;
             
-            form.html(formHtml);
+            form.html(loadingHtml);
             
-            // Bind click event to submission button
-            form.find('.cf7as-submit-work-btn').on('click', (e) => {
-                e.preventDefault();
-                this.startSubmissionProcess(form);
+            // Check open call status and timing
+            this.checkOpenCallStatus(formId)
+                .then(response => {
+                    if (!response.success) {
+                        this.renderErrorState(form, response.data || 'This form is not available for submissions.');
+                        return;
+                    }
+                    
+                    const openCall = response.data;
+                    this.renderSubmissionInterface(form, openCall, formId);
+                })
+                .catch(error => {
+                    console.error('CF7AS: Error checking open call status:', error);
+                    this.renderErrorState(form, 'Unable to load submission information. Please try again later.');
+                });
+        }
+        
+        /**
+         * Check open call status and timing information via AJAX.
+         * 
+         * @since 1.2.0
+         * @param {string} formId The Contact Form 7 form ID
+         * @returns {Promise} Promise resolving to open call information
+         */
+        checkOpenCallStatus(formId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: cf7as_uploader_config.ajax_url,
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        action: 'cf7as_get_open_call_info',
+                        form_id: formId,
+                        nonce: cf7as_uploader_config.cf7as_nonce
+                    },
+                    success: resolve,
+                    error: reject
+                });
             });
         }
         
-        startSubmissionProcess(form) {
-            // Create the multi-step modal
-            this.createSubmissionModal(form);
+        /**
+         * Render error state when open call is not available.
+         * 
+         * @since 1.2.0
+         * @param {jQuery} form Form element to render into
+         * @param {string} message Error message to display
+         */
+        renderErrorState(form, message) {
+            const errorHtml = `
+                <div class="cf7as-form-takeover">
+                    <div class="cf7as-submission-unavailable">
+                        <div class="cf7as-message cf7as-error">
+                            <h3>Submissions Not Available</h3>
+                            <p>${message}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            form.html(errorHtml);
         }
+        
+    /**
+     * Render the submission interface with timing information.
+     * 
+     * @since 1.2.0
+     * @param {jQuery} form Form element to render into
+     * @param {Object} openCall Open call configuration data
+     * @param {string} formId The Contact Form 7 form ID
+     */
+    renderSubmissionInterface(form, openCall, formId) {
+        // Store open call data for later use
+        this.openCallData = openCall;
+        
+        const isOpen = openCall.is_open;
+        const statusMessage = openCall.status_message || '';
+        const title = openCall.title || 'Submit Your Work';
+        const callType = openCall.call_type || 'visual_arts';
+        
+        let buttonContent, buttonClass, buttonDisabled;
+        
+        if (!isOpen) {
+            buttonContent = 'Submissions Closed';
+            buttonClass = 'cf7as-submit-disabled';
+            buttonDisabled = 'disabled';
+        } else {
+            buttonContent = 'Submit My Work';
+            buttonClass = 'cf7as-submit-active';
+            buttonDisabled = '';
+        }
+        
+        const statusHtml = statusMessage ? `<p class="cf7as-status-message">${statusMessage}</p>` : '';
+        
+        // Determine file types and description based on call type
+        let acceptedTypes, typeDescription;
+        if (callType === 'text_based') {
+            acceptedTypes = '.doc,.docx,.txt,.rtf';
+            typeDescription = 'Supported formats: DOC, DOCX, TXT, RTF (editable documents only)';
+        } else {
+            // Default to visual arts
+            acceptedTypes = '.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.webm';
+            typeDescription = 'Supported formats: JPG, PNG, GIF, MP4, MOV, AVI, WEBM';
+        }
+        
+        const formHtml = `
+            <div class="cf7as-form-takeover">
+                <div class="cf7as-submission-intro">
+                    <h2>${title}</h2>
+                    ${statusHtml}
+                    ${!isOpen ? '' : `<p>Click the button below to begin your submission process. You'll be able to fill out your details and upload your ${callType === 'text_based' ? 'document' : 'artwork'} files.</p>`}
+                </div>
+                <div class="cf7as-submission-button-container">
+                    <button type="button" class="cf7as-submit-work-btn ${buttonClass}" ${buttonDisabled} data-form-id="${formId}" data-call-type="${callType}">
+                        <span class="cf7as-btn-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,5 17,10"></polyline>
+                                <line x1="12" y1="5" x2="12" y2="15"></line>
+                            </svg>
+                        </span>
+                        ${buttonContent}
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        form.html(formHtml);
+        
+        // Only bind click event if submissions are open
+        if (isOpen) {
+            form.find('.cf7as-submit-work-btn').on('click', (e) => {
+                e.preventDefault();
+                this.startSubmissionProcess(form, callType, acceptedTypes, typeDescription);
+            });
+        }
+    }
+    
+    startSubmissionProcess(form, callType = 'visual_arts', acceptedTypes = '.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.webm', typeDescription = 'Supported formats: JPG, PNG, GIF, MP4, MOV, AVI, WEBM') {
+        // Store call type and file restrictions for later use
+        this.currentCallType = callType;
+        this.currentAcceptedTypes = acceptedTypes;
+        this.currentTypeDescription = typeDescription;
+        
+        // Create the multi-step modal
+        this.createSubmissionModal(form);
+    }
         
         createSubmissionModal(form) {
             // Parse original form to extract fields
@@ -366,11 +497,41 @@
                 const $checkboxes = $mediumsWrapper.find('input[type="checkbox"]');
                 let checkboxesHtml = '';
                 
-                $checkboxes.each(function() {
-                    const $checkbox = $(this);
-                    const $label = $checkbox.closest('label');
-                    checkboxesHtml += $label.prop('outerHTML');
-                });
+                // Get the original field name from existing checkboxes
+                let fieldName = 'mediums[]'; // Default fallback
+                if ($checkboxes.length > 0) {
+                    const originalName = $checkboxes.first().attr('name');
+                    if (originalName) {
+                        fieldName = originalName;
+                    }
+                }
+                
+                // If we have call-specific mediums data, use that instead of form mediums
+                if (this.openCallData && this.openCallData.mediums && this.openCallData.mediums.length > 0) {
+                    // Use mediums from AJAX response (filtered by call type)
+                    this.openCallData.mediums.forEach((medium, index) => {
+                        const style_vars = medium.bg_color && medium.text_color ? 
+                            ` style="--medium-bg: ${medium.bg_color}; --medium-text: ${medium.text_color};"` : '';
+                        
+                        // Create unique ID for proper label-input association
+                        const checkboxId = `cf7as-medium-${medium.term_id}-${Date.now()}-${index}`;
+                        
+                        checkboxesHtml += `
+                            <label class="cf7as-medium-checkbox" for="${checkboxId}"${style_vars}>
+                                <input type="checkbox" id="${checkboxId}" name="${fieldName}" value="${medium.term_id}"${isMediumsRequired ? ' required' : ''}>
+                                <span class="cf7as-checkbox-mark"></span>
+                                <span class="cf7as-medium-name">${medium.name}</span>
+                            </label>
+                        `;
+                    });
+                } else {
+                    // Fallback to original form mediums if no call-specific data
+                    $checkboxes.each(function() {
+                        const $checkbox = $(this);
+                        const $label = $checkbox.closest('label');
+                        checkboxesHtml += $label.prop('outerHTML');
+                    });
+                }
                 
                 mediumsHtml = `
                     <div class="cf7as-field-group cf7as-field-group-full-width">
@@ -783,16 +944,17 @@
                                 </svg>
                             </div>
                             <div class="cf7as-upload-text">
-                                <h3>Upload Your Artwork</h3>
+                                <h3>${this.callType === 'text_based' ? 'Upload Your Documents' : 'Upload Your Artwork'}</h3>
                                 <p>Drag & drop files here or 
                                     <label for="cf7as-file-input-${this.containerId}" class="cf7as-file-label">
                                         <span class="cf7as-browse-btn">browse files</span>
                                     </label>
                                 </p>
+                                <small>${this.currentTypeDescription || 'Supported formats: JPG, PNG, GIF, MP4, MOV, AVI, WEBM'}</small>
                                 <small>Max ${maxSizeGB}GB per file, up to ${this.options.maxFiles} files</small>
                             </div>
                         </div>
-                        <input type="file" id="cf7as-file-input-${this.containerId}" class="cf7as-file-input" multiple accept="image/*,video/*,application/pdf,.doc,.docx,.txt,.rtf" style="display: none;">
+                        <input type="file" id="cf7as-file-input-${this.containerId}" class="cf7as-file-input" multiple accept="${this.currentAcceptedTypes || '.jpg,.jpeg,.png,.gif,.mp4,.mov,.avi,.webm'}" style="display: none;">
                     </div>
                     
                     <div class="cf7as-work-content">
@@ -1226,7 +1388,7 @@
                 <div class="cf7as-form-takeover">
                     <div class="cf7as-submission-intro">
                         <h2>Ready to Submit Your Work?</h2>
-                        <p>Click the button below to begin your submission process. You'll be able to fill out your details and upload your artwork files.</p>
+                        <p>Click the button below to begin your submission process. You'll be able to fill out your details and upload your ${callType === 'text_based' ? 'document' : 'artwork'} files.</p>
                     </div>
                     <div class="cf7as-submission-button-container">
                         <button type="button" class="cf7as-submit-work-btn">
@@ -1312,6 +1474,69 @@
                 }).hide().fadeIn(300);
                 
                 $('body').addClass('cf7as-submission-modal-open');
+                
+                // Re-initialize Contact Form 7 validation for dynamically generated elements
+                // This ensures that our custom mediums checkboxes work properly
+                if (typeof window.wpcf7 !== 'undefined' && window.wpcf7.init) {
+                    // Try to re-initialize CF7 for our modal form elements
+                    setTimeout(() => {
+                        try {
+                            // Find the actual CF7 form element within the modal
+                            const cf7Form = this.submissionModal.find('form.wpcf7-form').get(0);
+                            if (cf7Form) {
+                                // Only initialize CF7 on actual CF7 forms
+                                window.wpcf7.init(cf7Form);
+                            }
+                            // If no CF7 form is found, skip initialization to avoid FormData errors
+                        } catch (e) {
+                            // Silently ignore CF7 initialization errors as they're not critical
+                            // for our custom mediums functionality
+                        }
+                    }, 100);
+                }
+                
+                // Also ensure our custom checkboxes are clickable by adding proper event handlers
+                const $checkboxes = this.submissionModal.find('.cf7as-medium-checkbox');
+                
+                $checkboxes.each(function() {
+                    const $label = $(this);
+                    const $checkbox = $label.find('input[type="checkbox"]');
+                    
+                    // Remove any existing handlers to avoid duplicates
+                    $label.off('click.cf7as');
+                    $checkbox.off('click.cf7as change.cf7as');
+                    
+                    // Handle clicks on the label (entire checkbox area)
+                    $label.on('click.cf7as', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Toggle the checkbox
+                        const isChecked = $checkbox.prop('checked');
+                        $checkbox.prop('checked', !isChecked).trigger('change');
+                    });
+                    
+                    // Handle direct checkbox clicks
+                    $checkbox.on('click.cf7as', function(e) {
+                        e.stopPropagation();
+                        // Let the default behavior happen, then trigger change
+                        setTimeout(() => {
+                            $(this).trigger('change');
+                        }, 0);
+                    });
+                    
+                    // Handle change events to update visual state
+                    $checkbox.on('change.cf7as', function() {
+                        const $mark = $label.find('.cf7as-checkbox-mark');
+                        const isChecked = $(this).prop('checked');
+                        
+                        if (isChecked) {
+                            $mark.addClass('checked');
+                        } else {
+                            $mark.removeClass('checked');
+                        }
+                    });
+                });
                 
                 // Prevent body scrolling
                 $('html, body').css({
@@ -1667,7 +1892,6 @@
                 'wmv': 'video/wmv',
                 'webm': 'video/webm',
                 // Documents
-                'pdf': 'application/pdf',
                 'doc': 'application/msword',
                 'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 'txt': 'text/plain',

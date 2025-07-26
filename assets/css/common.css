@@ -934,13 +934,22 @@
     position: relative;
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.8);
+    transition: all 0.2s ease;
 }
 
-.cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark {
-    background-color: var(--medium-text, #1d2327);
+/* Fallback checkbox mark styling without CSS variables */
+.cf7as-submission-modal .cf7as-checkbox-mark {
+    border: 2px solid #1d2327 !important;
+    background: rgba(255, 255, 255, 0.9) !important;
 }
 
-.cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark::after {
+.cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark,
+.cf7as-checkbox-mark.checked {
+    background-color: var(--medium-text, #1d2327) !important;
+}
+
+.cf7as-medium-checkbox input[type="checkbox"]:checked + .cf7as-checkbox-mark::after,
+.cf7as-checkbox-mark.checked::after {
     content: '';
     position: absolute;
     left: 4px;
@@ -950,6 +959,23 @@
     border: solid white;
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
+}
+
+/* Additional high-specificity fallback styles for modal context */
+.cf7as-submission-modal .cf7as-checkbox-mark.checked {
+    background-color: #1d2327 !important;
+}
+
+.cf7as-submission-modal .cf7as-checkbox-mark.checked::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 4px !important;
+    top: 1px !important;
+    width: 4px !important;
+    height: 8px !important;
+    border: solid white !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg) !important;
 }
 
 .cf7as-medium-name {
