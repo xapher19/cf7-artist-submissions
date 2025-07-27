@@ -1038,9 +1038,6 @@ class CF7_Artist_Submissions_Tabs {
      * Displays submitted works in a professional list layout with ratings and comments.
      */
     public static function render_works_list_view($post, $files) {
-        // Debug: Log that this function is called
-        error_log("CF7 Tabs: render_works_list_view called with " . count($files) . " files");
-        
         // Initialize ratings system if not already done
         if (class_exists('CF7_Artist_Submissions_Ratings')) {
             CF7_Artist_Submissions_Ratings::maybe_create_table();
@@ -1262,13 +1259,6 @@ class CF7_Artist_Submissions_Tabs {
             "SELECT * FROM {$table_name} WHERE submission_id = %s OR submission_id = %d ORDER BY created_at ASC",
             (string) $post->ID, (int) $post->ID
         ));
-        
-        // Debug: Log file retrieval
-        error_log("CF7 Tabs: render_submitted_files called for post ID {$post->ID}");
-        error_log("CF7 Tabs: Files found: " . count($files));
-        if (!empty($files)) {
-            error_log("CF7 Tabs: First file ID: {$files[0]->id}");
-        }
         
         if (empty($files)) {
             echo '<div class="cf7-works-list-view">';

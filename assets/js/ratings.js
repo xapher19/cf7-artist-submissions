@@ -74,6 +74,7 @@
             e.preventDefault();
             const $star = $(e.currentTarget);
             const $starsContainer = $star.closest('.cf7-rating-stars');
+            const $ratingContainer = $star.closest('.cf7-work-rating');
             const rating = parseInt($star.data('rating'));
             
             // Add animation effect
@@ -90,7 +91,7 @@
             this.clearStatus($starsContainer);
             
             // Enable auto-save after a short delay
-            this.scheduleAutoSave($starsContainer);
+            this.scheduleAutoSave($ratingContainer);
         }
         
         /**
@@ -133,12 +134,13 @@
             e.preventDefault();
             const $button = $(e.currentTarget);
             const $starsContainer = $button.closest('.cf7-rating-stars');
+            const $ratingContainer = $button.closest('.cf7-work-rating');
             
             if (confirm(cf7RatingsAjax.strings.confirm_remove)) {
                 this.updateStarsDisplay($starsContainer, 0);
                 $starsContainer.data('current-rating', 0);
                 this.clearStatus($starsContainer);
-                this.scheduleAutoSave($starsContainer);
+                this.scheduleAutoSave($ratingContainer);
             }
         }
         
@@ -420,10 +422,39 @@
      * Initialize when document is ready
      */
     $(document).ready(function() {
-        // Only initialize on submission edit pages
-        if ($('.cf7-work-rating').length > 0) {
-            new CF7RatingsSystem();
-        }
+        // Initialize ratings system
+        window.cf7RatingsInstance = new CF7RatingsSystem();
+        
+        // Check if ratings are immediately available
+        const initialRatingContainers = $('.cf7-work-rating').length;
+        
+        // Re-initialize when tabs change (especially when switching to "Submitted Works" tab)
+        $(document).on('cf7_tab_changed', function(event, tabId) {
+            // Small delay to allow content to load
+            setTimeout(function() {
+                const ratingContainers = $('.cf7-work-rating').length;
+                
+                if (ratingContainers > 0 && window.cf7RatingsInstance) {
+                    window.cf7RatingsInstance.initializeExistingRatings();
+                }
+            }, 100);
+        });
+        
+        // Fallback: Check periodically for new rating containers
+        let checkCount = 0;
+        const checkInterval = setInterval(function() {
+            checkCount++;
+            const ratingContainers = $('.cf7-work-rating').length;
+            
+            if (ratingContainers > 0) {
+                if (window.cf7RatingsInstance) {
+                    window.cf7RatingsInstance.initializeExistingRatings();
+                }
+                clearInterval(checkInterval);
+            } else if (checkCount >= 20) { // Stop after 10 seconds
+                clearInterval(checkInterval);
+            }
+        }, 500);
     });
     
     /**

@@ -123,8 +123,29 @@ class CF7_Artist_Submissions_Ratings {
      */
     public static function enqueue_scripts($hook) {
         // Only load on submission edit pages
-        global $post;
-        if (!$post || $post->post_type !== 'cf7_submission') {
+        global $post, $pagenow;
+        
+        // Check if we're on submission edit pages using multiple methods
+        $is_submission_page = false;
+        
+        // Method 1: Check current screen
+        $current_screen = get_current_screen();
+        if ($current_screen && $current_screen->post_type === 'cf7_submission') {
+            $is_submission_page = true;
+        }
+        
+        // Method 2: Check post object
+        if ($post && $post->post_type === 'cf7_submission') {
+            $is_submission_page = true;
+        }
+        
+        // Method 3: Check hook/pagenow for edit screens
+        if (($pagenow === 'post.php' || $pagenow === 'post-new.php') && 
+            isset($_GET['post']) && get_post_type($_GET['post']) === 'cf7_submission') {
+            $is_submission_page = true;
+        }
+        
+        if (!$is_submission_page) {
             return;
         }
         
