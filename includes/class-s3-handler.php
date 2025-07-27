@@ -210,6 +210,31 @@ class CF7_Artist_Submissions_S3_Handler {
             return false;
         }
         
+        // Force attachment disposition to trigger download instead of browser display
+        $query_params = array(
+            'response-content-disposition' => 'attachment'
+        );
+        
+        $signature_data = $this->create_signature_v4('GET', $s3_key, '', $expires_in, array(), $query_params, true);
+        
+        $url = "https://{$signature_data['host']}/{$s3_key}?{$signature_data['canonical_query']}";
+        
+        return $url;
+    }
+    
+    /**
+     * Generate presigned URL for file access (without forcing download)
+     * Used internally for file content retrieval and processing
+     * 
+     * @param string $s3_key The S3 object key
+     * @param int $expires_in Expiration time in seconds (default: 1 hour)
+     * @return string|false The presigned URL or false on failure
+     */
+    public function get_presigned_access_url($s3_key, $expires_in = 3600) {
+        if (!$this->init_s3_client()) {
+            return false;
+        }
+        
         $signature_data = $this->create_signature_v4('GET', $s3_key, '', $expires_in, array(), array(), true);
         
         $url = "https://{$signature_data['host']}/{$s3_key}?{$signature_data['canonical_query']}";
@@ -317,7 +342,6 @@ class CF7_Artist_Submissions_S3_Handler {
         ));
         
         if (is_wp_error($response)) {
-            error_log('CF7 Artist Submissions S3 Delete Error: ' . $response->get_error_message());
             return false;
         }
         
@@ -336,8 +360,8 @@ class CF7_Artist_Submissions_S3_Handler {
             return false;
         }
         
-        // Use presigned URL for GET request
-        $url = $this->get_presigned_download_url($s3_key, 300); // 5 minutes
+        // Use access URL for file content retrieval (not download URL)
+        $url = $this->get_presigned_access_url($s3_key, 300); // 5 minutes
         if (!$url) {
             return false;
         }
@@ -347,13 +371,11 @@ class CF7_Artist_Submissions_S3_Handler {
         ));
         
         if (is_wp_error($response)) {
-            error_log('CF7 Artist Submissions S3 Get File Error: ' . $response->get_error_message());
             return false;
         }
         
         $status_code = wp_remote_retrieve_response_code($response);
         if ($status_code !== 200) {
-            error_log('CF7 Artist Submissions S3 Get File Error: HTTP ' . $status_code);
             return false;
         }
         
@@ -850,7 +872,6 @@ class CF7_Artist_Submissions_S3_Handler {
      */
     public function initiate_multipart_upload($s3_key, $content_type) {
         if (!$this->init_s3_client()) {
-            error_log('CF7AS S3 Multipart Init: Failed to initialize S3 client');
             return false;
         }
         
@@ -878,7 +899,6 @@ class CF7_Artist_Submissions_S3_Handler {
         ));
         
         if (is_wp_error($response)) {
-            error_log('CF7AS S3 Multipart Init Error: ' . $response->get_error_message());
             return false;
         }
         
@@ -887,7 +907,6 @@ class CF7_Artist_Submissions_S3_Handler {
         
         
         if ($status_code !== 200) {
-            error_log('CF7AS S3 Multipart Init HTTP Error: ' . $status_code . ' - ' . $body);
             return false;
         }
         
@@ -902,7 +921,6 @@ class CF7_Artist_Submissions_S3_Handler {
             }
         }
         
-        error_log('CF7AS S3 Multipart Init XML Parse Error: ' . $body);
         return false;
     }
     
@@ -943,7 +961,6 @@ class CF7_Artist_Submissions_S3_Handler {
      */
     public function complete_multipart_upload($s3_key, $upload_id, $parts) {
         if (!$this->init_s3_client()) {
-            error_log('CF7AS S3 Complete: Failed to initialize S3 client');
             return false;
         }
         
@@ -988,7 +1005,6 @@ class CF7_Artist_Submissions_S3_Handler {
         ));
         
         if (is_wp_error($response)) {
-            error_log('CF7AS S3 Complete Error: ' . $response->get_error_message());
             return false;
         }
         
@@ -1003,7 +1019,6 @@ class CF7_Artist_Submissions_S3_Handler {
             );
         }
         
-        error_log('CF7AS S3 Complete HTTP Error: ' . $status_code . ' - ' . $body);
         return false;
     }
     
@@ -1094,7 +1109,6 @@ class CF7_Artist_Submissions_S3_Handler {
         ));
         
         if (is_wp_error($response)) {
-            error_log('CF7AS S3Handler: Upload error: ' . $response->get_error_message());
             return false;
         }
         

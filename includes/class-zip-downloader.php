@@ -157,7 +157,6 @@ class CF7_Artist_Submissions_ZIP_Downloader {
             
         } catch (Exception $e) {
             $this->cleanup_temp_directory($temp_dir);
-            error_log('CF7 Artist Submissions ZIP Download Error: ' . $e->getMessage());
             wp_die('Failed to create ZIP download');
         }
     }
@@ -213,8 +212,6 @@ class CF7_Artist_Submissions_ZIP_Downloader {
                     'local_path' => $local_path,
                     'original_name' => $file['original_name']
                 );
-            } else {
-                error_log('CF7AS ZIP Error: Failed to write file to ' . $local_path);
             }
         }
         
@@ -245,7 +242,8 @@ class CF7_Artist_Submissions_ZIP_Downloader {
         $zip_filename = $safe_artist_name . '_' . $submission_id . '_submission.zip';
         $zip_path = $temp_dir . '/' . $zip_filename;
         
-        if ($zip->open($zip_path, ZipArchive::CREATE) !== TRUE) {
+        $result = $zip->open($zip_path, ZipArchive::CREATE);
+        if ($result !== TRUE) {
             return false;
         }
         
@@ -255,7 +253,10 @@ class CF7_Artist_Submissions_ZIP_Downloader {
             }
         }
         
-        $zip->close();
+        $close_result = $zip->close();
+        if (!$close_result) {
+            return false;
+        }
         
         if (file_exists($zip_path)) {
             return $zip_path;
@@ -272,6 +273,16 @@ class CF7_Artist_Submissions_ZIP_Downloader {
      * @param string $artist_name Artist name for filename
      */
     private function stream_zip_file($zip_path, $submission_id, $artist_name = '') {
+        // Verify file exists before attempting to stream
+        if (!file_exists($zip_path) || !is_readable($zip_path)) {
+            wp_die('ZIP file could not be created');
+        }
+        
+        $file_size = filesize($zip_path);
+        if ($file_size === false || $file_size === 0) {
+            wp_die('ZIP file is empty');
+        }
+        
         // Create descriptive filename with artist name and submission ID
         $safe_artist_name = $this->sanitize_filename($artist_name);
         if (empty($safe_artist_name)) {
@@ -279,20 +290,49 @@ class CF7_Artist_Submissions_ZIP_Downloader {
         }
         $zip_filename = $safe_artist_name . '_' . $submission_id . '_submission.zip';
         
-        // Set headers for download
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="' . $zip_filename . '"');
-        header('Content-Length: ' . filesize($zip_path));
-        header('Pragma: public');
-        header('Cache-Control: must-revalidate');
-        
-        // Clear any previous output
-        if (ob_get_level()) {
+        // Clear any existing output and turn off output buffering
+        while (ob_get_level()) {
             ob_end_clean();
         }
         
-        // Stream file
-        readfile($zip_path);
+        // Prevent WordPress from interfering
+        if (function_exists('wp_die')) {
+            remove_all_actions('shutdown');
+        }
+        
+        // Set headers for download
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $zip_filename . '"');
+        header('Content-Length: ' . $file_size);
+        header('Content-Transfer-Encoding: binary');
+        header('Pragma: public');
+        header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+        header('Expires: 0');
+        
+        // Flush headers
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            flush();
+        }
+        
+        // Stream file in chunks to handle large files
+        $handle = fopen($zip_path, 'rb');
+        if ($handle === false) {
+            wp_die('Could not read ZIP file');
+        }
+        
+        $chunk_size = 8192; // 8KB chunks
+        while (!feof($handle)) {
+            $chunk = fread($handle, $chunk_size);
+            if ($chunk === false) {
+                break;
+            }
+            echo $chunk;
+            flush();
+        }
+        
+        fclose($handle);
         exit;
     }
     

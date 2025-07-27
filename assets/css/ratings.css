@@ -1,0 +1,612 @@
+/**
+ * CF7 Artist Submissions - Ratings System Styles
+ *
+ * Comprehensive styling for the work rating and commenting system.
+ * Provides modern, responsive design with professional appearance
+ * and smooth interactive animations.
+ *
+ * @package CF7_Artist_Submissions
+ * @subpackage Styles
+ * @since 1.2.0
+ * @version 1.2.0
+ */
+
+/* ============================================================================
+   WORKS LIST VIEW LAYOUT
+   ============================================================================ */
+
+/**
+ * Modern List View for Submitted Works
+ * 
+ * Converts the previous grid layout to a comprehensive list view
+ * that accommodates ratings, comments, and file information in
+ * an organized, scannable format.
+ */
+.cf7-works-list-view {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.cf7-works-list-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cf7-works-list-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.cf7-works-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.cf7-works-list-body {
+    padding: 0;
+}
+
+.cf7-work-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    transition: background-color 0.2s ease;
+    gap: 1.5rem;
+}
+
+.cf7-work-item:last-child {
+    border-bottom: none;
+}
+
+.cf7-work-item:hover {
+    background-color: #f9fafb;
+}
+
+/* ============================================================================
+   WORK PREVIEW SECTION
+   ============================================================================ */
+
+.cf7-work-preview {
+    flex: 0 0 120px;
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.cf7-work-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+}
+
+.cf7-work-preview:hover img {
+    transform: scale(1.05);
+}
+
+.cf7-work-preview .cf7-file-icon {
+    font-size: 2.5rem;
+    color: #9ca3af;
+}
+
+.cf7-work-preview .cf7-preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.cf7-work-preview:hover .cf7-preview-overlay {
+    opacity: 1;
+}
+
+.cf7-work-preview .cf7-preview-button {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+}
+
+/* ============================================================================
+   WORK INFORMATION SECTION
+   ============================================================================ */
+
+.cf7-work-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.cf7-work-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+}
+
+.cf7-work-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.cf7-work-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.cf7-work-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.cf7-work-meta-item .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.cf7-work-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.cf7-work-action-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cf7-work-action-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+    color: #1f2937;
+}
+
+.cf7-work-action-btn.primary {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.cf7-work-action-btn.primary:hover {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+}
+
+/* ============================================================================
+   RATING SYSTEM STYLES
+   ============================================================================ */
+
+.cf7-work-rating {
+    flex: 0 0 280px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.cf7-rating-section {
+    margin-bottom: 1rem;
+}
+
+.cf7-rating-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.cf7-rating-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.cf7-average-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+.cf7-average-label {
+    font-weight: 500;
+}
+
+.cf7-average-stars {
+    color: #fbbf24;
+}
+
+.cf7-rating-stars {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.cf7-star {
+    font-size: 1.5rem;
+    color: #d1d5db;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    line-height: 1;
+}
+
+.cf7-star.active {
+    color: #fbbf24;
+    text-shadow: 0 0 4px rgba(251, 191, 36, 0.3);
+}
+
+.cf7-star.half {
+    background: linear-gradient(90deg, #fbbf24 50%, #d1d5db 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.cf7-star:hover {
+    transform: scale(1.1);
+}
+
+.cf7-rating-stars:hover .cf7-star {
+    color: #fbbf24;
+    opacity: 0.4;
+}
+
+.cf7-rating-stars .cf7-star:hover,
+.cf7-rating-stars .cf7-star:hover ~ .cf7-star {
+    opacity: 0.4;
+}
+
+.cf7-rating-stars .cf7-star:hover,
+.cf7-rating-stars:hover .cf7-star:first-child:hover ~ .cf7-star {
+    opacity: 1;
+}
+
+/* Clear rating button */
+.cf7-clear-rating {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    margin-left: 0.5rem;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.cf7-clear-rating:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.cf7-rating-status {
+    min-height: 1.2rem;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.cf7-rating-status.success {
+    color: #059669;
+}
+
+.cf7-rating-status.error {
+    color: #dc2626;
+}
+
+.cf7-rating-status.saving {
+    color: #6b7280;
+}
+
+/* ============================================================================
+   COMMENTS SECTION
+   ============================================================================ */
+
+.cf7-comments-section {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1rem;
+}
+
+.cf7-comments-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.cf7-work-comments {
+    width: 100%;
+    min-height: 60px;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cf7-work-comments:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cf7-comments-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    gap: 1rem;
+}
+
+.cf7-save-rating {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.cf7-save-rating:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.cf7-save-rating .cf7-save-spinner {
+    position: absolute;
+    right: 0.75rem;
+}
+
+.cf7-save-rating .spinner {
+    float: none;
+    margin: 0;
+}
+
+.cf7-last-updated {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* ============================================================================
+   EMPTY STATE
+   ============================================================================ */
+
+.cf7-no-works {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6b7280;
+}
+
+.cf7-no-works .dashicons {
+    font-size: 4rem;
+    color: #d1d5db;
+    margin-bottom: 1rem;
+}
+
+.cf7-no-works h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 0.5rem 0;
+}
+
+.cf7-no-works p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 1200px) {
+    .cf7-work-rating {
+        flex: 0 0 260px;
+        padding: 0.875rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .cf7-work-item {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .cf7-work-preview {
+        flex: none;
+        width: 100%;
+        max-width: 200px;
+        height: 150px;
+        align-self: center;
+    }
+    
+    .cf7-work-rating {
+        flex: none;
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .cf7-works-list-header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .cf7-work-item {
+        padding: 1rem;
+        gap: 0.75rem;
+    }
+    
+    .cf7-work-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .cf7-work-meta {
+        gap: 0.75rem;
+    }
+    
+    .cf7-rating-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .cf7-comments-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+    
+    .cf7-last-updated {
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7-work-preview {
+        height: 120px;
+    }
+    
+    .cf7-work-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .cf7-work-action-btn {
+        justify-content: center;
+    }
+    
+    .cf7-rating-stars {
+        justify-content: center;
+    }
+    
+    .cf7-star {
+        font-size: 1.25rem;
+    }
+}
+
+/* ============================================================================
+   ANIMATION ENHANCEMENTS
+   ============================================================================ */
+
+@keyframes cf7-rating-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.cf7-star.cf7-rating-animation {
+    animation: cf7-rating-pulse 0.3s ease-out;
+}
+
+@keyframes cf7-save-success {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(16, 185, 129, 0.1); }
+    100% { background-color: transparent; }
+}
+
+.cf7-work-rating.cf7-save-success {
+    animation: cf7-save-success 0.6s ease-out;
+}
+
+/* ============================================================================
+   INTEGRATION WITH EXISTING STYLES
+   ============================================================================ */
+
+/* Ensure compatibility with existing tab system */
+.cf7-tab-content .cf7-works-list-view {
+    margin-top: 0;
+}
+
+/* Hide old grid layout when list view is active */
+.cf7-works-list-view + .cf7as-file-preview-container,
+.cf7-works-list-view + .submission-files {
+    display: none;
+}
+
+/* Lightbox integration */
+.cf7-work-preview [data-lightbox] {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Print styles */
+@media print {
+    .cf7-work-rating,
+    .cf7-work-actions,
+    .cf7-preview-overlay {
+        display: none;
+    }
+    
+    .cf7-work-item {
+        break-inside: avoid;
+        border: 1px solid #ccc;
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+}
