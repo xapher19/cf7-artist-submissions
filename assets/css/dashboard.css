@@ -2222,6 +2222,8 @@
     background: #f7fafc;
     gap: 1rem;
     flex-wrap: wrap;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
 }
 
 .cf7-pagination-info {
