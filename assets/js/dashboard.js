@@ -458,6 +458,9 @@
                 .css('color', '#f59e0b');
             $('.cf7-status-filter-display .cf7-status-text').text('Needs Review');
             
+            // Set the data-current attribute so the filter bar detects this as active
+            $('.cf7-status-filter-dropdown').attr('data-current', 'workflow');
+            
             this.currentPage = 1;
             this.updateActiveFiltersDisplay();
             this.loadSubmissions('workflow');
@@ -477,6 +480,9 @@
                 .css('color', '#3b82f6');
             $('.cf7-status-filter-display .cf7-status-text').text('In Progress');
             
+            // Set the data-current attribute so the filter bar detects this as active
+            $('.cf7-status-filter-dropdown').attr('data-current', 'progress');
+            
             this.currentPage = 1;
             this.updateActiveFiltersDisplay();
             this.loadSubmissions('progress');
@@ -495,6 +501,9 @@
                 .attr('class', 'cf7-status-icon dashicons dashicons-yes-alt')
                 .css('color', '#10b981');
             $('.cf7-status-filter-display .cf7-status-text').text('Decisions Made');
+            
+            // Set the data-current attribute so the filter bar detects this as active
+            $('.cf7-status-filter-dropdown').attr('data-current', 'outcomes');
             
             this.currentPage = 1;
             this.updateActiveFiltersDisplay();
@@ -3232,7 +3241,20 @@
         const activeStatus = $('.cf7-status-filter-dropdown').attr('data-current') || '';
         if (activeStatus && activeStatus !== '') {
             hasActiveFilters = true;
-            const statusLabel = $('.cf7-status-filter-option.active .cf7-status-label').text();
+            let statusLabel;
+            
+            // Handle custom metric card filters
+            if (activeStatus === 'workflow') {
+                statusLabel = 'Needs Review';
+            } else if (activeStatus === 'progress') {
+                statusLabel = 'In Progress';
+            } else if (activeStatus === 'outcomes') {
+                statusLabel = 'Decisions Made';
+            } else {
+                // Handle standard status filters
+                statusLabel = $('.cf7-status-filter-option.active .cf7-status-label').text() || activeStatus;
+            }
+            
             const statusTag = `
                 <span class="cf7-filter-tag" data-filter-type="status">
                     Status: ${statusLabel}

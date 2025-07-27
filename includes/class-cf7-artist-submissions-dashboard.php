@@ -704,6 +704,30 @@ class CF7_Artist_Submissions_Dashboard {
                     // No submissions with outstanding actions, return empty result
                     $args['post__in'] = array(0); // Non-existent ID
                 }
+            } elseif ($status === 'workflow') {
+                // Workflow filter: new + awaiting-information
+                $args['tax_query'][] = array(
+                    'taxonomy' => 'submission_status',
+                    'field' => 'slug',
+                    'terms' => array('new', 'awaiting-information'),
+                    'operator' => 'IN'
+                );
+            } elseif ($status === 'progress') {
+                // Progress filter: reviewed + shortlisted
+                $args['tax_query'][] = array(
+                    'taxonomy' => 'submission_status',
+                    'field' => 'slug',
+                    'terms' => array('reviewed', 'shortlisted'),
+                    'operator' => 'IN'
+                );
+            } elseif ($status === 'outcomes') {
+                // Outcomes filter: selected + rejected
+                $args['tax_query'][] = array(
+                    'taxonomy' => 'submission_status',
+                    'field' => 'slug',
+                    'terms' => array('selected', 'rejected'),
+                    'operator' => 'IN'
+                );
             } else {
                 // Regular status filter
                 $args['tax_query'][] = array(
