@@ -412,10 +412,30 @@ class CF7_Artist_Submissions_Dashboard {
                                         ));
                                         
                                         if (!empty($open_calls) && !is_wp_error($open_calls)) {
+                                            // Get open calls configuration for dashboard tags
+                                            $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+                                            $calls_config = $open_calls_options['calls'] ?? array();
+                                            
                                             foreach ($open_calls as $call) {
+                                                // Look for dashboard tag in configuration
+                                                $display_name = $call->name; // Default to taxonomy name
+                                                
+                                                if (!empty($calls_config)) {
+                                                    foreach ($calls_config as $call_config) {
+                                                        // Match by title or term name
+                                                        if ((isset($call_config['title']) && $call_config['title'] === $call->name) ||
+                                                            (isset($call_config['term_id']) && $call_config['term_id'] == $call->term_id)) {
+                                                            if (!empty($call_config['dashboard_tag'])) {
+                                                                $display_name = $call_config['dashboard_tag'];
+                                                            }
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                                
                                                 echo '<div class="cf7-call-filter-option" data-value="' . esc_attr($call->slug) . '" data-icon="dashicons-portfolio" data-color="#4299e1">';
                                                 echo '<span class="cf7-call-icon dashicons dashicons-portfolio" style="color: #4299e1;"></span>';
-                                                echo '<span class="cf7-call-label">' . esc_html($call->name) . '</span>';
+                                                echo '<span class="cf7-call-label">' . esc_html($display_name) . '</span>';
                                                 echo '</div>';
                                             }
                                         }
