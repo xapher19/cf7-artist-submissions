@@ -1577,7 +1577,7 @@
                         <div class="cf7-submission-meta">
                             ${submission.email} • ID: ${submission.id} • ${submission.open_call}
                         </div>
-                        ${this.renderMediumTags(submission.mediums)}
+                        ${this.renderMediumTags(submission.call_type === 'text_based' ? submission.text_mediums : submission.mediums)}
                     </div>
                     <div class="cf7-submission-date">
                         <div class="cf7-submission-date-main">${formattedDate}</div>

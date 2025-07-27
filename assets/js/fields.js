@@ -206,6 +206,18 @@
             $(this).data('changed', true);
             $('.cf7-save-status').text('');
         });
+        
+        // Handle mediums checkbox changes
+        $(document).on('change', '.cf7-mediums-edit input[type="checkbox"]', function() {
+            const $checkbox = $(this);
+            const $mediumsField = $checkbox.closest('.cf7-artistic-mediums-field');
+            
+            // Debounce the save to avoid too many AJAX calls
+            clearTimeout($mediumsField.data('saveTimeout'));
+            $mediumsField.data('saveTimeout', setTimeout(function() {
+                saveMediums($mediumsField);
+            }, 500));
+        });
     }
     
     // ============================================================================
@@ -843,26 +855,33 @@
                         
                         // Update each field with the saved value
                         for (const fieldKey in fieldData) {
-                            if (fieldKey === 'artistic_mediums') {
-                                // Update artistic mediums display
+                            const value = fieldData[fieldKey];
+                            
+                            if (fieldKey === 'artistic_mediums' || fieldKey === 'text_mediums') {
+                                // Update mediums display
                                 const $mediumsDisplay = $('.cf7-mediums-display');
-                                if ($mediumsDisplay.length && fieldData[fieldKey]) {
-                                    $mediumsDisplay.html(fieldData[fieldKey]);
+                                if ($mediumsDisplay.length && value) {
+                                    $mediumsDisplay.html(value);
                                 }
                             } else {
-                                // Update regular fields
-                                const $field = $('[data-field="' + fieldKey + '"]');
-                                if ($field.length && fieldData[fieldKey]) {
-                                    const value = fieldData[fieldKey];
-                                    
-                                    // Update header fields (remove cf7_ prefix for matching)
+                                // Update regular fields - try multiple matching strategies
+                                let $field = $('[data-field="' + fieldKey + '"]');
+                                
+                                // If not found, try without cf7_ prefix
+                                if (!$field.length) {
                                     const headerFieldName = fieldKey.replace('cf7_', '');
-                                    const $headerField = $('[data-field="' + headerFieldName + '"]');
-                                    if ($headerField.length) {
-                                        $headerField.find('.field-value').text(value);
-                                        $headerField.data('original', value);
+                                    $field = $('[data-field="' + headerFieldName + '"]');
+                                }
+                                
+                                if ($field.length && value !== undefined && value !== null) {                                    
+                                    // Update header fields
+                                    const $fieldValue = $field.find('.field-value');
+                                    if ($fieldValue.length) {
+                                        $fieldValue.text(value);
+                                        $field.data('original', value);
                                         
                                         // Special handling for pronouns visibility
+                                        const headerFieldName = fieldKey.replace('cf7_', '');
                                         if (headerFieldName === 'pronouns') {
                                             const $pronounsSpan = $('.cf7-artist-pronouns');
                                             if (value && value.trim()) {
@@ -875,17 +894,18 @@
                                     
                                     // Update profile fields
                                     if ($field.hasClass('cf7-profile-field')) {
-                                        const $fieldValue = $field.find('.cf7-field-value');
-                                        if ($fieldValue.length) {
+                                        const $profileValue = $field.find('.cf7-field-value');
+                                        if ($profileValue.length) {
                                             // Check if it's a URL field
-                                            if ($fieldValue.hasClass('cf7-field-link')) {
-                                                $fieldValue.attr('href', value.startsWith('http') ? value : 'http://' + value);
-                                                $fieldValue.text(value);
-                                            } else if ($fieldValue.hasClass('cf7-field-textarea')) {
+                                            if ($profileValue.hasClass('cf7-field-link')) {
+                                                const url = value.startsWith('http') ? value : 'http://' + value;
+                                                $profileValue.attr('href', url);
+                                                $profileValue.text(value);
+                                            } else if ($profileValue.hasClass('cf7-field-textarea')) {
                                                 // Handle textarea fields with line breaks
-                                                $fieldValue.html(value.replace(/\n/g, '<br>'));
+                                                $profileValue.html(value.replace(/\n/g, '<br>'));
                                             } else {
-                                                $fieldValue.text(value);
+                                                $profileValue.text(value);
                                             }
                                         }
                                         
@@ -900,6 +920,17 @@
                                     }
                                 }
                             }
+                        }
+                    }
+                    
+                    // Force refresh of any fields that might have been missed
+                    if (response.data && response.data.field_data) {
+                        // Trigger a custom event to allow other components to refresh
+                        $(document).trigger('cf7_fields_updated', [response.data.field_data]);
+                        
+                        // Update page title if artist name changed
+                        if (response.data.field_data['cf7_artist-name']) {
+                            document.title = response.data.field_data['cf7_artist-name'] + ' - Artist Submissions';
                         }
                     }
                     
@@ -1095,6 +1126,69 @@
                 } else {
                     $displayValue.text(originalValue);
                 }
+            }
+        });
+    }
+    
+    /**
+     * Save mediums (artistic or text) with AJAX handling
+     * 
+     * Handles both artistic and text mediums based on the field configuration
+     * and updates the display with proper styling and colors.
+     * 
+     * @since 1.2.0
+     */
+    function saveMediums($mediumsField) {
+        const postId = $mediumsField.data('post-id');
+        const fieldType = $mediumsField.data('field');
+        const selectedMediums = [];
+        
+        // Get selected medium IDs
+        $mediumsField.find('.cf7-mediums-edit input[type="checkbox"]:checked').each(function() {
+            selectedMediums.push($(this).val());
+        });
+        
+        // Show saving indicator
+        const $display = $mediumsField.find('.cf7-mediums-display');
+        $display.html('<span class="cf7-mediums-saving">Saving...</span>');
+        
+        // Make AJAX request
+        $.ajax({
+            url: cf7TabsAjax.ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7_save_artistic_mediums',
+                post_id: postId,
+                medium_ids: selectedMediums,
+                field_type: fieldType,
+                nonce: cf7TabsAjax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Update display with the formatted HTML from server
+                    if (response.data.medium_tags_html) {
+                        $display.html(response.data.medium_tags_html);
+                    } else {
+                        $display.html('<span class="cf7-no-mediums-text">No mediums selected</span>');
+                    }
+                } else {
+                    // Show error
+                    $display.html('<span class="cf7-mediums-error">Save failed: ' + (response.data?.message || 'Unknown error') + '</span>');
+                    
+                    // Clear error after 3 seconds
+                    setTimeout(function() {
+                        $display.html('<span class="cf7-no-mediums-text">No mediums selected</span>');
+                    }, 3000);
+                }
+            },
+            error: function(xhr, status, error) {
+                // Show network error
+                $display.html('<span class="cf7-mediums-error">Network error. Please try again.</span>');
+                
+                // Clear error after 3 seconds
+                setTimeout(function() {
+                    $display.html('<span class="cf7-no-mediums-text">No mediums selected</span>');
+                }, 3000);
             }
         });
     }

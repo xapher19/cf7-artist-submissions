@@ -329,7 +329,7 @@ class CF7_Artist_Submissions_Post_Type {
             'labels'                => $labels,
             'show_ui'               => true,
             'show_admin_column'     => true,
-            'show_in_menu'          => true, // Show in admin navigation
+            'show_in_menu'          => false, // Hide from admin navigation menu
             'query_var'             => true,
             'rewrite'               => array('slug' => 'open-call'),
             'show_tagcloud'         => false,

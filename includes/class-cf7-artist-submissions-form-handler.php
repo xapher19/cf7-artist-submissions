@@ -391,10 +391,10 @@ class CF7_Artist_Submissions_Form_Handler {
             $meta_count++;
         }
         
-        // Handle artistic medium tags
-        $this->process_medium_tags($post_id, $posted_data);
+        // Handle artistic medium tags (context-aware for open call type)
+        $this->process_medium_tags($post_id, $posted_data, $current_form_id);
         
-        // Handle text medium tags
+        // Handle text medium tags (legacy support for explicit text fields)
         $this->process_text_medium_tags($post_id, $posted_data);
         
         // Handle open call assignment
@@ -417,8 +417,27 @@ class CF7_Artist_Submissions_Form_Handler {
     /**
      * Process artistic medium tags from form submission data.
      * Extracts medium information from multiple field patterns and assigns taxonomies.
+     * Context-aware for open call type (artistic vs text-based).
      */
-    private function process_medium_tags($post_id, $posted_data) {
+    private function process_medium_tags($post_id, $posted_data, $form_id = null) {
+        // Determine the correct taxonomy based on open call type
+        $taxonomy = 'artistic_medium'; // Default
+        $call_type = 'visual_arts'; // Default
+        
+        if ($form_id) {
+            $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+            if (!empty($open_calls_options['calls'])) {
+                foreach ($open_calls_options['calls'] as $call_config) {
+                    if (!empty($call_config['form_id']) && 
+                        intval($call_config['form_id']) === intval($form_id)) {
+                        $call_type = isset($call_config['call_type']) ? $call_config['call_type'] : 'visual_arts';
+                        $taxonomy = ($call_type === 'text_based') ? 'text_medium' : 'artistic_medium';
+                        break;
+                    }
+                }
+            }
+        }
+        
         // Look for fields that might contain medium information
         $medium_fields = array(
             'medium',
@@ -440,10 +459,10 @@ class CF7_Artist_Submissions_Form_Handler {
                 
                 // Handle array values (checkboxes/multiple selects)
                 if (is_array($field_value)) {
-                    // For mediums field, values are term IDs, convert to term objects
+                    // For mediums field, values are term IDs, convert to term objects using correct taxonomy
                     if ($field === 'mediums') {
                         foreach ($field_value as $term_id) {
-                            $term = get_term($term_id, 'artistic_medium');
+                            $term = get_term($term_id, $taxonomy);
                             if ($term && !is_wp_error($term)) {
                                 $medium_terms[] = $term->name;
                             }
@@ -463,11 +482,12 @@ class CF7_Artist_Submissions_Form_Handler {
         $medium_terms = array_filter(array_map('sanitize_text_field', $medium_terms));
         
         if (!empty($medium_terms)) {
-            // Set the artistic medium terms for this submission
-            wp_set_object_terms($post_id, $medium_terms, 'artistic_medium');
+            // Set the medium terms for this submission using the correct taxonomy
+            wp_set_object_terms($post_id, $medium_terms, $taxonomy);
             
             // Also store as post meta for backwards compatibility
-            update_post_meta($post_id, 'cf7_artistic_mediums', implode(', ', $medium_terms));
+            $meta_key = ($taxonomy === 'text_medium') ? 'cf7_text_mediums' : 'cf7_artistic_mediums';
+            update_post_meta($post_id, $meta_key, implode(', ', $medium_terms));
             
         }
     }
@@ -655,16 +675,45 @@ class CF7_Artist_Submissions_Form_Handler {
             $class .= ' wpcf7-validates-as-required';
         }
         
-        // Get artistic mediums from taxonomy
+        // Determine taxonomy based on form context
+        $taxonomy = 'artistic_medium'; // Default
+        $call_type = 'visual_arts'; // Default
+        
+        // Try to get current form ID from Contact Form 7
+        $current_form_id = null;
+        if (function_exists('wpcf7_get_current_contact_form')) {
+            $contact_form = wpcf7_get_current_contact_form();
+            if ($contact_form) {
+                $current_form_id = $contact_form->id();
+            }
+        }
+        
+        // Determine call type from open calls configuration
+        if ($current_form_id) {
+            $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
+            if (!empty($open_calls_options['calls'])) {
+                foreach ($open_calls_options['calls'] as $call_config) {
+                    if (!empty($call_config['form_id']) && 
+                        intval($call_config['form_id']) === intval($current_form_id)) {
+                        $call_type = isset($call_config['call_type']) ? $call_config['call_type'] : 'visual_arts';
+                        $taxonomy = ($call_type === 'text_based') ? 'text_medium' : 'artistic_medium';
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Get mediums from the appropriate taxonomy
         $mediums = get_terms(array(
-            'taxonomy' => 'artistic_medium',
+            'taxonomy' => $taxonomy,
             'hide_empty' => false,
             'orderby' => 'name',
             'order' => 'ASC'
         ));
         
         if (empty($mediums) || is_wp_error($mediums)) {
-            return '<div class="cf7as-mediums-error">No artistic mediums available. Please contact the administrator.</div>';
+            $medium_type = ($taxonomy === 'text_medium') ? 'text mediums' : 'artistic mediums';
+            return '<div class="cf7as-mediums-error">No ' . $medium_type . ' available. Please contact the administrator.</div>';
         }
         
         // Build the HTML output

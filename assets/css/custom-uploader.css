@@ -2949,6 +2949,55 @@ body.cf7as-submission-modal-open {
     overflow: hidden;
 }
 
+/* Error Popup Styles */
+.cf7as-error-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483648;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cf7as-error-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.cf7as-error-content {
+    position: relative;
+    background: white;
+    padding: 48px;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 500px;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.25);
+}
+
+.cf7as-error-icon {
+    margin-bottom: 24px;
+}
+
+.cf7as-error-content h2 {
+    color: #e74c3c;
+    margin: 0 0 16px 0;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.cf7as-error-content p {
+    color: #6c757d;
+    margin: 16px 0;
+    line-height: 1.6;
+}
+
 /* Upload Controls in Step Actions */
 .cf7as-upload-controls-group {
     display: flex;

@@ -1365,14 +1365,23 @@
                 // Trigger CF7 submission by clicking the submit button
                 submitButton.trigger('click');
                 
-                // Since the form is intercepted and processed by custom backend,
-                // show success modal after a brief delay to allow form submission to process
+                // Since CF7 won't fire events due to custom file handling,
+                // we need to wait for the backend processing to complete
+                // and then verify the submission was successful
                 setTimeout(() => {
-                    // Restore the takeover interface
-                    this.restoreTakeoverInterface(form, takeoverOverlay);
-                    // Show success message directly since CF7 events won't fire
-                    this.showSuccessMessage();
-                }, 1000); // 1 second delay to allow form submission to be processed
+                    // Simple check to see if submission went through
+                    // We'll assume success unless we detect an obvious error
+                    const hasErrors = form.find('.wpcf7-not-valid, .wpcf7-validation-errors').length > 0;
+                    
+                    if (hasErrors) {
+                        // If there are validation errors, don't show success
+                        this.showErrorMessage('Please correct the errors in the form and try again.');
+                        takeoverOverlay.remove(); // Remove processing overlay
+                    } else {
+                        // Show success message - this will handle restoring interface when closed
+                        this.showSuccessMessage(form, takeoverOverlay);
+                    }
+                }, 2500); // Longer delay to ensure backend processing completes
                 
             }, 100);
         }
@@ -1380,6 +1389,9 @@
         restoreTakeoverInterface(form, takeoverOverlay) {
             // Remove the processing overlay
             takeoverOverlay.remove();
+            
+            // Get the call type from stored data
+            const callType = this.currentCallType || 'visual_arts';
             
             // Restore the original takeover interface
             const takeoverHtml = `
@@ -1419,11 +1431,11 @@
             // Rebind the submit work button event
             form.find('.cf7as-submit-work-btn').on('click', (e) => {
                 e.preventDefault();
-                this.startSubmissionProcess(form);
+                this.startSubmissionProcess(form, callType, this.currentAcceptedTypes, this.currentTypeDescription);
             });
         }
         
-        showSuccessMessage() {
+        showSuccessMessage(form, takeoverOverlay) {
             const successHtml = `
                 <div class="cf7as-success-popup" style="display: none;">
                     <div class="cf7as-success-overlay"></div>
@@ -1448,7 +1460,44 @@
             popup.fadeIn(300);
             
             popup.find('.cf7as-close-success, .cf7as-success-overlay').on('click', () => {
-                popup.fadeOut(300, () => popup.remove());
+                popup.fadeOut(300, () => {
+                    popup.remove();
+                    // Only restore the takeover interface after the success modal is closed
+                    if (form && takeoverOverlay) {
+                        this.restoreTakeoverInterface(form, takeoverOverlay);
+                    }
+                });
+            });
+        }
+        
+        showErrorMessage(message) {
+            const errorHtml = `
+                <div class="cf7as-error-popup" style="display: none;">
+                    <div class="cf7as-error-overlay"></div>
+                    <div class="cf7as-error-content">
+                        <div class="cf7as-error-icon">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg>
+                        </div>
+                        <h2>Submission Error</h2>
+                        <p>${message}</p>
+                        <button type="button" class="cf7as-btn cf7as-btn-primary cf7as-close-error">Try Again</button>
+                    </div>
+                </div>
+            `;
+            
+            $('body').append(errorHtml);
+            
+            const popup = $('.cf7as-error-popup');
+            popup.fadeIn(300);
+            
+            popup.find('.cf7as-close-error, .cf7as-error-overlay').on('click', () => {
+                popup.fadeOut(300, () => {
+                    popup.remove();
+                });
             });
         }
         

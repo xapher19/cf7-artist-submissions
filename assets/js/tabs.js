@@ -481,3 +481,29 @@ function showSaveFeedback(message, type) {
         });
     }, 4000);
 }
+
+/**
+ * Listen for field updates and refresh UI components as needed
+ */
+jQuery(document).on('cf7_fields_updated', function(e, fieldData) {
+    // Check if we need to refresh any tab content based on the updated fields
+    if (fieldData) {
+        // Look for fields that might affect the current tab display
+        const currentTab = jQuery('.cf7-tab-content.active').attr('id');
+        
+        // If profile tab is active and we have profile-related updates, refresh elements
+        if (currentTab === 'profile-tab') {
+            // Check if mediums were updated
+            if (fieldData.hasOwnProperty('artistic_mediums') || fieldData.hasOwnProperty('text_mediums')) {
+                const $mediumsDisplay = jQuery('.cf7-mediums-display');
+                if ($mediumsDisplay.length) {
+                    // Update with the appropriate medium type
+                    const mediumsHtml = fieldData.artistic_mediums || fieldData.text_mediums;
+                    if (mediumsHtml) {
+                        $mediumsDisplay.html(mediumsHtml);
+                    }
+                }
+            }
+        }
+    }
+});

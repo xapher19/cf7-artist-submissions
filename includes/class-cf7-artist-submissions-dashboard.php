@@ -758,8 +758,8 @@ class CF7_Artist_Submissions_Dashboard {
      */
     private function format_submission_data($post) {
         $status_terms = wp_get_object_terms($post->ID, 'submission_status');
-        $status = !empty($status_terms) ? $status_terms[0]->name : 'New';
-        $status_slug = !empty($status_terms) ? $status_terms[0]->slug : 'new';
+        $status = (!is_wp_error($status_terms) && !empty($status_terms)) ? $status_terms[0]->name : 'New';
+        $status_slug = (!is_wp_error($status_terms) && !empty($status_terms)) ? $status_terms[0]->slug : 'new';
         
         // Get notification counts
         global $wpdb;
@@ -782,18 +782,22 @@ class CF7_Artist_Submissions_Dashboard {
         
         // Get open call information
         $call_terms = wp_get_object_terms($post->ID, 'open_call');
-        $open_call = !empty($call_terms) ? $call_terms[0]->name : 'General Submissions';
-        $open_call_slug = !empty($call_terms) ? $call_terms[0]->slug : 'general-submissions';
+        $open_call = (!is_wp_error($call_terms) && !empty($call_terms)) ? $call_terms[0]->name : 'General Submissions';
+        $open_call_slug = (!is_wp_error($call_terms) && !empty($call_terms)) ? $call_terms[0]->slug : 'general-submissions';
         
-        // Get dashboard tag if available
+        // Get dashboard tag and call type if available
         $dashboard_display_name = $open_call;
-        if (!empty($call_terms)) {
+        $call_type = 'visual_arts'; // Default to visual arts
+        if (!is_wp_error($call_terms) && !empty($call_terms)) {
             $open_calls_options = get_option('cf7_artist_submissions_open_calls', array());
             if (!empty($open_calls_options['calls'])) {
                 foreach ($open_calls_options['calls'] as $call_config) {
                     if (isset($call_config['title']) && $call_config['title'] === $open_call) {
                         if (!empty($call_config['dashboard_tag'])) {
                             $dashboard_display_name = $call_config['dashboard_tag'];
+                        }
+                        if (!empty($call_config['call_type'])) {
+                            $call_type = $call_config['call_type'];
                         }
                         break;
                     }
@@ -810,8 +814,9 @@ class CF7_Artist_Submissions_Dashboard {
             'status_label' => $status, // Human readable label
             'open_call' => $dashboard_display_name, // Use dashboard tag if available, otherwise full name
             'open_call_slug' => $open_call_slug,
+            'call_type' => $call_type, // Add call type for mediums determination
             'artist_name' => get_post_meta($post->ID, 'cf7_artist-name', true) ?: 'Unknown Artist',
-            'email' => get_post_meta($post->ID, 'cf7_email', true) ?: get_post_meta($post->ID, 'your-email', true) ?: 'No email',
+            'email' => get_post_meta($post->ID, 'cf7_email', true) ?: get_post_meta($post->ID, 'your-email', true) ?: get_post_meta($post->ID, 'cf7_your-email', true) ?: get_post_meta($post->ID, 'email', true) ?: 'No email',
             'mediums' => $this->get_submission_mediums($post->ID),
             'text_mediums' => $this->get_submission_text_mediums($post->ID),
             'notes' => get_post_meta($post->ID, 'cf7_curator_notes', true),
@@ -859,7 +864,7 @@ class CF7_Artist_Submissions_Dashboard {
     
     /**
      * Handle CSV export generation for selected submissions.
-     * Creates downloadable CSV file with submission data for selected entries.
+     * Creates downloadable CSV file with comprehensive submission data for selected entries.
      */
     private function handle_export($post_ids) {
         $filename = 'submissions-' . date('Y-m-d-H-i-s') . '.csv';
@@ -867,20 +872,74 @@ class CF7_Artist_Submissions_Dashboard {
         
         $handle = fopen($file_path, 'w');
         
-        // CSV headers
-        fputcsv($handle, array('ID', 'Artist Name', 'Email', 'Date', 'Status', 'Notes'));
+        // Comprehensive CSV headers with all available fields
+        fputcsv($handle, array(
+            'ID', 
+            'Title',
+            'Artist Name', 
+            'Email', 
+            'Phone',
+            'Pronouns',
+            'Location',
+            'Website',
+            'Instagram',
+            'Date', 
+            'Status', 
+            'Open Call',
+            'Artistic Mediums',
+            'Text Mediums',
+            'Artist Statement',
+            'Submission Comments',
+            'Curator Notes',
+            'Unread Messages',
+            'Outstanding Actions',
+            'File Count',
+            'View URL'
+        ));
         
         foreach ($post_ids as $post_id) {
             $post = get_post($post_id);
             if ($post) {
                 $data = $this->format_submission_data($post);
+                
+                // Get additional field data not in format_submission_data
+                $phone = get_post_meta($post_id, 'cf7_phone', true) ?: '';
+                $pronouns = get_post_meta($post_id, 'cf7_pronouns', true) ?: '';
+                $location = get_post_meta($post_id, 'cf7_location', true) ?: '';
+                $website = get_post_meta($post_id, 'cf7_website', true) ?: '';
+                $instagram = get_post_meta($post_id, 'cf7_instagram', true) ?: '';
+                $artist_statement = get_post_meta($post_id, 'cf7_artist-statement', true) ?: get_post_meta($post_id, 'cf7_artistic-statement', true) ?: '';
+                $submission_comments = get_post_meta($post_id, 'cf7_submission-comments', true) ?: '';
+                
+                // Get file count from cf7as_files table
+                global $wpdb;
+                $file_count = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}cf7as_files WHERE submission_id = %d",
+                    $post_id
+                ));
+                
                 fputcsv($handle, array(
                     $data['id'],
+                    $data['title'],
                     $data['artist_name'],
                     $data['email'],
+                    $phone,
+                    $pronouns,
+                    $location,
+                    $website,
+                    $instagram,
                     $data['date'],
-                    $data['status'],
-                    $data['notes']
+                    $data['status_label'],
+                    $data['open_call'],
+                    $this->format_mediums_for_export($data['mediums']),
+                    $this->format_mediums_for_export($data['text_mediums']),
+                    $artist_statement,
+                    $submission_comments,
+                    $data['notes'],
+                    isset($data['unread_messages_count']) ? $data['unread_messages_count'] : 0,
+                    isset($data['outstanding_actions_count']) ? $data['outstanding_actions_count'] : 0,
+                    $file_count ?: 0,
+                    $data['view_url']
                 ));
             }
         }
@@ -1131,7 +1190,7 @@ class CF7_Artist_Submissions_Dashboard {
             wp_send_json_error('Insufficient permissions');
         }
         
-        // Generate CSV export
+        // Generate CSV export with comprehensive data
         $args = array(
             'post_type' => 'cf7_submission',
             'post_status' => array('publish', 'private'),
@@ -1139,37 +1198,111 @@ class CF7_Artist_Submissions_Dashboard {
             'meta_query' => array()
         );
         
-        // Apply filters if provided
+        // Apply status filter if provided (using taxonomy terms)
         if (!empty($_POST['status']) && $_POST['status'] !== 'all') {
-            $args['meta_query'][] = array(
-                'key' => 'cf7_submission_status',
-                'value' => sanitize_text_field($_POST['status']),
-                'compare' => '='
+            $args['tax_query'] = array(
+                array(
+                    'taxonomy' => 'submission_status',
+                    'field'    => 'slug',
+                    'terms'    => sanitize_text_field($_POST['status']),
+                )
             );
         }
         
+        // Apply search filter
         if (!empty($_POST['search'])) {
             $args['s'] = sanitize_text_field($_POST['search']);
         }
         
+        // Apply open call filter
+        if (!empty($_POST['open_call']) && $_POST['open_call'] !== 'all') {
+            if (!isset($args['tax_query'])) {
+                $args['tax_query'] = array();
+            }
+            $args['tax_query']['relation'] = 'AND';
+            $args['tax_query'][] = array(
+                'taxonomy' => 'open_call',
+                'field'    => 'slug',
+                'terms'    => sanitize_text_field($_POST['open_call']),
+            );
+        }
+        
         $submissions = get_posts($args);
         
-        // Create CSV content
-        $csv_content = "ID,Title,Email,Status,Date,Link\n";
+        // Create comprehensive CSV content using format_submission_data for consistency
+        $csv_headers = array(
+            'ID', 
+            'Title',
+            'Artist Name', 
+            'Email', 
+            'Phone',
+            'Pronouns',
+            'Location',
+            'Website',
+            'Instagram',
+            'Date', 
+            'Status', 
+            'Open Call',
+            'Artistic Mediums',
+            'Text Mediums',
+            'Artist Statement',
+            'Submission Comments',
+            'Curator Notes',
+            'Unread Messages',
+            'Outstanding Actions',
+            'File Count',
+            'View URL'
+        );
+        
+        $csv_content = implode(',', $csv_headers) . "\n";
+        
         foreach ($submissions as $submission) {
-            $email = get_post_meta($submission->ID, 'your-email', true);
-            $status = get_post_meta($submission->ID, 'cf7_submission_status', true) ?: 'new';
-            $link = admin_url('post.php?post=' . $submission->ID . '&action=edit');
+            $data = $this->format_submission_data($submission);
             
-            $csv_content .= sprintf(
-                "%d,\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
-                $submission->ID,
-                str_replace('"', '""', $submission->post_title),
-                str_replace('"', '""', $email),
-                $status,
-                get_the_date('Y-m-d H:i:s', $submission->ID),
-                $link
+            // Get additional field data not in format_submission_data
+            $phone = get_post_meta($submission->ID, 'cf7_phone', true) ?: '';
+            $pronouns = get_post_meta($submission->ID, 'cf7_pronouns', true) ?: '';
+            $location = get_post_meta($submission->ID, 'cf7_location', true) ?: '';
+            $website = get_post_meta($submission->ID, 'cf7_website', true) ?: '';
+            $instagram = get_post_meta($submission->ID, 'cf7_instagram', true) ?: '';
+            $artist_statement = get_post_meta($submission->ID, 'cf7_artist-statement', true) ?: get_post_meta($submission->ID, 'cf7_artistic-statement', true) ?: '';
+            $submission_comments = get_post_meta($submission->ID, 'cf7_submission-comments', true) ?: '';
+            
+            // Get file count from cf7as_files table
+            global $wpdb;
+            $file_count = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}cf7as_files WHERE submission_id = %d",
+                $submission->ID
+            ));
+            
+            $csv_row = array(
+                $data['id'],
+                $data['title'],
+                $data['artist_name'],
+                $data['email'],
+                $phone,
+                $pronouns,
+                $location,
+                $website,
+                $instagram,
+                $data['date'],
+                $data['status_label'],
+                $data['open_call'],
+                $this->format_mediums_for_export($data['mediums']),
+                $this->format_mediums_for_export($data['text_mediums']),
+                $artist_statement,
+                $submission_comments,
+                $data['notes'],
+                $data['unread_messages_count'],
+                $data['outstanding_actions_count'],
+                $file_count ?: 0,
+                $data['view_url']
             );
+            
+            // Properly escape CSV values
+            $csv_content .= implode(',', array_map(function($field) {
+                return '"' . str_replace('"', '""', $field) . '"';
+            }, $csv_row)) . "\n";
         }
         
         // Save to temporary file
@@ -1905,5 +2038,32 @@ class CF7_Artist_Submissions_Dashboard {
         }
         
         return $mediums;
+    }
+    
+    /**
+     * Format mediums data for CSV export.
+     * 
+     * Extracts medium names from array of medium objects and formats them
+     * as a comma-separated string suitable for CSV export.
+     * 
+     * @param array $mediums Array of medium objects with name, slug, and color data
+     * @return string Comma-separated list of medium names
+     * @since 1.2.0
+     */
+    private function format_mediums_for_export($mediums) {
+        if (empty($mediums) || !is_array($mediums)) {
+            return '';
+        }
+        
+        $names = array();
+        foreach ($mediums as $medium) {
+            if (is_array($medium) && isset($medium['name'])) {
+                $names[] = $medium['name'];
+            } elseif (is_string($medium)) {
+                $names[] = $medium;
+            }
+        }
+        
+        return implode(', ', $names);
     }
 }

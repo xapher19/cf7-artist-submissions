@@ -219,6 +219,31 @@
 }
 
 /**
+ * Artist Open Call Tag
+ * 
+ * Visual indicator showing which open call the submission belongs to,
+ * displayed as a subtle tag below the email address.
+ */
+.cf7-artist-open-call {
+    display: inline-block;
+    margin-left: 15px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cf7-artist-open-call .dashicons {
+    font-size: 14px;
+    margin-right: 4px;
+    vertical-align: middle;
+    opacity: 0.8;
+}
+
+/**
  * Header Action Controls Container
  * 
  * Container for header-level actions and buttons using shared button styling from common.css.
@@ -1167,6 +1192,25 @@ body.cf7-edit-mode .cf7-header-field:hover {
     }
 }
 
+/**
+ * Mediums Status Messages
+ * 
+ * Status indicators for saving, errors, and other states during mediums updates.
+ */
+.cf7-mediums-saving {
+    color: #666;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.cf7-mediums-error {
+    color: #dc3545;
+    font-weight: 500;
+    padding: 2px 6px;
+    background: rgba(220, 53, 69, 0.1);
+    border-radius: 3px;
+}
+
 /* ============================================================================
    ADMIN LIST PAGE MEDIUM TAGS SECTION
    ============================================================================ */
@@ -1501,6 +1545,14 @@ body.cf7-edit-mode .cf7-header-field:hover {
     .cf7-artist-header-content {
         flex-direction: column;
         text-align: center;
+    }
+    
+    /* Mobile Open Call Tag */
+    .cf7-artist-open-call {
+        display: block;
+        margin: 8px auto 0 auto;
+        margin-left: 0;
+        width: fit-content;
     }
     
     /* Mobile Tab Link Sizing */
