@@ -929,33 +929,7 @@ jQuery(document).ready(function($) {
             }
         });
     });
-});
-
-// Toggle secret field visibility
-function toggleSecretVisibility(fieldId) {
-    const field = document.getElementById(fieldId);
-    const button = field.nextElementSibling;
-    const icon = button.querySelector('.dashicons');
     
-    if (field.style.webkitTextSecurity === 'disc' || field.style.textSecurity === 'disc') {
-        // Show the value
-        field.style.webkitTextSecurity = 'none';
-        field.style.textSecurity = 'none';
-        field.style.letterSpacing = 'normal';
-        icon.classList.remove('dashicons-visibility');
-        icon.classList.add('dashicons-hidden');
-        button.title = 'Hide Secret Key';
-    } else {
-        // Hide the value
-        field.style.webkitTextSecurity = 'disc';
-        field.style.textSecurity = 'disc';
-        field.style.letterSpacing = '0.1em';
-        icon.classList.remove('dashicons-hidden');
-        icon.classList.add('dashicons-visibility');
-        button.title = 'Show Secret Key';
-    }
-}
-
     // Test PDF Lambda function
     console.log('=== SETTING UP PDF LAMBDA TEST BUTTON HANDLER ===');
     console.log('Button selector #test-pdf-lambda exists:', $('#test-pdf-lambda').length);
@@ -1097,14 +1071,28 @@ function toggleSecretVisibility(fieldId) {
 
 }); // End of jQuery document ready
 
-// Close conversion status modal function
-function closeConversionModal(event) {
-    // If event is provided and it's not clicking the background, don't close
-    if (event && event.target.id !== 'conversion-status-modal') {
-        return;
-    }
+// Toggle secret field visibility
+function toggleSecretVisibility(fieldId) {
+    const field = document.getElementById(fieldId);
+    const button = field.nextElementSibling;
+    const icon = button.querySelector('.dashicons');
     
-    // Remove the modal using jQuery
-    jQuery('#conversion-status-modal').remove();
+    if (field.style.webkitTextSecurity === 'disc' || field.style.textSecurity === 'disc') {
+        // Show the value
+        field.style.webkitTextSecurity = 'none';
+        field.style.textSecurity = 'none';
+        field.style.letterSpacing = 'normal';
+        icon.classList.remove('dashicons-visibility');
+        icon.classList.add('dashicons-hidden');
+        button.title = 'Hide Secret Key';
+    } else {
+        // Hide the value
+        field.style.webkitTextSecurity = 'disc';
+        field.style.textSecurity = 'disc';
+        field.style.letterSpacing = '0.1em';
+        icon.classList.remove('dashicons-hidden');
+        icon.classList.add('dashicons-visibility');
+        button.title = 'Show Secret Key';
+    }
 }
 </script>

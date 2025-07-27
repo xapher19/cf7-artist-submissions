@@ -1314,47 +1314,167 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Get submitted works with file information
+     * Get submitted works with file information from cf7as_files table
      */
     private function get_submitted_works($post_id) {
+        error_log('CF7AS: PDF Export - Getting submitted works for post: ' . $post_id);
+        
         $works = array();
         
-        // Get file fields using existing method
-        $file_fields = $this->get_file_fields($post_id);
-        
-        foreach ($file_fields as $field_name => $file_url) {
-            if (empty($file_url)) continue;
+        // Use metadata manager to get files from database
+        if (class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+            error_log('CF7AS: PDF Export - Using metadata manager to get files');
+            $metadata_manager = new CF7_Artist_Submissions_Metadata_Manager();
+            $files = $metadata_manager->get_submission_files($post_id);
+            error_log('CF7AS: PDF Export - Files from database: ' . count($files));
             
-            $work = array(
-                'filename' => basename($file_url),
-                'file_url' => $file_url
-            );
-            
-            // If it's an image, add image_url for PDF display
-            if ($this->is_image_file($work['filename'])) {
-                $work['image_url'] = $file_url;
+            foreach ($files as $file) {
+                $filename = $file['original_name'] ?? basename($file['s3_key']);
+                // Use sanitize_key to match the pattern used in tabs view
+                $safe_filename = sanitize_key($filename);
+                
+                $work = array(
+                    'filename' => $filename,
+                    'file_url' => $this->get_file_download_url($file),
+                    'file_type' => $file['mime_type'] ?? 'application/octet-stream',
+                    's3_key' => $file['s3_key'],
+                    'file_size' => $file['file_size'] ?? 0
+                );
+                
+                // Get work title from post meta (prioritize this over filename)
+                // Try both sanitize_key and regex patterns for compatibility
+                $work_title = get_post_meta($post_id, 'cf7_work_title_' . $safe_filename, true);
+                if (empty($work_title)) {
+                    // Fallback to regex pattern for older data
+                    $regex_safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $filename);
+                    $work_title = get_post_meta($post_id, 'cf7_work_title_' . $regex_safe_filename, true);
+                }
+                $work['title'] = !empty($work_title) ? $work_title : pathinfo($filename, PATHINFO_FILENAME);
+                
+                error_log('CF7AS: PDF Export - Work title lookup for ' . $filename . ': sanitize_key=' . $safe_filename . ', found=' . (!empty($work_title) ? 'YES' : 'NO'));
+                
+                // Get work statement from post meta
+                // Try both sanitize_key and regex patterns for compatibility
+                $work_statement = get_post_meta($post_id, 'cf7_work_statement_' . $safe_filename, true);
+                if (empty($work_statement)) {
+                    // Fallback to regex pattern for older data
+                    $regex_safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $filename);
+                    $work_statement = get_post_meta($post_id, 'cf7_work_statement_' . $regex_safe_filename, true);
+                }
+                if (!empty($work_statement)) {
+                    $work['description'] = $work_statement;
+                }
+                
+                // Handle different file types
+                if ($this->is_image_file($work['filename'])) {
+                    $work['type'] = 'image';
+                    // Try to get compressed preview image for PDF
+                    $compressed_url = $this->get_compressed_image_url($file);
+                    $work['image_url'] = !empty($compressed_url) ? $compressed_url : $work['file_url'];
+                } elseif ($this->is_video_file($work['filename'])) {
+                    $work['type'] = 'video';
+                    // Try to get thumbnail if available
+                    if (!empty($file['thumbnail_url'])) {
+                        $work['thumbnail_url'] = $file['thumbnail_url'];
+                    }
+                } elseif ($this->is_document_file($work['filename'])) {
+                    $work['type'] = 'document';
+                } else {
+                    $work['type'] = 'other';
+                }
+                
+                // Get work-specific ratings and comments from the ratings system
+                $work_ratings = array();
+                $work_comments = array();
+                
+                // Get file ID from the file data if available
+                if (isset($file['id'])) {
+                    $file_id = intval($file['id']);
+                    
+                    // Try to get ratings from the ratings system
+                    if (class_exists('CF7_Artist_Submissions_Ratings')) {
+                        error_log('CF7AS: PDF Export - Getting ratings for file ID: ' . $file_id);
+                        
+                        // Get all ratings for this work from all curators
+                        $all_ratings = CF7_Artist_Submissions_Ratings::get_submission_ratings($post_id);
+                        
+                        if (isset($all_ratings[$file_id])) {
+                            $rating_data = $all_ratings[$file_id];
+                            if ($rating_data['rating'] > 0) {
+                                $work_ratings[] = array(
+                                    'category' => 'Overall Rating',
+                                    'score' => $rating_data['rating'],
+                                    'comment' => $rating_data['comments']
+                                );
+                            }
+                            
+                            if (!empty($rating_data['comments'])) {
+                                $work_comments[] = array(
+                                    'author' => 'Curator',
+                                    'content' => $rating_data['comments'],
+                                    'date' => $rating_data['updated_at'] ?: $rating_data['created_at']
+                                );
+                            }
+                        }
+                        
+                        error_log('CF7AS: PDF Export - Found ' . count($work_ratings) . ' ratings and ' . count($work_comments) . ' comments for file ID: ' . $file_id);
+                    }
+                }
+                
+                $work['ratings'] = $work_ratings;
+                $work['comments'] = $work_comments; 
+                
+                error_log('CF7AS: PDF Export - Added work: ' . $work['title'] . ' (type: ' . $work['type'] . ', file: ' . $work['filename'] . ')');
+                $works[] = $work;
             }
+        } else {
+            error_log('CF7AS: PDF Export - Metadata manager not available, using fallback method');
+            // Fallback to old method
+            $file_fields = $this->get_file_fields($post_id);
             
-            // Try to get additional work metadata
-            $work_title_key = str_replace('cf7_file_', 'cf7_title_', $field_name);
-            $work_title = get_post_meta($post_id, $work_title_key, true);
-            if (!empty($work_title)) {
-                $work['title'] = $work_title;
+            foreach ($file_fields as $field_name => $file_url) {
+                if (empty($file_url)) continue;
+                
+                $work = array(
+                    'filename' => basename($file_url),
+                    'file_url' => $file_url,
+                    'title' => basename($file_url)
+                );
+                
+                // Handle different file types
+                if ($this->is_image_file($work['filename'])) {
+                    $work['image_url'] = $file_url;
+                    $work['type'] = 'image';
+                } elseif ($this->is_video_file($work['filename'])) {
+                    $work['type'] = 'video';
+                } elseif ($this->is_document_file($work['filename'])) {
+                    $work['type'] = 'document';
+                } else {
+                    $work['type'] = 'other';
+                }
+                
+                // Try to get additional work metadata
+                $work_title_key = str_replace('cf7_file_', 'cf7_title_', $field_name);
+                $work_title = get_post_meta($post_id, $work_title_key, true);
+                if (!empty($work_title)) {
+                    $work['title'] = $work_title;
+                }
+                
+                $work_desc_key = str_replace('cf7_file_', 'cf7_desc_', $field_name);
+                $work_desc = get_post_meta($post_id, $work_desc_key, true);
+                if (!empty($work_desc)) {
+                    $work['description'] = $work_desc;
+                }
+                
+                // Get work-specific ratings and comments
+                $work['ratings'] = $this->get_work_ratings($post_id, $field_name);
+                $work['comments'] = $this->get_work_comments($post_id, $field_name);
+                
+                $works[] = $work;
             }
-            
-            $work_desc_key = str_replace('cf7_file_', 'cf7_desc_', $field_name);
-            $work_desc = get_post_meta($post_id, $work_desc_key, true);
-            if (!empty($work_desc)) {
-                $work['description'] = $work_desc;
-            }
-            
-            // Get work-specific ratings and comments
-            $work['ratings'] = $this->get_work_ratings($post_id, $field_name);
-            $work['comments'] = $this->get_work_comments($post_id, $field_name);
-            
-            $works[] = $work;
         }
         
+        error_log('CF7AS: PDF Export - Total works found: ' . count($works));
         return $works;
     }
     
@@ -1375,6 +1495,11 @@ class CF7_Artist_Submissions_PDF_Export {
                     error_log('CF7AS: PDF Export - get_submission_ratings method exists, calling it');
                     $ratings = $ratings_class->get_submission_ratings($post_id);
                     error_log('CF7AS: PDF Export - Ratings class returned: ' . print_r($ratings, true));
+                    return $ratings;
+                } elseif (method_exists('CF7_Artist_Submissions_Ratings', 'get_submission_ratings')) {
+                    error_log('CF7AS: PDF Export - Using static method get_submission_ratings');
+                    $ratings = CF7_Artist_Submissions_Ratings::get_submission_ratings($post_id);
+                    error_log('CF7AS: PDF Export - Static ratings method returned: ' . print_r($ratings, true));
                     return $ratings;
                 } else {
                     error_log('CF7AS: PDF Export - get_submission_ratings method does not exist in ratings class');
@@ -1447,15 +1572,29 @@ class CF7_Artist_Submissions_PDF_Export {
                     $processed_comments = array();
                     if (is_array($raw_comments)) {
                         foreach ($raw_comments as $comment) {
-                            $clean_comment = array(
-                                'id' => isset($comment->id) ? (string)$comment->id : '',
-                                'from_name' => isset($comment->from_name) ? (string)$comment->from_name : '',
-                                'from_email' => isset($comment->from_email) ? (string)$comment->from_email : '',
-                                'subject' => isset($comment->subject) ? (string)$comment->subject : '',
-                                'message' => isset($comment->message_body) ? strip_tags((string)$comment->message_body) : '',
-                                'date' => isset($comment->created_at) ? (string)$comment->created_at : '',
-                                'direction' => isset($comment->direction) ? (string)$comment->direction : 'outbound'
-                            );
+                            // Handle both object and array formats
+                            if (is_object($comment)) {
+                                $clean_comment = array(
+                                    'id' => isset($comment->id) ? (string)$comment->id : '',
+                                    'from_name' => isset($comment->from_name) ? (string)$comment->from_name : (isset($comment->author_name) ? (string)$comment->author_name : 'Curator'),
+                                    'from_email' => isset($comment->from_email) ? (string)$comment->from_email : (isset($comment->author_email) ? (string)$comment->author_email : ''),
+                                    'subject' => isset($comment->subject) ? (string)$comment->subject : 'Curator Comment',
+                                    'message' => isset($comment->message_body) ? strip_tags((string)$comment->message_body) : (isset($comment->message) ? strip_tags((string)$comment->message) : ''),
+                                    'date' => isset($comment->created_at) ? (string)$comment->created_at : (isset($comment->date) ? (string)$comment->date : ''),
+                                    'direction' => isset($comment->direction) ? (string)$comment->direction : 'outbound'
+                                );
+                            } else {
+                                // Handle array format
+                                $clean_comment = array(
+                                    'id' => isset($comment['id']) ? (string)$comment['id'] : '',
+                                    'from_name' => isset($comment['from_name']) ? (string)$comment['from_name'] : (isset($comment['author_name']) ? (string)$comment['author_name'] : 'Curator'),
+                                    'from_email' => isset($comment['from_email']) ? (string)$comment['from_email'] : (isset($comment['author_email']) ? (string)$comment['author_email'] : ''),
+                                    'subject' => isset($comment['subject']) ? (string)$comment['subject'] : 'Curator Comment',
+                                    'message' => isset($comment['message_body']) ? strip_tags((string)$comment['message_body']) : (isset($comment['message']) ? strip_tags((string)$comment['message']) : ''),
+                                    'date' => isset($comment['created_at']) ? (string)$comment['created_at'] : (isset($comment['date']) ? (string)$comment['date'] : ''),
+                                    'direction' => isset($comment['direction']) ? (string)$comment['direction'] : 'outbound'
+                                );
+                            }
                             $processed_comments[] = $clean_comment;
                         }
                     }
@@ -1523,74 +1662,227 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     /**
-     * Get work-specific ratings
+     * Get compressed/preview image URL for PDF export
      */
-    private function get_work_ratings($post_id, $field_name) {
-        $ratings = array();
-        
-        // Extract work identifier from field name (e.g., cf7_file_work1 -> work1)
-        $work_id = str_replace('cf7_file_', '', $field_name);
-        
-        // Look for work-specific rating fields
-        $rating_categories = array(
-            'overall' => 'Overall Rating',
-            'technical' => 'Technical Skill',
-            'creativity' => 'Creativity',
-            'presentation' => 'Presentation'
-        );
-        
-        foreach ($rating_categories as $category_key => $category_label) {
-            $rating_key = 'cf7_' . $work_id . '_' . $category_key . '_rating';
-            $comment_key = 'cf7_' . $work_id . '_' . $category_key . '_comment';
+    private function get_compressed_image_url($file) {
+        // Try to use media converter to get compressed version
+        if (class_exists('CF7_Artist_Submissions_Media_Converter')) {
+            $converter = new CF7_Artist_Submissions_Media_Converter();
             
-            $rating_value = get_post_meta($post_id, $rating_key, true);
-            if (!empty($rating_value)) {
-                $rating_comment = get_post_meta($post_id, $comment_key, true);
-                $ratings[] = array(
-                    'category' => $category_label,
-                    'score' => floatval($rating_value),
-                    'comment' => $rating_comment
-                );
+            // Try to get preview or medium version (better for PDF)
+            $preview_version = $converter->get_best_version_for_serving($file['s3_key'], 'preview');
+            if (!$preview_version) {
+                $preview_version = $converter->get_best_version_for_serving($file['s3_key'], 'medium');
+            }
+            if (!$preview_version) {
+                $preview_version = $converter->get_best_version_for_serving($file['s3_key'], 'large');
+            }
+            
+            if ($preview_version && !empty($preview_version->converted_s3_key)) {
+                // Get S3 handler to generate presigned URL
+                if ($this->s3_handler && method_exists($this->s3_handler, 'get_presigned_preview_url')) {
+                    return $this->s3_handler->get_presigned_preview_url($preview_version->converted_s3_key);
+                }
             }
         }
         
-        return $ratings;
+        // Fallback to original file URL
+        return '';
     }
     
     /**
-     * Get work-specific comments
+     * Get work-specific ratings using safe filename and modern ratings system
      */
-    private function get_work_comments($post_id, $field_name) {
-        $comments = array();
+    private function get_work_ratings($post_id, $safe_filename) {
+        error_log('CF7AS: PDF Export - get_work_ratings called for post: ' . $post_id . ', filename: ' . $safe_filename);
         
-        // Extract work identifier from field name (e.g., cf7_file_work1 -> work1)
-        $work_id = str_replace('cf7_file_', '', $field_name);
+        $ratings = array();
         
-        // Look for work-specific comment fields
-        $work_comment_key = 'cf7_' . $work_id . '_comments';
-        $work_comments = get_post_meta($post_id, $work_comment_key, false);
+        // First try to get ratings from the modern ratings system if we can find the file ID
+        if (class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+            $metadata_manager = new CF7_Artist_Submissions_Metadata_Manager();
+            $files = $metadata_manager->get_submission_files($post_id);
+            
+            foreach ($files as $file) {
+                $filename = $file['original_name'] ?? basename($file['s3_key']);
+                $file_safe_filename = sanitize_key($filename);
+                
+                if ($file_safe_filename === $safe_filename && isset($file['id'])) {
+                    $file_id = intval($file['id']);
+                    
+                    if (class_exists('CF7_Artist_Submissions_Ratings')) {
+                        error_log('CF7AS: PDF Export - Getting ratings for file ID: ' . $file_id);
+                        
+                        // Get all ratings for this work
+                        $all_ratings = CF7_Artist_Submissions_Ratings::get_submission_ratings($post_id);
+                        
+                        if (isset($all_ratings[$file_id])) {
+                            $rating_data = $all_ratings[$file_id];
+                            if ($rating_data['rating'] > 0) {
+                                $ratings[] = array(
+                                    'category' => 'Overall Rating',
+                                    'score' => $rating_data['rating'],
+                                    'comment' => $rating_data['comments']
+                                );
+                                error_log('CF7AS: PDF Export - Found rating: ' . $rating_data['rating'] . ' for file: ' . $filename);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
         
-        if (!empty($work_comments)) {
-            foreach ($work_comments as $comment) {
-                if (is_array($comment)) {
-                    $comments[] = array(
-                        'author' => isset($comment['author']) ? $comment['author'] : 'Curator',
-                        'content' => isset($comment['content']) ? strip_tags($comment['content']) : '',
-                        'date' => isset($comment['date']) ? $comment['date'] : current_time('mysql')
-                    );
-                } else {
-                    $comments[] = array(
-                        'author' => 'Curator',
-                        'content' => strip_tags((string)$comment),
-                        'date' => current_time('mysql')
+        // Fallback to legacy meta field patterns if no modern ratings found
+        if (empty($ratings)) {
+            error_log('CF7AS: PDF Export - No modern ratings found, trying legacy meta fields');
+            
+            // Look for work-specific rating fields using the safe filename
+            $rating_categories = array(
+                'overall' => 'Overall Rating',
+                'technical' => 'Technical Skill', 
+                'creativity' => 'Creativity',
+                'presentation' => 'Presentation'
+            );
+            
+            foreach ($rating_categories as $category_key => $category_label) {
+                // Try multiple patterns for work ratings
+                $rating_patterns = array(
+                    'cf7_work_' . $safe_filename . '_' . $category_key . '_rating',
+                    'cf7_' . $safe_filename . '_' . $category_key . '_rating',
+                    'cf7_work_rating_' . $safe_filename . '_' . $category_key,
+                    'cf7_rating_' . $safe_filename . '_' . $category_key
+                );
+                
+                $comment_patterns = array(
+                    'cf7_work_' . $safe_filename . '_' . $category_key . '_comment',
+                    'cf7_' . $safe_filename . '_' . $category_key . '_comment',
+                    'cf7_work_comment_' . $safe_filename . '_' . $category_key,
+                    'cf7_comment_' . $safe_filename . '_' . $category_key
+                );
+                
+                $rating_value = null;
+                $rating_comment = '';
+                
+                // Try to find rating value
+                foreach ($rating_patterns as $pattern) {
+                    $value = get_post_meta($post_id, $pattern, true);
+                    if (!empty($value)) {
+                        $rating_value = floatval($value);
+                        error_log('CF7AS: PDF Export - Found legacy rating: ' . $rating_value . ' for pattern: ' . $pattern);
+                        break;
+                    }
+                }
+                
+                // Try to find rating comment
+                foreach ($comment_patterns as $pattern) {
+                    $comment = get_post_meta($post_id, $pattern, true);
+                    if (!empty($comment)) {
+                        $rating_comment = $comment;
+                        break;
+                    }
+                }
+                
+                if ($rating_value !== null) {
+                    $ratings[] = array(
+                        'category' => $category_label,
+                        'score' => $rating_value,
+                        'comment' => $rating_comment
                     );
                 }
             }
         }
         
-        return $comments;
+        error_log('CF7AS: PDF Export - Found ' . count($ratings) . ' ratings for work: ' . $safe_filename);
+        return $ratings;
     }
     
+    /**
+     * Get work-specific comments using safe filename and modern ratings system
+     */
+    private function get_work_comments($post_id, $safe_filename) {
+        error_log('CF7AS: PDF Export - get_work_comments called for post: ' . $post_id . ', filename: ' . $safe_filename);
+        
+        $comments = array();
+        
+        // First try to get comments from the modern ratings system if we can find the file ID
+        if (class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+            $metadata_manager = new CF7_Artist_Submissions_Metadata_Manager();
+            $files = $metadata_manager->get_submission_files($post_id);
+            
+            foreach ($files as $file) {
+                $filename = $file['original_name'] ?? basename($file['s3_key']);
+                $file_safe_filename = sanitize_key($filename);
+                
+                if ($file_safe_filename === $safe_filename && isset($file['id'])) {
+                    $file_id = intval($file['id']);
+                    
+                    if (class_exists('CF7_Artist_Submissions_Ratings')) {
+                        error_log('CF7AS: PDF Export - Getting comments for file ID: ' . $file_id);
+                        
+                        // Get all ratings for this work (which includes comments)
+                        $all_ratings = CF7_Artist_Submissions_Ratings::get_submission_ratings($post_id);
+                        
+                        if (isset($all_ratings[$file_id])) {
+                            $rating_data = $all_ratings[$file_id];
+                            if (!empty($rating_data['comments'])) {
+                                $comments[] = array(
+                                    'author' => 'Curator',
+                                    'content' => $rating_data['comments'],
+                                    'date' => $rating_data['updated_at'] ?: $rating_data['created_at']
+                                );
+                                error_log('CF7AS: PDF Export - Found comment: ' . substr($rating_data['comments'], 0, 50) . '... for file: ' . $filename);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
+        // Fallback to legacy meta field patterns if no modern comments found
+        if (empty($comments)) {
+            error_log('CF7AS: PDF Export - No modern comments found, trying legacy meta fields');
+            
+            // Look for work-specific comment fields using multiple patterns
+            $comment_patterns = array(
+                'cf7_work_' . $safe_filename . '_comments',
+                'cf7_' . $safe_filename . '_comments',
+                'cf7_work_comment_' . $safe_filename,
+                'cf7_comment_' . $safe_filename,
+                'cf7_curator_comment_' . $safe_filename,
+                'cf7_work_curator_comment_' . $safe_filename
+            );
+            
+            foreach ($comment_patterns as $pattern) {
+                $work_comments = get_post_meta($post_id, $pattern, false);
+                
+                if (!empty($work_comments)) {
+                    foreach ($work_comments as $comment) {
+                        if (is_array($comment)) {
+                            $comments[] = array(
+                                'author' => isset($comment['author']) ? $comment['author'] : 'Curator',
+                                'content' => isset($comment['content']) ? strip_tags($comment['content']) : '',
+                                'date' => isset($comment['date']) ? $comment['date'] : current_time('mysql')
+                            );
+                        } else {
+                            $comments[] = array(
+                                'author' => 'Curator',
+                                'content' => strip_tags((string)$comment),
+                                'date' => current_time('mysql')
+                            );
+                        }
+                        error_log('CF7AS: PDF Export - Found legacy comment via pattern: ' . $pattern);
+                    }
+                    break; // Found comments, stop looking
+                }
+            }
+        }
+        
+        error_log('CF7AS: PDF Export - Found ' . count($comments) . ' comments for work: ' . $safe_filename);
+        return $comments;
+    }
+
     /**
      * Get site information for PDF header
      */
@@ -2432,9 +2724,59 @@ document.addEventListener("DOMContentLoaded", function() {
      * Validates file extension against supported image formats.
      */
     private function is_image_file($filename) {
-        $image_extensions = array('jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp');
+        $image_extensions = array('jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg');
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         return in_array($extension, $image_extensions);
+    }
+    
+    /**
+     * Check if filename represents a video file type.
+     */
+    private function is_video_file($filename) {
+        $video_extensions = array('mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv', '3gp', 'm4v');
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        return in_array($extension, $video_extensions);
+    }
+    
+    /**
+     * Check if filename represents a document file type.
+     */
+    private function is_document_file($filename) {
+        $document_extensions = array('pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'pages', 'xls', 'xlsx', 'ppt', 'pptx');
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        return in_array($extension, $document_extensions);
+    }
+    
+    /**
+     * Get download URL for a file from S3 or generate presigned URL
+     */
+    private function get_file_download_url($file) {
+        // If the file already has a URL, use it
+        if (!empty($file['url'])) {
+            return $file['url'];
+        }
+        
+        // If we have an S3 key, generate a presigned URL
+        if (!empty($file['s3_key']) && $this->s3_handler) {
+            try {
+                return $this->s3_handler->get_presigned_access_url($file['s3_key'], 3600); // 1 hour expiry
+            } catch (Exception $e) {
+                error_log('CF7AS: PDF Export - Error generating presigned URL: ' . $e->getMessage());
+            }
+        }
+        
+        // Fallback: construct a basic S3 URL (may not work without proper auth)
+        if (!empty($file['s3_key'])) {
+            $plugin_options = get_option('cf7_artist_submissions_options', array());
+            $s3_bucket = isset($plugin_options['s3_bucket']) ? $plugin_options['s3_bucket'] : '';
+            $aws_region = isset($plugin_options['aws_region']) ? $plugin_options['aws_region'] : 'us-east-1';
+            
+            if (!empty($s3_bucket)) {
+                return "https://{$s3_bucket}.s3.{$aws_region}.amazonaws.com/{$file['s3_key']}";
+            }
+        }
+        
+        return '';
     }
     
     /**
