@@ -25,25 +25,6 @@
  */
 jQuery(document).ready(function($) {
     
-    console.log('=== PDF EXPORT SCRIPT LOADED ===');
-    console.log('cf7_pdf_export object:', typeof cf7_pdf_export !== 'undefined' ? cf7_pdf_export : 'UNDEFINED');
-    console.log('jQuery version:', $.fn.jquery);
-    console.log('Export button elements found:', $('.cf7-export-pdf-btn').length);
-    console.log('Status elements found:', $('.cf7-export-status').length);
-    console.log('Progress elements found:', $('.cf7-export-progress').length);
-    
-    // Check if we're on the right page
-    console.log('Current URL:', window.location.href);
-    console.log('Page contains post.php:', window.location.href.indexOf('post.php') !== -1);
-    
-    // Wait for tabs to load and check again
-    setTimeout(function() {
-        console.log('=== AFTER TAB LOAD CHECK ===');
-        console.log('Export button elements found (after delay):', $('.cf7-export-pdf-btn').length);
-        console.log('Status elements found (after delay):', $('.cf7-export-status').length);
-        console.log('Progress elements found (after delay):', $('.cf7-export-progress').length);
-    }, 2000);
-    
     // ============================================================================
     // PDF EXPORT PROCESSING WITH LAMBDA INTEGRATION
     // ============================================================================
@@ -63,30 +44,19 @@ jQuery(document).ready(function($) {
     $(document).on('click', '.cf7-export-pdf-btn', function(e) {
         e.preventDefault(); // Prevent any default form submission
         
-        console.log('=== PDF EXPORT BUTTON CLICKED ===');
-        console.log('Button element:', this);
-        console.log('Event object:', e);
-        
         var $button = $(this);
         var $status = $('.cf7-export-status');
         var $progress = $('.cf7-export-progress');
         var postId = $button.data('post-id');
         
-        console.log('Post ID:', postId);
-        console.log('Button disabled:', $button.prop('disabled'));
-        console.log('Status element found:', $status.length > 0);
-        console.log('Progress element found:', $progress.length > 0);
-        
         // If no status element found, create one
         if ($status.length === 0) {
-            console.log('Creating status element...');
             $button.after('<div class="cf7-export-status"></div>');
             $status = $('.cf7-export-status');
         }
         
         // If no progress element found, create one
         if ($progress.length === 0) {
-            console.log('Creating progress element...');
             $status.after('<div class="cf7-export-progress" style="display: none;"><div class="cf7-progress-bar"><div class="cf7-progress-fill"></div></div><div class="cf7-progress-text"></div></div>');
             $progress = $('.cf7-export-progress');
             
@@ -98,12 +68,9 @@ jQuery(document).ready(function($) {
         
         // Check if cf7_pdf_export is properly loaded
         if (typeof cf7_pdf_export === 'undefined') {
-            console.error('cf7_pdf_export object not found! Export cannot proceed.');
             alert('PDF export configuration not loaded. Please refresh the page and try again.');
             return;
         }
-        
-        console.log('cf7_pdf_export configuration:', cf7_pdf_export);
         
         // Get export options with new fields
         var options = {
@@ -115,19 +82,10 @@ jQuery(document).ready(function($) {
             confidential_watermark: $('input[name="confidential_watermark"]').is(':checked')
         };
         
-        console.log('=== EXPORT OPTIONS ===');
-        console.log('Options:', options);
-        console.log('Personal info checkbox found:', $('input[name="include_personal_info"]').length > 0);
-        console.log('Works checkbox found:', $('input[name="include_works"]').length > 0);
-        console.log('Personal info checked:', $('input[name="include_personal_info"]').is(':checked'));
-        console.log('Works checked:', $('input[name="include_works"]').is(':checked'));
-        
         // Disable button and show loading state
         $button.prop('disabled', true);
         $button.html('<span class="dashicons dashicons-update-alt"></span> ' + cf7_pdf_export.export_text);
         $status.removeClass('success error').addClass('loading').text('');
-        
-        console.log('Lambda available:', cf7_pdf_export.lambda_available);
         
         // Show progress bar if Lambda is available
         if (cf7_pdf_export.lambda_available) {
@@ -136,10 +94,6 @@ jQuery(document).ready(function($) {
         }
         
         // Make AJAX request
-        console.log('=== MAKING AJAX REQUEST ===');
-        console.log('URL:', cf7_pdf_export.ajax_url);
-        console.log('cf7_pdf_export object:', cf7_pdf_export);
-        
         var ajaxData = {
             action: 'cf7_export_submission_pdf',
             post_id: postId,
@@ -152,58 +106,30 @@ jQuery(document).ready(function($) {
             confidential_watermark: options.confidential_watermark ? 1 : 0
         };
         
-        console.log('AJAX Data:', ajaxData);
-        
-        // Log the exact data that will be sent
-        console.log('=== FINAL AJAX CHECK ===');
-        console.log('About to send AJAX request with:');
-        console.log('URL:', cf7_pdf_export.ajax_url);
-        console.log('Data keys:', Object.keys(ajaxData));
-        console.log('Data values:', ajaxData);
-        console.log('Nonce:', ajaxData.nonce);
-        console.log('Post ID:', ajaxData.post_id);
-        
         // Validate required data
         if (!cf7_pdf_export.ajax_url) {
-            console.error('AJAX URL not found!');
             alert('PDF export configuration error: AJAX URL missing');
             resetButton($button);
             return;
         }
         
         if (!cf7_pdf_export.nonce) {
-            console.error('Security nonce not found!');
             alert('PDF export configuration error: Security nonce missing');
             resetButton($button);
             return;
         }
         
         if (!postId) {
-            console.error('Post ID not found!');
             alert('PDF export error: Submission ID missing');
             resetButton($button);
             return;
         }
         
-        console.log('=== STARTING AJAX REQUEST ===');
-        console.log('Making AJAX call to:', cf7_pdf_export.ajax_url);
-        
         $.ajax({
             url: cf7_pdf_export.ajax_url,
             type: 'POST',
             data: ajaxData,
-            beforeSend: function(xhr, settings) {
-                console.log('AJAX beforeSend called');
-                console.log('XHR object:', xhr);
-                console.log('Settings:', settings);
-            },
             success: function(response) {
-                console.log('=== AJAX SUCCESS ===');
-                console.log('Raw response:', response);
-                console.log('Response type:', typeof response);
-                console.log('Response success:', response.success);
-                console.log('Response data:', response.data);
-                
                 if (response.success) {
                     if (response.data.type === 'lambda') {
                         // Check if Lambda processing completed immediately
@@ -219,21 +145,10 @@ jQuery(document).ready(function($) {
                         handleLegacyResponse(response.data, $button, $status, $progress);
                     }
                 } else {
-                    console.log('=== AJAX ERROR RESPONSE ===');
-                    console.log('Error data:', response.data);
-                    console.log('Error message:', response.data ? response.data.message : 'No error message');
-                    
                     handleError(response.data.message || 'Unknown error', $button, $status, $progress);
                 }
             },
             error: function(xhr, status, error) {
-                console.log('=== AJAX REQUEST FAILED ===');
-                console.log('XHR object:', xhr);
-                console.log('Status:', status);
-                console.log('Error:', error);
-                console.log('Response text:', xhr.responseText);
-                console.log('Status code:', xhr.status);
-                
                 var errorMsg = 'Connection failed';
                 if (xhr.status === 0) {
                     errorMsg = 'Network error - check your connection';
@@ -314,7 +229,6 @@ jQuery(document).ready(function($) {
             },
             error: function() {
                 // Continue checking on AJAX errors (temporary network issues)
-                console.log('Status check failed, retrying...');
             }
         });
     }
@@ -454,20 +368,6 @@ jQuery(document).ready(function($) {
     $(window).on('beforeunload', function() {
         if (statusCheckInterval) {
             clearInterval(statusCheckInterval);
-        }
-    });
-    
-    // Reinitialize when tabs change (for tab-based submissions view)
-    $(document).on('cf7_tab_changed', function(e, tabId) {
-        console.log('=== TAB CHANGED EVENT ===');
-        console.log('New tab ID:', tabId);
-        console.log('Export button elements found after tab change:', $('.cf7-export-pdf-btn').length);
-        
-        // If we're on the actions tab (where PDF export is), check button availability
-        if (tabId === 'cf7-tab-actions') {
-            setTimeout(function() {
-                console.log('Export button elements found after actions tab load:', $('.cf7-export-pdf-btn').length);
-            }, 500);
         }
     });
 });

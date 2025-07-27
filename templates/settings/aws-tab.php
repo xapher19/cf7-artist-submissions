@@ -474,19 +474,6 @@ jQuery(document).ready(function($) {
     // Define ajaxurl for WordPress AJAX calls
     var ajaxurl = '<?php echo admin_url("admin-ajax.php"); ?>';
     
-    // Test console log to verify script is running
-    console.log('=== CF7AS AWS TAB SCRIPT LOADED ===');
-    console.log('ajaxurl:', ajaxurl);
-    console.log('jQuery available:', typeof $ !== 'undefined');
-    console.log('Document ready state:', document.readyState);
-    
-    // Test if PDF Lambda button exists
-    if ($('#test-pdf-lambda').length) {
-        console.log('✅ PDF Lambda test button found');
-    } else {
-        console.log('❌ PDF Lambda test button NOT found');
-    }
-    
     // Generate nonces for AJAX calls
     const processFilesNonce = '<?php echo wp_create_nonce("cf7as_process_files"); ?>';
     const conversionStatusNonce = '<?php echo wp_create_nonce("cf7as_conversion_status"); ?>';
@@ -931,29 +918,17 @@ jQuery(document).ready(function($) {
     });
     
     // Test PDF Lambda function
-    console.log('=== SETTING UP PDF LAMBDA TEST BUTTON HANDLER ===');
-    console.log('Button selector #test-pdf-lambda exists:', $('#test-pdf-lambda').length);
-    
     $('#test-pdf-lambda').on('click', function() {
-        console.log('=== PDF LAMBDA TEST BUTTON CLICKED ===');
-        console.log('Button element:', this);
-        console.log('jQuery version:', $.fn.jquery);
-        
         const $button = $(this);
         const $result = $('#pdf-lambda-test-result');
         const originalText = $button.html();
-        
-        console.log('Button text:', originalText);
-        console.log('Result element found:', $result.length > 0);
         
         $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Testing...');
         $result.hide();
         
         const lambdaArn = $('#pdf_lambda_function_arn').val();
-        console.log('Lambda ARN from field:', lambdaArn);
         
         if (!lambdaArn) {
-            console.log('No Lambda ARN provided, showing error');
             $result.html('<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">Please enter a Lambda function ARN first.</div>').show();
             $button.prop('disabled', false).html(originalText);
             return;
@@ -969,25 +944,11 @@ jQuery(document).ready(function($) {
             s3_bucket: $('#s3_bucket').val()
         };
         
-        console.log('=== AJAX REQUEST DATA ===');
-        console.log('URL:', ajaxurl);
-        console.log('Data:', testData);
-        console.log('AWS Access Key length:', testData.aws_access_key ? testData.aws_access_key.length : 0);
-        console.log('AWS Secret Key length:', testData.aws_secret_key ? testData.aws_secret_key.length : 0);
-        console.log('AWS Region:', testData.aws_region);
-        console.log('S3 Bucket:', testData.s3_bucket);
-        
         $.ajax({
             url: ajaxurl,
             type: 'POST',
             data: testData,
             success: function(response) {
-                console.log('=== AJAX SUCCESS ===');
-                console.log('Raw response:', response);
-                console.log('Response type:', typeof response);
-                console.log('Response success:', response.success);
-                console.log('Response data:', response.data);
-                
                 if (response.success) {
                     const data = response.data;
                     let html = '<div style="color: #008000; padding: 10px; background: #f0fff0; border: 1px solid #90EE90; border-radius: 4px;">';
@@ -1015,9 +976,6 @@ jQuery(document).ready(function($) {
                     
                     $result.html(html).show();
                 } else {
-                    console.log('=== AJAX ERROR RESPONSE ===');
-                    console.log('Error response:', response);
-                    console.log('AJAX Error Response:', response);
                     const data = response.data;
                     let html = '<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">';
                     html += '<h4 style="color: #d63638; margin-top: 0;">❌ PDF Lambda Connection Failed</h4>';
@@ -1048,13 +1006,6 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.log('=== AJAX REQUEST FAILED ===');
-                console.log('XHR object:', xhr);
-                console.log('Status:', status);
-                console.log('Error:', error);
-                console.log('Response text:', xhr.responseText);
-                console.log('Status code:', xhr.status);
-                console.log('AJAX Request Failed:', {xhr: xhr, status: status, error: error});
                 let html = '<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">';
                 html += '<h4 style="color: #d63638; margin-top: 0;">❌ Test Request Failed</h4>';
                 html += '<p><strong>Error:</strong> ' + error + '</p>';

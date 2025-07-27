@@ -68,8 +68,6 @@ class CF7_Artist_Submissions_PDF_Export {
      * @since 1.2.0
      */
     public function init() {
-        error_log('CF7AS: PDF Export init() method called');
-        
         // Initialize S3 handler for AWS operations
         $this->s3_handler = new CF7_Artist_Submissions_S3_Handler();
         $this->s3_handler->init();
@@ -77,23 +75,16 @@ class CF7_Artist_Submissions_PDF_Export {
         // Load AWS configuration
         $this->load_aws_config();
         
-        error_log('CF7AS: PDF Export - Registering AJAX handlers');
-        
         // Add global AJAX debug hook
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'debug_ajax_call'), 1);
         
         // AJAX handlers
-        error_log('CF7AS: PDF Export - About to register: wp_ajax_cf7_export_submission_pdf -> handle_pdf_export');
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'handle_pdf_export'));
-        error_log('CF7AS: PDF Export - Registered: wp_ajax_cf7_export_submission_pdf');
-        
         add_action('wp_ajax_cf7_pdf_export_callback', array($this, 'handle_lambda_callback'));
         add_action('wp_ajax_cf7_check_pdf_status', array($this, 'handle_pdf_status_check'));
         
         // Add a debug test endpoint
         add_action('wp_ajax_cf7_pdf_debug_test', array($this, 'handle_debug_test'));
-        
-        error_log('CF7AS: PDF Export - AJAX handlers registered');
         
         // Script enqueuing
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -101,15 +92,11 @@ class CF7_Artist_Submissions_PDF_Export {
         // Add meta box for PDF export options
         add_action('add_meta_boxes', array($this, 'add_pdf_export_meta_box'));
         
-        error_log('CF7AS: PDF Export - Meta box action registered');
-        
         // Cleanup old PDFs periodically
         add_action('cf7_cleanup_old_pdfs', array($this, 'cleanup_old_pdfs'));
         if (!wp_next_scheduled('cf7_cleanup_old_pdfs')) {
             wp_schedule_event(time(), 'daily', 'cf7_cleanup_old_pdfs');
         }
-        
-        error_log('CF7AS: PDF Export init() method completed');
     }
     
     /**
@@ -125,10 +112,6 @@ class CF7_Artist_Submissions_PDF_Export {
      * Debug AJAX call tracking
      */
     public function debug_ajax_call() {
-        error_log('CF7AS: PDF Export - DEBUG: cf7_export_submission_pdf action called!');
-        error_log('CF7AS: PDF Export - DEBUG: POST data received: ' . print_r($_POST, true));
-        error_log('CF7AS: PDF Export - DEBUG: Current user: ' . wp_get_current_user()->user_login);
-        error_log('CF7AS: PDF Export - DEBUG: Doing AJAX: ' . (defined('DOING_AJAX') && DOING_AJAX ? 'YES' : 'NO'));
         // Don't exit - let other handlers run
     }
     
@@ -149,13 +132,9 @@ class CF7_Artist_Submissions_PDF_Export {
                 // Use ARN region if no region explicitly configured or if using default
                 if (!isset($options['aws_region']) || $this->aws_region === 'us-east-1') {
                     $this->aws_region = $arn_region;
-                    error_log('CF7AS: PDF Export - Using region from Lambda ARN: ' . $this->aws_region);
                 }
             }
         }
-        
-        error_log('CF7AS: PDF Export - Final AWS region: ' . $this->aws_region);
-        error_log('CF7AS: PDF Export - Lambda ARN: ' . $this->lambda_function_arn);
         
         // Validate Lambda function ARN format
         if (!empty($this->lambda_function_arn) && !$this->validate_lambda_arn($this->lambda_function_arn)) {
@@ -178,26 +157,20 @@ class CF7_Artist_Submissions_PDF_Export {
     public function enqueue_scripts($hook) {
         global $post;
         
-        error_log('CF7AS: PDF Export - Enqueue scripts called for hook: ' . $hook);
-        
         // Enqueue for individual submission edit pages (main functionality)
         $should_enqueue = false;
         
         if ($hook === 'post.php' && isset($post) && $post->post_type === 'cf7_submission') {
             $should_enqueue = true;
-            error_log('CF7AS: PDF Export - Post edit page detected for post ID: ' . $post->ID);
         }
         
         // Also enqueue for settings page but with limited functionality
         // The settings page has its own test button but may need some shared utilities
         if (strpos($hook, 'cf7-artist-submissions-settings') !== false) {
             $should_enqueue = true;
-            error_log('CF7AS: PDF Export - Settings page detected');
         }
         
         if ($should_enqueue) {
-            error_log('CF7AS: PDF Export - Enqueuing scripts for hook: ' . $hook);
-            
             wp_enqueue_script(
                 'cf7-pdf-export',
                 CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/pdf-export.js',
@@ -205,8 +178,6 @@ class CF7_Artist_Submissions_PDF_Export {
                 CF7_ARTIST_SUBMISSIONS_VERSION,
                 true
             );
-            
-            error_log('CF7AS: PDF Export - Script enqueued with URL: ' . CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/pdf-export.js');
             
             wp_localize_script('cf7-pdf-export', 'cf7_pdf_export', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
@@ -404,71 +375,47 @@ class CF7_Artist_Submissions_PDF_Export {
      * @since 1.2.0
      */
     public function handle_pdf_export() {
-        // Enhanced logging for PDF export
-        error_log('=== CF7AS: PDF Export Request Started ===');
-        error_log('CF7AS: Request Method: ' . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN'));
-        error_log('CF7AS: Current time: ' . current_time('mysql'));
-        error_log('CF7AS: Memory usage: ' . memory_get_usage(true) / 1024 / 1024 . ' MB');
-        error_log('CF7AS: $_POST data: ' . print_r($_POST, true));
-        error_log('CF7AS: $_GET data: ' . print_r($_GET, true));
-        error_log('CF7AS: Current user: ' . wp_get_current_user()->user_login);
-        error_log('CF7AS: Current user can edit posts: ' . (current_user_can('edit_posts') ? 'YES' : 'NO'));
-        error_log('CF7AS: DOING_AJAX defined: ' . (defined('DOING_AJAX') ? 'YES' : 'NO'));
-        error_log('CF7AS: DOING_AJAX value: ' . (defined('DOING_AJAX') ? (DOING_AJAX ? 'TRUE' : 'FALSE') : 'UNDEFINED'));
-        
         // Check if this is a proper AJAX request
         if (!defined('DOING_AJAX') || !DOING_AJAX) {
-            error_log('CF7AS: PDF Export - Not an AJAX request');
             wp_die('Invalid request method');
         }
         
         // Check if required POST data exists
         if (empty($_POST['nonce'])) {
-            error_log('CF7AS: PDF Export - No nonce provided');
             wp_send_json_error(array('message' => 'Security nonce missing'));
             return;
         }
         
         if (empty($_POST['post_id'])) {
-            error_log('CF7AS: PDF Export - No post ID provided');
             wp_send_json_error(array('message' => 'Submission ID missing'));
             return;
         }
         
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_pdf_export_nonce')) {
-            error_log('CF7AS: PDF Export - Nonce verification failed');
             wp_die('Security check failed');
         }
         
-        error_log('CF7AS: PDF Export - Nonce verification passed');
-        
         // Check capabilities
         if (!current_user_can('edit_posts')) {
-            error_log('CF7AS: PDF Export - Insufficient permissions for user: ' . wp_get_current_user()->user_login);
             wp_die('Insufficient permissions');
         }
         
-        error_log('CF7AS: PDF Export - Permission check passed');
-        
         $post_id = intval($_POST['post_id']);
-        error_log('CF7AS: PDF Export - Post ID: ' . $post_id);
         
         // Verify the post exists and is the right type
         $post = get_post($post_id);
         if (!$post) {
-            error_log('CF7AS: PDF Export - Post not found: ' . $post_id);
             wp_send_json_error(array('message' => 'Submission not found'));
             return;
         }
         
         if ($post->post_type !== 'cf7_submission') {
-            error_log('CF7AS: PDF Export - Wrong post type: ' . $post->post_type . ' for post: ' . $post_id);
             wp_send_json_error(array('message' => 'Invalid submission type'));
             return;
         }
         
-        error_log('CF7AS: PDF Export - Post validation passed');
+        // Parse options
         $options = array(
             'include_personal_info' => isset($_POST['include_personal_info']) && $_POST['include_personal_info'] == '1',
             'include_works' => isset($_POST['include_works']) && $_POST['include_works'] == '1',
@@ -478,12 +425,8 @@ class CF7_Artist_Submissions_PDF_Export {
             'confidential_watermark' => isset($_POST['confidential_watermark']) && $_POST['confidential_watermark'] == '1'
         );
         
-        error_log('CF7AS: PDF Export - Options: ' . print_r($options, true));
-        error_log('CF7AS: PDF Export - Lambda ARN configured: ' . (!empty($this->lambda_function_arn) ? 'YES' : 'NO'));
-        
-        if (!empty($this->lambda_function_arn)) {
-            error_log('CF7AS: PDF Export - Lambda ARN: ' . $this->lambda_function_arn);
-        } else {
+        // Check if Lambda is configured
+        if (empty($this->lambda_function_arn)) {
             error_log('CF7AS: PDF Export - No Lambda ARN found, checking plugin options...');
             $plugin_options = get_option('cf7_artist_submissions_options', array());
             error_log('CF7AS: PDF Export - Plugin options keys: ' . implode(', ', array_keys($plugin_options)));
@@ -494,11 +437,9 @@ class CF7_Artist_Submissions_PDF_Export {
         
         // Check if Lambda is configured
         if (empty($this->lambda_function_arn)) {
-            error_log('CF7AS: PDF Export - Lambda not configured, using HTML fallback');
             // Fallback to legacy HTML generation
             $result = $this->generate_html_fallback($post_id, $options);
         } else {
-            error_log('CF7AS: PDF Export - Using Lambda for PDF generation');
             // Use AWS Lambda for PDF generation
             $result = $this->generate_pdf_via_lambda($post_id, $options);
         }
