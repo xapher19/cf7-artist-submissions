@@ -1029,46 +1029,46 @@ class CF7_Artist_Submissions_Media_Converter {
     
     /**
      * Handle conversion callback from Lambda function
-     * Lambda functions can't generate WordPress nonces, so we use alternative authentication
-     * This should be called via AJAX when Lambda completes processing
+     * Requires proper authentication for security
      */
     public function handle_conversion_callback() {
-        // For Lambda callbacks, we accept either:
-        // 1. Valid WordPress nonce (for manual testing)
-        // 2. Job ID validation (Lambda can provide this)
+        // Require valid user capabilities
+        if (!current_user_can('manage_options')) {
+            wp_die('Insufficient permissions');
+            return;
+        }
         
-        $has_valid_nonce = wp_verify_nonce($_REQUEST['nonce'] ?? '', 'cf7as_conversion_callback');
-        $job_id = intval($_POST['job_id'] ?? 0);
-        
-        // If no valid nonce but we have a job_id, verify this is a legitimate Lambda callback
-        if (!$has_valid_nonce && $job_id > 0) {
-            // Verify this job_id exists in our database
-            global $wpdb;
-            $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
-            $job_exists = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM $jobs_table WHERE id = %d AND status IN ('pending', 'processing')",
-                $job_id
-            ));
-            
-            if (!$job_exists) {
-                wp_die('Invalid job ID');
-                return;
-            }
-            
-        } elseif (!$has_valid_nonce) {
+        // Require nonce verification for all conversion callbacks
+        if (!wp_verify_nonce($_REQUEST['nonce'] ?? '', 'cf7as_conversion_callback')) {
             wp_die('Security check failed');
             return;
         }
         
-        $status = sanitize_text_field($_POST['status'] ?? '');
-        $converted_files = $_POST['converted_files'] ?? array();
-        $error_message = sanitize_text_field($_POST['error_message'] ?? '');
-        $progress = intval($_POST['progress'] ?? 0);
+        $job_id = intval($_POST['job_id'] ?? 0);
         
         if (!$job_id) {
             wp_send_json_error('Invalid job ID');
             return;
         }
+        
+        // Verify this job_id exists in our database and belongs to a valid job
+        global $wpdb;
+        $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
+        $job_exists = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $jobs_table WHERE id = %d AND status IN ('pending', 'processing')",
+            $job_id
+        ));
+        
+        if (!$job_exists) {
+            wp_send_json_error('Invalid job ID');
+            return;
+        }
+        
+        // Sanitize and validate input data
+        $status = sanitize_text_field($_POST['status'] ?? '');
+        $converted_files = $_POST['converted_files'] ?? array();
+        $error_message = sanitize_text_field($_POST['error_message'] ?? '');
+        $progress = intval($_POST['progress'] ?? 0);
         
         
         // Update job status
@@ -1670,6 +1670,29 @@ class CF7_Artist_Submissions_Media_Converter {
     }
     
     /**
+     * AJAX handler for testing media conversion functionality
+     */
+    public function test_media_conversion() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'cf7as_test_conversion')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Basic test functionality - can be expanded
+        wp_send_json_success(array(
+            'message' => 'Media conversion test completed',
+            'php_version' => PHP_VERSION,
+            'gd_enabled' => extension_loaded('gd'),
+            'imagick_enabled' => extension_loaded('imagick')
+        ));
+    }
+    
+    /**
      * AJAX handler for testing Lambda connection
      */
     public function ajax_test_lambda_connection() {
@@ -1844,12 +1867,14 @@ class CF7_Artist_Submissions_Media_Converter {
         }
         
         // Now reset all files to not converted status
-        $result = $wpdb->query("
-            UPDATE $files_table 
-            SET has_converted_versions = 0 
-            WHERE has_converted_versions = 1 
-            OR has_converted_versions IS NULL
-        ");
+        $result = $wpdb->query(
+            $wpdb->prepare("
+                UPDATE {$wpdb->prefix}cf7as_files 
+                SET has_converted_versions = %d 
+                WHERE has_converted_versions = %d 
+                OR has_converted_versions IS NULL
+            ", 0, 1)
+        );
         
         if ($result === false) {
             wp_send_json_error('Database update failed: ' . $wpdb->last_error);
@@ -1860,10 +1885,12 @@ class CF7_Artist_Submissions_Media_Converter {
         
         // Also clear all pending and failed conversion jobs to allow fresh processing
         $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
-        $jobs_result = $wpdb->query("
-            DELETE FROM $jobs_table 
-            WHERE status IN ('pending', 'failed', 'processing')
-        ");
+        $jobs_result = $wpdb->query(
+            $wpdb->prepare("
+                DELETE FROM {$wpdb->prefix}cf7as_conversion_jobs 
+                WHERE status IN (%s, %s, %s)
+            ", 'pending', 'failed', 'processing')
+        );
         
         $cleared_jobs = 0;
         if ($jobs_result !== false) {
@@ -1873,10 +1900,9 @@ class CF7_Artist_Submissions_Media_Converter {
         
         // Also clear converted files records to allow fresh conversion
         $converted_files_table = $wpdb->prefix . 'cf7as_converted_files';
-        $converted_result = $wpdb->query("
-            DELETE FROM $converted_files_table 
-            WHERE id > 0
-        ");
+        $converted_result = $wpdb->query(
+            "DELETE FROM {$wpdb->prefix}cf7as_converted_files WHERE id > 0"
+        );
         
         $cleared_converted = 0;
         if ($converted_result !== false) {
@@ -2165,7 +2191,4 @@ add_action('wp_ajax_cf7as_conversion_callback', function() {
     $converter->handle_conversion_callback();
 });
 
-add_action('wp_ajax_nopriv_cf7as_conversion_callback', function() {
-    $converter = new CF7_Artist_Submissions_Media_Converter();
-    $converter->handle_conversion_callback();
-});
+// Removed unauthenticated access for security - all media conversion operations require authentication

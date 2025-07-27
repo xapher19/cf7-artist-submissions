@@ -1675,19 +1675,32 @@ class CF7_Artist_Submissions_Tabs {
      */
     public static function ajax_update_status() {
         // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'cf7_tabs_nonce')) {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_tabs_nonce')) {
             wp_send_json_error(array('message' => 'Security check failed'));
             return;
         }
         
-        // Check permissions
-        if (!current_user_can('edit_posts')) {
-            wp_send_json_error(array('message' => 'Insufficient permissions'));
+        // Check required data
+        if (!isset($_POST['post_id']) || !isset($_POST['status'])) {
+            wp_send_json_error(array('message' => 'Missing required data'));
             return;
         }
         
         $post_id = intval($_POST['post_id']);
         $new_status = sanitize_text_field($_POST['status']);
+        
+        // Validate post exists and is correct type
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'cf7_submission') {
+            wp_send_json_error(array('message' => 'Invalid post'));
+            return;
+        }
+        
+        // Check permissions for specific post
+        if (!current_user_can('edit_post', $post_id)) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
         
         // Validate status
         $valid_statuses = array('new', 'reviewed', 'awaiting-information', 'shortlisted', 'selected', 'rejected');
@@ -2234,30 +2247,34 @@ class CF7_Artist_Submissions_Tabs {
             wp_die(__('Security check failed', 'cf7-artist-submissions'));
         }
 
-        // Check user permissions
-        if (!current_user_can('manage_options')) {
-            error_log('CF7AS Error: Download file insufficient permissions');
-            wp_die(__('Insufficient permissions', 'cf7-artist-submissions'));
-        }
-
         $file_id = isset($_GET['file_id']) ? intval($_GET['file_id']) : 0;
         if (!$file_id) {
             error_log('CF7AS Error: Download file invalid file ID: ' . $file_id);
             wp_die(__('Invalid file ID', 'cf7-artist-submissions'));
         }
 
-
         global $wpdb;
-        
-        // Get file details - use the correct table name
+
+        // Check user permissions - use more specific permission
         $file = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}cf7as_files WHERE id = %d",
+            "SELECT sf.*, s.post_id as submission_id FROM {$wpdb->prefix}cf7as_files sf 
+             LEFT JOIN {$wpdb->prefix}cf7as_submissions s ON sf.submission_id = s.id 
+             WHERE sf.id = %d",
             $file_id
         ));
-
+        
         if (!$file) {
             error_log('CF7AS Error: Download file - file not found in database for ID: ' . $file_id);
             wp_die(__('File not found', 'cf7-artist-submissions'));
+        }
+        
+        // Check permissions for the specific submission instead of manage_options
+        if ($file->submission_id && !current_user_can('edit_post', $file->submission_id)) {
+            error_log('CF7AS Error: Download file insufficient permissions for submission: ' . $file->submission_id);
+            wp_die(__('Insufficient permissions', 'cf7-artist-submissions'));
+        } elseif (!$file->submission_id && !current_user_can('edit_posts')) {
+            error_log('CF7AS Error: Download file insufficient permissions');
+            wp_die(__('Insufficient permissions', 'cf7-artist-submissions'));
         }
 
 
@@ -2288,8 +2305,10 @@ class CF7_Artist_Submissions_Tabs {
             }
 
 
-            // Set headers to force download
-            $filename = basename($file->original_name);
+            // Set headers to force download - sanitize filename to prevent header injection
+            $filename = sanitize_file_name(basename($file->original_name));
+            // Additional sanitization to prevent header injection
+            $filename = preg_replace('/[^\w\-_\.]/', '_', $filename);
             $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             
             // Determine content type

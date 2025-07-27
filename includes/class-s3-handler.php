@@ -250,6 +250,15 @@ class CF7_Artist_Submissions_S3_Handler {
      * @return string The S3 key
      */
     public function generate_s3_key($submission_id, $filename) {
+        // Sanitize submission ID to prevent path traversal
+        $submission_id = sanitize_key($submission_id);
+        
+        // Additional validation for submission ID format
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $submission_id)) {
+            // Fallback to safe default if invalid
+            $submission_id = 'safe_' . uniqid();
+        }
+        
         // Sanitize filename
         $filename = sanitize_file_name($filename);
         return 'uploads/' . $submission_id . '/' . $filename;
@@ -263,6 +272,15 @@ class CF7_Artist_Submissions_S3_Handler {
      * @return string The S3 key for thumbnail
      */
     public function generate_thumbnail_s3_key($submission_id, $filename) {
+        // Sanitize submission ID to prevent path traversal
+        $submission_id = sanitize_key($submission_id);
+        
+        // Additional validation for submission ID format
+        if (!preg_match('/^[a-zA-Z0-9_-]+$/', $submission_id)) {
+            // Fallback to safe default if invalid
+            $submission_id = 'safe_' . uniqid();
+        }
+        
         $filename = sanitize_file_name($filename);
         $path_info = pathinfo($filename);
         $thumbnail_filename = $path_info['filename'] . '_thumb.' . $path_info['extension'];

@@ -766,6 +766,12 @@ class CF7_Artist_Submissions_Emails {
             return;
         }
         
+        // Check user permissions
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
         // Check required data
         if (!isset($_POST['template_id']) || !isset($_POST['submission_id'])) {
             wp_send_json_error(array('message' => 'Missing required data'));
@@ -865,6 +871,12 @@ class CF7_Artist_Submissions_Emails {
             return;
         }
         
+        // Check user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
         try {
             // Only proceed if WooCommerce is active
             if (!class_exists('WooCommerce')) {
@@ -912,6 +924,12 @@ class CF7_Artist_Submissions_Emails {
         // Check nonce
         if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_send_email_nonce')) {
             wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check user permissions - only users who can edit posts can send emails
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
             return;
         }
         
@@ -1061,13 +1079,28 @@ class CF7_Artist_Submissions_Emails {
             
             // Get IMAP settings for reply-to address (this is the email we'll monitor for replies)
             $imap_options = get_option('cf7_artist_submissions_imap_options', array());
-            $imap_email = isset($imap_options['username']) ? $imap_options['username'] : $from_email;
+            $imap_email = isset($imap_options['username']) ? sanitize_email($imap_options['username']) : $from_email;
+            
+            // Validate IMAP email before processing
+            if (!is_email($imap_email)) {
+                $imap_email = $from_email; // Fallback to from_email if invalid
+            }
             
             // Create reply-to address using plus addressing with IMAP email for conversation threading
             $email_parts = explode('@', $imap_email);
-            $local_part = $email_parts[0];
-            $domain_part = isset($email_parts[1]) ? $email_parts[1] : 'example.com';
-            $reply_to_email = $local_part . '+SUB' . $submission_id . '_' . $reply_token . '@' . $domain_part;
+            $local_part = sanitize_text_field($email_parts[0]);
+            $domain_part = isset($email_parts[1]) ? sanitize_text_field($email_parts[1]) : 'example.com';
+            $reply_to_email = $local_part . '+SUB' . intval($submission_id) . '_' . sanitize_text_field($reply_token) . '@' . $domain_part;
+            
+            // Sanitize email headers to prevent email header injection
+            $from_name = sanitize_text_field($from_name);
+            $from_email = sanitize_email($from_email);
+            $reply_to_email = sanitize_email($reply_to_email);
+            
+            // Validate critical email addresses
+            if (!is_email($from_email) || !is_email($reply_to_email)) {
+                return new WP_Error('invalid_email', 'Invalid email addresses detected');
+            }
             
             // Set up headers with conversation threading reply-to
             $headers = array(
@@ -1075,6 +1108,14 @@ class CF7_Artist_Submissions_Emails {
                 'From: ' . $from_name . ' <' . $from_email . '>',
                 'Reply-To: <' . $reply_to_email . '>'
             );
+            
+            // Validate final email parameters before sending
+            $to_email = sanitize_email($to_email);
+            $subject = sanitize_text_field($subject);
+            
+            if (!is_email($to_email)) {
+                return new WP_Error('invalid_recipient', 'Invalid recipient email address');
+            }
             
             // Send the email
             $mail_sent = wp_mail($to_email, $subject, $body, $headers);
@@ -1157,19 +1198,19 @@ class CF7_Artist_Submissions_Emails {
         $status_terms = wp_get_object_terms($submission_id, 'submission_status');
         $status = !empty($status_terms) ? $status_terms[0]->name : 'New';
         
-        // Basic merge tags
+        // Basic merge tags - sanitize for potential email header injection
         $merge_tags = array(
-            '{artist_name}' => $submission->post_title,
-            '{submission_date}' => get_post_meta($submission_id, 'cf7_submission_date', true),
-            '{submission_id}' => $submission_id,
-            '{status}' => $status,
-            '{site_name}' => get_bloginfo('name')
+            '{artist_name}' => sanitize_text_field($submission->post_title),
+            '{submission_date}' => sanitize_text_field(get_post_meta($submission_id, 'cf7_submission_date', true)),
+            '{submission_id}' => intval($submission_id),
+            '{status}' => sanitize_text_field($status),
+            '{site_name}' => sanitize_text_field(get_bloginfo('name'))
         );
         
-        // Add email merge tag
+        // Add email merge tag - sanitize email
         $email = $this->get_submission_email($submission_id);
         if ($email) {
-            $merge_tags['{email}'] = $email;
+            $merge_tags['{email}'] = sanitize_email($email);
         }
         
         // Get all custom fields
@@ -1186,9 +1227,9 @@ class CF7_Artist_Submissions_Emails {
                 
                 $value = get_post_meta($submission_id, $key, true);
                 if (is_string($value)) {
-                    // Create merge tag without cf7_ prefix
+                    // Create merge tag without cf7_ prefix - sanitize to prevent email header injection
                     $tag_key = substr($key, 4); // Remove cf7_ prefix
-                    $merge_tags['{' . $tag_key . '}'] = $value;
+                    $merge_tags['{' . $tag_key . '}'] = sanitize_text_field($value);
                 }
             }
         }

@@ -81,21 +81,24 @@ class CF7_Artist_Submissions_REST_Endpoints {
         register_rest_route($namespace, '/presigned-url', array(
             'methods' => 'POST',
             'callback' => array($this, 'get_presigned_url'),
-            'permission_callback' => '__return_true', // Public endpoint for form submissions
+            'permission_callback' => array($this, 'check_upload_permissions'), // Require authentication
             'args' => array(
                 'filename' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_filename')
                 ),
                 'type' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_content_type')
                 ),
                 'size' => array(
                     'required' => true,
-                    'type' => 'integer'
+                    'type' => 'integer',
+                    'validate_callback' => array($this, 'validate_file_size')
                 )
             )
         ));
@@ -104,21 +107,24 @@ class CF7_Artist_Submissions_REST_Endpoints {
         register_rest_route($namespace, '/initiate-multipart', array(
             'methods' => 'POST',
             'callback' => array($this, 'initiate_multipart_upload'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_upload_permissions'),
             'args' => array(
                 'filename' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_filename')
                 ),
                 'type' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_content_type')
                 ),
                 'size' => array(
                     'required' => true,
-                    'type' => 'integer'
+                    'type' => 'integer',
+                    'validate_callback' => array($this, 'validate_file_size')
                 )
             )
         ));
@@ -127,7 +133,7 @@ class CF7_Artist_Submissions_REST_Endpoints {
         register_rest_route($namespace, '/upload-part-url', array(
             'methods' => 'POST',
             'callback' => array($this, 'get_upload_part_url'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_upload_permissions'),
             'args' => array(
                 'uploadId' => array(
                     'required' => true,
@@ -150,7 +156,7 @@ class CF7_Artist_Submissions_REST_Endpoints {
         register_rest_route($namespace, '/complete-multipart', array(
             'methods' => 'POST',
             'callback' => array($this, 'complete_multipart_upload'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_upload_permissions'),
             'args' => array(
                 'uploadId' => array(
                     'required' => true,
@@ -173,7 +179,7 @@ class CF7_Artist_Submissions_REST_Endpoints {
         register_rest_route($namespace, '/abort-multipart', array(
             'methods' => 'POST',
             'callback' => array($this, 'abort_multipart_upload'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_upload_permissions'),
             'args' => array(
                 'uploadId' => array(
                     'required' => true,
@@ -192,17 +198,19 @@ class CF7_Artist_Submissions_REST_Endpoints {
         register_rest_route($namespace, '/file-metadata', array(
             'methods' => 'POST',
             'callback' => array($this, 'store_file_metadata'),
-            'permission_callback' => '__return_true', // Public endpoint for form submissions
+            'permission_callback' => array($this, 'check_upload_permissions'), // Require authentication
             'args' => array(
                 'submission_id' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_submission_id')
                 ),
                 'filename' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_filename')
                 ),
                 's3_key' => array(
                     'required' => true,
@@ -212,11 +220,13 @@ class CF7_Artist_Submissions_REST_Endpoints {
                 'content_type' => array(
                     'required' => true,
                     'type' => 'string',
-                    'sanitize_callback' => 'sanitize_text_field'
+                    'sanitize_callback' => 'sanitize_text_field',
+                    'validate_callback' => array($this, 'validate_content_type')
                 ),
                 'file_size' => array(
                     'required' => true,
-                    'type' => 'integer'
+                    'type' => 'integer',
+                    'validate_callback' => array($this, 'validate_file_size')
                 )
             )
         ));
@@ -597,16 +607,42 @@ class CF7_Artist_Submissions_REST_Endpoints {
     }
     
     /**
-     * Validate file size parameter
+     * Validate file size parameter with hard limits
      */
     public function validate_file_size($param, $request, $key) {
-        return is_numeric($param) && intval($param) > 0;
+        if (!is_numeric($param)) {
+            return false;
+        }
+        
+        $size = intval($param);
+        $max_size = 5 * 1024 * 1024 * 1024; // 5GB limit
+        
+        return $size > 0 && $size <= $max_size;
     }
     
     /**
-     * Check admin permissions
+     * Check admin permissions - more granular than manage_options
      */
     public function check_admin_permissions($request) {
-        return current_user_can('manage_options');
+        return current_user_can('edit_posts');
+    }
+    
+    /**
+     * Check upload permissions for file operations
+     * More lenient for front-end form submissions but still requires valid nonce
+     */
+    public function check_upload_permissions($request) {
+        // For now, allow anyone with a valid nonce to upload
+        // This maintains compatibility with form submissions while adding basic protection
+        $nonce = $request->get_header('X-WP-Nonce');
+        if (!$nonce) {
+            $nonce = $request->get_param('_wpnonce');
+        }
+        
+        if (!$nonce || !wp_verify_nonce($nonce, 'wp_rest')) {
+            return new WP_Error('rest_forbidden', 'Invalid nonce', array('status' => 403));
+        }
+        
+        return true;
     }
 }

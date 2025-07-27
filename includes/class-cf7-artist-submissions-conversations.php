@@ -110,7 +110,7 @@ class CF7_Artist_Submissions_Conversations {
         $table_name = $wpdb->prefix . 'cf7_conversations';
         
         // Check if table already exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) == $table_name) {
             // Table exists, check if we need to add new columns
             self::update_conversations_table();
             return;
@@ -162,33 +162,33 @@ class CF7_Artist_Submissions_Conversations {
         $table_name = $wpdb->prefix . 'cf7_conversations';
         
         // Check if is_template column exists
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'is_template'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `%1s` LIKE %s", $table_name, 'is_template'));
         if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table_name ADD COLUMN is_template tinyint(1) DEFAULT 0");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD COLUMN is_template tinyint(1) DEFAULT 0", $table_name));
         }
         
         // Check if template_id column exists
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'template_id'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `%1s` LIKE %s", $table_name, 'template_id'));
         if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table_name ADD COLUMN template_id varchar(100) DEFAULT NULL");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD COLUMN template_id varchar(100) DEFAULT NULL", $table_name));
         }
         
         // Check if admin_viewed_at column exists (for notification system)
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'admin_viewed_at'");
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `%1s` LIKE %s", $table_name, 'admin_viewed_at'));
         if (empty($column_exists)) {
-            $wpdb->query("ALTER TABLE $table_name ADD COLUMN admin_viewed_at datetime DEFAULT NULL");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD COLUMN admin_viewed_at datetime DEFAULT NULL", $table_name));
         }
         
         // Add index for is_template if it doesn't exist
-        $index_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'is_template'");
+        $index_exists = $wpdb->get_results($wpdb->prepare("SHOW INDEX FROM `%1s` WHERE Key_name = %s", $table_name, 'is_template'));
         if (empty($index_exists)) {
-            $wpdb->query("ALTER TABLE $table_name ADD INDEX is_template (is_template)");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD INDEX is_template (is_template)", $table_name));
         }
         
         // Add index for admin_viewed_at if it doesn't exist
-        $index_exists = $wpdb->get_results("SHOW INDEX FROM $table_name WHERE Key_name = 'admin_viewed_at'");
+        $index_exists = $wpdb->get_results($wpdb->prepare("SHOW INDEX FROM `%1s` WHERE Key_name = %s", $table_name, 'admin_viewed_at'));
         if (empty($index_exists)) {
-            $wpdb->query("ALTER TABLE $table_name ADD INDEX admin_viewed_at (admin_viewed_at)");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD INDEX admin_viewed_at (admin_viewed_at)", $table_name));
         }
     }
     
@@ -592,7 +592,7 @@ class CF7_Artist_Submissions_Conversations {
         );
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             $debug_info[] = array(
                 'timestamp' => current_time('mysql'),
                 'action' => 'get_conversation_messages',
@@ -1296,7 +1296,7 @@ class CF7_Artist_Submissions_Conversations {
         $debug_info = array();
         
         // Check if table exists
-        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'") == $table_name;
+        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) == $table_name;
         $debug_info['table_exists'] = $table_exists;
         $debug_info['table_name'] = $table_name;
         
@@ -1340,7 +1340,7 @@ class CF7_Artist_Submissions_Conversations {
         );
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             $debug_info[] = array(
                 'timestamp' => current_time('mysql'),
                 'action' => 'verify_reply_token',
@@ -1525,7 +1525,7 @@ class CF7_Artist_Submissions_Conversations {
         );
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             $debug_info[] = array(
                 'timestamp' => current_time('mysql'),
                 'action' => 'store_incoming_message',
@@ -2332,17 +2332,23 @@ class CF7_Artist_Submissions_Conversations {
      * Provides granular message state control for administrative workflow.
      */
     public static function ajax_toggle_message_read() {
-        check_ajax_referer('cf7_conversation_nonce', 'nonce');
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
         
         if (!current_user_can('manage_options')) {
-            wp_send_json_error('Insufficient permissions');
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
         }
         
         $message_id = intval($_POST['message_id']);
         $current_status = sanitize_text_field($_POST['current_status']);
         
         if (!$message_id) {
-            wp_send_json_error('Invalid message ID');
+            wp_send_json_error(array('message' => 'Invalid message ID'));
+            return;
         }
         
         global $wpdb;
@@ -2365,7 +2371,7 @@ class CF7_Artist_Submissions_Conversations {
                 'message' => $new_status ? __('Message marked as read', 'cf7-artist-submissions') : __('Message marked as unread', 'cf7-artist-submissions')
             ));
         } else {
-            wp_send_json_error('Failed to update message status');
+            wp_send_json_error(array('message' => 'Failed to update message status'));
         }
     }
     
@@ -2374,16 +2380,22 @@ class CF7_Artist_Submissions_Conversations {
      * Provides complete message history reset for administrative cleanup.
      */
     public static function ajax_clear_messages() {
-        check_ajax_referer('cf7_conversation_nonce', 'nonce');
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
         }
         
         $submission_id = intval($_POST['submission_id']);
         
         if (!$submission_id) {
             wp_send_json_error(array('message' => 'Invalid submission ID'));
+            return;
         }
         
         global $wpdb;
@@ -2392,6 +2404,7 @@ class CF7_Artist_Submissions_Conversations {
         // Check if table exists
         if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
             wp_send_json_error(array('message' => 'Conversations table does not exist'));
+            return;
         }
         
         // Begin transaction for data integrity

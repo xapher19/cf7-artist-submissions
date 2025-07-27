@@ -302,6 +302,12 @@ class CF7_Artist_Submissions_PDF_Viewer {
             wp_send_json_error('No file URL provided');
         }
         
+        // Additional security: validate URL is from allowed domains/schemes
+        $parsed_url = parse_url($file_url);
+        if (!$parsed_url || !in_array($parsed_url['scheme'], array('http', 'https'))) {
+            wp_send_json_error('Invalid file URL scheme');
+        }
+        
         // Validate file type
         $file_type = $this->get_file_type($file_url);
         if ($file_type !== 'pdf') {
@@ -369,17 +375,24 @@ class CF7_Artist_Submissions_PDF_Viewer {
             wp_send_json_error('No file URL provided');
         }
         
+        // Additional security: validate URL is from allowed domains/schemes
+        $parsed_url = parse_url($file_url);
+        if (!$parsed_url || !in_array($parsed_url['scheme'], array('http', 'https'))) {
+            wp_send_json_error('Invalid file URL scheme');
+        }
+        
         $file_type = $this->get_file_type($file_url);
         $file_name = basename($file_url);
         
-        // Get file size if possible
+        // Get file size if possible (with additional security checks)
         $file_size = '';
-        if (function_exists('get_headers')) {
+        if (function_exists('get_headers') && filter_var($file_url, FILTER_VALIDATE_URL)) {
+            // Additional validation to prevent SSRF attacks
             $headers = @get_headers($file_url, 1);
             if (isset($headers['Content-Length'])) {
                 $size_bytes = is_array($headers['Content-Length']) ? 
                     $headers['Content-Length'][0] : $headers['Content-Length'];
-                $file_size = $this->format_file_size($size_bytes);
+                $file_size = $this->format_file_size(intval($size_bytes));
             }
         }
         

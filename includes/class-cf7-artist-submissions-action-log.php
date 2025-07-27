@@ -71,28 +71,27 @@ class CF7_Artist_Submissions_Action_Log {
         
         $charset_collate = $wpdb->get_charset_collate();
         
-        $sql = "CREATE TABLE $table_name (
+                $sql = $wpdb->prepare("CREATE TABLE `%1s` (
             id bigint(20) NOT NULL AUTO_INCREMENT,
             submission_id bigint(20) NOT NULL DEFAULT 0,
-            user_id bigint(20) NOT NULL,
-            action_type varchar(50) NOT NULL,
+            user_id bigint(20) NOT NULL DEFAULT 0,
+            action_type varchar(100) NOT NULL,
             artist_name varchar(255) DEFAULT '' NOT NULL,
             artist_email varchar(255) DEFAULT '' NOT NULL,
-            data text NOT NULL,
-            date_created datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            PRIMARY KEY  (id),
+            data longtext,
+            date_created datetime NOT NULL,
+            PRIMARY KEY (id),
             KEY submission_id (submission_id),
-            KEY action_type (action_type),
-            KEY artist_email (artist_email),
             KEY user_id (user_id),
-            KEY date_created (date_created)
-        ) $charset_collate;";
+            KEY date_created (date_created),
+            KEY artist_email (artist_email)
+        ) %s;", $table_name, $charset_collate);
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
         
         // Check if table was created successfully
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             // Table creation failed
             return false;
         }
@@ -109,40 +108,40 @@ class CF7_Artist_Submissions_Action_Log {
         $table_name = $wpdb->prefix . 'cf7_action_log';
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             return false;
         }
         
         // Check if new columns already exist
-        $columns = $wpdb->get_results("SHOW COLUMNS FROM $table_name");
+        $columns = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `%1s`", $table_name));
         $column_names = wp_list_pluck($columns, 'Field');
         
         $needs_artist_name = !in_array('artist_name', $column_names);
         $needs_artist_email = !in_array('artist_email', $column_names);
         
         if ($needs_artist_name) {
-            $wpdb->query("ALTER TABLE $table_name ADD COLUMN artist_name varchar(255) DEFAULT '' NOT NULL AFTER action_type");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD COLUMN artist_name varchar(255) DEFAULT '' NOT NULL AFTER action_type", $table_name));
         }
         
         if ($needs_artist_email) {
-            $wpdb->query("ALTER TABLE $table_name ADD COLUMN artist_email varchar(255) DEFAULT '' NOT NULL AFTER artist_name");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD COLUMN artist_email varchar(255) DEFAULT '' NOT NULL AFTER artist_name", $table_name));
         }
         
         // Update submission_id to allow 0 for system-wide actions
-        $wpdb->query("ALTER TABLE $table_name MODIFY submission_id bigint(20) NOT NULL DEFAULT 0");
+        $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` MODIFY submission_id bigint(20) NOT NULL DEFAULT 0", $table_name));
         
         // Add additional indexes for better performance
-        $existing_indexes = $wpdb->get_results("SHOW INDEXES FROM $table_name");
+        $existing_indexes = $wpdb->get_results($wpdb->prepare("SHOW INDEXES FROM `%1s`", $table_name));
         $index_names = wp_list_pluck($existing_indexes, 'Key_name');
         
         if (!in_array('artist_email', $index_names)) {
-            $wpdb->query("ALTER TABLE $table_name ADD INDEX (artist_email)");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD INDEX (artist_email)", $table_name));
         }
         if (!in_array('user_id', $index_names)) {
-            $wpdb->query("ALTER TABLE $table_name ADD INDEX (user_id)");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD INDEX (user_id)", $table_name));
         }
         if (!in_array('date_created', $index_names)) {
-            $wpdb->query("ALTER TABLE $table_name ADD INDEX (date_created)");
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%1s` ADD INDEX (date_created)", $table_name));
         }
         
         return true;
@@ -168,12 +167,12 @@ class CF7_Artist_Submissions_Action_Log {
         $table_name = $wpdb->prefix . 'cf7_action_log';
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             // Try to create the table if it doesn't exist
             self::create_log_table();
             
             // Check again to make sure it was created
-            if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+            if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
                 return false;
             }
         }
@@ -191,9 +190,17 @@ class CF7_Artist_Submissions_Action_Log {
             }
         }
         
+        // Sanitize input parameters
+        $submission_id = intval($submission_id);
+        $action_type = sanitize_text_field($action_type);
+        $artist_name = sanitize_text_field($artist_name);
+        $artist_email = sanitize_email($artist_email);
+        
         // Ensure data is properly formatted
         if (is_array($data)) {
             $data = wp_json_encode($data);
+        } else {
+            $data = sanitize_textarea_field($data);
         }
         
         // Get current user ID
@@ -239,13 +246,22 @@ class CF7_Artist_Submissions_Action_Log {
         global $wpdb;
         $table_name = $wpdb->prefix . 'cf7_action_log';
         
+        // Sanitize input parameters
+        $submission_id = intval($submission_id);
+        $action_type = sanitize_text_field($action_type);
+        
+        // Validate submission ID
+        if ($submission_id <= 0) {
+            return array();
+        }
+        
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) != $table_name) {
             return array();
         }
         
         // Base query
-        $query = $wpdb->prepare("SELECT * FROM $table_name WHERE submission_id = %d", $submission_id);
+        $query = $wpdb->prepare("SELECT * FROM `%1s` WHERE submission_id = %d", $table_name, $submission_id);
         
         // Add action type filter if specified
         if (!empty($action_type)) {
@@ -272,6 +288,12 @@ class CF7_Artist_Submissions_Action_Log {
     public static function delete_logs_for_submission($submission_id) {
         global $wpdb;
         $table_name = $wpdb->prefix . 'cf7_action_log';
+        
+        // Sanitize and validate input
+        $submission_id = intval($submission_id);
+        if ($submission_id <= 0) {
+            return false;
+        }
         
         return $wpdb->delete($table_name, array('submission_id' => $submission_id), array('%d'));
     }
@@ -313,7 +335,7 @@ class CF7_Artist_Submissions_Action_Log {
         // Try to retrieve the log entry
         global $wpdb;
         $table_name = $wpdb->prefix . 'cf7_action_log';
-        $query = $wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $result);
+        $query = $wpdb->prepare("SELECT * FROM `%1s` WHERE id = %d", $table_name, $result);
         $log = $wpdb->get_row($query);
         
         if (!$log) {
@@ -503,10 +525,11 @@ class CF7_Artist_Submissions_Action_Log {
         $table_name = $wpdb->prefix . 'cf7_action_log';
         
         // Find entries with missing artist information
-        $entries = $wpdb->get_results(
-            "SELECT id, submission_id FROM {$table_name} 
-             WHERE submission_id > 0 AND (artist_name = '' OR artist_name IS NULL)"
-        );
+        $entries = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, submission_id FROM `%1s` 
+             WHERE submission_id > 0 AND (artist_name = '' OR artist_name IS NULL)",
+            $table_name
+        ));
         
         $updated_count = 0;
         

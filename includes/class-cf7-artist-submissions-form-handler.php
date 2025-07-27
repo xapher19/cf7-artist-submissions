@@ -198,13 +198,14 @@ class CF7_Artist_Submissions_Form_Handler {
      * @since 1.2.0
      */
     public function ajax_get_open_call_info() {
-        // Verify nonce for security
+        // Verify nonce for security - die on failure for security
         if (!check_ajax_referer('cf7as_nonce', 'nonce', false)) {
             wp_send_json_error('Invalid security token');
-            return;
+            wp_die();
         }
         
-        $form_id = isset($_POST['form_id']) ? intval($_POST['form_id']) : 0;
+        // Sanitize and validate form ID input
+        $form_id = isset($_POST['form_id']) ? absint($_POST['form_id']) : 0;
         
         if (!$form_id) {
             wp_send_json_error('Form ID is required');
@@ -371,11 +372,26 @@ class CF7_Artist_Submissions_Form_Handler {
         // Set initial status
         wp_set_object_terms($post_id, 'New', 'submission_status');
         
-        // Save form data as post meta
+        // Save form data as post meta with field validation
         $meta_count = 0;
+        $allowed_fields = array(
+            'artist-name', 'your-name', 'name', 'first-name', 'last-name',
+            'email', 'pronouns', 'phone', 'location', 'website', 'instagram',
+            'artist-statement', 'medium', 'mediums', 'availability',
+            'submission-comments', 'your-work', 'work-title', 'work-statement',
+            'text-medium', 'text_medium', 'open-call', 'open_call',
+            // Add other expected field names as needed
+        );
+        
         foreach ($posted_data as $key => $value) {
             if (empty($value)) {
                 continue;
+            }
+            
+            // Security: Only process known/expected field names
+            $sanitized_key = sanitize_key($key);
+            if (!in_array($key, $allowed_fields) && !preg_match('/^[a-zA-Z0-9_-]+(_data)?$/', $key)) {
+                continue; // Skip unexpected field names
             }
             
             // Skip storing mfile data directly if it's complex
@@ -384,10 +400,14 @@ class CF7_Artist_Submissions_Form_Handler {
             }
             
             if (is_array($value)) {
+                // Sanitize array values
+                $value = array_map('sanitize_text_field', $value);
                 $value = implode(', ', $value);
+            } else {
+                $value = sanitize_text_field($value);
             }
             
-            update_post_meta($post_id, 'cf7_' . sanitize_key($key), sanitize_text_field($value));
+            update_post_meta($post_id, 'cf7_' . $sanitized_key, $value);
             $meta_count++;
         }
         
@@ -561,13 +581,27 @@ class CF7_Artist_Submissions_Form_Handler {
         $table_name = $wpdb->prefix . 'cf7as_files';
         $stored_count = 0;
         
+        // Validate post_id
+        if (!is_numeric($post_id) || $post_id <= 0) {
+            return $stored_count;
+        }
+        
+        // Validate field_name
+        $field_name = sanitize_key($field_name);
+        if (empty($field_name)) {
+            return $stored_count;
+        }
         
         if (!is_array($file_data)) {
             return $stored_count;
         }
         
         foreach ($file_data as $file) {
-            // Handle both old and new field formats
+            if (!is_array($file)) {
+                continue; // Skip invalid file entries
+            }
+            
+            // Handle both old and new field formats with validation
             $s3_key = isset($file['s3_key']) ? $file['s3_key'] : (isset($file['s3Key']) ? $file['s3Key'] : null);
             $original_name = isset($file['filename']) ? $file['filename'] :
                             (isset($file['original_filename']) ? $file['original_filename'] : 
@@ -577,9 +611,25 @@ class CF7_Artist_Submissions_Form_Handler {
                         (isset($file['file_type']) ? $file['file_type'] :
                         (isset($file['mime_type']) ? $file['mime_type'] : 'application/octet-stream'));
             
-            
+            // Security validation
             if (!$s3_key || !$original_name) {
                 continue; // Skip invalid file data
+            }
+            
+            // Validate S3 key format (prevent path traversal)
+            if (!preg_match('/^[a-zA-Z0-9\/_.-]+$/', $s3_key) || strpos($s3_key, '..') !== false) {
+                continue; // Skip suspicious S3 keys
+            }
+            
+            // Validate original filename (prevent path traversal and dangerous names)
+            $original_name = basename($original_name); // Remove any path components
+            if (empty($original_name) || $original_name === '.' || $original_name === '..') {
+                continue; // Skip dangerous filenames
+            }
+            
+            // Validate MIME type format
+            if (!preg_match('/^[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.]*$/', $mime_type)) {
+                $mime_type = 'application/octet-stream'; // Fallback to safe default
             }
             
             // Check if this S3 key already exists for this submission to prevent duplicates
@@ -598,24 +648,24 @@ class CF7_Artist_Submissions_Form_Handler {
                 'original_name' => sanitize_text_field($original_name),
                 's3_key' => sanitize_text_field($s3_key),
                 'mime_type' => sanitize_text_field($mime_type),
-                'file_size' => isset($file['size']) ? intval($file['size']) : 0,
+                'file_size' => isset($file['size']) ? absint($file['size']) : 0,
                 'thumbnail_url' => isset($file['thumbnail_url']) ? esc_url_raw($file['thumbnail_url']) : '',
                 'created_at' => current_time('mysql')
             );
             
-            // Store work metadata as post meta linked to the file
+            // Store work metadata as post meta linked to the file (with sanitization)
             if (!empty($file['work_title'])) {
-                update_post_meta($post_id, 'cf7_work_title_' . sanitize_key($original_name), sanitize_text_field($file['work_title']));
+                $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $original_name);
+                update_post_meta($post_id, 'cf7_work_title_' . $safe_filename, sanitize_text_field($file['work_title']));
             }
             if (!empty($file['work_statement'])) {
-                update_post_meta($post_id, 'cf7_work_statement_' . sanitize_key($original_name), sanitize_textarea_field($file['work_statement']));
+                $safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $original_name);
+                update_post_meta($post_id, 'cf7_work_statement_' . $safe_filename, sanitize_textarea_field($file['work_statement']));
             }
-            
             
             $result = $wpdb->insert($table_name, $insert_data);
             
-            if ($result === false) {
-            } else {
+            if ($result !== false) {
                 $stored_count++;
                 $file_id = $wpdb->insert_id;
                 
@@ -624,7 +674,7 @@ class CF7_Artist_Submissions_Form_Handler {
                     'submission_id' => (string) $post_id,
                     'original_name' => $original_name,
                     'mime_type' => $mime_type,
-                    'file_size' => isset($file['size']) ? intval($file['size']) : 0
+                    'file_size' => isset($file['size']) ? absint($file['size']) : 0
                 );
                 
                 // Fire action hook for media conversion

@@ -144,7 +144,7 @@ class CF7_Artist_Submissions_Actions {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'cf7_actions';
-        $result = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        $result = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name));
         
         return $result === $table_name;
     }
@@ -163,15 +163,16 @@ class CF7_Artist_Submissions_Actions {
         
         $table_name = $wpdb->prefix . 'cf7_actions';
         
-        // Check if assigned_to column exists
-        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'assigned_to'");
+        // Check if assigned_to column exists - use prepared statement for security
+        $column_exists = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM `{$wpdb->prefix}cf7_actions` LIKE %s", 'assigned_to'));
         
         if (empty($column_exists)) {
-            // Add the assigned_to column
-            $wpdb->query("ALTER TABLE $table_name ADD COLUMN assigned_to mediumint(9) DEFAULT NULL AFTER assignee_type");
+            // Use direct query for DDL operations - WordPress standard practice
+            // DDL operations cannot use prepared statements effectively
+            $wpdb->query("ALTER TABLE `{$wpdb->prefix}cf7_actions` ADD COLUMN assigned_to mediumint(9) DEFAULT NULL AFTER assignee_type");
             
             // Add index for the new column
-            $wpdb->query("ALTER TABLE $table_name ADD KEY assigned_to (assigned_to)");
+            $wpdb->query("ALTER TABLE `{$wpdb->prefix}cf7_actions` ADD KEY assigned_to (assigned_to)");
             
             error_log('CF7 Actions: Added assigned_to column to actions table');
         }

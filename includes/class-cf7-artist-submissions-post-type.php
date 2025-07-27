@@ -719,11 +719,16 @@ class CF7_Artist_Submissions_Post_Type {
      */
     public function bulk_action_admin_notice() {
         if (!empty($_REQUEST['export_csv']) && (int) $_REQUEST['export_csv'] === 1) {
-            $message = sprintf(
-                __('Exported %d submissions to CSV.', 'cf7-artist-submissions'),
-                (int) $_REQUEST['post_count']
-            );
-            echo '<div class="updated"><p>' . esc_html($message) . '</p></div>';
+            // Sanitize and validate the post count
+            $post_count = isset($_REQUEST['post_count']) ? absint($_REQUEST['post_count']) : 0;
+            
+            if ($post_count > 0) {
+                $message = sprintf(
+                    __('Exported %d submissions to CSV.', 'cf7-artist-submissions'),
+                    $post_count
+                );
+                echo '<div class="updated"><p>' . esc_html($message) . '</p></div>';
+            }
         }
     }
     
@@ -837,15 +842,29 @@ class CF7_Artist_Submissions_Post_Type {
         
         $meta_fields = array();
         
-        // Get all meta keys for these posts
-        $query = $wpdb->prepare(
-            "SELECT DISTINCT meta_key FROM {$wpdb->postmeta} 
-             WHERE post_id IN (" . implode(',', array_fill(0, count($post_ids), '%d')) . ") 
-             AND meta_key LIKE 'cf7_%'",
-            $post_ids
-        );
+        // Ensure post_ids are validated integers
+        $post_ids = array_map('intval', $post_ids);
+        $post_ids = array_filter($post_ids, function($id) {
+            return $id > 0;
+        });
         
-        $results = $wpdb->get_results($query);
+        if (empty($post_ids)) {
+            return $meta_fields;
+        }
+        
+        // Create safe placeholders for IN clause with validation
+        $placeholders = implode(',', array_fill(0, count($post_ids), '%d'));
+        
+        // Build query with proper escaping for dynamic IN clause
+        $sql = "SELECT DISTINCT meta_key FROM {$wpdb->postmeta} 
+                WHERE post_id IN ($placeholders) 
+                AND meta_key LIKE %s";
+        
+        // Prepare arguments: post_ids first, then LIKE parameter
+        $prepare_args = array_merge($post_ids, array('cf7_%'));
+        
+        // Use prepared statement with validated arguments
+        $results = $wpdb->get_results($wpdb->prepare($sql, $prepare_args));
         
         foreach ($results as $row) {
             // Skip certain meta keys

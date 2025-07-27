@@ -83,7 +83,7 @@ class CF7_Artist_Submissions_Settings {
         
         // AJAX handlers for settings management
         add_action('wp_ajax_cf7_save_artist_settings', array($this, 'ajax_save_settings'));
-        add_action('wp_ajax_nopriv_cf7_save_artist_settings', array($this, 'ajax_save_settings'));
+        // SECURITY FIX: Removed wp_ajax_nopriv_ to prevent unauthenticated access
         
         // Bypass handler for settings save (working solution)
         add_action('wp_ajax_cf7_bypass_save', array($this, 'ajax_bypass_save_settings'));
@@ -286,6 +286,18 @@ class CF7_Artist_Submissions_Settings {
      * Test AJAX handler to verify routing
      */
     public function ajax_test_handler() {
+        // Check nonce for security
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
         wp_send_json_success(array('message' => 'AJAX routing works!'));
     }
     

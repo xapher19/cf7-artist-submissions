@@ -180,14 +180,14 @@ class CF7_Artist_Submissions_Dashboard {
         $post_table = $wpdb->prefix . 'posts';
         $conversations_table = $wpdb->prefix . 'cf7_conversations';
         
-        $total = $wpdb->get_var("SELECT COUNT(*) FROM {$post_table} WHERE post_type = 'cf7_submission' AND post_status = 'publish'");
-        $new = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p LEFT JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id LEFT JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND (t.name = 'New' OR t.name IS NULL)");
-        $reviewed = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Reviewed'");
-        $awaiting_information = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Awaiting Information'");
-        $shortlisted = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Shortlisted'");
-        $selected = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Selected'");
-        $rejected = $wpdb->get_var("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = 'cf7_submission' AND p.post_status = 'publish' AND t.name = 'Rejected'");
-        $unread_messages = $wpdb->get_var("SELECT COUNT(DISTINCT c.submission_id) FROM {$conversations_table} c WHERE c.direction = 'inbound' AND c.admin_viewed_at IS NULL");
+        $total = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$post_table} WHERE post_type = %s AND post_status = %s", 'cf7_submission', 'publish'));
+        $new = $wpdb->get_var($wpdb->prepare("SELECT COUNT(p.ID) FROM {$post_table} p LEFT JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id LEFT JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = %s AND p.post_status = %s AND (t.name = %s OR t.name IS NULL)", 'cf7_submission', 'publish', 'New'));
+        $reviewed = $wpdb->get_var($wpdb->prepare("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = %s AND p.post_status = %s AND t.name = %s", 'cf7_submission', 'publish', 'Reviewed'));
+        $awaiting_information = $wpdb->get_var($wpdb->prepare("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = %s AND p.post_status = %s AND t.name = %s", 'cf7_submission', 'publish', 'Awaiting Information'));
+        $shortlisted = $wpdb->get_var($wpdb->prepare("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = %s AND p.post_status = %s AND t.name = %s", 'cf7_submission', 'publish', 'Shortlisted'));
+        $selected = $wpdb->get_var($wpdb->prepare("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = %s AND p.post_status = %s AND t.name = %s", 'cf7_submission', 'publish', 'Selected'));
+        $rejected = $wpdb->get_var($wpdb->prepare("SELECT COUNT(p.ID) FROM {$post_table} p INNER JOIN {$wpdb->prefix}term_relationships tr ON p.ID = tr.object_id INNER JOIN {$wpdb->prefix}terms t ON tr.term_taxonomy_id = t.term_id WHERE p.post_type = %s AND p.post_status = %s AND t.name = %s", 'cf7_submission', 'publish', 'Rejected'));
+        $unread_messages = $wpdb->get_var($wpdb->prepare("SELECT COUNT(DISTINCT c.submission_id) FROM {$conversations_table} c WHERE c.direction = %s AND c.admin_viewed_at IS NULL", 'inbound'));
         
         $stats = array(
             'total' => (int) $total,
@@ -631,6 +631,12 @@ class CF7_Artist_Submissions_Dashboard {
             wp_send_json_error('Invalid nonce');
         }
         
+        // Check user capabilities
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
         $page = intval($_POST['page'] ?? 1);
         $per_page = intval($_POST['per_page'] ?? 10);
         $search = sanitize_text_field($_POST['search'] ?? '');
@@ -638,6 +644,10 @@ class CF7_Artist_Submissions_Dashboard {
         $open_call = sanitize_text_field($_POST['open_call'] ?? '');
         $date_from = sanitize_text_field($_POST['date_from'] ?? '');
         $date_to = sanitize_text_field($_POST['date_to'] ?? '');
+        
+        // Validate and limit pagination parameters
+        $page = max(1, $page);
+        $per_page = max(1, min(100, $per_page)); // Limit to 100 items per page
         
         $args = array(
             'post_type' => 'cf7_submission',
@@ -666,11 +676,11 @@ class CF7_Artist_Submissions_Dashboard {
                 // Filter submissions with unread messages
                 global $wpdb;
                 $conversations_table = $wpdb->prefix . 'cf7_conversations';
-                $submission_ids = $wpdb->get_col("
+                $submission_ids = $wpdb->get_col($wpdb->prepare("
                     SELECT DISTINCT submission_id 
                     FROM {$conversations_table} 
-                    WHERE direction = 'inbound' AND admin_viewed_at IS NULL
-                ");
+                    WHERE direction = %s AND admin_viewed_at IS NULL
+                ", 'inbound'));
                 
                 if (!empty($submission_ids)) {
                     $args['post__in'] = $submission_ids;
@@ -682,11 +692,11 @@ class CF7_Artist_Submissions_Dashboard {
                 // Filter submissions with outstanding actions
                 global $wpdb;
                 $actions_table = $wpdb->prefix . 'cf7_actions';
-                $submission_ids = $wpdb->get_col("
+                $submission_ids = $wpdb->get_col($wpdb->prepare("
                     SELECT DISTINCT submission_id 
                     FROM {$actions_table} 
-                    WHERE status = 'pending'
-                ");
+                    WHERE status = %s
+                ", 'pending'));
                 
                 if (!empty($submission_ids)) {
                     $args['post__in'] = $submission_ids;
@@ -839,11 +849,31 @@ class CF7_Artist_Submissions_Dashboard {
             wp_send_json_error('Invalid nonce');
         }
         
+        // Check user capabilities
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
         $action = sanitize_text_field($_POST['bulk_action'] ?? '');
         $post_ids = array_map('intval', $_POST['ids'] ?? array());
         
         if (empty($post_ids)) {
             wp_send_json_error('No items selected');
+        }
+        
+        // Limit number of items to prevent DoS
+        if (count($post_ids) > 1000) {
+            wp_send_json_error('Too many items selected. Maximum 1000 allowed.');
+            return;
+        }
+        
+        // Validate all post IDs belong to cf7_submission post type
+        foreach ($post_ids as $post_id) {
+            if (!get_post($post_id) || get_post_type($post_id) !== 'cf7_submission') {
+                wp_send_json_error('Invalid submission ID detected');
+                return;
+            }
         }
         
         switch ($action) {
@@ -1078,8 +1108,20 @@ class CF7_Artist_Submissions_Dashboard {
     public function ajax_update_status() {
         check_ajax_referer('cf7_dashboard_nonce', 'nonce');
         
+        // Check user capabilities
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
         $post_id = intval($_POST['post_id']);
         $status = sanitize_text_field($_POST['status']);
+        
+        // Validate post ID
+        if (!$post_id || !get_post($post_id) || get_post_type($post_id) !== 'cf7_submission') {
+            wp_send_json_error('Invalid submission ID');
+            return;
+        }
         
         $term = get_term_by('slug', $status, 'submission_status');
         if (!$term) {
@@ -1736,6 +1778,12 @@ class CF7_Artist_Submissions_Dashboard {
         // Check nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_dashboard_nonce')) {
             wp_send_json_error('Invalid nonce');
+        }
+        
+        // Check user capabilities
+        if (!current_user_can('edit_posts')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
         }
         
         $message_id = intval($_POST['message_id']);
