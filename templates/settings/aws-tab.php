@@ -346,6 +346,86 @@ $options = get_option('cf7_artist_submissions_options', array());
                     </div>
                 </div>
                 <?php endif; } ?>
+            </div>
+
+            <!-- PDF Generation Settings -->
+            <div class="cf7-form-section">
+                <div class="cf7-section-header">
+                    <h3 class="cf7-section-title">
+                        <span class="dashicons dashicons-pdf"></span>
+                        <?php _e('PDF Generation (AWS Lambda)', 'cf7-artist-submissions'); ?>
+                    </h3>
+                    <p class="cf7-section-description">
+                        <?php _e('Configure AWS Lambda for professional PDF generation using Puppeteer and Chrome. This provides high-quality PDF exports with pixel-perfect rendering instead of browser print-to-PDF.', 'cf7-artist-submissions'); ?>
+                    </p>
+                </div>
+
+                <!-- Enable PDF Lambda Toggle -->
+                <div class="cf7-form-row">
+                    <div class="cf7-form-group">
+                        <label class="cf7-field-label">
+                            <span class="dashicons dashicons-pdf"></span>
+                            <strong><?php _e('Enable AWS Lambda PDF Generation', 'cf7-artist-submissions'); ?></strong>
+                        </label>
+                        <div class="cf7-toggle">
+                            <input type="checkbox" 
+                                   id="enable_pdf_lambda"
+                                   name="cf7_artist_submissions_options[enable_pdf_lambda]" 
+                                   value="on"
+                                   <?php checked(isset($options['enable_pdf_lambda']) ? $options['enable_pdf_lambda'] : '', 'on'); ?>>
+                            <span class="cf7-toggle-slider"></span>
+                        </div>
+                        <p class="cf7-field-description">
+                            <?php _e('Enable cloud-based PDF generation using AWS Lambda. When disabled, the system will fall back to browser-based HTML print-to-PDF.', 'cf7-artist-submissions'); ?>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="cf7-field-group">
+                    <label class="cf7-field-label" for="pdf_lambda_function_arn">
+                        <span class="dashicons dashicons-cloud"></span>
+                        <?php _e('PDF Lambda Function ARN', 'cf7-artist-submissions'); ?>
+                        <span class="cf7-required">*</span>
+                    </label>
+                    <input type="text" 
+                           class="cf7-field-input" 
+                           id="pdf_lambda_function_arn" 
+                           name="cf7_artist_submissions_options[pdf_lambda_function_arn]" 
+                           value="<?php echo esc_attr(isset($options['pdf_lambda_function_arn']) ? $options['pdf_lambda_function_arn'] : ''); ?>" 
+                           placeholder="<?php _e('arn:aws:lambda:us-east-1:123456789012:function:cf7as-pdf-generator', 'cf7-artist-submissions'); ?>" />
+                    <p class="cf7-field-help">
+                        <?php _e('The full ARN of your AWS Lambda function for PDF generation. Deploy the cf7as-pdf-generator function and enter its ARN here.', 'cf7-artist-submissions'); ?>
+                    </p>
+                </div>
+
+                <div class="cf7-form-row">
+                    <div class="cf7-form-group">
+                        <button type="button" id="test-pdf-lambda" class="cf7-test-btn">
+                            <span class="dashicons dashicons-pdf"></span>
+                            <?php _e('Test PDF Lambda Function', 'cf7-artist-submissions'); ?>
+                        </button>
+                        <div id="pdf-lambda-test-result" class="cf7-test-result" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- PDF Lambda Setup Help -->
+                <div class="cf7-notice cf7-notice-info">
+                    <span class="dashicons dashicons-info"></span>
+                    <div>
+                        <strong><?php _e('PDF Lambda Setup', 'cf7-artist-submissions'); ?></strong>
+                        <p><?php _e('To enable professional PDF generation, deploy the cf7as-pdf-generator Lambda function:', 'cf7-artist-submissions'); ?></p>
+                        <ol style="margin: 10px 0 0 20px; color: #666;">
+                            <li><?php _e('Navigate to lambda-functions/cf7as-pdf-generator/', 'cf7-artist-submissions'); ?></li>
+                            <li><?php _e('Run ./deploy.sh to deploy the function to AWS', 'cf7-artist-submissions'); ?></li>
+                            <li><?php _e('Copy the function ARN from the deployment output', 'cf7-artist-submissions'); ?></li>
+                            <li><?php _e('Paste the ARN in the field above and test the connection', 'cf7-artist-submissions'); ?></li>
+                        </ol>
+                        <p style="margin-top: 10px;">
+                            <strong><?php _e('Benefits:', 'cf7-artist-submissions'); ?></strong>
+                            <?php _e('Professional rendering, consistent formatting, better image handling, and automatic S3 storage with download URLs.', 'cf7-artist-submissions'); ?>
+                        </p>
+                    </div>
+                </div>
 
                 <!-- AWS Setup Help -->
                 <div class="cf7-notice cf7-notice-info">
@@ -391,6 +471,22 @@ $options = get_option('cf7_artist_submissions_options', array());
 
 <script type="text/javascript">
 jQuery(document).ready(function($) {
+    // Define ajaxurl for WordPress AJAX calls
+    var ajaxurl = '<?php echo admin_url("admin-ajax.php"); ?>';
+    
+    // Test console log to verify script is running
+    console.log('=== CF7AS AWS TAB SCRIPT LOADED ===');
+    console.log('ajaxurl:', ajaxurl);
+    console.log('jQuery available:', typeof $ !== 'undefined');
+    console.log('Document ready state:', document.readyState);
+    
+    // Test if PDF Lambda button exists
+    if ($('#test-pdf-lambda').length) {
+        console.log('✅ PDF Lambda test button found');
+    } else {
+        console.log('❌ PDF Lambda test button NOT found');
+    }
+    
     // Generate nonces for AJAX calls
     const processFilesNonce = '<?php echo wp_create_nonce("cf7as_process_files"); ?>';
     const conversionStatusNonce = '<?php echo wp_create_nonce("cf7as_conversion_status"); ?>';
@@ -408,7 +504,7 @@ jQuery(document).ready(function($) {
             aws_secret_key: $('#aws_secret_key').val(),
             aws_region: $('#aws_region').val(),
             s3_bucket: $('#s3_bucket').val(),
-            nonce: '<?php echo wp_create_nonce('cf7_artist_submissions_settings'); ?>'
+            nonce: '<?php echo wp_create_nonce("cf7_artist_submissions_settings"); ?>'
         };
         
         // Validate required fields
@@ -570,7 +666,7 @@ jQuery(document).ready(function($) {
             type: 'POST',
             data: {
                 action: 'cf7as_test_lambda_connection',
-                nonce: '<?php echo wp_create_nonce('cf7as_test_lambda'); ?>',
+                nonce: '<?php echo wp_create_nonce("cf7as_test_lambda"); ?>',
                 lambda_function_name: $('#lambda_function_name').val(),
                 mediaconvert_endpoint: $('#mediaconvert_endpoint').val(),
                 aws_access_key: $('#aws_access_key').val(),
@@ -859,6 +955,147 @@ function toggleSecretVisibility(fieldId) {
         button.title = 'Show Secret Key';
     }
 }
+
+    // Test PDF Lambda function
+    console.log('=== SETTING UP PDF LAMBDA TEST BUTTON HANDLER ===');
+    console.log('Button selector #test-pdf-lambda exists:', $('#test-pdf-lambda').length);
+    
+    $('#test-pdf-lambda').on('click', function() {
+        console.log('=== PDF LAMBDA TEST BUTTON CLICKED ===');
+        console.log('Button element:', this);
+        console.log('jQuery version:', $.fn.jquery);
+        
+        const $button = $(this);
+        const $result = $('#pdf-lambda-test-result');
+        const originalText = $button.html();
+        
+        console.log('Button text:', originalText);
+        console.log('Result element found:', $result.length > 0);
+        
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Testing...');
+        $result.hide();
+        
+        const lambdaArn = $('#pdf_lambda_function_arn').val();
+        console.log('Lambda ARN from field:', lambdaArn);
+        
+        if (!lambdaArn) {
+            console.log('No Lambda ARN provided, showing error');
+            $result.html('<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">Please enter a Lambda function ARN first.</div>').show();
+            $button.prop('disabled', false).html(originalText);
+            return;
+        }
+        
+        const testData = {
+            action: 'cf7as_test_pdf_lambda',
+            nonce: '<?php echo wp_create_nonce("cf7as_test_pdf_lambda"); ?>',
+            pdf_lambda_function_arn: lambdaArn,
+            aws_access_key: $('#aws_access_key').val(),
+            aws_secret_key: $('#aws_secret_key').val(),
+            aws_region: $('#aws_region').val(),
+            s3_bucket: $('#s3_bucket').val()
+        };
+        
+        console.log('=== AJAX REQUEST DATA ===');
+        console.log('URL:', ajaxurl);
+        console.log('Data:', testData);
+        console.log('AWS Access Key length:', testData.aws_access_key ? testData.aws_access_key.length : 0);
+        console.log('AWS Secret Key length:', testData.aws_secret_key ? testData.aws_secret_key.length : 0);
+        console.log('AWS Region:', testData.aws_region);
+        console.log('S3 Bucket:', testData.s3_bucket);
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: testData,
+            success: function(response) {
+                console.log('=== AJAX SUCCESS ===');
+                console.log('Raw response:', response);
+                console.log('Response type:', typeof response);
+                console.log('Response success:', response.success);
+                console.log('Response data:', response.data);
+                
+                if (response.success) {
+                    const data = response.data;
+                    let html = '<div style="color: #008000; padding: 10px; background: #f0fff0; border: 1px solid #90EE90; border-radius: 4px;">';
+                    html += '<h4 style="color: #008000; margin-top: 0;">✅ PDF Lambda Function Test Results</h4>';
+                    
+                    if (data.connection_successful) {
+                        html += '<p><strong>🎉 Connection Successful!</strong> Your PDF Lambda function is responding correctly.</p>';
+                    }
+                    
+                    html += '<ul>';
+                    html += '<li><strong>Lambda ARN:</strong> ' + (data.lambda_arn_valid ? '✅ Valid Format' : '❌ Invalid Format') + '</li>';
+                    html += '<li><strong>AWS Credentials:</strong> ' + (data.credentials_valid ? '✅ Valid' : '❌ Invalid') + '</li>';
+                    html += '<li><strong>S3 Bucket:</strong> ' + (data.s3_bucket_configured ? '✅ Configured' : '❌ Missing') + '</li>';
+                    html += '<li><strong>Lambda Response:</strong> ' + (data.connection_successful ? '✅ Success' : '❌ Failed') + '</li>';
+                    html += '</ul>';
+                    
+                    if (data.lambda_response) {
+                        html += '<div style="margin-top: 10px; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 3px;">';
+                        html += '<strong>Lambda Response:</strong><br>';
+                        html += '<code>' + JSON.stringify(data.lambda_response, null, 2) + '</code>';
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
+                    
+                    $result.html(html).show();
+                } else {
+                    console.log('=== AJAX ERROR RESPONSE ===');
+                    console.log('Error response:', response);
+                    console.log('AJAX Error Response:', response);
+                    const data = response.data;
+                    let html = '<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">';
+                    html += '<h4 style="color: #d63638; margin-top: 0;">❌ PDF Lambda Connection Failed</h4>';
+                    
+                    if (data && data.message) {
+                        html += '<p><strong>Error:</strong> ' + data.message + '</p>';
+                    }
+                    
+                    html += '<h5>🛠️ Setup Requirements:</h5>';
+                    html += '<ol>';
+                    html += '<li>Deploy the cf7as-pdf-generator Lambda function to AWS</li>';
+                    html += '<li>Ensure the function has the correct IAM permissions</li>';
+                    html += '<li>Configure S3 bucket access for PDF storage</li>';
+                    html += '<li>Verify the Lambda function ARN is correct</li>';
+                    html += '</ol>';
+                    
+                    html += '<h5>📋 Deployment Steps:</h5>';
+                    html += '<ol>';
+                    html += '<li>Navigate to <code>lambda-functions/cf7as-pdf-generator/</code></li>';
+                    html += '<li>Run <code>./deploy.sh</code> to deploy the function</li>';
+                    html += '<li>Copy the function ARN from the deployment output</li>';
+                    html += '<li>Paste the ARN in the field above</li>';
+                    html += '</ol>';
+                    
+                    html += '</div>';
+                    
+                    $result.html(html).show();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log('=== AJAX REQUEST FAILED ===');
+                console.log('XHR object:', xhr);
+                console.log('Status:', status);
+                console.log('Error:', error);
+                console.log('Response text:', xhr.responseText);
+                console.log('Status code:', xhr.status);
+                console.log('AJAX Request Failed:', {xhr: xhr, status: status, error: error});
+                let html = '<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">';
+                html += '<h4 style="color: #d63638; margin-top: 0;">❌ Test Request Failed</h4>';
+                html += '<p><strong>Error:</strong> ' + error + '</p>';
+                html += '<p>Please check your network connection and try again.</p>';
+                html += '</div>';
+                
+                $result.html(html).show();
+            },
+            complete: function() {
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
+}); // End of jQuery document ready
 
 // Close conversion status modal function
 function closeConversionModal(event) {

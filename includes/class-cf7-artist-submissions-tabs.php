@@ -452,8 +452,9 @@ class CF7_Artist_Submissions_Tabs {
     }
     
     /**
-     * Render PDF export tab with customizable export options.
-     * Provides professional PDF generation with watermarking and content selection.
+     * Render PDF export tab with enhanced export options.
+     * Provides professional PDF generation with ratings, curator functionality,
+     * and comprehensive content selection including AWS Lambda integration.
      */
     public static function render_export_tab($post) {
         ?>
@@ -461,33 +462,64 @@ class CF7_Artist_Submissions_Tabs {
             <h3 class="cf7-tab-section-title"><?php _e('Export Options', 'cf7-artist-submissions'); ?></h3>
             <div class="cf7-export-options">
                 <div class="cf7-export-section">
-                    <p class="description"><?php _e('Generate a beautifully formatted PDF with artist information and submitted works.', 'cf7-artist-submissions'); ?></p>
+                    <p class="description"><?php _e('Generate a professionally formatted PDF with selected content sections. Choose which information to include in your export.', 'cf7-artist-submissions'); ?></p>
                     
                     <div class="cf7-export-options-list">
-                        <label>
-                            <input type="checkbox" name="include_personal_info" checked> 
-                            <?php _e('Include Personal Information', 'cf7-artist-submissions'); ?>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="include_works" checked> 
-                            <?php _e('Include Submitted Works', 'cf7-artist-submissions'); ?>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="include_notes"> 
-                            <?php _e('Include Curator Notes', 'cf7-artist-submissions'); ?>
-                        </label>
-                        <label>
-                            <input type="checkbox" name="confidential_watermark" checked> 
-                            <?php _e('Add "Private & Confidential" Watermark', 'cf7-artist-submissions'); ?>
-                        </label>
+                        <div class="cf7-export-option-group">
+                            <h4><?php _e('Basic Information', 'cf7-artist-submissions'); ?></h4>
+                            <label>
+                                <input type="checkbox" name="include_personal_info" checked> 
+                                <?php _e('Include Personal Information', 'cf7-artist-submissions'); ?>
+                                <span class="cf7-option-description"><?php _e('Name, email, contact details, bio', 'cf7-artist-submissions'); ?></span>
+                            </label>
+                            <label>
+                                <input type="checkbox" name="include_works" checked> 
+                                <?php _e('Include Submitted Works', 'cf7-artist-submissions'); ?>
+                                <span class="cf7-option-description"><?php _e('Artwork images, descriptions, details', 'cf7-artist-submissions'); ?></span>
+                            </label>
+                        </div>
+                        
+                        <div class="cf7-export-option-group">
+                            <h4><?php _e('Evaluation & Feedback', 'cf7-artist-submissions'); ?></h4>
+                            <label>
+                                <input type="checkbox" name="include_ratings"> 
+                                <?php _e('Include Ratings & Scores', 'cf7-artist-submissions'); ?>
+                                <span class="cf7-option-description"><?php _e('Technical, creative, and overall ratings', 'cf7-artist-submissions'); ?></span>
+                            </label>
+                            <label>
+                                <input type="checkbox" name="include_curator_notes"> 
+                                <?php _e('Include Curator Notes', 'cf7-artist-submissions'); ?>
+                                <span class="cf7-option-description"><?php _e('Internal curator observations and notes', 'cf7-artist-submissions'); ?></span>
+                            </label>
+                            <label>
+                                <input type="checkbox" name="include_curator_comments"> 
+                                <?php _e('Include Curator Comments', 'cf7-artist-submissions'); ?>
+                                <span class="cf7-option-description"><?php _e('Curator feedback and discussion threads', 'cf7-artist-submissions'); ?></span>
+                            </label>
+                        </div>
+                        
+                        <div class="cf7-export-option-group">
+                            <h4><?php _e('Document Options', 'cf7-artist-submissions'); ?></h4>
+                            <label>
+                                <input type="checkbox" name="confidential_watermark" checked> 
+                                <?php _e('Add "Private & Confidential" Watermark', 'cf7-artist-submissions'); ?>
+                                <span class="cf7-option-description"><?php _e('Adds security watermark to document', 'cf7-artist-submissions'); ?></span>
+                            </label>
+                        </div>
                     </div>
                     
                     <div class="cf7-export-actions">
                         <button type="button" class="button button-primary cf7-export-pdf-btn" data-post-id="<?php echo esc_attr($post->ID); ?>">
                             <span class="dashicons dashicons-pdf"></span>
-                            <?php _e('Export to PDF', 'cf7-artist-submissions'); ?>
+                            <?php _e('Generate PDF', 'cf7-artist-submissions'); ?>
                         </button>
                         <div class="cf7-export-status"></div>
+                        <div class="cf7-export-progress" style="display: none;">
+                            <div class="cf7-progress-bar">
+                                <div class="cf7-progress-fill"></div>
+                            </div>
+                            <div class="cf7-progress-text">Generating PDF...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -498,32 +530,54 @@ class CF7_Artist_Submissions_Tabs {
             padding: 0;
         }
         
-        .cf7-export-options-list {
-            margin: 12px 0;
+        .cf7-export-option-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .cf7-export-option-group h4 {
+            margin: 0 0 12px 0;
+            color: #2c3e50;
+            font-size: 14px;
+            font-weight: 600;
         }
         
         .cf7-export-options-list label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-size: 13px;
+            line-height: 1.4;
         }
         
         .cf7-export-options-list input[type="checkbox"] {
-            margin-right: 6px;
+            margin-right: 8px;
+        }
+        
+        .cf7-option-description {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-left: 24px;
+            margin-top: 2px;
         }
         
         .cf7-export-actions {
-            margin-top: 15px;
-            padding-top: 12px;
+            margin-top: 20px;
+            padding-top: 15px;
             border-top: 1px solid #dcdcde;
         }
         
         .cf7-export-pdf-btn {
-            height: 36px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
+            font-weight: 500;
+            min-width: 140px;
         }
         
         .cf7-export-pdf-btn:disabled {
@@ -532,9 +586,9 @@ class CF7_Artist_Submissions_Tabs {
         }
         
         .cf7-export-status {
-            margin-top: 8px;
-            padding: 6px 0;
-            font-size: 12px;
+            margin-top: 12px;
+            padding: 8px 0;
+            font-size: 13px;
         }
         
         .cf7-export-status.success {
@@ -547,6 +601,64 @@ class CF7_Artist_Submissions_Tabs {
         
         .cf7-export-status.loading {
             color: #2271b1;
+        }
+        
+        .cf7-export-progress {
+            margin-top: 15px;
+        }
+        
+        .cf7-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e1e1e1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .cf7-progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+            animation: progress-pulse 1.5s infinite;
+        }
+        
+        @keyframes progress-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .cf7-progress-text {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .cf7-download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #00a32a;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+        
+        .cf7-download-link:hover {
+            background: #008a20;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .cf7-download-link .dashicons {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
         }
         </style>
         <?php
@@ -926,6 +1038,9 @@ class CF7_Artist_Submissions_Tabs {
      * Displays submitted works in a professional list layout with ratings and comments.
      */
     public static function render_works_list_view($post, $files) {
+        // Debug: Log that this function is called
+        error_log("CF7 Tabs: render_works_list_view called with " . count($files) . " files");
+        
         // Initialize ratings system if not already done
         if (class_exists('CF7_Artist_Submissions_Ratings')) {
             CF7_Artist_Submissions_Ratings::maybe_create_table();
@@ -1147,6 +1262,13 @@ class CF7_Artist_Submissions_Tabs {
             "SELECT * FROM {$table_name} WHERE submission_id = %s OR submission_id = %d ORDER BY created_at ASC",
             (string) $post->ID, (int) $post->ID
         ));
+        
+        // Debug: Log file retrieval
+        error_log("CF7 Tabs: render_submitted_files called for post ID {$post->ID}");
+        error_log("CF7 Tabs: Files found: " . count($files));
+        if (!empty($files)) {
+            error_log("CF7 Tabs: First file ID: {$files[0]->id}");
+        }
         
         if (empty($files)) {
             echo '<div class="cf7-works-list-view">';

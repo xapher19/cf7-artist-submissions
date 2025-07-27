@@ -81,6 +81,9 @@ class CF7_Artist_Submissions_Settings {
         // AJAX handlers for S3 configuration
         add_action('wp_ajax_test_s3_connection', array($this, 'ajax_test_s3_connection'));
         
+        // AJAX handler for PDF Lambda testing
+        add_action('wp_ajax_cf7as_test_pdf_lambda', array($this, 'ajax_test_pdf_lambda'));
+        
         // AJAX handlers for settings management
         add_action('wp_ajax_cf7_save_artist_settings', array($this, 'ajax_save_settings'));
         // SECURITY FIX: Removed wp_ajax_nopriv_ to prevent unauthenticated access
@@ -497,6 +500,10 @@ class CF7_Artist_Submissions_Settings {
         $valid['enable_media_conversion'] = isset($input['enable_media_conversion']) ? 'on' : 'off';
         $valid['lambda_function_name'] = isset($input['lambda_function_name']) ? sanitize_text_field($input['lambda_function_name']) : 'cf7as-image-converter';
         $valid['mediaconvert_endpoint'] = isset($input['mediaconvert_endpoint']) ? esc_url_raw($input['mediaconvert_endpoint']) : '';
+        
+        // PDF Lambda settings
+        $valid['enable_pdf_lambda'] = isset($input['enable_pdf_lambda']) ? 'on' : 'off';
+        $valid['pdf_lambda_function_arn'] = isset($input['pdf_lambda_function_arn']) ? sanitize_text_field($input['pdf_lambda_function_arn']) : '';
         
         // Add conversion settings checkboxes
         $valid['convert_images'] = isset($input['convert_images']) ? 1 : 0;
@@ -2355,5 +2362,204 @@ class CF7_Artist_Submissions_Settings {
                 'details' => $e->getMessage()
             ));
         }
+    }
+    
+    /**
+     * AJAX handler for testing PDF Lambda function
+     */
+    public function ajax_test_pdf_lambda() {
+        // Log that the function was called
+        error_log('=== CF7AS: ajax_test_pdf_lambda function called ===');
+        error_log('CF7AS: $_POST data: ' . print_r($_POST, true));
+        error_log('CF7AS: Current user can manage options: ' . (current_user_can('manage_options') ? 'YES' : 'NO'));
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7as_test_pdf_lambda')) {
+            error_log('CF7AS: Nonce verification failed');
+            error_log('CF7AS: Expected nonce action: cf7as_test_pdf_lambda');
+            error_log('CF7AS: Received nonce: ' . $_POST['nonce']);
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        error_log('CF7AS: Nonce verification passed');
+        
+        // Check capabilities
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        try {
+            // Get submitted values
+            $lambda_arn = sanitize_text_field($_POST['pdf_lambda_function_arn']);
+            $aws_access_key = sanitize_text_field($_POST['aws_access_key']);
+            $aws_secret_key = sanitize_text_field($_POST['aws_secret_key']);
+            $aws_region = sanitize_text_field($_POST['aws_region']);
+            $s3_bucket = sanitize_text_field($_POST['s3_bucket']);
+            
+            error_log('CF7AS: Test values - Lambda ARN: ' . $lambda_arn . ', Region: ' . $aws_region);
+            
+            // Validate inputs
+            $validation_errors = array();
+            
+            if (empty($lambda_arn)) {
+                $validation_errors[] = 'Lambda function ARN is required';
+            } elseif (!preg_match('/^arn:aws:lambda:[a-z0-9\-]+:\d+:function:[a-zA-Z0-9\-_]+$/', $lambda_arn)) {
+                $validation_errors[] = 'Invalid Lambda function ARN format';
+            }
+            
+            if (empty($aws_access_key)) {
+                $validation_errors[] = 'AWS Access Key is required';
+            }
+            
+            if (empty($aws_secret_key)) {
+                $validation_errors[] = 'AWS Secret Key is required';
+            }
+            
+            if (empty($aws_region)) {
+                $validation_errors[] = 'AWS Region is required';
+            }
+            
+            if (empty($s3_bucket)) {
+                $validation_errors[] = 'S3 Bucket is required';
+            }
+            
+            if (!empty($validation_errors)) {
+                wp_send_json_error(array(
+                    'message' => 'Configuration incomplete',
+                    'errors' => $validation_errors
+                ));
+                return;
+            }
+            
+            // Create test payload
+            $test_payload = array(
+                'test' => true,
+                'timestamp' => current_time('mysql')
+            );
+            
+            // Generate AWS Lambda invocation endpoint
+            // Extract function name from ARN for endpoint
+            $function_name = basename($lambda_arn);
+            $endpoint = "https://lambda.{$aws_region}.amazonaws.com/2015-03-31/functions/{$function_name}/invocations";
+            $json_payload = json_encode($test_payload);
+            
+            // Generate AWS signature
+            $headers = $this->generate_lambda_headers($json_payload, $endpoint, $aws_access_key, $aws_secret_key, $aws_region);
+            
+            // Make HTTP request to Lambda
+            $args = array(
+                'method' => 'POST',
+                'headers' => $headers,
+                'body' => $json_payload,
+                'timeout' => 30
+            );
+            
+            $response = wp_remote_request($endpoint, $args);
+            
+            if (is_wp_error($response)) {
+                wp_send_json_error(array(
+                    'message' => 'HTTP request failed: ' . $response->get_error_message(),
+                    'lambda_arn_valid' => true,
+                    'credentials_valid' => false,
+                    's3_bucket_configured' => !empty($s3_bucket),
+                    'connection_successful' => false
+                ));
+                return;
+            }
+            
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
+            
+            if ($status_code !== 200) {
+                wp_send_json_error(array(
+                    'message' => "Lambda invocation failed with status $status_code: $body",
+                    'lambda_arn_valid' => true,
+                    'credentials_valid' => false,
+                    's3_bucket_configured' => !empty($s3_bucket),
+                    'connection_successful' => false
+                ));
+                return;
+            }
+            
+            // Parse Lambda response
+            $lambda_response = json_decode($body, true);
+            
+            // Extract the actual response from Lambda's body field if it exists
+            $actual_response = $lambda_response;
+            if (isset($lambda_response['body'])) {
+                $nested_response = json_decode($lambda_response['body'], true);
+                if ($nested_response) {
+                    $actual_response = $nested_response;
+                }
+            }
+            
+            wp_send_json_success(array(
+                'lambda_arn_valid' => true,
+                'credentials_valid' => true,
+                's3_bucket_configured' => !empty($s3_bucket),
+                'connection_successful' => true,
+                'lambda_response' => $actual_response,
+                'message' => 'PDF Lambda function test successful'
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array(
+                'message' => 'PDF Lambda test failed: ' . $e->getMessage(),
+                'lambda_arn_valid' => false,
+                'credentials_valid' => false,
+                's3_bucket_configured' => false,
+                'connection_successful' => false
+            ));
+        }
+    }
+    
+    /**
+     * Generate AWS Signature V4 headers for Lambda invocation
+     */
+    private function generate_lambda_headers($payload, $endpoint, $access_key, $secret_key, $region) {
+        $url_parts = parse_url($endpoint);
+        $host = $url_parts['host'];
+        $path = $url_parts['path'];
+        
+        $timestamp = gmdate('Ymd\THis\Z');
+        $date = gmdate('Ymd');
+        $service = 'lambda';
+        
+        // Create canonical request
+        $canonical_headers = "host:$host\nx-amz-date:$timestamp\n";
+        $signed_headers = 'host;x-amz-date';
+        $payload_hash = hash('sha256', $payload);
+        
+        $canonical_request = "POST\n$path\n\n$canonical_headers\n$signed_headers\n$payload_hash";
+        
+        // Create string to sign
+        $algorithm = 'AWS4-HMAC-SHA256';
+        $credential_scope = "$date/$region/$service/aws4_request";
+        $string_to_sign = "$algorithm\n$timestamp\n$credential_scope\n" . hash('sha256', $canonical_request);
+        
+        // Calculate signature
+        $signing_key = $this->get_lambda_signature_key($secret_key, $date, $region, $service);
+        $signature = hash_hmac('sha256', $string_to_sign, $signing_key);
+        
+        // Create authorization header
+        $authorization = "$algorithm Credential=$access_key/$credential_scope, SignedHeaders=$signed_headers, Signature=$signature";
+        
+        return array(
+            'Authorization' => $authorization,
+            'X-Amz-Date' => $timestamp,
+            'Content-Type' => 'application/json'
+        );
+    }
+    
+    /**
+     * Generate signing key for AWS Signature V4
+     */
+    private function get_lambda_signature_key($key, $date, $region, $service) {
+        $k_date = hash_hmac('sha256', $date, 'AWS4' . $key, true);
+        $k_region = hash_hmac('sha256', $region, $k_date, true);
+        $k_service = hash_hmac('sha256', $service, $k_region, true);
+        return hash_hmac('sha256', 'aws4_request', $k_service, true);
     }
 }

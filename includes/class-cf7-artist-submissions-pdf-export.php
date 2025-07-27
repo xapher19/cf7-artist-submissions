@@ -1,67 +1,203 @@
 <?php
 /**
- * CF7 Artist Submissions - Professional PDF Export System
+ * CF7 Artist Submissions - AWS Lambda PDF Export System
  *
- * Comprehensive PDF export functionality for artist submissions with browser-based
- * PDF generation, professional formatting, configurable content sections, and
- * optimized print layouts for streamlined submission presentation and archival.
+ * Comprehensive PDF export functionality for artist submissions using AWS Lambda
+ * and Puppeteer for professional PDF generation with configurable content sections,
+ * ratings integration, curator comments, and secure cloud-based processing.
  *
  * Features:
- * • Professional PDF-ready HTML document generation
- * • Browser-based print-to-PDF optimization with cost-effective solution
- * • Two-column artwork grid layout for professional presentation
- * • Configurable content sections (personal info, works, curator notes)
- * • Confidential watermarks for sensitive document handling
- * • Responsive design with print-optimized styling and branding
+ * • AWS Lambda-powered PDF generation using Puppeteer and Chrome
+ * • Professional PDF output with pixel-perfect rendering
+ * • Configurable content sections (personal info, works, ratings, curator notes/comments)
+ * • Real-time progress tracking and status updates
+ * • Secure S3 storage with presigned download URLs
+ * • Advanced error handling and retry mechanisms
+ * • Rating system integration with star displays
+ * • Curator comments and notes with timestamps
+ * • Confidential watermarks for sensitive documents
+ * • Mobile-responsive admin interface
  *
  * @package CF7_Artist_Submissions
  * @subpackage PDFExport
- * @since 1.0.0
- * @version 1.0.1
+ * @since 1.2.0
+ * @version 1.2.0
  */
 
 /**
  * CF7 Artist Submissions PDF Export Class
  * 
- * Professional PDF export system for artist submissions with browser-based
- * PDF generation, configurable content sections, and optimized print layouts.
- * Provides comprehensive document generation with professional styling,
- * watermark support, and seamless integration with submission workflow.
+ * Professional PDF export system for artist submissions using AWS Lambda
+ * for server-side PDF generation. Provides comprehensive document generation
+ * with professional styling, ratings integration, curator functionality,
+ * and seamless cloud-based processing workflow.
  * 
- * @since 1.0.0
+ * @since 1.2.0
  */
 
 class CF7_Artist_Submissions_PDF_Export {
+    
+    // ============================================================================
+    // PROPERTIES SECTION
+    // ============================================================================
+    
+    /**
+     * AWS Lambda configuration
+     */
+    private $lambda_function_arn;
+    private $s3_handler;
+    private $aws_region;
+    
+    /**
+     * Export job tracking
+     */
+    private $active_jobs = array();
     
     // ============================================================================
     // INITIALIZATION SECTION
     // ============================================================================
     
     /**
-     * Initialize professional PDF export system with comprehensive functionality.
+     * Initialize AWS Lambda-powered PDF export system with comprehensive functionality.
      * 
      * Establishes AJAX handlers for PDF generation, script enqueuing for export
-     * interface, and integration hooks for submission workflow. Provides complete
-     * PDF export infrastructure including browser-based generation, configurable
-     * content sections, and professional document formatting capabilities.
+     * interface, AWS Lambda integration, and callback processing. Provides complete
+     * PDF export infrastructure including cloud-based generation, progress tracking,
+     * configurable content sections, and professional document formatting.
      * 
-     * @since 1.0.0
+     * @since 1.2.0
      */
     public function init() {
+        error_log('CF7AS: PDF Export init() method called');
+        
+        // Initialize S3 handler for AWS operations
+        $this->s3_handler = new CF7_Artist_Submissions_S3_Handler();
+        $this->s3_handler->init();
+        
+        // Load AWS configuration
+        $this->load_aws_config();
+        
+        error_log('CF7AS: PDF Export - Registering AJAX handlers');
+        
+        // Add global AJAX debug hook
+        add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'debug_ajax_call'), 1);
+        
+        // AJAX handlers
+        error_log('CF7AS: PDF Export - About to register: wp_ajax_cf7_export_submission_pdf -> handle_pdf_export');
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'handle_pdf_export'));
+        error_log('CF7AS: PDF Export - Registered: wp_ajax_cf7_export_submission_pdf');
+        
+        add_action('wp_ajax_cf7_pdf_export_callback', array($this, 'handle_lambda_callback'));
+        add_action('wp_ajax_cf7_check_pdf_status', array($this, 'handle_pdf_status_check'));
+        
+        // Add a debug test endpoint
+        add_action('wp_ajax_cf7_pdf_debug_test', array($this, 'handle_debug_test'));
+        
+        error_log('CF7AS: PDF Export - AJAX handlers registered');
+        
+        // Script enqueuing
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
-        // Meta box is now handled by the tabs interface
-        // add_action('add_meta_boxes', array($this, 'add_pdf_export_meta_box'), 20);
+        
+        // Add meta box for PDF export options
+        add_action('add_meta_boxes', array($this, 'add_pdf_export_meta_box'));
+        
+        error_log('CF7AS: PDF Export - Meta box action registered');
+        
+        // Cleanup old PDFs periodically
+        add_action('cf7_cleanup_old_pdfs', array($this, 'cleanup_old_pdfs'));
+        if (!wp_next_scheduled('cf7_cleanup_old_pdfs')) {
+            wp_schedule_event(time(), 'daily', 'cf7_cleanup_old_pdfs');
+        }
+        
+        error_log('CF7AS: PDF Export init() method completed');
+    }
+    
+    /**
+     * Debug test method to verify AJAX is working
+     */
+    public function handle_debug_test() {
+        error_log('CF7AS: PDF Export - Debug test called successfully!');
+        error_log('CF7AS: $_POST: ' . print_r($_POST, true));
+        wp_send_json_success(array('message' => 'Debug test successful', 'timestamp' => current_time('mysql')));
+    }
+    
+    /**
+     * Debug AJAX call tracking
+     */
+    public function debug_ajax_call() {
+        error_log('CF7AS: PDF Export - DEBUG: cf7_export_submission_pdf action called!');
+        error_log('CF7AS: PDF Export - DEBUG: POST data received: ' . print_r($_POST, true));
+        error_log('CF7AS: PDF Export - DEBUG: Current user: ' . wp_get_current_user()->user_login);
+        error_log('CF7AS: PDF Export - DEBUG: Doing AJAX: ' . (defined('DOING_AJAX') && DOING_AJAX ? 'YES' : 'NO'));
+        // Don't exit - let other handlers run
+    }
+    
+    /**
+     * Load AWS configuration from plugin settings
+     */
+    private function load_aws_config() {
+        $options = get_option('cf7_artist_submissions_options', array());
+        
+        $this->aws_region = isset($options['aws_region']) ? $options['aws_region'] : 'us-east-1';
+        $this->lambda_function_arn = isset($options['pdf_lambda_function_arn']) ? $options['pdf_lambda_function_arn'] : '';
+        
+        // Extract region from Lambda ARN if available and region not explicitly set
+        if (!empty($this->lambda_function_arn)) {
+            $arn_parts = explode(':', $this->lambda_function_arn);
+            if (count($arn_parts) >= 4 && !empty($arn_parts[3])) {
+                $arn_region = $arn_parts[3];
+                // Use ARN region if no region explicitly configured or if using default
+                if (!isset($options['aws_region']) || $this->aws_region === 'us-east-1') {
+                    $this->aws_region = $arn_region;
+                    error_log('CF7AS: PDF Export - Using region from Lambda ARN: ' . $this->aws_region);
+                }
+            }
+        }
+        
+        error_log('CF7AS: PDF Export - Final AWS region: ' . $this->aws_region);
+        error_log('CF7AS: PDF Export - Lambda ARN: ' . $this->lambda_function_arn);
+        
+        // Validate Lambda function ARN format
+        if (!empty($this->lambda_function_arn) && !$this->validate_lambda_arn($this->lambda_function_arn)) {
+            error_log('CF7AS PDF Export: Invalid Lambda function ARN format');
+            $this->lambda_function_arn = '';
+        }
+    }
+    
+    /**
+     * Validate Lambda function ARN format
+     */
+    private function validate_lambda_arn($arn) {
+        return preg_match('/^arn:aws:lambda:[a-z0-9\-]+:\d+:function:[a-zA-Z0-9\-_]+$/', $arn);
     }
     
     /**
      * Enqueue JavaScript and localization for PDF export interface.
-     * Loads export scripts with AJAX configuration and user feedback text.
+     * Loads export scripts with AJAX configuration, progress tracking, and user feedback.
      */
     public function enqueue_scripts($hook) {
         global $post;
         
+        error_log('CF7AS: PDF Export - Enqueue scripts called for hook: ' . $hook);
+        
+        // Enqueue for individual submission edit pages (main functionality)
+        $should_enqueue = false;
+        
         if ($hook === 'post.php' && isset($post) && $post->post_type === 'cf7_submission') {
+            $should_enqueue = true;
+            error_log('CF7AS: PDF Export - Post edit page detected for post ID: ' . $post->ID);
+        }
+        
+        // Also enqueue for settings page but with limited functionality
+        // The settings page has its own test button but may need some shared utilities
+        if (strpos($hook, 'cf7-artist-submissions-settings') !== false) {
+            $should_enqueue = true;
+            error_log('CF7AS: PDF Export - Settings page detected');
+        }
+        
+        if ($should_enqueue) {
+            error_log('CF7AS: PDF Export - Enqueuing scripts for hook: ' . $hook);
+            
             wp_enqueue_script(
                 'cf7-pdf-export',
                 CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/pdf-export.js',
@@ -70,12 +206,19 @@ class CF7_Artist_Submissions_PDF_Export {
                 true
             );
             
+            error_log('CF7AS: PDF Export - Script enqueued with URL: ' . CF7_ARTIST_SUBMISSIONS_PLUGIN_URL . 'assets/js/pdf-export.js');
+            
             wp_localize_script('cf7-pdf-export', 'cf7_pdf_export', array(
                 'ajax_url' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('cf7_pdf_export_nonce'),
-                'export_text' => __('Exporting PDF...', 'cf7-artist-submissions'),
-                'success_text' => __('PDF exported successfully!', 'cf7-artist-submissions'),
-                'error_text' => __('Error exporting PDF', 'cf7-artist-submissions')
+                'export_text' => __('Generating PDF...', 'cf7-artist-submissions'),
+                'processing_text' => __('Processing in cloud...', 'cf7-artist-submissions'),
+                'success_text' => __('PDF generated successfully!', 'cf7-artist-submissions'),
+                'error_text' => __('Error generating PDF', 'cf7-artist-submissions'),
+                'download_text' => __('Download PDF', 'cf7-artist-submissions'),
+                'lambda_available' => !empty($this->lambda_function_arn),
+                'status_check_interval' => 3000, // 3 seconds
+                'max_status_checks' => 60 // 3 minutes maximum
             ));
         }
     }
@@ -120,8 +263,16 @@ class CF7_Artist_Submissions_PDF_Export {
                         <?php _e('Include Submitted Works', 'cf7-artist-submissions'); ?>
                     </label>
                     <label>
-                        <input type="checkbox" name="include_notes"> 
+                        <input type="checkbox" name="include_ratings"> 
+                        <?php _e('Include Ratings', 'cf7-artist-submissions'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="include_curator_notes"> 
                         <?php _e('Include Curator Notes', 'cf7-artist-submissions'); ?>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="include_curator_comments"> 
+                        <?php _e('Include Curator Comments', 'cf7-artist-submissions'); ?>
                     </label>
                     <label>
                         <input type="checkbox" name="confidential_watermark" checked> 
@@ -135,6 +286,12 @@ class CF7_Artist_Submissions_PDF_Export {
                         <?php _e('Export to PDF', 'cf7-artist-submissions'); ?>
                     </button>
                     <div class="cf7-export-status"></div>
+                    <div class="cf7-export-progress" style="display: none;">
+                        <div class="cf7-export-progress-bar">
+                            <div class="cf7-export-progress-fill"></div>
+                        </div>
+                        <div class="cf7-export-progress-text"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -202,6 +359,32 @@ class CF7_Artist_Submissions_PDF_Export {
         .cf7-export-status.loading {
             color: #2271b1;
         }
+        
+        .cf7-export-progress {
+            margin-top: 12px;
+        }
+        
+        .cf7-export-progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #f0f0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .cf7-export-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2271b1, #135e96);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .cf7-export-progress-text {
+            font-size: 12px;
+            text-align: center;
+            color: #646970;
+        }
         </style>
         <?php
     }
@@ -211,41 +394,157 @@ class CF7_Artist_Submissions_PDF_Export {
     // ============================================================================
     
     /**
-     * AJAX handler for PDF export request processing with security validation.
+     * AJAX handler for PDF export request processing with AWS Lambda integration.
      * 
      * Processes PDF export requests with comprehensive security validation,
      * capability checks, and option parsing. Handles export configuration,
-     * document generation coordination, and JSON response formatting for
-     * seamless user interface integration and feedback.
+     * AWS Lambda invocation, and response formatting for seamless user
+     * interface integration and cloud-based PDF generation.
      * 
-     * @since 1.0.0
+     * @since 1.2.0
      */
     public function handle_pdf_export() {
+        // Enhanced logging for PDF export
+        error_log('=== CF7AS: PDF Export Request Started ===');
+        error_log('CF7AS: Request Method: ' . ($_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN'));
+        error_log('CF7AS: Current time: ' . current_time('mysql'));
+        error_log('CF7AS: Memory usage: ' . memory_get_usage(true) / 1024 / 1024 . ' MB');
+        error_log('CF7AS: $_POST data: ' . print_r($_POST, true));
+        error_log('CF7AS: $_GET data: ' . print_r($_GET, true));
+        error_log('CF7AS: Current user: ' . wp_get_current_user()->user_login);
+        error_log('CF7AS: Current user can edit posts: ' . (current_user_can('edit_posts') ? 'YES' : 'NO'));
+        error_log('CF7AS: DOING_AJAX defined: ' . (defined('DOING_AJAX') ? 'YES' : 'NO'));
+        error_log('CF7AS: DOING_AJAX value: ' . (defined('DOING_AJAX') ? (DOING_AJAX ? 'TRUE' : 'FALSE') : 'UNDEFINED'));
+        
+        // Check if this is a proper AJAX request
+        if (!defined('DOING_AJAX') || !DOING_AJAX) {
+            error_log('CF7AS: PDF Export - Not an AJAX request');
+            wp_die('Invalid request method');
+        }
+        
+        // Check if required POST data exists
+        if (empty($_POST['nonce'])) {
+            error_log('CF7AS: PDF Export - No nonce provided');
+            wp_send_json_error(array('message' => 'Security nonce missing'));
+            return;
+        }
+        
+        if (empty($_POST['post_id'])) {
+            error_log('CF7AS: PDF Export - No post ID provided');
+            wp_send_json_error(array('message' => 'Submission ID missing'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_pdf_export_nonce')) {
+            error_log('CF7AS: PDF Export - Nonce verification failed');
+            wp_die('Security check failed');
+        }
+        
+        error_log('CF7AS: PDF Export - Nonce verification passed');
+        
+        // Check capabilities
+        if (!current_user_can('edit_posts')) {
+            error_log('CF7AS: PDF Export - Insufficient permissions for user: ' . wp_get_current_user()->user_login);
+            wp_die('Insufficient permissions');
+        }
+        
+        error_log('CF7AS: PDF Export - Permission check passed');
+        
+        $post_id = intval($_POST['post_id']);
+        error_log('CF7AS: PDF Export - Post ID: ' . $post_id);
+        
+        // Verify the post exists and is the right type
+        $post = get_post($post_id);
+        if (!$post) {
+            error_log('CF7AS: PDF Export - Post not found: ' . $post_id);
+            wp_send_json_error(array('message' => 'Submission not found'));
+            return;
+        }
+        
+        if ($post->post_type !== 'cf7_submission') {
+            error_log('CF7AS: PDF Export - Wrong post type: ' . $post->post_type . ' for post: ' . $post_id);
+            wp_send_json_error(array('message' => 'Invalid submission type'));
+            return;
+        }
+        
+        error_log('CF7AS: PDF Export - Post validation passed');
+        $options = array(
+            'include_personal_info' => isset($_POST['include_personal_info']) && $_POST['include_personal_info'] == '1',
+            'include_works' => isset($_POST['include_works']) && $_POST['include_works'] == '1',
+            'include_ratings' => isset($_POST['include_ratings']) && $_POST['include_ratings'] == '1',
+            'include_curator_notes' => isset($_POST['include_curator_notes']) && $_POST['include_curator_notes'] == '1',
+            'include_curator_comments' => isset($_POST['include_curator_comments']) && $_POST['include_curator_comments'] == '1',
+            'confidential_watermark' => isset($_POST['confidential_watermark']) && $_POST['confidential_watermark'] == '1'
+        );
+        
+        error_log('CF7AS: PDF Export - Options: ' . print_r($options, true));
+        error_log('CF7AS: PDF Export - Lambda ARN configured: ' . (!empty($this->lambda_function_arn) ? 'YES' : 'NO'));
+        
+        if (!empty($this->lambda_function_arn)) {
+            error_log('CF7AS: PDF Export - Lambda ARN: ' . $this->lambda_function_arn);
+        } else {
+            error_log('CF7AS: PDF Export - No Lambda ARN found, checking plugin options...');
+            $plugin_options = get_option('cf7_artist_submissions_options', array());
+            error_log('CF7AS: PDF Export - Plugin options keys: ' . implode(', ', array_keys($plugin_options)));
+            if (isset($plugin_options['pdf_lambda_function_arn'])) {
+                error_log('CF7AS: PDF Export - PDF Lambda ARN in options: ' . $plugin_options['pdf_lambda_function_arn']);
+            }
+        }
+        
+        // Check if Lambda is configured
+        if (empty($this->lambda_function_arn)) {
+            error_log('CF7AS: PDF Export - Lambda not configured, using HTML fallback');
+            // Fallback to legacy HTML generation
+            $result = $this->generate_html_fallback($post_id, $options);
+        } else {
+            error_log('CF7AS: PDF Export - Using Lambda for PDF generation');
+            // Use AWS Lambda for PDF generation
+            $result = $this->generate_pdf_via_lambda($post_id, $options);
+        }
+        
+        error_log('CF7AS: PDF Export - Generation result: ' . print_r($result, true));
+        
+        if ($result['success']) {
+            error_log('CF7AS: PDF Export - Success, sending response');
+            wp_send_json_success($result);
+        } else {
+            error_log('CF7AS: PDF Export - Failed: ' . $result['message']);
+            wp_send_json_error($result);
+        }
+    }
+    
+    /**
+     * Handle Lambda callback from AWS
+     */
+    public function handle_lambda_callback() {
+        // Verify this is a legitimate callback (you might want to add signature verification)
+        $job_id = sanitize_text_field($_POST['job_id']);
+        $status = sanitize_text_field($_POST['status']);
+        
+        if (empty($job_id)) {
+            wp_die('Invalid callback');
+        }
+        
+        // Update job status in database
+        $this->update_job_status($job_id, $_POST);
+        
+        wp_send_json_success(array('message' => 'Callback processed'));
+    }
+    
+    /**
+     * Handle PDF status check requests
+     */
+    public function handle_pdf_status_check() {
         // Verify nonce
         if (!wp_verify_nonce($_POST['nonce'], 'cf7_pdf_export_nonce')) {
             wp_die('Security check failed');
         }
         
-        // Check capabilities
-        if (!current_user_can('edit_posts')) {
-            wp_die('Insufficient permissions');
-        }
+        $job_id = sanitize_text_field($_POST['job_id']);
+        $status = $this->get_job_status($job_id);
         
-        $post_id = intval($_POST['post_id']);
-        $options = array(
-            'include_personal_info' => isset($_POST['include_personal_info']) && $_POST['include_personal_info'] == '1',
-            'include_works' => isset($_POST['include_works']) && $_POST['include_works'] == '1',
-            'include_notes' => isset($_POST['include_notes']) && $_POST['include_notes'] == '1',
-            'confidential_watermark' => isset($_POST['confidential_watermark']) && $_POST['confidential_watermark'] == '1'
-        );
-        
-        $result = $this->generate_pdf($post_id, $options);
-        
-        if ($result['success']) {
-            wp_send_json_success($result);
-        } else {
-            wp_send_json_error($result);
-        }
+        wp_send_json_success($status);
     }
     
     // ============================================================================
@@ -253,16 +552,158 @@ class CF7_Artist_Submissions_PDF_Export {
     // ============================================================================
     
     /**
-     * Generate professional PDF-ready HTML document with comprehensive formatting.
+     * Generate PDF using AWS Lambda with Puppeteer for professional output.
      * 
-     * Creates complete HTML document optimized for browser printing to PDF with
-     * validation, content generation, professional styling, and file handling.
-     * Implements configurable content sections, responsive design, and error
-     * handling for seamless PDF generation workflow integration.
+     * Invokes AWS Lambda function to create high-quality PDFs with comprehensive
+     * formatting, validation, content preparation, and cloud-based processing.
+     * Implements job tracking, progress monitoring, and error handling for
+     * reliable PDF generation workflow integration.
      * 
-     * @since 1.0.0
+     * @since 1.2.0
      */
-    private function generate_pdf($post_id, $options = array()) {
+    private function generate_pdf_via_lambda($post_id, $options = array()) {
+        // Check if post exists
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'cf7_submission') {
+            return array('success' => false, 'message' => 'Submission not found');
+        }
+        
+        try {
+            // Generate unique job ID
+            $job_id = 'pdf_' . uniqid() . '_' . $post_id;
+            
+            // Prepare submission data for Lambda
+            $submission_data = $this->prepare_submission_data($post_id);
+            
+            // Get site information
+            $site_info = $this->get_site_info();
+            
+            // Get S3 bucket configuration
+            $plugin_options = get_option('cf7_artist_submissions_options', array());
+            $s3_bucket = isset($plugin_options['s3_bucket']) ? $plugin_options['s3_bucket'] : '';
+            
+            if (empty($s3_bucket)) {
+                return array('success' => false, 'message' => 'S3 bucket not configured');
+            }
+            
+            // Prepare Lambda event payload
+            $lambda_payload = array(
+                'job_id' => $job_id,
+                'submission_data' => $submission_data,
+                'export_options' => $options,
+                'bucket' => $s3_bucket,
+                'callback_url' => admin_url('admin-ajax.php?action=cf7_pdf_export_callback'),
+                'site_info' => $site_info
+            );
+            
+        // Additional payload cleaning and validation
+        $lambda_payload = $this->clean_data_for_lambda($lambda_payload);
+        
+        // ENHANCED DEBUGGING: Check all data types in payload
+        $this->validate_lambda_payload_types($lambda_payload);
+        
+        // CRITICAL DEBUGGING: Check specific field types that might cause JS errors
+        if (isset($lambda_payload['submission_data']['id'])) {
+            error_log('CF7AS: PDF Export - submission_data.id type: ' . gettype($lambda_payload['submission_data']['id']) . ', value: ' . var_export($lambda_payload['submission_data']['id'], true));
+        }
+        
+        // Check all numeric-looking fields in submission_data
+        if (isset($lambda_payload['submission_data'])) {
+            foreach ($lambda_payload['submission_data'] as $key => $value) {
+                if (is_numeric($value) || (is_string($value) && ctype_digit($value))) {
+                    error_log('CF7AS: PDF Export - Numeric field detected: ' . $key . ' (type: ' . gettype($value) . ', value: ' . var_export($value, true) . ')');
+                }
+            }
+        }
+        
+        error_log('CF7AS: PDF Export - LAMBDA PAYLOAD: ' . print_r($lambda_payload, true));
+        error_log('CF7AS: PDF Export - Export options being sent: ' . print_r($options, true));
+        error_log('CF7AS: PDF Export - Payload JSON size: ' . strlen(json_encode($lambda_payload)) . ' bytes');            // Store job in database for tracking
+            $this->store_job($job_id, $post_id, 'processing', $options);
+            
+            // Invoke Lambda function
+            $lambda_result = $this->invoke_lambda_function($lambda_payload);
+            
+            if ($lambda_result['success']) {
+                // Check if Lambda returned immediate results (synchronous processing)
+                $lambda_response = isset($lambda_result['response']) ? $lambda_result['response'] : array();
+                
+                // Parse the response body if it's a JSON string
+                if (isset($lambda_response['body']) && is_string($lambda_response['body'])) {
+                    $response_body = json_decode($lambda_response['body'], true);
+                    
+                    // Check if Lambda function itself returned an error
+                    if (isset($response_body['success']) && !$response_body['success']) {
+                        $error_message = isset($response_body['error']) ? $response_body['error'] : 'Unknown Lambda error';
+                        error_log('CF7AS: PDF Export - Lambda function error: ' . $error_message);
+                        
+                        // Update job status to failed
+                        $this->update_job_status($job_id, array(
+                            'status' => 'failed', 
+                            'error_message' => $error_message
+                        ));
+                        
+                        return array(
+                            'success' => false,
+                            'message' => 'PDF generation failed: ' . $error_message
+                        );
+                    }
+                    
+                    // If we got a successful immediate response with download URL, return it
+                    if (isset($response_body['success']) && $response_body['success'] && 
+                        isset($response_body['download_url'])) {
+                        
+                        // Update job status to completed
+                        $this->update_job_status($job_id, array(
+                            'status' => 'completed',
+                            'pdf_s3_key' => $response_body['s3_key'] ?? '',
+                            'download_url' => $response_body['download_url'],
+                            'file_size' => $response_body['file_size'] ?? 0
+                        ));
+                        
+                        return array(
+                            'success' => true,
+                            'message' => 'PDF generated successfully',
+                            'job_id' => $job_id,
+                            'type' => 'lambda',
+                            'status' => 'completed',
+                            'download_url' => $response_body['download_url'],
+                            'file_size' => $response_body['file_size'] ?? 0
+                        );
+                    }
+                }
+                
+                // Fallback to async processing mode
+                return array(
+                    'success' => true,
+                    'message' => 'PDF generation started',
+                    'job_id' => $job_id,
+                    'type' => 'lambda',
+                    'status' => 'processing'
+                );
+            } else {
+                // Update job status to failed
+                $this->update_job_status($job_id, array('status' => 'failed', 'error_message' => $lambda_result['message']));
+                
+                return array(
+                    'success' => false,
+                    'message' => 'Failed to start PDF generation: ' . $lambda_result['message']
+                );
+            }
+            
+        } catch (Exception $e) {
+            error_log('CF7AS PDF Export Lambda Error: ' . $e->getMessage());
+            return array(
+                'success' => false,
+                'message' => 'Error starting PDF generation: ' . $e->getMessage()
+            );
+        }
+    }
+    
+    /**
+     * Generate HTML fallback for when Lambda is not configured
+     */
+    private function generate_html_fallback($post_id, $options = array()) {
         // Check if post exists
         $post = get_post($post_id);
         if (!$post || $post->post_type !== 'cf7_submission') {
@@ -271,7 +712,7 @@ class CF7_Artist_Submissions_PDF_Export {
         
         try {
             // Generate HTML content
-            $html = $this->generate_pdf_content($post_id, $options);
+            $html = $this->generate_legacy_pdf_content($post_id, $options);
             
             // Wrap in complete HTML document
             $complete_html = $this->wrap_html_document($html, $post_id, $options);
@@ -305,8 +746,1043 @@ class CF7_Artist_Submissions_PDF_Export {
     }
     
     // ============================================================================
-    // UTILITY FUNCTIONS SECTION
+    // AWS LAMBDA INTEGRATION SECTION
     // ============================================================================
+    
+    /**
+     * Invoke AWS Lambda function for PDF generation
+     */
+    private function invoke_lambda_function($payload) {
+        error_log('CF7AS: PDF Export - Starting Lambda invocation');
+        
+        try {
+            // Get AWS credentials
+            $plugin_options = get_option('cf7_artist_submissions_options', array());
+            $aws_access_key = isset($plugin_options['aws_access_key']) ? $plugin_options['aws_access_key'] : '';
+            $aws_secret_key = isset($plugin_options['aws_secret_key']) ? $plugin_options['aws_secret_key'] : '';
+            
+            error_log('CF7AS: PDF Export - AWS Access Key configured: ' . (!empty($aws_access_key) ? 'YES' : 'NO'));
+            error_log('CF7AS: PDF Export - AWS Secret Key configured: ' . (!empty($aws_secret_key) ? 'YES' : 'NO'));
+            error_log('CF7AS: PDF Export - AWS Region: ' . $this->aws_region);
+            error_log('CF7AS: PDF Export - Lambda ARN: ' . $this->lambda_function_arn);
+            
+            if (empty($aws_access_key) || empty($aws_secret_key)) {
+                return array('success' => false, 'message' => 'AWS credentials not configured');
+            }
+            
+            // Prepare AWS Lambda invocation
+            // Extract function name from ARN for endpoint
+            // ARN format: arn:aws:lambda:region:account-id:function:function-name
+            $arn_parts = explode(':', $this->lambda_function_arn);
+            if (count($arn_parts) >= 6) {
+                $function_name = $arn_parts[6]; // Get the function name part
+            } else {
+                $function_name = basename($this->lambda_function_arn); // Fallback
+            }
+            
+            $endpoint = "https://lambda.{$this->aws_region}.amazonaws.com/2015-03-31/functions/{$function_name}/invocations";
+            $json_payload = json_encode($payload);
+            
+            error_log('CF7AS: PDF Export - Function name extracted: ' . $function_name);
+            error_log('CF7AS: PDF Export - Endpoint: ' . $endpoint);
+            error_log('CF7AS: PDF Export - Payload size: ' . strlen($json_payload) . ' bytes');
+            
+            // Generate AWS signature
+            $headers = $this->generate_aws_headers($json_payload, $endpoint, $aws_access_key, $aws_secret_key);
+            
+            error_log('CF7AS: PDF Export - Generated headers: ' . print_r(array_keys($headers), true));
+            
+            // Make HTTP request to Lambda
+            $args = array(
+                'method' => 'POST',
+                'headers' => $headers,
+                'body' => $json_payload,
+                'timeout' => 30,
+                'sslverify' => true
+            );
+            
+            error_log('CF7AS: PDF Export - Making HTTP request to: ' . $endpoint);
+            error_log('CF7AS: PDF Export - Request args (without body): ' . print_r(array_merge($args, array('body' => '[PAYLOAD_' . strlen($json_payload) . '_BYTES]')), true));
+            
+            $response = wp_remote_request($endpoint, $args);
+            
+            if (is_wp_error($response)) {
+                error_log('CF7AS: PDF Export - WP HTTP Error: ' . $response->get_error_message());
+                return array('success' => false, 'message' => 'HTTP request failed: ' . $response->get_error_message());
+            }
+            
+            $status_code = wp_remote_retrieve_response_code($response);
+            $body = wp_remote_retrieve_body($response);
+            $response_headers = wp_remote_retrieve_headers($response);
+            
+            error_log('CF7AS: PDF Export - Response status: ' . $status_code);
+            error_log('CF7AS: PDF Export - Response headers: ' . print_r($response_headers, true));
+            error_log('CF7AS: PDF Export - Response body: ' . $body);
+            
+            if ($status_code !== 200 && $status_code !== 202) {
+                error_log('CF7AS: PDF Export - Lambda invocation failed with status ' . $status_code);
+                return array('success' => false, 'message' => "Lambda invocation failed with status $status_code: $body");
+            }
+            
+            error_log('CF7AS: PDF Export - Lambda invocation successful');
+            return array('success' => true, 'response' => json_decode($body, true));
+            
+        } catch (Exception $e) {
+            return array('success' => false, 'message' => 'Lambda invocation error: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Generate AWS Signature V4 headers for Lambda invocation
+     */
+    private function generate_aws_headers($payload, $endpoint, $access_key, $secret_key) {
+        error_log('CF7AS: PDF Export - Generating AWS signature headers');
+        
+        $url_parts = parse_url($endpoint);
+        $host = $url_parts['host'];
+        $path = isset($url_parts['path']) ? $url_parts['path'] : '/';
+        
+        // Use GMT time for AWS signatures
+        $timestamp = gmdate('Ymd\THis\Z');
+        $date = gmdate('Ymd');
+        $service = 'lambda';
+        $region = $this->aws_region;
+        
+        error_log('CF7AS: PDF Export - Host: ' . $host);
+        error_log('CF7AS: PDF Export - Path: ' . $path);
+        error_log('CF7AS: PDF Export - Timestamp: ' . $timestamp);
+        error_log('CF7AS: PDF Export - Date: ' . $date);
+        error_log('CF7AS: PDF Export - Region: ' . $region);
+        
+        // Create canonical request
+        $canonical_headers = "host:" . $host . "\n" . "x-amz-date:" . $timestamp . "\n";
+        $signed_headers = 'host;x-amz-date';
+        $payload_hash = hash('sha256', $payload);
+        
+        // Canonical request format: METHOD\nURI\nQUERY_STRING\nHEADERS\nSIGNED_HEADERS\nPAYLOAD_HASH
+        // Make sure path is properly URL-encoded
+        $canonical_uri = rawurlencode($path);
+        // But don't double-encode slashes
+        $canonical_uri = str_replace('%2F', '/', $canonical_uri);
+        
+        $canonical_request = "POST\n" . $canonical_uri . "\n\n" . $canonical_headers . "\n" . $signed_headers . "\n" . $payload_hash;
+        
+        error_log('CF7AS: PDF Export - Canonical URI: ' . $canonical_uri);
+        error_log('CF7AS: PDF Export - Payload hash: ' . $payload_hash);
+        error_log('CF7AS: PDF Export - Canonical request hash: ' . hash('sha256', $canonical_request));
+        
+        // Create string to sign
+        $algorithm = 'AWS4-HMAC-SHA256';
+        $credential_scope = $date . '/' . $region . '/' . $service . '/aws4_request';
+        $string_to_sign = $algorithm . "\n" . $timestamp . "\n" . $credential_scope . "\n" . hash('sha256', $canonical_request);
+        
+        error_log('CF7AS: PDF Export - Credential scope: ' . $credential_scope);
+        error_log('CF7AS: PDF Export - String to sign hash: ' . hash('sha256', $string_to_sign));
+        
+        // Calculate signature
+        $signing_key = $this->get_signature_key($secret_key, $date, $region, $service);
+        $signature = hash_hmac('sha256', $string_to_sign, $signing_key);
+        
+        error_log('CF7AS: PDF Export - Signature: ' . $signature);
+        
+        // Create authorization header
+        $authorization = $algorithm . ' Credential=' . $access_key . '/' . $credential_scope . ', SignedHeaders=' . $signed_headers . ', Signature=' . $signature;
+        
+        error_log('CF7AS: PDF Export - Authorization header: ' . substr($authorization, 0, 100) . '...');
+        
+        return array(
+            'Authorization' => $authorization,
+            'X-Amz-Date' => $timestamp,
+            'Content-Type' => 'application/json',
+            'Host' => $host
+        );
+    }
+    
+    /**
+     * Generate signing key for AWS Signature V4
+     */
+    private function get_signature_key($key, $date, $region, $service) {
+        error_log('CF7AS: PDF Export - Generating signing key for date: ' . $date . ', region: ' . $region . ', service: ' . $service);
+        
+        $k_date = hash_hmac('sha256', $date, 'AWS4' . $key, true);
+        $k_region = hash_hmac('sha256', $region, $k_date, true);
+        $k_service = hash_hmac('sha256', $service, $k_region, true);
+        $signing_key = hash_hmac('sha256', 'aws4_request', $k_service, true);
+        
+        error_log('CF7AS: PDF Export - Signing key generated (length: ' . strlen($signing_key) . ')');
+        
+        return $signing_key;
+    }
+    
+    // ============================================================================
+    // JOB TRACKING SECTION
+    // ============================================================================
+    
+    /**
+     * Store PDF generation job in database
+     */
+    private function store_job($job_id, $post_id, $status, $options) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_pdf_jobs';
+        
+        // Create table if it doesn't exist
+        $this->create_jobs_table();
+        
+        $wpdb->insert(
+            $table_name,
+            array(
+                'job_id' => $job_id,
+                'post_id' => $post_id,
+                'status' => $status,
+                'export_options' => json_encode($options),
+                'created_at' => current_time('mysql'),
+                'updated_at' => current_time('mysql')
+            ),
+            array('%s', '%d', '%s', '%s', '%s', '%s')
+        );
+    }
+    
+    /**
+     * Update job status in database
+     */
+    private function update_job_status($job_id, $data) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_pdf_jobs';
+        
+        $update_data = array('updated_at' => current_time('mysql'));
+        $update_format = array('%s');
+        
+        if (isset($data['status'])) {
+            $update_data['status'] = sanitize_text_field($data['status']);
+            $update_format[] = '%s';
+        }
+        
+        if (isset($data['pdf_s3_key'])) {
+            $update_data['pdf_s3_key'] = sanitize_text_field($data['pdf_s3_key']);
+            $update_format[] = '%s';
+        }
+        
+        if (isset($data['download_url'])) {
+            $update_data['download_url'] = esc_url_raw($data['download_url']);
+            $update_format[] = '%s';
+        }
+        
+        if (isset($data['error_message'])) {
+            $update_data['error_message'] = sanitize_textarea_field($data['error_message']);
+            $update_format[] = '%s';
+        }
+        
+        if (isset($data['file_size'])) {
+            $update_data['file_size'] = intval($data['file_size']);
+            $update_format[] = '%d';
+        }
+        
+        $wpdb->update(
+            $table_name,
+            $update_data,
+            array('job_id' => $job_id),
+            $update_format,
+            array('%s')
+        );
+    }
+    
+    /**
+     * Get job status from database
+     */
+    private function get_job_status($job_id) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_pdf_jobs';
+        
+        $job = $wpdb->get_row(
+            $wpdb->prepare("SELECT * FROM $table_name WHERE job_id = %s", $job_id),
+            ARRAY_A
+        );
+        
+        if (!$job) {
+            return array('status' => 'not_found');
+        }
+        
+        return $job;
+    }
+    
+    /**
+     * Create jobs tracking table
+     */
+    private function create_jobs_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_pdf_jobs';
+        
+        $charset_collate = $wpdb->get_charset_collate();
+        
+        $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+            id int(11) NOT NULL AUTO_INCREMENT,
+            job_id varchar(100) NOT NULL,
+            post_id int(11) NOT NULL,
+            status varchar(50) NOT NULL DEFAULT 'processing',
+            export_options text,
+            pdf_s3_key varchar(255),
+            download_url text,
+            error_message text,
+            file_size int(11),
+            created_at datetime NOT NULL,
+            updated_at datetime NOT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY job_id (job_id),
+            KEY post_id (post_id),
+            KEY status (status),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+        
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+    
+    // ============================================================================
+    // DATA PREPARATION SECTION
+    // ============================================================================
+    
+    /**
+     * Prepare submission data for Lambda function
+     */
+    private function prepare_submission_data($post_id) {
+        error_log('CF7AS: PDF Export - Starting data preparation for post: ' . $post_id);
+        
+        $post = get_post($post_id);
+        $meta_data = get_post_meta($post_id);
+        
+        error_log('CF7AS: PDF Export - Post title: ' . $post->post_title);
+        error_log('CF7AS: PDF Export - Meta data keys: ' . implode(', ', array_keys($meta_data)));
+        
+        // DIAGNOSTIC: Check what field names actually exist for this post
+        $cf7_fields = array();
+        foreach (array_keys($meta_data) as $key) {
+            if (strpos($key, 'cf7_') === 0) {
+                $cf7_fields[] = $key;
+            }
+        }
+        error_log('CF7AS: PDF Export - DIAGNOSTIC: All CF7 fields found: ' . implode(', ', $cf7_fields));
+        
+        // Extract artist information
+        $submission_data = array(
+            'id' => $post_id,
+            'title' => $post->post_title,
+            'artist_name' => $this->get_artist_name($post_id),
+            'submission_date' => get_post_meta($post_id, 'cf7_submission_date', true)
+        );
+        
+        error_log('CF7AS: PDF Export - Basic data prepared, artist name: ' . $submission_data['artist_name']);
+        
+        // Add personal information fields
+        // Note: WordPress forms may save fields with hyphens (admin/manual) or underscores (sanitize_key)
+        $personal_fields = array(
+            'email' => array('cf7_email', 'cf7_your-email', 'cf7_your_email', 'cf7_artist-email', 'cf7_artist_email'),
+            'phone' => array('cf7_phone', 'cf7_your-phone', 'cf7_your_phone', 'cf7_contact-phone', 'cf7_contact_phone'),
+            'pronouns' => array('cf7_pronouns', 'cf7_your-pronouns', 'cf7_your_pronouns', 'cf7_artist-pronouns', 'cf7_artist_pronouns'),
+            'address' => array('cf7_address', 'cf7_your-address', 'cf7_your_address', 'cf7_contact-address', 'cf7_contact_address'),
+            'website' => array('cf7_website', 'cf7_your-website', 'cf7_your_website', 'cf7_artist-website', 'cf7_artist_website'),
+            'portfolio_link' => array('cf7_portfolio-link', 'cf7_portfolio_link', 'cf7_portfolio', 'cf7_portfolio-url', 'cf7_portfolio_url'),
+            'bio' => array('cf7_bio', 'cf7_artist-bio', 'cf7_artist_bio', 'cf7_biography'),
+            'artist_statement' => array('cf7_artist-statement', 'cf7_artist_statement', 'cf7_statement', 'cf7_artistic-statement', 'cf7_artistic_statement'),
+            'experience' => array('cf7_experience', 'cf7_art-experience', 'cf7_art_experience', 'cf7_years-experience', 'cf7_years_experience'),
+            'medium' => array('cf7_medium', 'cf7_preferred-medium', 'cf7_preferred_medium', 'cf7_art-medium', 'cf7_art_medium'),
+            'artistic_mediums' => array('cf7_artistic-mediums', 'cf7_artistic_mediums', 'cf7_art-mediums', 'cf7_art_mediums', 'cf7_mediums'),
+            'text_mediums' => array('cf7_text-mediums', 'cf7_text_mediums', 'cf7_text-medium', 'cf7_text_medium', 'cf7_writing-mediums', 'cf7_writing_mediums'),
+            'style' => array('cf7_style', 'cf7_art-style', 'cf7_art_style', 'cf7_artistic-style', 'cf7_artistic_style')
+        );
+        
+        foreach ($personal_fields as $field => $possible_keys) {
+            foreach ($possible_keys as $key) {
+                $value = get_post_meta($post_id, $key, true);
+                if (!empty($value)) {
+                    $submission_data[$field] = $value;
+                    error_log('CF7AS: PDF Export - DIAGNOSTIC: Found field ' . $field . ' using key ' . $key . ' = ' . substr($value, 0, 50));
+                    break;
+                }
+            }
+            
+            // If field not found, log which keys were tried
+            if (!isset($submission_data[$field])) {
+                error_log('CF7AS: PDF Export - DIAGNOSTIC: Field ' . $field . ' not found, tried keys: ' . implode(', ', $possible_keys));
+            }
+        }
+        
+        error_log('CF7AS: PDF Export - Personal fields processed');
+        
+        // Add all other meta fields for fallback
+        foreach ($meta_data as $key => $value) {
+            if (substr($key, 0, 1) !== '_' && substr($key, 0, 8) !== 'cf7_file_' && !isset($submission_data[$key])) {
+                $submission_data[$key] = is_array($value) ? $value[0] : $value;
+            }
+        }
+        
+        error_log('CF7AS: PDF Export - Meta fields processed, starting works...');
+        
+        // Get submitted works
+        try {
+            $submission_data['works'] = $this->get_submitted_works($post_id);
+            error_log('CF7AS: PDF Export - Works processed: ' . count($submission_data['works']));
+        } catch (Exception $e) {
+            error_log('CF7AS: PDF Export - Error getting submitted works: ' . $e->getMessage());
+            $submission_data['works'] = array();
+        }
+        
+        // Get ratings if available
+        try {
+            error_log('CF7AS: PDF Export - Starting ratings processing...');
+            $submission_data['ratings'] = $this->get_submission_ratings($post_id);
+            error_log('CF7AS: PDF Export - Ratings processed successfully: ' . count($submission_data['ratings']) . ' ratings found');
+        } catch (Exception $e) {
+            error_log('CF7AS: PDF Export - CRITICAL ERROR getting ratings: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Ratings error stack trace: ' . $e->getTraceAsString());
+            $submission_data['ratings'] = array();
+        } catch (Error $e) {
+            error_log('CF7AS: PDF Export - FATAL ERROR getting ratings: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Ratings fatal error stack trace: ' . $e->getTraceAsString());
+            $submission_data['ratings'] = array();
+        }
+        
+        // Get curator notes
+        try {
+            error_log('CF7AS: PDF Export - Starting curator notes processing...');
+            $curator_notes = get_post_meta($post_id, 'cf7_curator_notes', true);
+            if (!empty($curator_notes)) {
+                $submission_data['curator_notes'] = $curator_notes;
+                error_log('CF7AS: PDF Export - Curator notes found: ' . strlen($curator_notes) . ' characters');
+            } else {
+                error_log('CF7AS: PDF Export - No curator notes found');
+            }
+        } catch (Exception $e) {
+            error_log('CF7AS: PDF Export - CRITICAL ERROR getting curator notes: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Curator notes error stack trace: ' . $e->getTraceAsString());
+        }
+        
+        // Note: Curator comments are now handled per-work in get_submitted_works() method
+        // Global curator_comments field has been removed as requested
+        
+        error_log('CF7AS: PDF Export - Data preparation completed successfully');
+        
+        // Clean all submission data for Lambda compatibility
+        $submission_data = $this->clean_data_for_lambda($submission_data);
+        
+        error_log('CF7AS: PDF Export - FULL SUBMISSION DATA: ' . print_r($submission_data, true));
+        error_log('CF7AS: PDF Export - Works count: ' . count($submission_data['works']));
+        error_log('CF7AS: PDF Export - Personal info fields: ' . implode(', ', array_keys(array_filter($submission_data, function($key) {
+            return in_array($key, ['email', 'phone', 'pronouns', 'address', 'website', 'portfolio_link', 'bio', 'artist_statement', 'experience', 'medium', 'artistic_mediums', 'text_mediums', 'style']);
+        }, ARRAY_FILTER_USE_KEY))));
+        
+        // Additional debugging - check data types
+        foreach ($submission_data as $key => $value) {
+            if (!is_string($value) && !is_array($value)) {
+                error_log('CF7AS: PDF Export - WARNING: Non-string/array field detected: ' . $key . ' (type: ' . gettype($value) . ')');
+            }
+            if (is_string($value) && (strpos($value, '{') !== false || strpos($value, '[') !== false)) {
+                error_log('CF7AS: PDF Export - WARNING: Potential JSON in string field: ' . $key . ' = ' . substr($value, 0, 100));
+            }
+        }
+        
+        return $submission_data;
+    }
+    
+    /**
+     * Clean all data to ensure Lambda compatibility
+     * Removes complex objects, HTML content, and ensures all values are simple strings or arrays
+     */
+    private function clean_data_for_lambda($data) {
+        error_log('CF7AS: PDF Export - Cleaning data for Lambda compatibility');
+        
+        if (is_array($data)) {
+            $cleaned = array();
+            foreach ($data as $key => $value) {
+                // Skip any uploader data fields that contain complex JSON
+                // Enhanced patterns to catch more uploader variations
+                if ((strpos($key, 'uploader') !== false && strpos($key, '_data') !== false) ||
+                    strpos($key, 'cf7as-uploader-') !== false ||
+                    strpos($key, 'cf7_cf7as-uploader-') !== false ||
+                    preg_match('/.*uploader.*_data$/', $key) ||
+                    preg_match('/^_uploader/', $key)) {
+                    error_log('CF7AS: PDF Export - Skipping complex uploader data field: ' . $key);
+                    continue;
+                }
+                
+                // Skip any field key that looks suspicious for Lambda
+                if (strpos($key, '_edit_') !== false || 
+                    strpos($key, '_lock') !== false ||
+                    strpos($key, '_thumbnail') !== false ||
+                    strpos($key, '_temp') !== false ||
+                    strpos($key, '_cache') !== false ||
+                    preg_match('/^_[a-z]/', $key)) {
+                    error_log('CF7AS: PDF Export - Skipping internal/meta field: ' . $key);
+                    continue;
+                }
+                
+                // Also skip any field that contains JSON-like data
+                if (is_string($value) && (strpos($value, '{"') === 0 || strpos($value, '[{') === 0)) {
+                    error_log('CF7AS: PDF Export - Skipping JSON data field: ' . $key);
+                    continue;
+                }
+                
+                $cleaned[$key] = $this->clean_data_for_lambda($value);
+            }
+            return $cleaned;
+        } elseif (is_object($data)) {
+            // Convert objects to arrays
+            error_log('CF7AS: PDF Export - Converting object to array');
+            return $this->clean_data_for_lambda((array)$data);
+        } else {
+            // ULTRA-AGGRESSIVE STRING CONVERSION: Convert EVERYTHING to string
+            // This ensures no matter what type we have, it becomes a string
+            
+            if (is_null($data)) {
+                return '';
+            }
+            
+            if (is_bool($data)) {
+                return $data ? '1' : '0';
+            }
+            
+            if (is_numeric($data) || is_int($data) || is_float($data)) {
+                $string_result = strval($data);
+                error_log('CF7AS: PDF Export - Converting numeric value: ' . var_export($data, true) . ' -> "' . $string_result . '"');
+                return $string_result;
+            }
+            
+            if (is_string($data)) {
+                // Check if string looks like JSON and skip it
+                if (strpos($data, '{"') === 0 || strpos($data, '[{') === 0) {
+                    error_log('CF7AS: PDF Export - Skipping JSON string data');
+                    return '';
+                }
+                
+                // Handle empty or null strings
+                if ($data === '') {
+                    return '';
+                }
+                
+                // Strip HTML tags and ensure it's a clean string
+                $cleaned = strip_tags($data);
+                // Also decode HTML entities
+                $cleaned = html_entity_decode($cleaned, ENT_QUOTES, 'UTF-8');
+                // Remove any remaining control characters that might cause issues
+                $cleaned = preg_replace('/[\x00-\x1F\x7F-\x9F]/u', '', $cleaned);
+                // Ensure we return a proper string, never null or undefined
+                $result = trim($cleaned);
+                return $result !== '' ? $result : '';
+            }
+            
+            // For absolutely any other type, force convert to string
+            $result = strval($data);
+            error_log('CF7AS: PDF Export - Force converting unknown type ' . gettype($data) . ' to string: "' . $result . '"');
+            return $result !== null ? $result : '';
+        }
+    }
+    
+    /**
+     * Validate Lambda payload data types to prevent JavaScript errors
+     */
+    private function validate_lambda_payload_types($data, $path = '') {
+        if (is_array($data)) {
+            foreach ($data as $key => $value) {
+                $current_path = $path ? $path . '.' . $key : $key;
+                
+                if (!is_string($value) && !is_array($value)) {
+                    error_log('CF7AS: PDF Export - CRITICAL: Non-string/array value found in payload at ' . $current_path . ' (type: ' . gettype($value) . ', value: ' . var_export($value, true) . ')');
+                }
+                
+                if (is_null($value)) {
+                    error_log('CF7AS: PDF Export - CRITICAL: NULL value found in payload at ' . $current_path);
+                }
+                
+                if (is_string($value)) {
+                    if (strpos($value, '{') === 0 || strpos($value, '[') === 0) {
+                        error_log('CF7AS: PDF Export - WARNING: Potential JSON string at ' . $current_path . ': ' . substr($value, 0, 50) . '...');
+                    }
+                    if (strlen($value) > 10000) {
+                        error_log('CF7AS: PDF Export - WARNING: Very long string at ' . $current_path . ' (' . strlen($value) . ' chars)');
+                    }
+                }
+                
+                // Recursively validate arrays
+                if (is_array($value)) {
+                    $this->validate_lambda_payload_types($value, $current_path);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Get submitted works with file information
+     */
+    private function get_submitted_works($post_id) {
+        $works = array();
+        
+        // Get file fields using existing method
+        $file_fields = $this->get_file_fields($post_id);
+        
+        foreach ($file_fields as $field_name => $file_url) {
+            if (empty($file_url)) continue;
+            
+            $work = array(
+                'filename' => basename($file_url),
+                'file_url' => $file_url
+            );
+            
+            // If it's an image, add image_url for PDF display
+            if ($this->is_image_file($work['filename'])) {
+                $work['image_url'] = $file_url;
+            }
+            
+            // Try to get additional work metadata
+            $work_title_key = str_replace('cf7_file_', 'cf7_title_', $field_name);
+            $work_title = get_post_meta($post_id, $work_title_key, true);
+            if (!empty($work_title)) {
+                $work['title'] = $work_title;
+            }
+            
+            $work_desc_key = str_replace('cf7_file_', 'cf7_desc_', $field_name);
+            $work_desc = get_post_meta($post_id, $work_desc_key, true);
+            if (!empty($work_desc)) {
+                $work['description'] = $work_desc;
+            }
+            
+            // Get work-specific ratings and comments
+            $work['ratings'] = $this->get_work_ratings($post_id, $field_name);
+            $work['comments'] = $this->get_work_comments($post_id, $field_name);
+            
+            $works[] = $work;
+        }
+        
+        return $works;
+    }
+    
+    /**
+     * Get submission ratings
+     */
+    private function get_submission_ratings($post_id) {
+        error_log('CF7AS: PDF Export - get_submission_ratings() called for post: ' . $post_id);
+        
+        try {
+            // Check if CF7 Artist Submissions Ratings class exists
+            if (class_exists('CF7_Artist_Submissions_Ratings')) {
+                error_log('CF7AS: PDF Export - CF7_Artist_Submissions_Ratings class found, using it');
+                $ratings_class = new CF7_Artist_Submissions_Ratings();
+                
+                // Check if the method exists before calling it
+                if (method_exists($ratings_class, 'get_submission_ratings')) {
+                    error_log('CF7AS: PDF Export - get_submission_ratings method exists, calling it');
+                    $ratings = $ratings_class->get_submission_ratings($post_id);
+                    error_log('CF7AS: PDF Export - Ratings class returned: ' . print_r($ratings, true));
+                    return $ratings;
+                } else {
+                    error_log('CF7AS: PDF Export - get_submission_ratings method does not exist in ratings class');
+                }
+            } else {
+                error_log('CF7AS: PDF Export - CF7_Artist_Submissions_Ratings class not found, using fallback');
+            }
+            
+            // Fallback: look for rating metadata
+            error_log('CF7AS: PDF Export - Using fallback rating method');
+            $ratings = array();
+            
+            // Common rating field patterns
+            $rating_fields = array(
+                'overall_rating' => 'Overall Rating',
+                'technical_rating' => 'Technical Skill',
+                'creativity_rating' => 'Creativity',
+                'presentation_rating' => 'Presentation'
+            );
+            
+            foreach ($rating_fields as $field => $label) {
+                $rating_value = get_post_meta($post_id, 'cf7_' . $field, true);
+                $rating_comment = get_post_meta($post_id, 'cf7_' . $field . '_comment', true);
+                
+                error_log('CF7AS: PDF Export - Checking field cf7_' . $field . ': value=' . var_export($rating_value, true));
+                
+                if (!empty($rating_value)) {
+                    $rating_data = array(
+                        'category' => $label,
+                        'score' => floatval($rating_value),
+                        'comment' => $rating_comment
+                    );
+                    $ratings[] = $rating_data;
+                    error_log('CF7AS: PDF Export - Added rating: ' . print_r($rating_data, true));
+                }
+            }
+            
+            error_log('CF7AS: PDF Export - Fallback method returning ' . count($ratings) . ' ratings');
+            return $ratings;
+            
+        } catch (Exception $e) {
+            error_log('CF7AS: PDF Export - EXCEPTION in get_submission_ratings: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Exception trace: ' . $e->getTraceAsString());
+            throw $e; // Re-throw to be caught by calling code
+        } catch (Error $e) {
+            error_log('CF7AS: PDF Export - FATAL ERROR in get_submission_ratings: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Error trace: ' . $e->getTraceAsString());
+            throw new Exception('Fatal error in ratings processing: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get curator comments
+     */
+    private function get_curator_comments($post_id) {
+        error_log('CF7AS: PDF Export - get_curator_comments() called for post: ' . $post_id);
+        
+        try {
+            // Check if Conversations class exists for comments
+            if (class_exists('CF7_Artist_Submissions_Conversations')) {
+                error_log('CF7AS: PDF Export - CF7_Artist_Submissions_Conversations class found');
+                
+                // Check if the method exists before calling it
+                if (method_exists('CF7_Artist_Submissions_Conversations', 'get_conversation_messages')) {
+                    error_log('CF7AS: PDF Export - get_conversation_messages static method exists, calling it');
+                    $raw_comments = CF7_Artist_Submissions_Conversations::get_conversation_messages($post_id);
+                    error_log('CF7AS: PDF Export - Conversations class returned: ' . print_r($raw_comments, true));
+                    
+                    // Convert to clean array format for Lambda
+                    $processed_comments = array();
+                    if (is_array($raw_comments)) {
+                        foreach ($raw_comments as $comment) {
+                            $clean_comment = array(
+                                'id' => isset($comment->id) ? (string)$comment->id : '',
+                                'from_name' => isset($comment->from_name) ? (string)$comment->from_name : '',
+                                'from_email' => isset($comment->from_email) ? (string)$comment->from_email : '',
+                                'subject' => isset($comment->subject) ? (string)$comment->subject : '',
+                                'message' => isset($comment->message_body) ? strip_tags((string)$comment->message_body) : '',
+                                'date' => isset($comment->created_at) ? (string)$comment->created_at : '',
+                                'direction' => isset($comment->direction) ? (string)$comment->direction : 'outbound'
+                            );
+                            $processed_comments[] = $clean_comment;
+                        }
+                    }
+                    
+                    error_log('CF7AS: PDF Export - Processed comments count: ' . count($processed_comments));
+                    return $processed_comments;
+                } else {
+                    error_log('CF7AS: PDF Export - get_conversation_messages method does not exist in conversations class');
+                }
+            } else {
+                error_log('CF7AS: PDF Export - CF7_Artist_Submissions_Conversations class not found, using fallback');
+            }
+            
+            // Fallback: look for comment metadata
+            error_log('CF7AS: PDF Export - Using fallback comments method');
+            $comments = array();
+            
+            $comment_fields = get_post_meta($post_id, 'cf7_curator_comments', false);
+            error_log('CF7AS: PDF Export - Found comment fields: ' . print_r($comment_fields, true));
+            
+            if (!empty($comment_fields)) {
+                foreach ($comment_fields as $comment) {
+                    if (is_array($comment)) {
+                        // Clean up array comment
+                        $clean_comment = array(
+                            'id' => isset($comment['id']) ? (string)$comment['id'] : uniqid(),
+                            'from_name' => isset($comment['author']) ? (string)$comment['author'] : 'Curator',
+                            'from_email' => isset($comment['email']) ? (string)$comment['email'] : '',
+                            'subject' => isset($comment['subject']) ? (string)$comment['subject'] : 'Curator Comment',
+                            'message' => isset($comment['content']) ? strip_tags((string)$comment['content']) : '',
+                            'date' => isset($comment['date']) ? (string)$comment['date'] : current_time('mysql'),
+                            'direction' => 'outbound'
+                        );
+                        $comments[] = $clean_comment;
+                        error_log('CF7AS: PDF Export - Added array comment: ' . print_r($clean_comment, true));
+                    } else {
+                        // Clean up string comment
+                        $clean_comment = array(
+                            'id' => uniqid(),
+                            'from_name' => 'Curator',
+                            'from_email' => '',
+                            'subject' => 'Curator Comment',
+                            'message' => strip_tags((string)$comment),
+                            'date' => current_time('mysql'),
+                            'direction' => 'outbound'
+                        );
+                        $comments[] = $clean_comment;
+                        error_log('CF7AS: PDF Export - Added string comment: ' . print_r($clean_comment, true));
+                    }
+                }
+            }
+            
+            error_log('CF7AS: PDF Export - Fallback method returning ' . count($comments) . ' comments');
+            return $comments;
+            
+        } catch (Exception $e) {
+            error_log('CF7AS: PDF Export - EXCEPTION in get_curator_comments: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Exception trace: ' . $e->getTraceAsString());
+            throw $e; // Re-throw to be caught by calling code
+        } catch (Error $e) {
+            error_log('CF7AS: PDF Export - FATAL ERROR in get_curator_comments: ' . $e->getMessage());
+            error_log('CF7AS: PDF Export - Error trace: ' . $e->getTraceAsString());
+            throw new Exception('Fatal error in comments processing: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get work-specific ratings
+     */
+    private function get_work_ratings($post_id, $field_name) {
+        $ratings = array();
+        
+        // Extract work identifier from field name (e.g., cf7_file_work1 -> work1)
+        $work_id = str_replace('cf7_file_', '', $field_name);
+        
+        // Look for work-specific rating fields
+        $rating_categories = array(
+            'overall' => 'Overall Rating',
+            'technical' => 'Technical Skill',
+            'creativity' => 'Creativity',
+            'presentation' => 'Presentation'
+        );
+        
+        foreach ($rating_categories as $category_key => $category_label) {
+            $rating_key = 'cf7_' . $work_id . '_' . $category_key . '_rating';
+            $comment_key = 'cf7_' . $work_id . '_' . $category_key . '_comment';
+            
+            $rating_value = get_post_meta($post_id, $rating_key, true);
+            if (!empty($rating_value)) {
+                $rating_comment = get_post_meta($post_id, $comment_key, true);
+                $ratings[] = array(
+                    'category' => $category_label,
+                    'score' => floatval($rating_value),
+                    'comment' => $rating_comment
+                );
+            }
+        }
+        
+        return $ratings;
+    }
+    
+    /**
+     * Get work-specific comments
+     */
+    private function get_work_comments($post_id, $field_name) {
+        $comments = array();
+        
+        // Extract work identifier from field name (e.g., cf7_file_work1 -> work1)
+        $work_id = str_replace('cf7_file_', '', $field_name);
+        
+        // Look for work-specific comment fields
+        $work_comment_key = 'cf7_' . $work_id . '_comments';
+        $work_comments = get_post_meta($post_id, $work_comment_key, false);
+        
+        if (!empty($work_comments)) {
+            foreach ($work_comments as $comment) {
+                if (is_array($comment)) {
+                    $comments[] = array(
+                        'author' => isset($comment['author']) ? $comment['author'] : 'Curator',
+                        'content' => isset($comment['content']) ? strip_tags($comment['content']) : '',
+                        'date' => isset($comment['date']) ? $comment['date'] : current_time('mysql')
+                    );
+                } else {
+                    $comments[] = array(
+                        'author' => 'Curator',
+                        'content' => strip_tags((string)$comment),
+                        'date' => current_time('mysql')
+                    );
+                }
+            }
+        }
+        
+        return $comments;
+    }
+    
+    /**
+     * Get site information for PDF header
+     */
+    private function get_site_info() {
+        return array(
+            'site_name' => get_bloginfo('name'),
+            'site_url' => get_site_url(),
+            'logo_url' => $this->get_site_logo_url()
+        );
+    }
+    
+    /**
+     * Cleanup old PDF files from S3 and database
+     */
+    public function cleanup_old_pdfs() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_pdf_jobs';
+        
+        // Delete PDFs older than 7 days
+        $cutoff_date = date('Y-m-d H:i:s', strtotime('-7 days'));
+        
+        $old_jobs = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM $table_name WHERE created_at < %s AND status = 'completed'",
+                $cutoff_date
+            )
+        );
+        
+        foreach ($old_jobs as $job) {
+            // Delete from S3 if we have a key
+            if (!empty($job->pdf_s3_key) && $this->s3_handler) {
+                // Delete from S3 (implement this method in S3 handler if needed)
+                // $this->s3_handler->delete_file($job->pdf_s3_key);
+            }
+            
+            // Delete from database
+            $wpdb->delete($table_name, array('id' => $job->id), array('%d'));
+        }
+        
+        error_log("CF7AS PDF Export: Cleaned up " . count($old_jobs) . " old PDF jobs");
+    }
+    
+    // ============================================================================
+    // LEGACY HTML GENERATION SECTION (FALLBACK)
+    // ============================================================================
+    
+    /**
+     * Generate legacy PDF content for fallback HTML generation
+     */
+    private function generate_legacy_pdf_content($post_id, $options) {
+        $post = get_post($post_id);
+        $artist_name = $this->get_artist_name($post_id);
+        $submission_date = get_post_meta($post_id, 'cf7_submission_date', true);
+        
+        $html = '';
+        
+        // Debug: Show options being used (when debug mode is on)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            $html .= '<div style="background: #e0f7ff; padding: 15px; margin: 10px 0; border-left: 4px solid #007cba; font-family: monospace; font-size: 12px;">';
+            $html .= '<strong>🔧 Debug - Export Options:</strong><br>';
+            $html .= 'Include Personal Info: ' . ($options['include_personal_info'] ? 'YES' : 'NO') . '<br>';
+            $html .= 'Include Works: ' . ($options['include_works'] ? 'YES' : 'NO') . '<br>';
+            $html .= 'Include Ratings: ' . ($options['include_ratings'] ? 'YES' : 'NO') . '<br>';
+            $html .= 'Include Curator Notes: ' . ($options['include_curator_notes'] ? 'YES' : 'NO') . '<br>';
+            $html .= 'Include Curator Comments: ' . ($options['include_curator_comments'] ? 'YES' : 'NO') . '<br>';
+            $html .= 'Confidential Watermark: ' . ($options['confidential_watermark'] ? 'YES' : 'NO') . '<br>';
+            $html .= '</div>';
+        }
+        
+        // Header section
+        $html .= '<div class="submission-header">';
+        $html .= '<h1 class="submission-title">' . esc_html($post->post_title) . '</h1>';
+        if ($submission_date) {
+            $html .= '<p class="submission-date">Submitted: ' . esc_html(date('F j, Y', strtotime($submission_date))) . '</p>';
+        }
+        $html .= '</div>';
+        
+        // Personal Information Section
+        if ($options['include_personal_info']) {
+            $html .= '<h2>Artist Information</h2>';
+            $html .= '<table class="info-table">';
+            
+            $meta_keys = get_post_custom_keys($post_id);
+            if ($meta_keys) {
+                foreach ($meta_keys as $key) {
+                    // Skip internal meta and file fields
+                    if (substr($key, 0, 1) === '_' || 
+                        substr($key, 0, 8) === 'cf7_file_' || 
+                        $key === 'cf7_submission_date' || 
+                        $key === 'cf7_curator_notes' ||
+                        strpos($key, 'work') !== false ||
+                        strpos($key, 'files') !== false) {
+                        continue;
+                    }
+                    
+                    $value = get_post_meta($post_id, $key, true);
+                    if (empty($value) || is_array($value)) {
+                        continue;
+                    }
+                    
+                    // Format label
+                    $label = ucwords(str_replace(array('cf7_', '_', '-'), ' ', $key));
+                    
+                    // Format value (handle URLs, emails, etc.)
+                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $formatted_value = '<a href="mailto:' . esc_attr($value) . '">' . esc_html($value) . '</a>';
+                    } elseif (filter_var($value, FILTER_VALIDATE_URL)) {
+                        $formatted_value = '<a href="' . esc_url($value) . '" target="_blank">' . esc_html($value) . '</a>';
+                    } else {
+                        $formatted_value = esc_html($value);
+                    }
+                    
+                    $html .= '<tr>';
+                    $html .= '<td>' . esc_html($label) . '</td>';
+                    $html .= '<td>' . $formatted_value . '</td>';
+                    $html .= '</tr>';
+                }
+            }
+            
+            $html .= '</table>';
+        }
+        
+        // Submitted Works Section
+        if ($options['include_works']) {
+            $html .= '<h2>Submitted Works</h2>';
+            $html .= '<div class="works-grid">';
+            
+            $file_fields = $this->get_file_fields($post_id);
+            
+            if (!empty($file_fields)) {
+                foreach ($file_fields as $field_name => $file_url) {
+                    $html .= $this->format_work_item($file_url, $field_name);
+                }
+            } else {
+                $html .= '<p>No submitted works found.</p>';
+            }
+            
+            $html .= '</div>';
+        }
+        
+        // Ratings Section
+        if ($options['include_ratings']) {
+            $ratings = $this->get_submission_ratings($post_id);
+            if (!empty($ratings)) {
+                $html .= '<h2>Ratings & Evaluation</h2>';
+                foreach ($ratings as $rating) {
+                    $html .= '<div class="rating-section">';
+                    $html .= '<h3>' . esc_html($rating['category']) . '</h3>';
+                    $html .= '<div class="rating-score">Score: ' . esc_html($rating['score']) . '/5</div>';
+                    if (!empty($rating['comment'])) {
+                        $html .= '<div class="rating-comment">' . esc_html($rating['comment']) . '</div>';
+                    }
+                    $html .= '</div>';
+                }
+            }
+        }
+        
+        // Curator Notes Section
+        if ($options['include_curator_notes']) {
+            $notes = get_post_meta($post_id, 'cf7_curator_notes', true);
+            if (!empty($notes)) {
+                $html .= '<div class="notes-section">';
+                $html .= '<h2>Curator Notes</h2>';
+                $html .= '<p>' . nl2br(esc_html($notes)) . '</p>';
+                $html .= '</div>';
+            }
+        }
+        
+        // Curator Comments Section
+        if ($options['include_curator_comments']) {
+            $comments = $this->get_curator_comments($post_id);
+            if (!empty($comments)) {
+                $html .= '<h2>Curator Comments</h2>';
+                foreach ($comments as $comment) {
+                    $html .= '<div class="comment-section">';
+                    if (is_array($comment)) {
+                        $html .= '<div><strong>By:</strong> ' . esc_html($comment['author'] ?? 'Curator') . '</div>';
+                        if (!empty($comment['date'])) {
+                            $html .= '<div><strong>Date:</strong> ' . esc_html(date('F j, Y', strtotime($comment['date']))) . '</div>';
+                        }
+                        $html .= '<div>' . nl2br(esc_html($comment['content'] ?? $comment)) . '</div>';
+                    } else {
+                        $html .= '<div>' . nl2br(esc_html($comment)) . '</div>';
+                    }
+                    $html .= '</div>';
+                }
+            }
+        }
+        
+        return $html;
+    }
     
     /**
      * Wrap generated content in complete HTML document structure.
@@ -814,58 +2290,107 @@ document.addEventListener("DOMContentLoaded", function() {
      * Searches various metadata patterns to locate uploaded files and URLs.
      */
     private function get_file_fields($post_id) {
+        error_log('CF7AS: PDF Export - Getting file fields for post: ' . $post_id);
+        
         // Start with an empty array of file URLs to display
         $file_urls = array();
         
-        // APPROACH 1: Check for standard file format (cf7_file_your-work)
-        $standard_files = get_post_meta($post_id, 'cf7_file_your-work', true);
-        if (!empty($standard_files)) {
-            if (is_array($standard_files)) {
-                $file_urls = $standard_files;
-            } else {
-                $file_urls = array($standard_files);
-            }
-        }
-        
-        // APPROACH 2: If no files found, check for comma-separated URLs in cf7_your-work
-        if (empty($file_urls)) {
-            $comma_separated_urls = get_post_meta($post_id, 'cf7_your-work', true);
-            if (!empty($comma_separated_urls)) {
-                // Split by commas
-                $file_urls = array_map('trim', explode(',', $comma_separated_urls));
-            }
-        }
-        
-        // APPROACH 3: Check for any other file fields
-        if (empty($file_urls)) {
-            $meta_keys = get_post_custom_keys($post_id);
-            if (!empty($meta_keys)) {
-                foreach ($meta_keys as $key) {
-                    if (substr($key, 0, 8) === 'cf7_file_') {
-                        $file_data = get_post_meta($post_id, $key, true);
-                        
-                        // Handle both string and array values
-                        if (is_array($file_data)) {
-                            $file_urls = array_merge($file_urls, $file_data);
-                        } else {
-                            $file_urls[] = $file_data;
+        // APPROACH 1: Check for CF7AS uploader data (most common)
+        $meta_keys = get_post_custom_keys($post_id);
+        if (!empty($meta_keys)) {
+            foreach ($meta_keys as $key) {
+                // Check for CF7AS uploader data
+                if (strpos($key, 'cf7as-uploader-') === 0 && strpos($key, '_data') !== false) {
+                    error_log('CF7AS: PDF Export - Found uploader data key: ' . $key);
+                    $uploader_data = get_post_meta($post_id, $key, true);
+                    error_log('CF7AS: PDF Export - Uploader data: ' . print_r($uploader_data, true));
+                    
+                    if (!empty($uploader_data) && is_array($uploader_data)) {
+                        foreach ($uploader_data as $file_info) {
+                            if (isset($file_info['url']) && !empty($file_info['url'])) {
+                                $file_key = 'cf7_file_' . sanitize_key($file_info['filename'] ?? 'upload_' . count($file_urls));
+                                $file_urls[$file_key] = $file_info['url'];
+                                error_log('CF7AS: PDF Export - Added file: ' . $file_key . ' -> ' . $file_info['url']);
+                            }
                         }
                     }
                 }
             }
         }
         
-        // Return files with field names for proper organization
-        $file_fields = array();
-        if (!empty($file_urls)) {
-            foreach ($file_urls as $index => $url) {
-                if (!empty($url)) {
-                    $file_fields['work_' . ($index + 1)] = $url;
+        // APPROACH 2: Check for standard file format (both hyphen and underscore variants)
+        if (empty($file_urls)) {
+            error_log('CF7AS: PDF Export - No uploader data found, trying standard file fields');
+            
+            // Try both hyphen and underscore variants
+            $standard_file_keys = array('cf7_file_your-work', 'cf7_file_your_work');
+            foreach ($standard_file_keys as $file_key) {
+                $standard_files = get_post_meta($post_id, $file_key, true);
+                if (!empty($standard_files)) {
+                    if (is_array($standard_files)) {
+                        foreach ($standard_files as $index => $url) {
+                            $file_urls['cf7_file_work_' . ($index + 1)] = $url;
+                        }
+                    } else {
+                        $file_urls['cf7_file_your_work'] = $standard_files;
+                    }
+                    error_log('CF7AS: PDF Export - Found standard files in ' . $file_key . ': ' . count($file_urls));
+                    break; // Found files, stop looking
                 }
             }
         }
         
-        return $file_fields;
+        // APPROACH 3: If no files found, check for comma-separated URLs (both variants)
+        if (empty($file_urls)) {
+            error_log('CF7AS: PDF Export - Trying comma-separated URLs');
+            
+            $url_field_keys = array('cf7_your-work', 'cf7_your_work');
+            foreach ($url_field_keys as $url_key) {
+                $comma_separated_urls = get_post_meta($post_id, $url_key, true);
+                if (!empty($comma_separated_urls)) {
+                    // Split by commas
+                    $urls = array_map('trim', explode(',', $comma_separated_urls));
+                    foreach ($urls as $index => $url) {
+                        if (!empty($url)) {
+                            $file_urls['cf7_file_work_' . ($index + 1)] = $url;
+                        }
+                    }
+                    error_log('CF7AS: PDF Export - Found comma-separated files in ' . $url_key . ': ' . count($file_urls));
+                    break; // Found files, stop looking
+                }
+            }
+        }
+        
+        // APPROACH 4: Check for any other file fields with cf7_file_ prefix
+        if (empty($file_urls)) {
+            error_log('CF7AS: PDF Export - Trying cf7_file_ prefixed fields');
+            if (!empty($meta_keys)) {
+                foreach ($meta_keys as $key) {
+                    if (substr($key, 0, 8) === 'cf7_file_') {
+                        $file_data = get_post_meta($post_id, $key, true);
+                        
+                        if (!empty($file_data)) {
+                            // Handle both string and array values
+                            if (is_array($file_data)) {
+                                foreach ($file_data as $index => $url) {
+                                    if (!empty($url)) {
+                                        $file_urls[$key . '_' . $index] = $url;
+                                    }
+                                }
+                            } else {
+                                $file_urls[$key] = $file_data;
+                            }
+                        }
+                    }
+                }
+                error_log('CF7AS: PDF Export - Found cf7_file_ prefixed files: ' . count($file_urls));
+            }
+        }
+        
+        error_log('CF7AS: PDF Export - Total files found: ' . count($file_urls));
+        error_log('CF7AS: PDF Export - File fields: ' . print_r($file_urls, true));
+        
+        return $file_urls;
     }
     
     /**
@@ -917,8 +2442,8 @@ document.addEventListener("DOMContentLoaded", function() {
      * Searches multiple field patterns with post title fallback.
      */
     private function get_artist_name($post_id) {
-        // Try common field names for artist name
-        $name_fields = array('cf7_artist_name', 'cf7_name', 'cf7_your_name', 'cf7_artist-name');
+        // Try common field names for artist name (both hyphen and underscore variants)
+        $name_fields = array('cf7_artist-name', 'cf7_artist_name', 'cf7_your-name', 'cf7_your_name', 'cf7_name');
         
         foreach ($name_fields as $field) {
             $name = get_post_meta($post_id, $field, true);

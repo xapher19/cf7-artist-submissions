@@ -109,6 +109,9 @@ function cf7_artist_submissions_init() {
     // Initialize Actions System
     CF7_Artist_Submissions_Actions::init();
     
+    // Initialize Ratings System
+    CF7_Artist_Submissions_Ratings::init();
+    
     // Initialize S3 Handler
     if (class_exists('CF7_Artist_Submissions_S3_Handler')) {
         $s3_handler = new CF7_Artist_Submissions_S3_Handler();
