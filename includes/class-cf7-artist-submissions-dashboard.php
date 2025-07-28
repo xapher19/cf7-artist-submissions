@@ -20,7 +20,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage Dashboard
  * @since 1.0.0
- * @version 1.0.1
+ * @version 1.2.0
  */
 
 /**

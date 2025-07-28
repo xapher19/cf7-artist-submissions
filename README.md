@@ -499,24 +499,41 @@ This plugin is licensed under the GPL v2 or later.
 
 ## 📅 Changelog
 
-### 1.2.0 - Open Calls & Advanced Management (Current)
+### 1.2.0 - Open Calls & Advanced Management (July 28, 2025)
 **🎯 Open Calls Management System**
-- **NEW:** **Open Calls Configuration** - Multiple open call management with individual CF7 form assignments
-- **NEW:** **Dashboard Tag Integration** - User-friendly call filtering with custom dashboard labels
-- **NEW:** **Call Status Management** - Active/inactive call control with visual indicators
-- **NEW:** **Taxonomy Integration** - Custom term management for call organization
+- **NEW:** **Multi-Call Configuration** - Create and manage multiple open calls with individual Contact Form 7 assignments
+- **NEW:** **Dashboard Tag Integration** - User-friendly call filtering with custom dashboard labels and real-time statistics
+- **NEW:** **Call Status Management** - Active/inactive call control with visual indicators and bulk operations
+- **NEW:** **Taxonomy Integration** - Advanced term management for call organization with hierarchical structure
+- **NEW:** **Dynamic Add/Remove** - Real-time open call management with AJAX-powered interface
 
 **⚡ Dashboard & Interface Improvements**
-- **ENHANCED:** **Dashboard Filtering** - Open calls integration with real-time statistics
-- **ENHANCED:** **Settings Navigation** - Improved responsive design that scales properly
-- **ENHANCED:** **Tab Interface** - Better mobile responsiveness and touch interactions
-- **ENHANCED:** **Performance Optimization** - Faster loading with optimized queries
+- **ENHANCED:** **Dashboard Filtering** - Open calls integration with per-call statistics and trend analysis
+- **ENHANCED:** **Settings Navigation** - Redesigned responsive tabbed interface that scales across devices
+- **ENHANCED:** **Tab Interface** - Improved mobile responsiveness with touch-optimized interactions
+- **ENHANCED:** **Performance Optimization** - Faster loading with optimized database queries and caching
+- **ENHANCED:** **Visual Indicators** - Better status badges and progress tracking across all interfaces
 
 **🔧 Technical Enhancements**
-- **IMPROVED:** **Asset Loading System** - Shortcode-based loading with `[cf7as_load_assets]`
-- **IMPROVED:** **Form Tag Generator** - Enhanced CF7 integration with visual builders
-- **IMPROVED:** **REST API** - Extended endpoints for metadata and file operations
-- **IMPROVED:** **Database Schema** - Optimized table structure for better performance
+- **IMPROVED:** **Asset Loading System** - Shortcode-based asset loading with `[cf7as_load_assets]` for conflict prevention
+- **IMPROVED:** **Form Tag Generator** - Enhanced CF7 integration with visual tag builders and real-time preview
+- **IMPROVED:** **REST API** - Extended endpoints for metadata management and file operations with better error handling
+- **IMPROVED:** **Database Schema** - Optimized table structure for better performance and scalability
+- **IMPROVED:** **Memory Management** - Better handling of large datasets and file operations
+- **IMPROVED:** **Git Integration** - Added pre-commit hooks for automated version management across all files
+
+**🔒 Security & Compliance**
+- **ENHANCED:** **Role-based Access** - Improved capability checking with granular permission control
+- **ENHANCED:** **Input Validation** - Strengthened form validation and sanitization across all inputs
+- **ENHANCED:** **Audit Logging** - Extended activity tracking for open calls management and configuration changes
+- **ENHANCED:** **CSRF Protection** - Enhanced nonce verification for all administrative operations
+
+**🐛 Bug Fixes & Stability**
+- **FIXED:** **Settings Page Responsiveness** - Resolved mobile layout issues in settings navigation
+- **FIXED:** **Open Calls Persistence** - Improved data validation and save reliability
+- **FIXED:** **Dashboard Statistics** - Fixed calculation accuracy for filtered submission counts
+- **FIXED:** **Asset Loading Conflicts** - Resolved JavaScript conflicts with other plugins and themes
+- **FIXED:** **Form Generator Integration** - Enhanced compatibility with Contact Form 7 tag generation
 
 ### 1.1.0 - S3 Integration & Media Revolution (July 2025)
 **🎯 Form Experience Revolution**
@@ -558,19 +575,19 @@ This plugin is licensed under the GPL v2 or later.
 - **OPTIMIZED:** AJAX-powered submission creation with integrated file upload management
 - **UPDATED:** Form validation and user feedback systems for improved user experience
 
-### 1.0.0 - Initial Release
-- Contact Form 7 integration with custom post type creation and metadata handling
-- Modern interactive dashboard with real-time statistics and trend analysis
-- Professional 5-tab interface (Profile, Works, Conversations, Actions, Notes)
-- Advanced inline field editing system with auto-save and validation
-- Comprehensive task management system with assignments, due dates, and notifications
-- Two-way email conversation system with plus addressing and IMAP automation
-- Secure file management with lightbox preview and professional styling
-- Professional PDF export with configurable layouts and artwork integration
-- Comprehensive audit logging for compliance and activity tracking
-- Status management workflow with visual indicators and circular badges
-- CSV export functionality with advanced filtering and bulk operations
-- Responsive design optimized for all devices with mobile-first approach
+### 1.0.0 - Initial Release (June 2025)
+- **FOUNDATION:** Contact Form 7 integration with custom post type creation and metadata handling
+- **DASHBOARD:** Modern interactive dashboard with real-time statistics and trend analysis
+- **INTERFACE:** Professional 5-tab interface (Profile, Works, Conversations, Actions, Notes)
+- **EDITING:** Advanced inline field editing system with auto-save and validation
+- **TASKS:** Comprehensive task management system with assignments, due dates, and notifications
+- **COMMUNICATIONS:** Two-way email conversation system with plus addressing and IMAP automation
+- **FILES:** Secure file management with lightbox preview and professional styling
+- **EXPORT:** Professional PDF export with configurable layouts and artwork integration
+- **AUDIT:** Comprehensive audit logging for compliance and activity tracking
+- **WORKFLOW:** Status management workflow with visual indicators and circular badges
+- **DATA:** CSV export functionality with advanced filtering and bulk operations
+- **RESPONSIVE:** Mobile-first design optimized for all devices with modern styling
 
 ---
 

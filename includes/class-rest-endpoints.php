@@ -19,7 +19,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage RestAPIIntegration
  * @since 1.1.0
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 /**
