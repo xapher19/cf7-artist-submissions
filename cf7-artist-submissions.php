@@ -129,9 +129,10 @@ function cf7_artist_submissions_init() {
         CF7_Artist_Submissions_Metadata_Manager::init();
     }
     
-    // Initialize Media Converter
+    // Initialize Media Converter (singleton pattern)
     if (class_exists('CF7_Artist_Submissions_Media_Converter')) {
-        $media_converter = new CF7_Artist_Submissions_Media_Converter();
+        error_log('CF7AS Plugin: Initializing Media Converter from main plugin file');
+        CF7_Artist_Submissions_Media_Converter::get_instance();
     }
     
     // Initialize Dashboard
