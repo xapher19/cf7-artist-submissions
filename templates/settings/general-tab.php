@@ -147,6 +147,47 @@ $options = get_option('cf7_artist_submissions_options', array());
                         </ul>
                     </div>
                 </div>
+
+                <!-- Orphaned Data Cleanup Section -->
+                <div class="cf7-form-section">
+                    <div class="cf7-section-header">
+                        <h3 class="cf7-section-title">
+                            <span class="dashicons dashicons-admin-tools"></span>
+                            <?php _e('System Maintenance', 'cf7-artist-submissions'); ?>
+                        </h3>
+                        <p class="cf7-section-description">
+                            <?php _e('Clean up orphaned data that may remain after deleting submissions or from system issues.', 'cf7-artist-submissions'); ?>
+                        </p>
+                    </div>
+
+                    <div class="cf7-notice cf7-notice-info">
+                        <span class="dashicons dashicons-info"></span>
+                        <div>
+                            <strong><?php _e('Orphaned Data Cleanup', 'cf7-artist-submissions'); ?></strong>
+                            <p><?php _e('When submissions are deleted, all associated data should be automatically cleaned up. However, database issues or interrupted deletions may leave orphaned records. Use these tools to scan for and remove any orphaned data.', 'cf7-artist-submissions'); ?></p>
+                            <ul style="margin: 10px 0 0 20px; color: #666;">
+                                <li><?php _e('Actions records not linked to active submissions', 'cf7-artist-submissions'); ?></li>
+                                <li><?php _e('Conversation records without valid submissions', 'cf7-artist-submissions'); ?></li>
+                                <li><?php _e('File records for missing submission entries', 'cf7-artist-submissions'); ?></li>
+                                <li><?php _e('PDF generation records for deleted submissions', 'cf7-artist-submissions'); ?></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="cf7-form-row">
+                        <div class="cf7-form-group">
+                            <button type="button" id="scan-orphaned-data" class="cf7-test-btn">
+                                <span class="dashicons dashicons-search"></span>
+                                <?php _e('Scan for Orphaned Data', 'cf7-artist-submissions'); ?>
+                            </button>
+                            <button type="button" id="cleanup-orphaned-data" class="cf7-test-btn" style="margin-left: 10px; background-color: #d63638;">
+                                <span class="dashicons dashicons-trash"></span>
+                                <?php _e('Clean Up Orphaned Data', 'cf7-artist-submissions'); ?>
+                            </button>
+                            <div id="orphaned-data-result" class="cf7-test-result" style="display: none;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="cf7-form-actions">
@@ -320,5 +361,242 @@ jQuery(document).ready(function($) {
             scrollTop: $('.cf7-modern-settings').offset().top - 50
         }, 500);
     }
+    
+    // Handle Orphaned Data Scan
+    $('#scan-orphaned-data').on('click', function(e) {
+        e.preventDefault();
+        
+        const $button = $(this);
+        const $result = $('#orphaned-data-result');
+        const originalText = $button.html();
+        
+        // Update button state
+        $button.prop('disabled', true)
+               .html('<span class="dashicons dashicons-update spin"></span> Scanning...');
+        
+        // Show loading state
+        $result.show().removeClass('success error').addClass('loading')
+               .html('<span class="dashicons dashicons-update spin"></span> Scanning for orphaned data...');
+        
+        // Make AJAX request
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7as_cleanup_orphaned_data',
+                cleanup_action: 'scan',
+                nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>'
+            },
+            timeout: 60000,
+            success: function(response) {
+                if (response.success) {
+                    $result.removeClass('loading error').addClass('success')
+                           .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                    
+                    // Show stats if available
+                    if (response.data.stats) {
+                        const stats = response.data.stats;
+                        let statsHtml = '<div class="cf7-test-details" style="margin-top: 10px;">';
+                        statsHtml += '<strong>📊 Detailed Statistics:</strong><br>';
+                        statsHtml += 'Active submissions: ' + stats.active_submissions + '<br>';
+                        statsHtml += 'Orphaned actions: ' + stats.orphaned_actions + '<br>';
+                        statsHtml += 'Orphaned conversations: ' + stats.orphaned_conversations + '<br>';
+                        statsHtml += 'Orphaned files: ' + stats.orphaned_files + '<br>';
+                        statsHtml += 'Orphaned PDFs: ' + stats.orphaned_pdfs + '<br>';
+                        statsHtml += '<strong>Total orphaned records: ' + stats.total_orphaned + '</strong><br>';
+                        statsHtml += '</div>';
+                        $result.append(statsHtml);
+                    }
+                } else {
+                    $result.removeClass('loading success').addClass('error')
+                           .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                let errorMessage = 'Scan failed';
+                if (status === 'timeout') {
+                    errorMessage = 'Scan timed out - your database may have large amounts of data';
+                } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                    errorMessage = xhr.responseJSON.data.message;
+                } else if (error) {
+                    errorMessage = 'Error: ' + error;
+                }
+                
+                $result.removeClass('loading success').addClass('error')
+                       .html('<span class="dashicons dashicons-warning"></span> ' + errorMessage);
+            },
+            complete: function() {
+                // Restore button state
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+    
+    // Handle Orphaned Data Cleanup
+    $('#cleanup-orphaned-data').on('click', function(e) {
+        e.preventDefault();
+        
+        // Confirmation dialog
+        if (!confirm('⚠️ CLEAN UP ORPHANED DATA\n\nThis will:\n• Permanently delete orphaned actions, conversations, files, and PDF records\n• Remove database records that are not linked to active submissions\n• Cannot be undone\n\n💡 Recommendation: Run "Scan for Orphaned Data" first to see what will be deleted.\n\nContinue with cleanup?')) {
+            return;
+        }
+        
+        const $button = $(this);
+        const $result = $('#orphaned-data-result');
+        const originalText = $button.html();
+        
+        // Update button state
+        $button.prop('disabled', true)
+               .html('<span class="dashicons dashicons-update spin"></span> Cleaning...');
+        
+        // Show loading state
+        $result.show().removeClass('success error').addClass('loading')
+               .html('<span class="dashicons dashicons-update spin"></span> Cleaning up orphaned data...');
+        
+        // Make AJAX request
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7as_cleanup_orphaned_data',
+                cleanup_action: 'cleanup',
+                nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>'
+            },
+            timeout: 120000, // 2 minutes for cleanup
+            success: function(response) {
+                if (response.success) {
+                    $result.removeClass('loading error').addClass('success')
+                           .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                    
+                    // Show stats if available
+                    if (response.data.stats) {
+                        const stats = response.data.stats;
+                        let statsHtml = '<div class="cf7-test-details" style="margin-top: 10px;">';
+                        statsHtml += '<strong>📊 Cleanup Results:</strong><br>';
+                        statsHtml += 'Actions cleaned: ' + stats.cleaned_actions + '<br>';
+                        statsHtml += 'Conversations cleaned: ' + stats.cleaned_conversations + '<br>';
+                        statsHtml += 'Files cleaned: ' + stats.cleaned_files + '<br>';
+                        statsHtml += 'PDFs cleaned: ' + stats.cleaned_pdfs + '<br>';
+                        statsHtml += '<strong>Total cleaned: ' + stats.total_cleaned + '</strong><br>';
+                        
+                        if (stats.total_cleaned > 0) {
+                            statsHtml += '<br><strong style="color: #00a32a;">✅ Cleanup successful!</strong><br>';
+                            statsHtml += 'Removed ' + stats.total_cleaned + ' orphaned records from the database.';
+                        }
+                        
+                        statsHtml += '</div>';
+                        $result.append(statsHtml);
+                    }
+                } else {
+                    $result.removeClass('loading success').addClass('error')
+                           .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                let errorMessage = 'Cleanup failed';
+                if (status === 'timeout') {
+                    errorMessage = 'Cleanup timed out - you may have many orphaned records. Try again or contact support.';
+                } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                    errorMessage = xhr.responseJSON.data.message;
+                } else if (error) {
+                    errorMessage = 'Error: ' + error;
+                }
+                
+                $result.removeClass('loading success').addClass('error')
+                       .html('<span class="dashicons dashicons-warning"></span> ' + errorMessage);
+            },
+            complete: function() {
+                // Restore button state
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
 });
 </script>
+
+<style>
+/* Orphaned Data Cleanup Styles */
+#scan-orphaned-data {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+#scan-orphaned-data:hover {
+    background: #005a87;
+}
+
+#scan-orphaned-data:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+#cleanup-orphaned-data {
+    background: #d63638;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+#cleanup-orphaned-data:hover {
+    background: #b32d2e;
+}
+
+#cleanup-orphaned-data:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+#orphaned-data-result {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    background: #f9f9f9;
+    border-left: 4px solid #ddd;
+}
+
+#orphaned-data-result.success {
+    background: #f0fff0;
+    border-left-color: #00a32a;
+    color: #155724;
+}
+
+#orphaned-data-result.error {
+    background: #fff5f5;
+    border-left-color: #dc3232;
+    color: #721c24;
+}
+
+#orphaned-data-result.loading {
+    background: #f8f9fa;
+    border-left-color: #007cba;
+    color: #0c5460;
+}
+
+.cf7-test-details {
+    margin-top: 10px;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    background: rgba(0,0,0,0.05);
+    padding: 8px;
+    border-radius: 3px;
+}
+</style>

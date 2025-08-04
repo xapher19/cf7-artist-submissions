@@ -1438,7 +1438,7 @@
             if (actions.length === 0) {
                 $container.html(`
                     <div class="cf7-outstanding-actions-empty">
-                        <div class="cf7-no-actions-icon">✅</div>
+                        <div class="cf7-no-actions-icon dashicons dashicons-yes"></div>
                         <h4>No outstanding actions</h4>
                         <p>All caught up! No pending actions require attention.</p>
                         ${totalCount > 0 ? `<small>Total pending actions: ${totalCount}</small>` : ''}
@@ -1687,7 +1687,7 @@
             
             return `
                 <div class="cf7-loading-state">
-                    <div style="font-size: 2rem; margin-bottom: 1rem;">�</div>
+                    <div style="font-size: 2rem; margin-bottom: 1rem;" class="dashicons dashicons-no"></div>
                     <h3>${message}</h3>
                     <p>${suggestion}</p>
                     ${hasFilters ? `<button class="cf7-btn cf7-btn-ghost" onclick="CF7Dashboard.clearAllFilters()">Clear All Filters</button>` : ''}

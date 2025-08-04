@@ -51,8 +51,31 @@ $submissions = get_posts(array(
     'fields' => 'ids',
 ));
 
-// Delete all submission posts and their metadata
+// Clean up S3 files and delete all submission posts
 foreach ($submissions as $post_id) {
+    // Clean up S3 files before deleting the post
+    if (class_exists('CF7_Artist_Submissions_Metadata_Manager') && class_exists('CF7_Artist_Submissions_S3_Handler')) {
+        $metadata_manager = new CF7_Artist_Submissions_Metadata_Manager();
+        $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+        
+        // Get all files associated with this submission
+        $files = $metadata_manager->get_submission_files($post_id);
+        
+        foreach ($files as $file) {
+            // Delete the main file from S3
+            $s3_handler->delete_file($file['s3_key']);
+            
+            // Also delete thumbnail if it exists
+            if (!empty($file['thumbnail_url'])) {
+                $thumbnail_key = $s3_handler->generate_thumbnail_s3_key($post_id, $file['original_name']);
+                $s3_handler->delete_file($thumbnail_key);
+            }
+        }
+        
+        // Clean up database records
+        $metadata_manager->delete_submission_files($post_id);
+    }
+    
     wp_delete_post($post_id, true);
 }
 

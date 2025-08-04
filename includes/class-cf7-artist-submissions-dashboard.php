@@ -331,7 +331,7 @@ class CF7_Artist_Submissions_Dashboard {
                                         <span class="dashicons dashicons-search"></span>
                                     </button>
                                     <div class="cf7-search-input-expandable" id="cf7-search-input-expandable">
-                                        <input type="text" id="cf7-search-input" placeholder="Search submissions..." class="cf7-search-field">
+                                        <input type="text" id="cf7-search-input" placeholder="Search by name, email, artistic medium, status, call..." class="cf7-search-field">
                                         <button class="cf7-search-close" id="cf7-search-close" title="Close search">
                                             <span class="dashicons dashicons-no-alt"></span>
                                         </button>
@@ -659,7 +659,16 @@ class CF7_Artist_Submissions_Dashboard {
         );
         
         if (!empty($search)) {
-            $args['s'] = $search;
+            // Enhanced search that includes artistic medium terms
+            $search_results = $this->perform_enhanced_search($search);
+            
+            if (!empty($search_results)) {
+                $args['post__in'] = $search_results;
+                // Don't use WordPress default search if we have custom results
+            } else {
+                // Fallback to default WordPress search if no custom results found
+                $args['s'] = $search;
+            }
         }
         
         // Add open call filtering
@@ -2007,6 +2016,150 @@ class CF7_Artist_Submissions_Dashboard {
         ));
     }
     
+    /**
+     * Perform enhanced search including artistic medium terms.
+     * Searches through post content, titles, meta fields, and artistic medium taxonomy terms.
+     * 
+     * @param string $search Search query (can be comma-separated for multiple terms)
+     * @return array Array of post IDs that match the search criteria
+     */
+    private function perform_enhanced_search($search) {
+        global $wpdb;
+        
+        $search = trim($search);
+        if (empty($search)) {
+            return array();
+        }
+        
+        // Split search by commas and clean up terms
+        $search_terms = array_map('trim', explode(',', $search));
+        $search_terms = array_filter($search_terms); // Remove empty terms
+        
+        $post_ids = array();
+        
+        foreach ($search_terms as $term) {
+            $term = sanitize_text_field($term);
+            if (empty($term)) {
+                continue;
+            }
+            
+            $term_post_ids = array();
+            
+            // 1. Search in artistic medium taxonomy
+            $medium_terms = get_terms(array(
+                'taxonomy' => 'artistic_medium',
+                'name__like' => $term,
+                'hide_empty' => false
+            ));
+            
+            if (!is_wp_error($medium_terms) && !empty($medium_terms)) {
+                foreach ($medium_terms as $medium_term) {
+                    $posts_with_medium = get_objects_in_term($medium_term->term_id, 'artistic_medium');
+                    if (!empty($posts_with_medium)) {
+                        $term_post_ids = array_merge($term_post_ids, $posts_with_medium);
+                    }
+                }
+            }
+            
+            // 2. Search in post titles and content (WordPress default search behavior)
+            $wp_search_query = new WP_Query(array(
+                'post_type' => 'cf7_submission',
+                'post_status' => 'publish',
+                's' => $term,
+                'posts_per_page' => -1,
+                'fields' => 'ids'
+            ));
+            
+            if (!empty($wp_search_query->posts)) {
+                $term_post_ids = array_merge($term_post_ids, $wp_search_query->posts);
+            }
+            
+            // 3. Search in common meta fields
+            $meta_fields = array(
+                'cf7_artist-name',
+                'cf7_email',
+                'cf7_your-email',
+                'cf7_phone',
+                'cf7_location',
+                'cf7_website',
+                'cf7_instagram',
+                'cf7_artist-statement',
+                'cf7_submission-comments',
+                'cf7_curator_notes'
+            );
+            
+            foreach ($meta_fields as $field) {
+                $meta_query = new WP_Query(array(
+                    'post_type' => 'cf7_submission',
+                    'post_status' => 'publish',
+                    'meta_query' => array(
+                        array(
+                            'key' => $field,
+                            'value' => $term,
+                            'compare' => 'LIKE'
+                        )
+                    ),
+                    'posts_per_page' => -1,
+                    'fields' => 'ids'
+                ));
+                
+                if (!empty($meta_query->posts)) {
+                    $term_post_ids = array_merge($term_post_ids, $meta_query->posts);
+                }
+            }
+            
+            // 4. Search in open_call taxonomy as well
+            $call_terms = get_terms(array(
+                'taxonomy' => 'open_call',
+                'name__like' => $term,
+                'hide_empty' => false
+            ));
+            
+            if (!is_wp_error($call_terms) && !empty($call_terms)) {
+                foreach ($call_terms as $call_term) {
+                    $posts_with_call = get_objects_in_term($call_term->term_id, 'open_call');
+                    if (!empty($posts_with_call)) {
+                        $term_post_ids = array_merge($term_post_ids, $posts_with_call);
+                    }
+                }
+            }
+            
+            // 5. Search in submission_status taxonomy
+            $status_terms = get_terms(array(
+                'taxonomy' => 'submission_status',
+                'name__like' => $term,
+                'hide_empty' => false
+            ));
+            
+            if (!is_wp_error($status_terms) && !empty($status_terms)) {
+                foreach ($status_terms as $status_term) {
+                    $posts_with_status = get_objects_in_term($status_term->term_id, 'submission_status');
+                    if (!empty($posts_with_status)) {
+                        $term_post_ids = array_merge($term_post_ids, $posts_with_status);
+                    }
+                }
+            }
+            
+            // Remove duplicates for this term
+            $term_post_ids = array_unique($term_post_ids);
+            
+            // For comma-separated searches, we want posts that match ANY of the terms (OR logic)
+            $post_ids = array_merge($post_ids, $term_post_ids);
+        }
+        
+        // Remove duplicates and ensure all IDs are for cf7_submission post type
+        $post_ids = array_unique($post_ids);
+        $validated_ids = array();
+        
+        foreach ($post_ids as $id) {
+            if (get_post_type($id) === 'cf7_submission') {
+                $validated_ids[] = $id;
+            }
+        }
+        
+        return $validated_ids;
+    }
+
     /**
      * Get artist name from submission metadata with fallback options.
      * Attempts multiple field patterns and provides intelligent email parsing.

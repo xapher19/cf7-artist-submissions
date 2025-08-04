@@ -566,6 +566,36 @@ class CF7_Artist_Submissions_Actions {
         return $result !== false;
     }
     
+    /**
+     * Delete all actions for a specific submission.
+     * 
+     * Removes all actions associated with a submission during cleanup.
+     * Used when submissions are deleted to prevent orphaned actions.
+     * 
+     * @since 1.2.0
+     * @param int $submission_id The submission ID
+     * @return int|false Number of deleted actions or false on error
+     */
+    public static function delete_actions_for_submission($submission_id) {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7_actions';
+        
+        // Sanitize and validate input
+        $submission_id = intval($submission_id);
+        if ($submission_id <= 0) {
+            return false;
+        }
+        
+        $result = $wpdb->delete(
+            $table_name,
+            array('submission_id' => $submission_id),
+            array('%d')
+        );
+        
+        return $result;
+    }
+    
     // ============================================================================
     // REPORTING AND ANALYTICS SECTION
     // ============================================================================

@@ -72,6 +72,10 @@ class CF7_Artist_Submissions_Post_Type {
         // Add modern dashboard in the right position
         add_action('all_admin_notices', array($this, 'add_submissions_dashboard_notice'));
         add_action('admin_footer', array($this, 'move_dashboard_script'));
+        
+        // Add S3 cleanup hooks for submission deletion
+        add_action('before_delete_post', array($this, 'cleanup_submission_s3_files'));
+        add_action('wp_trash_post', array($this, 'cleanup_submission_s3_files'));
     }
     
     /**
@@ -1047,6 +1051,111 @@ class CF7_Artist_Submissions_Post_Type {
     // ============================================================================
     // UTILITY FUNCTIONS SECTION
     // ============================================================================
+    
+    /**
+     * Clean up S3 files when a submission is deleted or trashed.
+     * 
+     * This method is triggered before a post is permanently deleted or moved to trash
+     * to ensure all associated S3 files are properly cleaned up to prevent orphaned files.
+     * 
+     * @since 1.2.0
+     * @param int $post_id The ID of the post being deleted
+     */
+    public function cleanup_submission_s3_files($post_id) {
+        // Only process CF7 submissions
+        if (get_post_type($post_id) !== 'cf7_submission') {
+            return;
+        }
+        
+        // Log the cleanup attempt
+        error_log("CF7AS: Starting S3 cleanup for submission ID: {$post_id}");
+        
+        // Get the metadata manager and S3 handler
+        if (!class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+            error_log("CF7AS: Metadata Manager not available for S3 cleanup");
+            return;
+        }
+        
+        if (!class_exists('CF7_Artist_Submissions_S3_Handler')) {
+            error_log("CF7AS: S3 Handler not available for S3 cleanup");
+            return;
+        }
+        
+        $metadata_manager = new CF7_Artist_Submissions_Metadata_Manager();
+        $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+        
+        // Get all files associated with this submission
+        $files = $metadata_manager->get_submission_files($post_id);
+        
+        if (empty($files)) {
+            error_log("CF7AS: No files found for submission ID: {$post_id}");
+            return;
+        }
+        
+        $deleted_count = 0;
+        $error_count = 0;
+        
+        foreach ($files as $file) {
+            $s3_key = $file['s3_key'];
+            
+            // Delete the main file from S3
+            $deleted = $s3_handler->delete_file($s3_key);
+            
+            if ($deleted) {
+                $deleted_count++;
+                error_log("CF7AS: Successfully deleted S3 file: {$s3_key}");
+                
+                // Also delete thumbnail if it exists
+                if (!empty($file['thumbnail_url'])) {
+                    $thumbnail_key = $s3_handler->generate_thumbnail_s3_key($post_id, $file['original_name']);
+                    $thumbnail_deleted = $s3_handler->delete_file($thumbnail_key);
+                    
+                    if ($thumbnail_deleted) {
+                        error_log("CF7AS: Successfully deleted S3 thumbnail: {$thumbnail_key}");
+                    } else {
+                        error_log("CF7AS: Failed to delete S3 thumbnail: {$thumbnail_key}");
+                        $error_count++;
+                    }
+                }
+            } else {
+                $error_count++;
+                error_log("CF7AS: Failed to delete S3 file: {$s3_key}");
+            }
+        }
+        
+        // Clean up database records
+        $db_deleted = $metadata_manager->delete_submission_files($post_id);
+        
+        if ($db_deleted) {
+            error_log("CF7AS: Successfully cleaned up database records for submission ID: {$post_id}");
+        } else {
+            error_log("CF7AS: Failed to clean up database records for submission ID: {$post_id}");
+            $error_count++;
+        }
+        
+        // Clean up actions (tasks) for this submission
+        if (class_exists('CF7_Artist_Submissions_Actions')) {
+            $deleted_actions = CF7_Artist_Submissions_Actions::delete_actions_for_submission($post_id);
+            error_log("CF7AS: Cleaned up {$deleted_actions} actions for submission ID: {$post_id}");
+        }
+        
+        // Clean up action log entries
+        if (class_exists('CF7_Artist_Submissions_Action_Log')) {
+            CF7_Artist_Submissions_Action_Log::delete_logs_for_submission($post_id);
+            error_log("CF7AS: Cleaned up action log entries for submission ID: {$post_id}");
+        }
+        
+        // Clean up conversation data
+        if (class_exists('CF7_Artist_Submissions_Conversations')) {
+            global $wpdb;
+            $conversations_table = $wpdb->prefix . 'cf7_conversations';
+            $wpdb->delete($conversations_table, array('submission_id' => $post_id), array('%d'));
+            error_log("CF7AS: Cleaned up conversation data for submission ID: {$post_id}");
+        }
+        
+        // Final cleanup summary
+        error_log("CF7AS: S3 cleanup completed for submission ID: {$post_id}. Files deleted: {$deleted_count}, Errors: {$error_count}");
+    }
     
     /**
      * Get submission statistics by status.

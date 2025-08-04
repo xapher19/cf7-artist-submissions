@@ -81,6 +81,12 @@ class CF7_Artist_Submissions_Settings {
         // AJAX handlers for S3 configuration
         add_action('wp_ajax_test_s3_connection', array($this, 'ajax_test_s3_connection'));
         
+        // AJAX handler for S3 cleanup
+        add_action('wp_ajax_cf7as_cleanup_s3_files', array($this, 'ajax_cleanup_s3_files'));
+        
+        // AJAX handler for comprehensive orphaned data cleanup
+        add_action('wp_ajax_cf7as_cleanup_orphaned_data', array($this, 'ajax_cleanup_orphaned_data'));
+        
         // AJAX handler for PDF Lambda testing
         add_action('wp_ajax_cf7as_test_pdf_lambda', array($this, 'ajax_test_pdf_lambda'));
         
@@ -3094,5 +3100,436 @@ class CF7_Artist_Submissions_Settings {
      */
     public function ajax_test_simple() {
         wp_send_json_success(array('message' => 'Simple AJAX test successful'));
+    }
+    
+    /**
+     * AJAX handler for S3 orphaned files cleanup
+     * 
+     * Identifies and removes S3 files that are no longer linked to active submissions.
+     * This helps prevent storage costs from accumulating due to orphaned files.
+     * 
+     * @since 1.2.0
+     */
+    public function ajax_cleanup_s3_files() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        // Check if S3 handler and metadata manager are available
+        if (!class_exists('CF7_Artist_Submissions_S3_Handler')) {
+            wp_send_json_error(array('message' => 'S3 Handler class not available'));
+            return;
+        }
+        
+        if (!class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
+            wp_send_json_error(array('message' => 'Metadata Manager class not available'));
+            return;
+        }
+        
+        // Get the action parameter (scan or cleanup)
+        $action = isset($_POST['cleanup_action']) ? sanitize_text_field($_POST['cleanup_action']) : 'scan';
+        
+        try {
+            $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+            $metadata_manager = new CF7_Artist_Submissions_Metadata_Manager();
+            
+            // Initialize S3 client
+            if (!$s3_handler->init()) {
+                wp_send_json_error(array('message' => 'Failed to initialize S3 connection. Please check your AWS credentials.'));
+                return;
+            }
+            
+            // Get all files tracked in the database
+            global $wpdb;
+            $files_table = $wpdb->prefix . 'cf7as_files';
+            
+            // Check if files table exists
+            $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$files_table'");
+            if (!$table_exists) {
+                wp_send_json_error(array('message' => 'Files tracking table not found. S3 cleanup requires the database table to track files.'));
+                return;
+            }
+            
+            // Get all S3 keys from database
+            $tracked_files = $wpdb->get_results(
+                "SELECT DISTINCT s3_key, submission_id, original_name, created_at FROM $files_table ORDER BY created_at DESC",
+                ARRAY_A
+            );
+            
+            if (empty($tracked_files)) {
+                wp_send_json_success(array(
+                    'message' => 'No files found in the tracking database. Nothing to clean up.',
+                    'stats' => array(
+                        'tracked_files' => 0,
+                        'active_submissions' => 0,
+                        'orphaned_files' => 0,
+                        'cleaned_files' => 0
+                    )
+                ));
+                return;
+            }
+            
+            // Get all active submission IDs
+            $active_submissions = get_posts(array(
+                'post_type' => 'cf7_submission',
+                'post_status' => 'publish',
+                'numberposts' => -1,
+                'fields' => 'ids'
+            ));
+            
+            // Convert to string array for comparison
+            $active_submission_ids = array_map('strval', $active_submissions);
+            
+            // Find orphaned files
+            $orphaned_files = array();
+            $active_files = array();
+            
+            foreach ($tracked_files as $file) {
+                if (!in_array($file['submission_id'], $active_submission_ids)) {
+                    $orphaned_files[] = $file;
+                } else {
+                    $active_files[] = $file;
+                }
+            }
+            
+            $stats = array(
+                'tracked_files' => count($tracked_files),
+                'active_submissions' => count($active_submissions),
+                'active_files' => count($active_files),
+                'orphaned_files' => count($orphaned_files),
+                'cleaned_files' => 0
+            );
+            
+            if ($action === 'scan') {
+                // Just return the scan results
+                $message = 'S3 cleanup scan completed.';
+                $message .= '<br><br><strong>Summary:</strong>';
+                $message .= '<br>• Total tracked files: ' . $stats['tracked_files'];
+                $message .= '<br>• Active submissions: ' . $stats['active_submissions'];
+                $message .= '<br>• Files linked to active submissions: ' . $stats['active_files'];
+                $message .= '<br>• Orphaned files found: ' . $stats['orphaned_files'];
+                
+                if ($stats['orphaned_files'] > 0) {
+                    $message .= '<br><br><strong>Orphaned files preview (latest 5):</strong>';
+                    $preview_files = array_slice($orphaned_files, 0, 5);
+                    foreach ($preview_files as $file) {
+                        $message .= '<br>• ' . esc_html($file['original_name']) . ' (from submission ' . esc_html($file['submission_id']) . ')';
+                    }
+                    if (count($orphaned_files) > 5) {
+                        $message .= '<br>• ... and ' . (count($orphaned_files) - 5) . ' more files';
+                    }
+                    $message .= '<br><br><em>Use "Clean Up Files" to delete these orphaned files from S3.</em>';
+                } else {
+                    $message .= '<br><br>✅ No orphaned files found. Your S3 storage is clean!';
+                }
+                
+                wp_send_json_success(array(
+                    'message' => $message,
+                    'stats' => $stats,
+                    'orphaned_files' => $orphaned_files
+                ));
+                return;
+            }
+            
+            if ($action === 'cleanup') {
+                if (empty($orphaned_files)) {
+                    wp_send_json_success(array(
+                        'message' => 'No orphaned files found to clean up.',
+                        'stats' => $stats
+                    ));
+                    return;
+                }
+                
+                // Perform the cleanup
+                $cleaned_count = 0;
+                $error_count = 0;
+                $errors = array();
+                
+                foreach ($orphaned_files as $file) {
+                    // Delete from S3
+                    $s3_deleted = $s3_handler->delete_file($file['s3_key']);
+                    
+                    if ($s3_deleted) {
+                        // Delete from database
+                        $db_deleted = $wpdb->delete(
+                            $files_table,
+                            array('s3_key' => $file['s3_key']),
+                            array('%s')
+                        );
+                        
+                        if ($db_deleted) {
+                            $cleaned_count++;
+                        } else {
+                            $error_count++;
+                            $errors[] = 'Failed to remove database record for: ' . $file['original_name'];
+                        }
+                    } else {
+                        $error_count++;
+                        $errors[] = 'Failed to delete S3 file: ' . $file['original_name'];
+                    }
+                    
+                    // Also try to delete thumbnail if it exists
+                    if (!empty($file['s3_key'])) {
+                        $thumbnail_key = $s3_handler->generate_thumbnail_s3_key($file['submission_id'], $file['original_name']);
+                        if ($thumbnail_key) {
+                            $s3_handler->delete_file($thumbnail_key);
+                        }
+                    }
+                }
+                
+                $stats['cleaned_files'] = $cleaned_count;
+                
+                $message = 'S3 cleanup completed!';
+                $message .= '<br><br><strong>Results:</strong>';
+                $message .= '<br>• Files successfully cleaned: ' . $cleaned_count;
+                $message .= '<br>• Errors encountered: ' . $error_count;
+                
+                if ($error_count > 0 && !empty($errors)) {
+                    $message .= '<br><br><strong>Errors:</strong>';
+                    foreach (array_slice($errors, 0, 5) as $error) {
+                        $message .= '<br>• ' . esc_html($error);
+                    }
+                    if (count($errors) > 5) {
+                        $message .= '<br>• ... and ' . (count($errors) - 5) . ' more errors';
+                    }
+                }
+                
+                if ($cleaned_count > 0) {
+                    $message .= '<br><br>✅ Cleanup successful! Removed ' . $cleaned_count . ' orphaned files from S3 storage.';
+                }
+                
+                wp_send_json_success(array(
+                    'message' => $message,
+                    'stats' => $stats,
+                    'errors' => $errors
+                ));
+                return;
+            }
+            
+            wp_send_json_error(array('message' => 'Invalid cleanup action specified'));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Error during S3 cleanup: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for comprehensive orphaned data cleanup.
+     * 
+     * Comprehensive cleanup system for orphaned data including:
+     * - Actions without valid submissions
+     * - Conversations without valid submissions  
+     * - Action logs without valid submissions
+     * - Files without valid submissions (already exists)
+     * 
+     * @since 1.2.0
+     */
+    public function ajax_cleanup_orphaned_data() {
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+
+        global $wpdb;
+        $cleanup_action = sanitize_text_field($_POST['cleanup_action'] ?? 'scan');
+        
+        // Get all active submission IDs
+        $active_submissions = get_posts(array(
+            'post_type' => 'cf7_submission',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids'
+        ));
+        
+        $active_submission_ids = array_map('strval', $active_submissions);
+        $results = array();
+        
+        // Check Actions table
+        $actions_table = $wpdb->prefix . 'cf7_actions';
+        $orphaned_actions = array();
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $actions_table)) == $actions_table) {
+            $all_actions = $wpdb->get_results("SELECT id, submission_id, title FROM {$actions_table}");
+            foreach ($all_actions as $action) {
+                if (!in_array($action->submission_id, $active_submission_ids)) {
+                    $orphaned_actions[] = $action;
+                }
+            }
+        }
+        
+        // Check Conversations table
+        $conversations_table = $wpdb->prefix . 'cf7_conversations';
+        $orphaned_conversations = array();
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $conversations_table)) == $conversations_table) {
+            $all_conversations = $wpdb->get_results("SELECT id, submission_id FROM {$conversations_table}");
+            foreach ($all_conversations as $conversation) {
+                if (!in_array($conversation->submission_id, $active_submission_ids)) {
+                    $orphaned_conversations[] = $conversation;
+                }
+            }
+        }
+        
+        // Check Action Log table
+        $action_log_table = $wpdb->prefix . 'cf7_action_log';
+        $orphaned_logs = array();
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $action_log_table)) == $action_log_table) {
+            $all_logs = $wpdb->get_results("SELECT id, submission_id FROM {$action_log_table} WHERE submission_id > 0");
+            foreach ($all_logs as $log) {
+                if (!in_array($log->submission_id, $active_submission_ids)) {
+                    $orphaned_logs[] = $log;
+                }
+            }
+        }
+        
+        // Check Files table (reuse existing logic)
+        $files_table = $wpdb->prefix . 'cf7as_files';
+        $orphaned_files = array();
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $files_table)) == $files_table) {
+            $all_files = $wpdb->get_results("SELECT * FROM {$files_table}");
+            foreach ($all_files as $file) {
+                if (!in_array($file->submission_id, $active_submission_ids)) {
+                    $orphaned_files[] = (array) $file;
+                }
+            }
+        }
+        
+        $stats = array(
+            'active_submissions' => count($active_submissions),
+            'orphaned_actions' => count($orphaned_actions),
+            'orphaned_conversations' => count($orphaned_conversations),
+            'orphaned_logs' => count($orphaned_logs),
+            'orphaned_files' => count($orphaned_files)
+        );
+        
+        if ($cleanup_action === 'scan') {
+            $message = '🔍 <strong>Orphaned Data Scan Results:</strong>';
+            $message .= '<br><br><strong>📊 Summary:</strong>';
+            $message .= '<br>• Active submissions: ' . $stats['active_submissions'];
+            $message .= '<br>• Orphaned actions: ' . $stats['orphaned_actions'];
+            $message .= '<br>• Orphaned conversations: ' . $stats['orphaned_conversations'];
+            $message .= '<br>• Orphaned log entries: ' . $stats['orphaned_logs'];
+            $message .= '<br>• Orphaned files: ' . $stats['orphaned_files'];
+            
+            $total_orphaned = $stats['orphaned_actions'] + $stats['orphaned_conversations'] + $stats['orphaned_logs'] + $stats['orphaned_files'];
+            
+            if ($total_orphaned > 0) {
+                $message .= '<br><br>🧹 <strong>Found ' . $total_orphaned . ' orphaned records</strong>';
+                $message .= '<br><em>Use "Clean Up Data" to remove these orphaned records.</em>';
+            } else {
+                $message .= '<br><br>✅ <strong>No orphaned data found!</strong> Your database is clean.';
+            }
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'stats' => $stats
+            ));
+            return;
+        }
+        
+        if ($cleanup_action === 'cleanup') {
+            $cleaned_stats = array();
+            
+            // Clean up orphaned actions
+            if (!empty($orphaned_actions)) {
+                $action_ids = array_map(function($action) { return $action->id; }, $orphaned_actions);
+                $cleaned_actions = $wpdb->query(
+                    "DELETE FROM {$actions_table} WHERE id IN (" . 
+                    implode(',', array_map('intval', $action_ids)) . ")"
+                );
+                $cleaned_stats['actions'] = $cleaned_actions;
+            } else {
+                $cleaned_stats['actions'] = 0;
+            }
+            
+            // Clean up orphaned conversations
+            if (!empty($orphaned_conversations)) {
+                $conversation_ids = array_map(function($conv) { return $conv->id; }, $orphaned_conversations);
+                $cleaned_conversations = $wpdb->query(
+                    "DELETE FROM {$conversations_table} WHERE id IN (" . 
+                    implode(',', array_map('intval', $conversation_ids)) . ")"
+                );
+                $cleaned_stats['conversations'] = $cleaned_conversations;
+            } else {
+                $cleaned_stats['conversations'] = 0;
+            }
+            
+            // Clean up orphaned logs
+            if (!empty($orphaned_logs)) {
+                $log_ids = array_map(function($log) { return $log->id; }, $orphaned_logs);
+                $cleaned_logs = $wpdb->query(
+                    "DELETE FROM {$action_log_table} WHERE id IN (" . 
+                    implode(',', array_map('intval', $log_ids)) . ")"
+                );
+                $cleaned_stats['logs'] = $cleaned_logs;
+            } else {
+                $cleaned_stats['logs'] = 0;
+            }
+            
+            // Clean up orphaned files (reuse existing S3 cleanup logic)
+            $cleaned_files = 0;
+            if (!empty($orphaned_files) && class_exists('CF7_Artist_Submissions_S3_Handler')) {
+                $s3_handler = new CF7_Artist_Submissions_S3_Handler();
+                
+                foreach ($orphaned_files as $file) {
+                    // Delete from S3
+                    $s3_deleted = $s3_handler->delete_file($file['s3_key']);
+                    
+                    if ($s3_deleted) {
+                        // Delete from database
+                        $db_deleted = $wpdb->delete(
+                            $files_table,
+                            array('s3_key' => $file['s3_key']),
+                            array('%s')
+                        );
+                        
+                        if ($db_deleted) {
+                            $cleaned_files++;
+                        }
+                        
+                        // Also try to delete thumbnail if it exists
+                        if (!empty($file['s3_key'])) {
+                            $thumbnail_key = $s3_handler->generate_thumbnail_s3_key($file['submission_id'], $file['original_name']);
+                            if ($thumbnail_key) {
+                                $s3_handler->delete_file($thumbnail_key);
+                            }
+                        }
+                    }
+                }
+            }
+            $cleaned_stats['files'] = $cleaned_files;
+            
+            $total_cleaned = $cleaned_stats['actions'] + $cleaned_stats['conversations'] + $cleaned_stats['logs'] + $cleaned_stats['files'];
+            
+            $message = '🧹 <strong>Orphaned Data Cleanup Complete!</strong>';
+            $message .= '<br><br><strong>📊 Cleanup Results:</strong>';
+            $message .= '<br>• Actions cleaned: ' . $cleaned_stats['actions'];
+            $message .= '<br>• Conversations cleaned: ' . $cleaned_stats['conversations'];
+            $message .= '<br>• Log entries cleaned: ' . $cleaned_stats['logs'];
+            $message .= '<br>• Files cleaned: ' . $cleaned_stats['files'];
+            $message .= '<br><br>✅ <strong>Total: ' . $total_cleaned . ' orphaned records removed</strong>';
+            
+            wp_send_json_success(array(
+                'message' => $message,
+                'stats' => array_merge($stats, $cleaned_stats),
+                'total_cleaned' => $total_cleaned
+            ));
+            return;
+        }
+        
+        wp_send_json_error(array('message' => 'Invalid cleanup action'));
     }
 }

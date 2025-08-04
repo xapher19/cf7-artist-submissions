@@ -160,7 +160,37 @@ $options = get_option('cf7_artist_submissions_options', array());
                             <span class="dashicons dashicons-admin-tools"></span>
                             <?php _e('Diagnose S3 Setup', 'cf7-artist-submissions'); ?>
                         </button>
+                        <button type="button" id="scan-s3-files" class="cf7-test-btn" style="margin-left: 10px;">
+                            <span class="dashicons dashicons-search"></span>
+                            <?php _e('Scan for Orphaned Files', 'cf7-artist-submissions'); ?>
+                        </button>
+                        <button type="button" id="cleanup-s3-files" class="cf7-test-btn" style="margin-left: 10px; background-color: #d63638; color: white;">
+                            <span class="dashicons dashicons-trash"></span>
+                            <?php _e('Clean Up Orphaned Files', 'cf7-artist-submissions'); ?>
+                        </button>
                         <div id="s3-test-result" class="cf7-test-result" style="display: none;"></div>
+                        <div id="s3-cleanup-result" class="cf7-test-result" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <!-- S3 Cleanup Information -->
+                <div class="cf7-notice cf7-notice-info">
+                    <span class="dashicons dashicons-info"></span>
+                    <div>
+                        <strong><?php _e('S3 File Cleanup', 'cf7-artist-submissions'); ?></strong>
+                        <p><?php _e('The cleanup tools help manage S3 storage costs by identifying and removing files that are no longer linked to active submissions:', 'cf7-artist-submissions'); ?></p>
+                        <ul style="margin: 10px 0 0 20px; color: #666;">
+                            <li><strong><?php _e('Scan for Orphaned Files:', 'cf7-artist-submissions'); ?></strong> <?php _e('Identifies files in S3 that are no longer linked to active submissions', 'cf7-artist-submissions'); ?></li>
+                            <li><strong><?php _e('Clean Up Orphaned Files:', 'cf7-artist-submissions'); ?></strong> <?php _e('Permanently deletes orphaned files from S3 storage and database records', 'cf7-artist-submissions'); ?></li>
+                        </ul>
+                        <p style="margin-top: 10px;">
+                            <strong><?php _e('When files become orphaned:', 'cf7-artist-submissions'); ?></strong>
+                            <?php _e('When submissions are deleted manually from the WordPress admin, associated files in S3 storage may remain. The cleanup tools help identify and remove these unused files.', 'cf7-artist-submissions'); ?>
+                        </p>
+                        <p style="margin-top: 10px; color: #d63638;">
+                            <strong><?php _e('⚠️ Important:', 'cf7-artist-submissions'); ?></strong>
+                            <?php _e('Always run "Scan" first to review what will be deleted. File deletion cannot be undone.', 'cf7-artist-submissions'); ?>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1160,6 +1190,151 @@ jQuery(document).ready(function($) {
             }
         });
     });
+    
+    // Handle S3 Files Scan
+    $('#scan-s3-files').on('click', function(e) {
+        e.preventDefault();
+        
+        const $button = $(this);
+        const $result = $('#s3-cleanup-result');
+        const originalText = $button.html();
+        
+        // Update button state
+        $button.prop('disabled', true)
+               .html('<span class="dashicons dashicons-update spin"></span> Scanning...');
+        
+        // Show loading state
+        $result.show().removeClass('success error').addClass('loading')
+               .html('<span class="dashicons dashicons-update spin"></span> Scanning S3 for orphaned files...');
+        
+        // Make AJAX request
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7as_cleanup_s3_files',
+                cleanup_action: 'scan',
+                nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>'
+            },
+            timeout: 60000,
+            success: function(response) {
+                if (response.success) {
+                    $result.removeClass('loading error').addClass('success')
+                           .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                    
+                    // Show stats if available
+                    if (response.data.stats) {
+                        const stats = response.data.stats;
+                        let statsHtml = '<div class="cf7-test-details" style="margin-top: 10px;">';
+                        statsHtml += '<strong>📊 Detailed Statistics:</strong><br>';
+                        statsHtml += 'Total files tracked: ' + stats.tracked_files + '<br>';
+                        statsHtml += 'Active submissions: ' + stats.active_submissions + '<br>';
+                        statsHtml += 'Files linked to active submissions: ' + stats.active_files + '<br>';
+                        statsHtml += '<strong>Orphaned files: ' + stats.orphaned_files + '</strong><br>';
+                        statsHtml += '</div>';
+                        $result.append(statsHtml);
+                    }
+                } else {
+                    $result.removeClass('loading success').addClass('error')
+                           .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                let errorMessage = 'Scan failed';
+                if (status === 'timeout') {
+                    errorMessage = 'Scan timed out - your S3 bucket may have many files';
+                } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                    errorMessage = xhr.responseJSON.data.message;
+                } else if (error) {
+                    errorMessage = 'Error: ' + error;
+                }
+                
+                $result.removeClass('loading success').addClass('error')
+                       .html('<span class="dashicons dashicons-warning"></span> ' + errorMessage);
+            },
+            complete: function() {
+                // Restore button state
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+    
+    // Handle S3 Files Cleanup
+    $('#cleanup-s3-files').on('click', function(e) {
+        e.preventDefault();
+        
+        // Confirmation dialog
+        if (!confirm('⚠️ CLEAN UP ORPHANED S3 FILES\n\nThis will:\n• Permanently delete orphaned files from S3 storage\n• Remove database records for deleted files\n• Cannot be undone\n\n💡 Recommendation: Run "Scan for Orphaned Files" first to see what will be deleted.\n\nContinue with cleanup?')) {
+            return;
+        }
+        
+        const $button = $(this);
+        const $result = $('#s3-cleanup-result');
+        const originalText = $button.html();
+        
+        // Update button state
+        $button.prop('disabled', true)
+               .html('<span class="dashicons dashicons-update spin"></span> Cleaning...');
+        
+        // Show loading state
+        $result.show().removeClass('success error').addClass('loading')
+               .html('<span class="dashicons dashicons-update spin"></span> Cleaning up orphaned S3 files...');
+        
+        // Make AJAX request
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7as_cleanup_s3_files',
+                cleanup_action: 'cleanup',
+                nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>'
+            },
+            timeout: 120000, // 2 minutes for cleanup
+            success: function(response) {
+                if (response.success) {
+                    $result.removeClass('loading error').addClass('success')
+                           .html('<span class="dashicons dashicons-yes-alt"></span> ' + response.data.message);
+                    
+                    // Show stats if available
+                    if (response.data.stats) {
+                        const stats = response.data.stats;
+                        let statsHtml = '<div class="cf7-test-details" style="margin-top: 10px;">';
+                        statsHtml += '<strong>📊 Cleanup Results:</strong><br>';
+                        statsHtml += 'Files successfully cleaned: ' + stats.cleaned_files + '<br>';
+                        statsHtml += 'Orphaned files found: ' + stats.orphaned_files + '<br>';
+                        
+                        if (stats.cleaned_files > 0) {
+                            statsHtml += '<br><strong style="color: #00a32a;">✅ Cleanup successful!</strong><br>';
+                            statsHtml += 'Removed ' + stats.cleaned_files + ' orphaned files from S3.';
+                        }
+                        
+                        statsHtml += '</div>';
+                        $result.append(statsHtml);
+                    }
+                } else {
+                    $result.removeClass('loading success').addClass('error')
+                           .html('<span class="dashicons dashicons-warning"></span> ' + response.data.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                let errorMessage = 'Cleanup failed';
+                if (status === 'timeout') {
+                    errorMessage = 'Cleanup timed out - you may have many orphaned files. Try again or contact support.';
+                } else if (xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                    errorMessage = xhr.responseJSON.data.message;
+                } else if (error) {
+                    errorMessage = 'Error: ' + error;
+                }
+                
+                $result.removeClass('loading success').addClass('error')
+                       .html('<span class="dashicons dashicons-warning"></span> ' + errorMessage);
+            },
+            complete: function() {
+                // Restore button state
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
 
 }); // End of jQuery document ready
 
@@ -1353,5 +1528,51 @@ function clearFailedJobs() {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* S3 Cleanup Button Styles */
+#scan-s3-files {
+    background-color: #0073aa;
+    color: white;
+    border: none;
+}
+
+#scan-s3-files:hover {
+    background-color: #005a87;
+}
+
+#cleanup-s3-files {
+    background-color: #d63638;
+    color: white;
+    border: none;
+}
+
+#cleanup-s3-files:hover {
+    background-color: #a72324;
+}
+
+#cleanup-s3-files:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+}
+
+/* Cleanup Results Styling */
+#s3-cleanup-result .cf7-test-details {
+    background: #f8f9fa;
+    border-left: 4px solid #0073aa;
+    padding: 15px;
+    margin-top: 10px;
+    border-radius: 0 4px 4px 0;
+}
+
+#s3-cleanup-result.success .cf7-test-details {
+    background: #f0fff0;
+    border-left-color: #00a32a;
+}
+
+#s3-cleanup-result.error .cf7-test-details {
+    background: #fff5f5;
+    border-left-color: #d63638;
 }
 </style>
