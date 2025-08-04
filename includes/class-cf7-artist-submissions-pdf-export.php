@@ -1606,7 +1606,16 @@ class CF7_Artist_Submissions_PDF_Export {
      * Get compressed/preview image URL for PDF export
      */
     private function get_compressed_image_url($file) {
-        // Try to use media converter to get compressed version
+        // For GIF files, always use original to preserve animation
+        if (isset($file['mime_type']) && $file['mime_type'] === 'image/gif') {
+            // Use original file URL for GIF files to preserve animation
+            if ($this->s3_handler && method_exists($this->s3_handler, 'get_presigned_preview_url')) {
+                return $this->s3_handler->get_presigned_preview_url($file['s3_key']);
+            }
+            return '';
+        }
+        
+        // Try to use media converter to get compressed version for non-GIF images
         if (class_exists('CF7_Artist_Submissions_Media_Converter')) {
             $converter = new CF7_Artist_Submissions_Media_Converter();
             

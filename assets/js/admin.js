@@ -405,6 +405,9 @@
                 case 'test-s3-connection':
                     this.testS3Connection($button, originalHtml);
                     break;
+                case 'debug-video-thumbnail':
+                    this.debugVideoThumbnail($button, originalHtml);
+                    break;
                 default:
                     this.resetButton($button, originalHtml);
             }
@@ -684,6 +687,29 @@
                 }
             }, function(xhr, status, error) {
                 CF7AdminInterface.showTestResults('S3 connection test failed: ' + error, false);
+            });
+        },
+        
+        /**
+         * Debug video thumbnail detection for a submission
+         */
+        debugVideoThumbnail: function($button, originalHtml) {
+            const submissionId = $('#debug-submission-id').val();
+            
+            if (!submissionId || submissionId < 1) {
+                this.resetButton($button, originalHtml);
+                this.showTestResults('Please enter a valid submission ID.', false);
+                return;
+            }
+            
+            this.performSafeAjaxTest($button, originalHtml, {
+                action: 'debug_video_thumbnail',
+                nonce: cf7ArtistSubmissions.nonce,
+                submission_id: submissionId
+            }, function(response) {
+                CF7AdminInterface.showTestResults(response.data, response.success);
+            }, function(xhr, status, error) {
+                CF7AdminInterface.showTestResults('Video thumbnail debug failed: ' + error, false);
             });
         },
         
@@ -1218,14 +1244,23 @@
             const $body = $results.find('.cf7-test-results-body');
             
             const noticeClass = isSuccess ? 'cf7-notice-success' : 'cf7-notice-error';
-            $body.html('<div class="cf7-notice ' + noticeClass + '"><p>' + message + '</p></div>');
+            
+            // Check if message contains HTML by looking for tags
+            if (typeof message === 'string' && message.includes('<')) {
+                // HTML content - display directly with notice wrapper
+                $body.html('<div class="cf7-notice ' + noticeClass + '">' + message + '</div>');
+            } else {
+                // Plain text content - wrap in paragraph
+                $body.html('<div class="cf7-notice ' + noticeClass + '"><p>' + message + '</p></div>');
+            }
             
             $results.show();
             
-            // Auto-hide after 5 seconds
+            // Auto-hide after 10 seconds for complex debug info, 5 for simple messages
+            const hideDelay = (typeof message === 'string' && message.includes('<')) ? 10000 : 5000;
             setTimeout(function() {
                 $results.hide();
-            }, 5000);
+            }, hideDelay);
             
             // Close button
             $results.find('.cf7-test-results-close').off('click').on('click', function() {

@@ -1069,8 +1069,21 @@ class CF7_Artist_Submissions_Tabs {
             $file_size = self::format_file_size($file->file_size);
             
             // Get work metadata for this file
-            $work_title = get_post_meta($post->ID, 'cf7_work_title_' . sanitize_key($file->original_name), true);
-            $work_statement = get_post_meta($post->ID, 'cf7_work_statement_' . sanitize_key($file->original_name), true);
+            // Try both sanitize_key and regex patterns for compatibility
+            $safe_filename = sanitize_key($file->original_name);
+            $work_title = get_post_meta($post->ID, 'cf7_work_title_' . $safe_filename, true);
+            if (empty($work_title)) {
+                // Fallback to regex pattern for older data
+                $regex_safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $file->original_name);
+                $work_title = get_post_meta($post->ID, 'cf7_work_title_' . $regex_safe_filename, true);
+            }
+            
+            $work_statement = get_post_meta($post->ID, 'cf7_work_statement_' . $safe_filename, true);
+            if (empty($work_statement)) {
+                // Fallback to regex pattern for older data
+                $regex_safe_filename = preg_replace('/[^a-zA-Z0-9_-]/', '_', $file->original_name);
+                $work_statement = get_post_meta($post->ID, 'cf7_work_statement_' . $regex_safe_filename, true);
+            }
             
             // Use work title for display if available, otherwise use filename
             $display_title = !empty($work_title) ? $work_title : pathinfo($file->original_name, PATHINFO_FILENAME);
@@ -1080,47 +1093,71 @@ class CF7_Artist_Submissions_Tabs {
             $preview_url = '';
             $thumbnail_url = '';
             $has_video_thumbnail = false;
+            $has_converted_video = false;
             
             if ($s3_handler) {
                 $original_download_url = $s3_handler->get_presigned_download_url($file->s3_key);
                 $preview_url = $original_download_url; // Fallback to original
-                $thumbnail_url = $original_download_url; // Fallback to original
+                // Note: Don't set thumbnail_url fallback for videos as they won't display as images
                 
                 // Get converted versions using the media converter
                 if ($converter) {
                     if (self::is_image_file($file_ext)) {
-                        // Get best version for preview (medium or large)
-                        $preview_version = $converter->get_best_version_for_serving($file->s3_key, 'large');
-                        if (!$preview_version) {
-                            $preview_version = $converter->get_best_version_for_serving($file->s3_key, 'medium');
-                        }
-                        
-                        if ($preview_version && !empty($preview_version->converted_s3_key)) {
-                            $preview_url = $s3_handler->get_presigned_preview_url($preview_version->converted_s3_key);
-                        }
-                        
-                        // Get thumbnail version
-                        $thumbnail_version = $converter->get_thumbnail_version($file->s3_key);
-                        if ($thumbnail_version && !empty($thumbnail_version->converted_s3_key)) {
-                            $thumbnail_url = $s3_handler->get_presigned_preview_url($thumbnail_version->converted_s3_key);
+                        // For GIF files, always use original to preserve animation
+                        if ($file->mime_type === 'image/gif') {
+                            // GIF files are not converted - use original URL for both preview and thumbnail
+                            $preview_url = $original_download_url;
+                            $thumbnail_url = $original_download_url;
+                        } else {
+                            // Get best version for preview (medium or large)
+                            $preview_version = $converter->get_best_version_for_serving($file->s3_key, 'large');
+                            if (!$preview_version) {
+                                $preview_version = $converter->get_best_version_for_serving($file->s3_key, 'medium');
+                            }
+                            
+                            if ($preview_version && !empty($preview_version->converted_s3_key)) {
+                                $preview_url = $s3_handler->get_presigned_preview_url($preview_version->converted_s3_key);
+                            }
+                            
+                            // Get thumbnail version
+                            $thumbnail_version = $converter->get_thumbnail_version($file->s3_key);
+                            if ($thumbnail_version && !empty($thumbnail_version->converted_s3_key)) {
+                                $thumbnail_url = $s3_handler->get_presigned_preview_url($thumbnail_version->converted_s3_key);
+                            } else {
+                                // Fallback: use preview version for thumbnail if available, otherwise original
+                                $thumbnail_url = $preview_url;
+                            }
                         }
                     } elseif (self::is_video_file($file_ext)) {
-                        // Get converted versions for videos
-                        $video_version = $converter->get_best_version_for_serving($file->s3_key, 'web');
+                        // Get converted versions for videos - try different preset names
+                        $video_version = $converter->get_best_version_for_serving($file->s3_key, 'video_web');
+                        if (!$video_version) {
+                            $video_version = $converter->get_best_version_for_serving($file->s3_key, 'web');
+                        }
                         if (!$video_version) {
                             $video_version = $converter->get_best_version_for_serving($file->s3_key, 'medium');
                         }
                         
                         if ($video_version && !empty($video_version->converted_s3_key)) {
                             $preview_url = $s3_handler->get_presigned_preview_url($video_version->converted_s3_key);
+                            $has_converted_video = true;
                         }
                         
-                        // Get video thumbnail
+                        // Get video thumbnail - try different preset names
                         $thumbnail_version = $converter->get_thumbnail_version($file->s3_key);
+                        if (!$thumbnail_version) {
+                            // Fallback: try to get video_thumbnail preset directly
+                            $thumbnail_versions = $converter->get_converted_versions($file->s3_key, null, 'video_thumbnail');
+                            if (!empty($thumbnail_versions)) {
+                                $thumbnail_version = $thumbnail_versions[0];
+                            }
+                        }
+                        
                         if ($thumbnail_version && !empty($thumbnail_version->converted_s3_key)) {
                             $thumbnail_url = $s3_handler->get_presigned_preview_url($thumbnail_version->converted_s3_key);
                             $has_video_thumbnail = true;
                         }
+                        // Note: Don't set thumbnail_url fallback to original for videos as they won't display as images
                     }
                 }
             }
@@ -1137,15 +1174,41 @@ class CF7_Artist_Submissions_Tabs {
                 echo '</a>';
                 echo '</div>';
             } elseif (self::is_video_file($file_ext)) {
-                if ($has_video_thumbnail) {
+                if ($has_video_thumbnail && !empty($thumbnail_url)) {
+                    // We have a generated thumbnail
                     echo '<img src="' . esc_url($thumbnail_url) . '" alt="' . esc_attr($display_title) . '" />';
                     echo '<div class="cf7-preview-overlay cf7-video-overlay">';
-                    echo '<a href="' . esc_url($preview_url) . '" class="cf7-preview-button" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
-                    echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Play Video', 'cf7-artist-submissions');
-                    echo '</a>';
+                    if ($has_converted_video) {
+                        // We have a converted video - use it for preview
+                        echo '<a href="' . esc_url($preview_url) . '" class="cf7-preview-button" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                        echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Play Video', 'cf7-artist-submissions');
+                        echo '</a>';
+                    } else {
+                        // Original video only
+                        echo '<a href="' . esc_url($original_download_url) . '" class="cf7-preview-button" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                        echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Play Video (Original)', 'cf7-artist-submissions');
+                        echo '</a>';
+                    }
                     echo '</div>';
                 } else {
-                    echo '<div class="cf7-file-icon"><span class="dashicons dashicons-video-alt3"></span></div>';
+                    // No thumbnail available, show video icon with preview functionality
+                    echo '<div class="cf7-file-icon cf7-video-placeholder">';
+                    echo '<span class="dashicons dashicons-video-alt3"></span>';
+                    echo '<span class="cf7-video-label">Video</span>';
+                    echo '<div class="cf7-preview-overlay cf7-video-overlay">';
+                    if ($has_converted_video) {
+                        // We have a converted video - use it for preview
+                        echo '<a href="' . esc_url($preview_url) . '" class="cf7-preview-button" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                        echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Play Video', 'cf7-artist-submissions');
+                        echo '</a>';
+                    } else {
+                        // Original video only
+                        echo '<a href="' . esc_url($original_download_url) . '" class="cf7-preview-button" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                        echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Play Video (Original)', 'cf7-artist-submissions');
+                        echo '</a>';
+                    }
+                    echo '</div>';
+                    echo '</div>';
                 }
             } else {
                 echo '<div class="cf7-file-icon">' . self::get_file_icon($file_ext) . '</div>';
@@ -1155,7 +1218,10 @@ class CF7_Artist_Submissions_Tabs {
             // Work information section
             echo '<div class="cf7-work-info">';
             echo '<div class="cf7-work-header">';
-            echo '<h4 class="cf7-work-title">' . esc_html($display_title) . '</h4>';
+            // Only show work title if user provided one, don't fallback to filename
+            if (!empty($work_title)) {
+                echo '<h4 class="cf7as-work-title">' . esc_html($work_title) . '</h4>';
+            }
             echo '</div>';
             
             echo '<div class="cf7-work-meta">';
@@ -1175,7 +1241,7 @@ class CF7_Artist_Submissions_Tabs {
             
             // Display work statement if available
             if (!empty($work_statement)) {
-                echo '<div class="cf7-work-description">' . esc_html($work_statement) . '</div>';
+                echo '<div class="cf7as-work-statement">' . esc_html($work_statement) . '</div>';
             }
             
             // Work actions
@@ -1186,10 +1252,18 @@ class CF7_Artist_Submissions_Tabs {
                 echo '<a href="' . esc_url($preview_url) . '" class="cf7-work-action-btn primary" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
                 echo '<span class="dashicons dashicons-visibility"></span> ' . __('Preview', 'cf7-artist-submissions');
                 echo '</a>';
-            } elseif (self::is_video_file($file_ext) && $preview_url) {
-                echo '<a href="' . esc_url($preview_url) . '" class="cf7-work-action-btn primary" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
-                echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Preview', 'cf7-artist-submissions');
-                echo '</a>';
+            } elseif (self::is_video_file($file_ext)) {
+                if ($preview_url !== $original_download_url) {
+                    // We have a converted video
+                    echo '<a href="' . esc_url($preview_url) . '" class="cf7-work-action-btn primary" data-lightbox="submission-gallery" data-title="' . esc_attr($display_title) . '">';
+                    echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('Play Video', 'cf7-artist-submissions');
+                    echo '</a>';
+                } else {
+                    // Original video only - show download instead of preview
+                    echo '<a href="' . esc_url($original_download_url) . '" class="cf7-work-action-btn primary" target="_blank" title="' . __('Original video file', 'cf7-artist-submissions') . '">';
+                    echo '<span class="dashicons dashicons-video-alt3"></span> ' . __('View Original', 'cf7-artist-submissions');
+                    echo '</a>';
+                }
             }
             
             // Download button
@@ -1260,6 +1334,37 @@ class CF7_Artist_Submissions_Tabs {
             (string) $post->ID, (int) $post->ID
         ));
         
+        // Debug: Log the query and results (only in admin or AJAX context to reduce spam)
+        if (is_admin() || wp_doing_ajax()) {
+            error_log("CF7AS DEBUG: Checking files for submission ID {$post->ID}");
+            error_log("CF7AS DEBUG: Table {$table_name} has {$total_files} total files");
+            error_log("CF7AS DEBUG: Found " . count($files) . " files for this submission");
+            if (!empty($files)) {
+                error_log("CF7AS DEBUG: Files found: " . print_r(array_column($files, 'original_name'), true));
+                
+                // Debug video files specifically
+                $video_files = array_filter($files, function($file) {
+                    return self::is_video_file(strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)));
+                });
+                
+                if (!empty($video_files)) {
+                    error_log("CF7AS DEBUG: Video files found: " . count($video_files));
+                    foreach ($video_files as $video_file) {
+                        error_log("CF7AS DEBUG: Video - " . $video_file->original_name . " (ID: {$video_file->id}, S3: {$video_file->s3_key})");
+                        
+                        // Check for conversion status
+                        if (isset($video_file->has_converted_versions)) {
+                            error_log("CF7AS DEBUG: Video has_converted_versions = " . $video_file->has_converted_versions);
+                        }
+                        
+                        if (isset($video_file->conversion_status)) {
+                            error_log("CF7AS DEBUG: Video conversion_status = " . $video_file->conversion_status);
+                        }
+                    }
+                }
+            }
+        }
+        
         if (empty($files)) {
             echo '<div class="cf7-works-list-view">';
             echo '<div class="cf7-works-list-header">';
@@ -1271,21 +1376,6 @@ class CF7_Artist_Submissions_Tabs {
             echo '<div class="dashicons dashicons-images-alt2"></div>';
             echo '<h3>' . __('No files submitted', 'cf7-artist-submissions') . '</h3>';
             echo '<p>' . __('This artist has not uploaded any works yet.', 'cf7-artist-submissions') . '</p>';
-            
-            // Add debugging info for administrators
-            if (current_user_can('manage_options')) {
-                $all_submission_ids = $wpdb->get_col("SELECT DISTINCT submission_id FROM {$table_name}");
-                echo '<div style="margin-top: 20px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px;">';
-                echo '<strong>Debug Info (Administrators only):</strong><br>';
-                echo 'Submission ID: ' . $post->ID . '<br>';
-                echo 'Table exists: ' . ($table_exists ? 'Yes' : 'No') . '<br>';
-                echo 'Total files in database: ' . $total_files . '<br>';
-                echo 'All submission IDs: ' . implode(', ', $all_submission_ids) . '<br>';
-                if (!$table_exists) {
-                    echo '<br><strong style="color: #d63638;">Solution:</strong> The files table is missing. <a href="' . admin_url('plugins.php') . '" style="color: #2271b1;">Deactivate and reactivate the plugin</a> to create the missing database table.';
-                }
-                echo '</div>';
-            }
             echo '</div>';
             echo '</div>';
             echo '</div>';

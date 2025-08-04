@@ -300,29 +300,50 @@ jQuery(document).ready(function($) {
      * 
      * @since 1.0.0
      */
-    $('#check-replies-manual').on('click', function(e) {
+    /**
+     * Manual reply checking with comprehensive IMAP integration and error handling.
+     * 
+     * Provides on-demand email checking with detailed progress feedback, timeout
+     * management, and automatic conversation refresh. Includes security validation,
+     * error handling, and user feedback for reliable IMAP integration workflow.
+     * 
+     * @since 1.0.0
+     */
+    $(document).on('click', '#check-replies-manual', function(e) {
         e.preventDefault();
+        
+        console.log('Check replies manual clicked');
         
         var button = $(this);
         var originalText = button.text();
         var submissionId = button.data('submission-id');
         
+        console.log('Submission ID:', submissionId);
+        
         // Check if cf7Conversations is available
         if (typeof cf7Conversations === 'undefined') {
+            console.error('cf7Conversations not available');
             alert('JavaScript configuration error - cf7Conversations not available');
+            return;
+        }
+        
+        console.log('cf7Conversations available, proceeding with AJAX');
+        
+        if (!submissionId) {
+            console.error('No submission ID found');
+            alert('Error: No submission ID found.');
             return;
         }
         
         // Disable button and show loading state
         button.prop('disabled', true).text('Checking...');
         
-        // Show loading in the thread controls
-        $('.thread-controls .last-checked').text('Checking for new replies...');
-        
-        // Add a timeout warning after 5 seconds (reduced from 10)
+        // Set up timeout warning (show after 30 seconds)
         var timeoutWarning = setTimeout(function() {
-            $('.thread-controls .last-checked').text('Still checking... this should be quick now');
-        }, 5000);
+            $('.thread-controls .last-checked').text('Still checking... this may take a while for large inboxes.');
+        }, 30000);
+        
+        console.log('Starting AJAX request to check replies');
         
         $.ajax({
             url: cf7Conversations.ajaxUrl,
@@ -334,6 +355,7 @@ jQuery(document).ready(function($) {
                 submission_id: submissionId
             },
             success: function(response) {
+                console.log('Check replies AJAX success:', response);
                 clearTimeout(timeoutWarning);
                 
                 if (response.success) {
@@ -353,13 +375,9 @@ jQuery(document).ready(function($) {
                         sessionStorage.setItem('cf7_scroll_to_bottom', 'true');
                         location.reload();
                     }, 1000);
-                    
-                    // Show success message briefly
-                    showNotice('Successfully checked for new replies', 'success');
-                    
                 } else {
                     // Handle error response safely
-                    let errorMessage = 'Manual check failed';
+                    let errorMessage = 'Failed to check for replies.';
                     if (response.data) {
                         if (typeof response.data === 'string') {
                             errorMessage = response.data;
@@ -371,6 +389,7 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
+                console.error('Check replies AJAX error:', {xhr: xhr, status: status, error: error});
                 clearTimeout(timeoutWarning);
                 
                 if (status === 'timeout') {
@@ -385,9 +404,7 @@ jQuery(document).ready(function($) {
                 button.prop('disabled', false).text(originalText);
             }
         });
-    });
-    
-    // ============================================================================
+    });    // ============================================================================
     // CONVERSATION DISPLAY ENGINE
     // ============================================================================
 
@@ -774,7 +791,7 @@ jQuery(document).ready(function($) {
      * Provides simple page reload mechanism for conversation updates.
      * Used when automatic refresh is needed or AJAX updates fail.
      */
-    $('#refresh-messages-btn').on('click', function(e) {
+    $(document).on('click', '#refresh-messages-btn', function(e) {
         e.preventDefault();
         refreshMessages();
     });
@@ -785,7 +802,7 @@ jQuery(document).ready(function($) {
      * Initiates secure message clearing workflow by displaying confirmation
      * modal with safety mechanisms and user guidance for destructive operation.
      */
-    $('#cf7-clear-messages-btn').on('click', function(e) {
+    $(document).on('click', '#cf7-clear-messages-btn', function(e) {
         e.preventDefault();
         showClearMessagesModal();
     });
@@ -795,7 +812,7 @@ jQuery(document).ready(function($) {
      * 
      * Provides multiple dismissal methods for modal interface.
      */
-    $('#cf7-clear-cancel, #cf7-clear-messages-modal .cf7-modal-close').on('click', function() {
+    $(document).on('click', '#cf7-clear-cancel, #cf7-clear-messages-modal .cf7-modal-close', function() {
         hideClearMessagesModal();
     });
 
@@ -804,7 +821,7 @@ jQuery(document).ready(function($) {
      * 
      * Closes modal when clicking outside modal content area.
      */
-    $('#cf7-clear-messages-modal').on('click', function(e) {
+    $(document).on('click', '#cf7-clear-messages-modal', function(e) {
         if (e.target === this) {
             hideClearMessagesModal();
         }
@@ -815,7 +832,7 @@ jQuery(document).ready(function($) {
      * 
      * Enables confirm button only when correct confirmation text is entered.
      */
-    $('#cf7-clear-confirmation').on('input', function() {
+    $(document).on('input', '#cf7-clear-confirmation', function() {
         const confirmText = $(this).val().trim();
         const confirmButton = $('#cf7-clear-confirm');
         
@@ -831,7 +848,7 @@ jQuery(document).ready(function($) {
      * 
      * Processes final confirmation and triggers message clearing operation.
      */
-    $('#cf7-clear-confirm').on('click', function(e) {
+    $(document).on('click', '#cf7-clear-confirm', function(e) {
         e.preventDefault();
         
         const confirmText = $('#cf7-clear-confirmation').val().trim();
@@ -894,13 +911,18 @@ function showNotice(message, type) {
  * button state initialization, and smooth fade-in animation.
  * Prepares secure workflow for destructive operation confirmation.
  */
-function showClearMessagesModal() {
-    jQuery('#cf7-clear-messages-modal').fadeIn(200);
-    jQuery('#cf7-clear-confirmation').val('').focus();
-    jQuery('#cf7-clear-confirm').prop('disabled', true);
-}
-
-/**
+    function showClearMessagesModal() {
+        var modal = jQuery('#cf7-clear-messages-modal');
+        
+        // Remove the inline display:none style that might be interfering
+        modal.css('display', '');
+        
+        // Use the CSS class approach
+        modal.addClass('show');
+        
+        jQuery('#cf7-clear-confirmation').val('').focus();
+        jQuery('#cf7-clear-confirm').prop('disabled', true);
+    }/**
  * Hide clear messages confirmation modal.
  * 
  * Dismisses modal interface with cleanup of form state and
@@ -908,7 +930,7 @@ function showClearMessagesModal() {
  * preventing partial confirmation states.
  */
 function hideClearMessagesModal() {
-    jQuery('#cf7-clear-messages-modal').fadeOut(200);
+    jQuery('#cf7-clear-messages-modal').removeClass('show');
     jQuery('#cf7-clear-confirmation').val('');
     jQuery('#cf7-clear-confirm').prop('disabled', true);
 }
@@ -923,19 +945,26 @@ function hideClearMessagesModal() {
  * @since 1.0.0
  */
 function clearAllMessages() {
+    console.log('clearAllMessages function called');
     const submissionId = jQuery('#cf7-clear-messages-btn').data('submission-id');
     const confirmButton = jQuery('#cf7-clear-confirm');
     
+    console.log('Submission ID for clear:', submissionId);
+    
     if (!submissionId) {
+        console.error('No submission ID found for clear operation');
         alert('Error: No submission ID found.');
         return;
     }
     
     // Check if cf7Conversations is available
     if (typeof cf7Conversations === 'undefined') {
+        console.error('cf7Conversations not available in clearAllMessages');
         showNotice('JavaScript configuration error - cf7Conversations not available', 'error');
         return;
     }
+    
+    console.log('Starting AJAX request to clear messages');
     
     // Disable button and show loading
     confirmButton.prop('disabled', true).text('Clearing...');
@@ -949,6 +978,7 @@ function clearAllMessages() {
             nonce: cf7Conversations.nonce
         },
         success: function(response) {
+            console.log('Clear messages AJAX success:', response);
             
             if (response.success) {
                 // Hide modal
@@ -976,10 +1006,12 @@ function clearAllMessages() {
             }
         },
         error: function(xhr, status, error) {
+            console.error('Clear messages AJAX error:', xhr, status, error);
             let errorMessage = 'Error clearing messages. Please try again.';
             
             // Try to get more specific error information
             if (xhr.responseText) {
+                console.log('Error response text:', xhr.responseText);
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);
                     if (errorResponse.data && errorResponse.data.message) {

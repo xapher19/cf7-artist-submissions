@@ -22,8 +22,8 @@
                 chunkSize: 10 * 1024 * 1024, // 10MB chunks
                 chunkThreshold: 50 * 1024 * 1024, // Use chunks for files > 50MB
                 allowedTypes: [
-                    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
-                    'video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/webm',
+                    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp', 'image/tiff',
+                    'video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo', 'video/x-matroska', 'video/mpeg',
                     'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                     'text/plain', 'application/rtf'
                 ],
@@ -1932,12 +1932,16 @@
                 'gif': 'image/gif',
                 'webp': 'image/webp',
                 'svg': 'image/svg+xml',
+                'bmp': 'image/bmp',
+                'tiff': 'image/tiff',
                 // Videos
                 'mp4': 'video/mp4',
-                'avi': 'video/avi',
-                'mov': 'video/mov',
-                'wmv': 'video/wmv',
+                'mov': 'video/quicktime',
                 'webm': 'video/webm',
+                'avi': 'video/x-msvideo',
+                'mkv': 'video/x-matroska',
+                'mpeg': 'video/mpeg',
+                'mpg': 'video/mpeg',
                 // Documents
                 'doc': 'application/msword',
                 'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

@@ -84,7 +84,24 @@ class CF7_Artist_Submissions_Settings {
         // AJAX handler for PDF Lambda testing
         add_action('wp_ajax_cf7as_test_pdf_lambda', array($this, 'ajax_test_pdf_lambda'));
         
-        // AJAX handlers for settings management
+        // AJAX handler for MediaConvert testing
+        add_action('wp_ajax_cf7as_test_mediaconvert_connection', array($this, 'ajax_test_mediaconvert_connection'));
+        
+        // Separate save handlers for different tabs to prevent cross-tab interference
+        add_action('wp_ajax_cf7_save_aws_settings', array($this, 'ajax_save_aws_settings'));
+        add_action('wp_ajax_cf7_save_general_settings', array($this, 'ajax_save_general_settings'));
+        
+        // AJAX handlers for job management
+        add_action('wp_ajax_cf7as_clear_pending_jobs', array($this, 'ajax_clear_pending_jobs'));
+        add_action('wp_ajax_cf7as_clear_failed_jobs', array($this, 'ajax_clear_failed_jobs'));
+        
+        // Video thumbnail debugging
+        add_action('wp_ajax_debug_video_thumbnail', array($this, 'ajax_debug_video_thumbnail'));
+        
+        // Simple test handler to verify AJAX routing
+        add_action('wp_ajax_test_simple_ajax', array($this, 'ajax_test_simple'));
+        
+        // AJAX handlers for settings management (legacy combined handler)
         add_action('wp_ajax_cf7_save_artist_settings', array($this, 'ajax_save_settings'));
         // SECURITY FIX: Removed wp_ajax_nopriv_ to prevent unauthenticated access
         
@@ -461,12 +478,24 @@ class CF7_Artist_Submissions_Settings {
         $valid = array();
         $old_options = get_option('cf7_artist_submissions_options', array());
         
-        $valid['form_id'] = isset($input['form_id']) ? sanitize_text_field($input['form_id']) : '';
-        $valid['menu_label'] = isset($input['menu_label']) ? sanitize_text_field($input['menu_label']) : 'Submissions';
-        $valid['store_files'] = isset($input['store_files']) ? 'yes' : 'no';
+        // Start with existing options to preserve values not in current form
+        $valid = $old_options;
         
-        // Add AWS S3 configuration fields
-        $valid['aws_access_key'] = isset($input['aws_access_key']) ? sanitize_text_field($input['aws_access_key']) : '';
+        // Only update fields that are present in the input
+        if (isset($input['form_id'])) {
+            $valid['form_id'] = sanitize_text_field($input['form_id']);
+        }
+        if (isset($input['menu_label'])) {
+            $valid['menu_label'] = sanitize_text_field($input['menu_label']);
+        }
+        if (array_key_exists('store_files', $input)) {
+            $valid['store_files'] = isset($input['store_files']) ? 'yes' : 'no';
+        }
+        
+        // Add AWS S3 configuration fields - only update if present
+        if (isset($input['aws_access_key'])) {
+            $valid['aws_access_key'] = sanitize_text_field($input['aws_access_key']);
+        }
         
         // Debug secret key processing in validation
         if (isset($input['aws_secret_key'])) {
@@ -489,27 +518,50 @@ class CF7_Artist_Submissions_Settings {
             }
             
             $valid['aws_secret_key'] = sanitize_text_field($secret_raw);
-        } else {
-            $valid['aws_secret_key'] = '';
         }
         
-        $valid['aws_region'] = isset($input['aws_region']) ? sanitize_text_field($input['aws_region']) : 'us-east-1';
-        $valid['s3_bucket'] = isset($input['s3_bucket']) ? sanitize_text_field($input['s3_bucket']) : '';
+        if (isset($input['aws_region'])) {
+            $valid['aws_region'] = sanitize_text_field($input['aws_region']);
+        }
+        if (isset($input['s3_bucket'])) {
+            $valid['s3_bucket'] = sanitize_text_field($input['s3_bucket']);
+        }
         
-        // Add media conversion configuration fields
-        $valid['enable_media_conversion'] = isset($input['enable_media_conversion']) ? 'on' : 'off';
-        $valid['lambda_function_name'] = isset($input['lambda_function_name']) ? sanitize_text_field($input['lambda_function_name']) : 'cf7as-image-converter';
-        $valid['mediaconvert_endpoint'] = isset($input['mediaconvert_endpoint']) ? esc_url_raw($input['mediaconvert_endpoint']) : '';
+        // Add media conversion configuration fields - only update if present
+        if (array_key_exists('enable_media_conversion', $input)) {
+            $valid['enable_media_conversion'] = isset($input['enable_media_conversion']) ? 'on' : 'off';
+        }
+        if (isset($input['lambda_function_name'])) {
+            $valid['lambda_function_name'] = sanitize_text_field($input['lambda_function_name']);
+        }
+        if (isset($input['mediaconvert_endpoint'])) {
+            $valid['mediaconvert_endpoint'] = esc_url_raw($input['mediaconvert_endpoint']);
+        }
+        if (isset($input['mediaconvert_role_arn'])) {
+            $valid['mediaconvert_role_arn'] = sanitize_text_field($input['mediaconvert_role_arn']);
+        }
         
-        // PDF Lambda settings
-        $valid['enable_pdf_lambda'] = isset($input['enable_pdf_lambda']) ? 'on' : 'off';
-        $valid['pdf_lambda_function_arn'] = isset($input['pdf_lambda_function_arn']) ? sanitize_text_field($input['pdf_lambda_function_arn']) : '';
+        // PDF Lambda settings - only update if present
+        if (array_key_exists('enable_pdf_lambda', $input)) {
+            $valid['enable_pdf_lambda'] = isset($input['enable_pdf_lambda']) ? 'on' : 'off';
+        }
+        if (isset($input['pdf_lambda_function_arn'])) {
+            $valid['pdf_lambda_function_arn'] = sanitize_text_field($input['pdf_lambda_function_arn']);
+        }
         
-        // Add conversion settings checkboxes
-        $valid['convert_images'] = isset($input['convert_images']) ? 1 : 0;
-        $valid['convert_videos'] = isset($input['convert_videos']) ? 1 : 0;
-        $valid['generate_thumbnails'] = isset($input['generate_thumbnails']) ? 1 : 0;
-        $valid['create_multiple_sizes'] = isset($input['create_multiple_sizes']) ? 1 : 0;
+        // Add conversion settings checkboxes - only update if present
+        if (array_key_exists('convert_images', $input)) {
+            $valid['convert_images'] = isset($input['convert_images']) ? 1 : 0;
+        }
+        if (array_key_exists('convert_videos', $input)) {
+            $valid['convert_videos'] = isset($input['convert_videos']) ? 1 : 0;
+        }
+        if (array_key_exists('generate_thumbnails', $input)) {
+            $valid['generate_thumbnails'] = isset($input['generate_thumbnails']) ? 1 : 0;
+        }
+        if (array_key_exists('create_multiple_sizes', $input)) {
+            $valid['create_multiple_sizes'] = isset($input['create_multiple_sizes']) ? 1 : 0;
+        }
         
         // Log setting changes
         $this->log_settings_changes($old_options, $valid, 'general');
@@ -2211,6 +2263,19 @@ class CF7_Artist_Submissions_Settings {
                 $settings['s3_bucket'] = sanitize_text_field($_POST['s3_bucket']);
             }
             
+            // MediaConvert settings
+            if (isset($_POST['mediaconvert_endpoint'])) {
+                $settings['mediaconvert_endpoint'] = esc_url_raw($_POST['mediaconvert_endpoint']);
+            }
+            if (isset($_POST['mediaconvert_role_arn'])) {
+                $settings['mediaconvert_role_arn'] = sanitize_text_field($_POST['mediaconvert_role_arn']);
+            }
+            
+            // Lambda settings
+            if (isset($_POST['pdf_lambda_function_arn'])) {
+                $settings['pdf_lambda_function_arn'] = sanitize_text_field($_POST['pdf_lambda_function_arn']);
+            }
+            
             if (empty($settings)) {
                 wp_send_json_error(array(
                     'message' => 'No valid settings found to save. Please check the form data.'
@@ -2516,6 +2581,76 @@ class CF7_Artist_Submissions_Settings {
     }
     
     /**
+     * AJAX handler for testing MediaConvert connection
+     */
+    public function ajax_test_mediaconvert_connection() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7as_test_mediaconvert')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        try {
+            // Get the MediaConvert tester from the Media Converter class
+            if (!class_exists('CF7_Artist_Submissions_Media_Converter')) {
+                wp_send_json_error(array(
+                    'message' => 'MediaConvert class not available',
+                    'error' => 'Media Converter class not loaded'
+                ));
+                return;
+            }
+            
+            // Create a temporary options array with submitted values for testing
+            $test_options = array(
+                'aws_access_key' => sanitize_text_field($_POST['aws_access_key']),
+                'aws_secret_key' => sanitize_text_field($_POST['aws_secret_key']),
+                'aws_region' => sanitize_text_field($_POST['aws_region']),
+                'mediaconvert_endpoint' => sanitize_text_field($_POST['mediaconvert_endpoint']),
+                'mediaconvert_role_arn' => sanitize_text_field($_POST['mediaconvert_role_arn'])
+            );
+            
+            // Temporarily update options for testing
+            $original_options = get_option('cf7_artist_submissions_options', array());
+            update_option('cf7_artist_submissions_options', array_merge($original_options, $test_options));
+            
+            // Create MediaConvert instance and test
+            $media_converter = new CF7_Artist_Submissions_Media_Converter();
+            $test_results = $media_converter->test_mediaconvert_connection();
+            
+            // Restore original options
+            update_option('cf7_artist_submissions_options', $original_options);
+            
+            // Return results
+            if ($test_results['connection_test'] === true) {
+                wp_send_json_success($test_results);
+            } else {
+                wp_send_json_error($test_results);
+            }
+            
+        } catch (Exception $e) {
+            // Restore original options if exception occurred
+            if (isset($original_options)) {
+                update_option('cf7_artist_submissions_options', $original_options);
+            }
+            
+            wp_send_json_error(array(
+                'message' => 'MediaConvert test failed: ' . $e->getMessage(),
+                'error' => $e->getMessage(),
+                'endpoint_configured' => false,
+                'credentials_configured' => false,
+                'role_configured' => false,
+                'connection_test' => false
+            ));
+        }
+    }
+    
+    /**
      * Generate AWS Signature V4 headers for Lambda invocation
      */
     private function generate_lambda_headers($payload, $endpoint, $access_key, $secret_key, $region) {
@@ -2561,5 +2696,403 @@ class CF7_Artist_Submissions_Settings {
         $k_region = hash_hmac('sha256', $region, $k_date, true);
         $k_service = hash_hmac('sha256', $service, $k_region, true);
         return hash_hmac('sha256', 'aws4_request', $k_service, true);
+    }
+    
+    /**
+     * AJAX handler for saving AWS-specific settings only
+     * This prevents interference with other tabs' settings
+     */
+    public function ajax_save_aws_settings() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce') && 
+            !wp_verify_nonce($_POST['nonce'], 'cf7_artist_submissions_settings')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        try {
+            // Only process AWS-related settings
+            $aws_settings = array();
+            
+            // S3 settings
+            if (isset($_POST['aws_access_key'])) {
+                $aws_settings['aws_access_key'] = sanitize_text_field($_POST['aws_access_key']);
+            }
+            if (isset($_POST['aws_secret_key'])) {
+                $secret_raw = $_POST['aws_secret_key'];
+                
+                // Fix common URL encoding issues with + character
+                if (strlen($secret_raw) === 41) {
+                    if (substr($secret_raw, 0, 2) === '=+') {
+                        $secret_raw = substr($secret_raw, 1);
+                    } elseif (substr($secret_raw, 0, 1) === ' ') {
+                        $secret_raw = '+' . substr($secret_raw, 1);
+                    }
+                }
+                
+                $aws_settings['aws_secret_key'] = sanitize_text_field($secret_raw);
+            }
+            if (isset($_POST['aws_region'])) {
+                $aws_settings['aws_region'] = sanitize_text_field($_POST['aws_region']);
+            }
+            if (isset($_POST['s3_bucket'])) {
+                $aws_settings['s3_bucket'] = sanitize_text_field($_POST['s3_bucket']);
+            }
+            
+            // MediaConvert settings
+            if (isset($_POST['mediaconvert_endpoint'])) {
+                $aws_settings['mediaconvert_endpoint'] = esc_url_raw($_POST['mediaconvert_endpoint']);
+            }
+            if (isset($_POST['mediaconvert_role_arn'])) {
+                $aws_settings['mediaconvert_role_arn'] = sanitize_text_field($_POST['mediaconvert_role_arn']);
+            }
+            
+            // Lambda settings
+            if (isset($_POST['pdf_lambda_function_arn'])) {
+                $aws_settings['pdf_lambda_function_arn'] = sanitize_text_field($_POST['pdf_lambda_function_arn']);
+            }
+            
+            if (empty($aws_settings)) {
+                wp_send_json_error(array('message' => 'No AWS settings found to save'));
+                return;
+            }
+            
+            // Get existing options and only update AWS-specific fields
+            $existing_options = get_option('cf7_artist_submissions_options', array());
+            
+            foreach ($aws_settings as $key => $value) {
+                $existing_options[$key] = $value;
+            }
+            
+            $result = update_option('cf7_artist_submissions_options', $existing_options);
+            
+            if ($result === false) {
+                $current_options = get_option('cf7_artist_submissions_options', array());
+                if ($current_options === $existing_options) {
+                    wp_send_json_success(array(
+                        'message' => 'AWS settings are already up to date',
+                        'saved_count' => count($aws_settings)
+                    ));
+                } else {
+                    wp_send_json_error(array('message' => 'Failed to save AWS settings'));
+                }
+                return;
+            }
+
+            wp_send_json_success(array(
+                'message' => 'AWS settings saved successfully! Updated ' . count($aws_settings) . ' settings.',
+                'saved_count' => count($aws_settings)
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Failed to save AWS settings: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for saving General tab settings only
+     */
+    public function ajax_save_general_settings() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce') && 
+            !wp_verify_nonce($_POST['nonce'], 'cf7_artist_submissions_settings')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        try {
+            // Only process General tab settings
+            $general_settings = array();
+            
+            if (isset($_POST['form_id'])) {
+                $general_settings['form_id'] = intval($_POST['form_id']);
+            }
+            if (isset($_POST['menu_label'])) {
+                $general_settings['menu_label'] = sanitize_text_field($_POST['menu_label']);
+            }
+            if (isset($_POST['submissions_per_page'])) {
+                $general_settings['submissions_per_page'] = intval($_POST['submissions_per_page']);
+            }
+            if (isset($_POST['enable_file_uploads'])) {
+                $general_settings['enable_file_uploads'] = (bool) $_POST['enable_file_uploads'];
+            }
+            if (isset($_POST['max_file_size'])) {
+                $general_settings['max_file_size'] = intval($_POST['max_file_size']);
+            }
+            if (isset($_POST['allowed_file_types'])) {
+                $general_settings['allowed_file_types'] = sanitize_text_field($_POST['allowed_file_types']);
+            }
+            if (isset($_POST['store_files'])) {
+                $general_settings['store_files'] = sanitize_text_field($_POST['store_files']);
+            }
+            
+            if (empty($general_settings)) {
+                wp_send_json_error(array('message' => 'No general settings found to save'));
+                return;
+            }
+            
+            // Get existing options and only update general fields
+            $existing_options = get_option('cf7_artist_submissions_options', array());
+            
+            foreach ($general_settings as $key => $value) {
+                $existing_options[$key] = $value;
+            }
+            
+            $result = update_option('cf7_artist_submissions_options', $existing_options);
+            
+            if ($result === false) {
+                $current_options = get_option('cf7_artist_submissions_options', array());
+                if ($current_options === $existing_options) {
+                    wp_send_json_success(array(
+                        'message' => 'General settings are already up to date',
+                        'saved_count' => count($general_settings)
+                    ));
+                } else {
+                    wp_send_json_error(array('message' => 'Failed to save general settings'));
+                }
+                return;
+            }
+
+            wp_send_json_success(array(
+                'message' => 'General settings saved successfully! Updated ' . count($general_settings) . ' settings.',
+                'saved_count' => count($general_settings)
+            ));
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Failed to save general settings: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for clearing pending conversion jobs
+     */
+    public function ajax_clear_pending_jobs() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        try {
+            // Get the media converter instance
+            if (!class_exists('CF7_Artist_Submissions_Media_Converter')) {
+                wp_send_json_error(array('message' => 'Media Converter class not available'));
+                return;
+            }
+            
+            $media_converter = new CF7_Artist_Submissions_Media_Converter();
+            $result = $media_converter->clear_pending_jobs();
+            
+            if ($result['success']) {
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error($result);
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Failed to clear pending jobs: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for clearing failed conversion jobs
+     */
+    public function ajax_clear_failed_jobs() {
+        // Check permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(array('message' => 'Insufficient permissions'));
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'cf7_admin_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+            return;
+        }
+        
+        try {
+            // Get the media converter instance
+            if (!class_exists('CF7_Artist_Submissions_Media_Converter')) {
+                wp_send_json_error(array('message' => 'Media Converter class not available'));
+                return;
+            }
+            
+            $media_converter = new CF7_Artist_Submissions_Media_Converter();
+            $result = $media_converter->clear_failed_jobs();
+            
+            if ($result['success']) {
+                wp_send_json_success($result);
+            } else {
+                wp_send_json_error($result);
+            }
+            
+        } catch (Exception $e) {
+            wp_send_json_error(array('message' => 'Failed to clear failed jobs: ' . $e->getMessage()));
+        }
+    }
+    
+    /**
+     * AJAX handler for debugging video thumbnails
+     * Tests thumbnail detection for a specific submission
+     */
+    public function ajax_debug_video_thumbnail() {
+        // Simple test first - don't try to do anything complex
+        wp_send_json_success(array('message' => 'Handler reached successfully', 'data' => array(
+            'submission_id' => $_POST['submission_id'] ?? 'not provided',
+            'nonce_provided' => isset($_POST['nonce']),
+            'user_can_manage' => current_user_can('manage_options'),
+            'class_exists' => class_exists('CF7_Artist_Submissions_Media_Converter')
+        )));
+    }
+    
+    /**
+     * Format debug information as HTML for display
+     */
+    private function format_debug_info_as_html($debug_info) {
+        $html = '<div class="cf7-debug-results">';
+        
+        // Submission info
+        if (isset($debug_info['submission'])) {
+            $html .= '<h4>Submission Information:</h4>';
+            $html .= '<ul>';
+            foreach ($debug_info['submission'] as $key => $value) {
+                $html .= '<li><strong>' . esc_html(ucwords(str_replace('_', ' ', $key))) . ':</strong> ' . esc_html($value) . '</li>';
+            }
+            $html .= '</ul>';
+        }
+        
+        // Show existing submissions if the requested one wasn't found
+        if (isset($debug_info['existing_submissions'])) {
+            $html .= '<h4>Available Submissions (last 10):</h4>';
+            if (empty($debug_info['existing_submissions'])) {
+                $html .= '<p>No submissions found in database.</p>';
+            } else {
+                $html .= '<ul>';
+                foreach ($debug_info['existing_submissions'] as $submission) {
+                    $html .= '<li>' . esc_html($submission) . '</li>';
+                }
+                $html .= '</ul>';
+            }
+        }
+        
+        // Video files
+        if (isset($debug_info['video_files'])) {
+            $html .= '<h4>Video Files Found:</h4>';
+            if (empty($debug_info['video_files'])) {
+                $html .= '<p>No video files found.</p>';
+            } else {
+                $html .= '<ul>';
+                foreach ($debug_info['video_files'] as $file) {
+                    $html .= '<li>' . esc_html($file) . '</li>';
+                }
+                $html .= '</ul>';
+            }
+        }
+        
+        // All files (for debugging)
+        if (isset($debug_info['all_files'])) {
+            $html .= '<h4>All Files for this Submission:</h4>';
+            if (empty($debug_info['all_files'])) {
+                $html .= '<p>No files found.</p>';
+            } else {
+                $html .= '<ul>';
+                foreach ($debug_info['all_files'] as $file) {
+                    $html .= '<li>' . esc_html($file) . '</li>';
+                }
+                $html .= '</ul>';
+            }
+        }
+        
+        // Database info
+        if (isset($debug_info['files_table_exists'])) {
+            $html .= '<h4>Database Information:</h4>';
+            $html .= '<p><strong>Files table exists:</strong> ' . ($debug_info['files_table_exists'] ? 'Yes' : 'No') . '</p>';
+            
+            if (isset($debug_info['table_columns'])) {
+                $html .= '<p><strong>Table columns:</strong></p><ul>';
+                foreach ($debug_info['table_columns'] as $column) {
+                    $html .= '<li>' . esc_html($column) . '</li>';
+                }
+                $html .= '</ul>';
+            }
+        }
+        
+        // Conversion jobs
+        if (isset($debug_info['conversion_jobs'])) {
+            $html .= '<h4>Conversion Jobs:</h4>';
+            if (empty($debug_info['conversion_jobs'])) {
+                $html .= '<p>No conversion jobs found.</p>';
+            } else {
+                foreach ($debug_info['conversion_jobs'] as $job) {
+                    $html .= '<div class="cf7-debug-job">';
+                    $html .= '<strong>Job ID:</strong> ' . esc_html($job['id']) . '<br>';
+                    $html .= '<strong>Status:</strong> ' . esc_html($job['status']) . '<br>';
+                    $html .= '<strong>Original File:</strong> ' . esc_html($job['original_file']) . '<br>';
+                    $html .= '<strong>Created:</strong> ' . esc_html($job['created_at']) . '<br>';
+                    if ($job['completed_at']) {
+                        $html .= '<strong>Completed:</strong> ' . esc_html($job['completed_at']) . '<br>';
+                    }
+                    $html .= '</div><hr>';
+                }
+            }
+        }
+        
+        // Converted files
+        if (isset($debug_info['converted_files'])) {
+            $html .= '<h4>Converted Files:</h4>';
+            if (empty($debug_info['converted_files'])) {
+                $html .= '<p>No converted files found.</p>';
+            } else {
+                foreach ($debug_info['converted_files'] as $file) {
+                    $html .= '<div class="cf7-debug-file">';
+                    $html .= '<strong>Version:</strong> ' . esc_html($file['version']) . '<br>';
+                    $html .= '<strong>File Path:</strong> ' . esc_html($file['file_path']) . '<br>';
+                    $html .= '<strong>File URL:</strong> ' . esc_html($file['file_url']) . '<br>';
+                    $html .= '<strong>Created:</strong> ' . esc_html($file['created_at']) . '<br>';
+                    $html .= '</div><hr>';
+                }
+            }
+        }
+        
+        // Thumbnail detection results
+        if (isset($debug_info['thumbnail_detection'])) {
+            $html .= '<h4>Thumbnail Detection Results:</h4>';
+            foreach ($debug_info['thumbnail_detection'] as $detection) {
+                $html .= '<div class="cf7-debug-detection">';
+                $html .= '<strong>File:</strong> ' . esc_html($detection['original_file']) . '<br>';
+                $html .= '<strong>WebP Thumbnail:</strong> ' . ($detection['webp_thumbnail'] ? 'Found: ' . esc_html($detection['webp_thumbnail']) : 'Not found') . '<br>';
+                $html .= '<strong>JPG Thumbnail:</strong> ' . ($detection['jpg_thumbnail'] ? 'Found: ' . esc_html($detection['jpg_thumbnail']) : 'Not found') . '<br>';
+                $html .= '<strong>Final Thumbnail:</strong> ' . ($detection['final_thumbnail'] ? esc_html($detection['final_thumbnail']) : 'Not found') . '<br>';
+                $html .= '</div><hr>';
+            }
+        }
+        
+        $html .= '</div>';
+        return $html;
+    }
+    
+    /**
+     * Simple AJAX test handler to verify routing
+     */
+    public function ajax_test_simple() {
+        wp_send_json_success(array('message' => 'Simple AJAX test successful'));
     }
 }

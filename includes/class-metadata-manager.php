@@ -44,7 +44,8 @@ class CF7_Artist_Submissions_Metadata_Manager {
      * Setup WordPress hooks
      */
     public static function setup_hooks() {
-        // Add any hooks here if needed
+        // Run schema updates on admin init
+        add_action('admin_init', array(__CLASS__, 'update_table_schema'));
     }
     
     private $table_name;
@@ -57,6 +58,63 @@ class CF7_Artist_Submissions_Metadata_Manager {
         $this->table_name = $wpdb->prefix . 'cf7as_files';
     }
     
+    /**
+     * Update table schema if needed (add missing columns)
+     */
+    public static function update_table_schema() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7as_files';
+        
+        // Check if table exists first
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$table_name'");
+        if (!$table_exists) {
+            self::create_files_table();
+            return;
+        }
+        
+        // Check for missing columns and add them
+        $columns_to_add = array(
+            'file_path' => 'ALTER TABLE ' . $table_name . ' ADD COLUMN file_path text AFTER s3_key',
+            'has_converted_versions' => 'ALTER TABLE ' . $table_name . ' ADD COLUMN has_converted_versions tinyint(1) DEFAULT 0 AFTER thumbnail_url',
+            'conversion_status' => 'ALTER TABLE ' . $table_name . ' ADD COLUMN conversion_status varchar(50) DEFAULT \'pending\' AFTER has_converted_versions',
+            'updated_at' => 'ALTER TABLE ' . $table_name . ' ADD COLUMN updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at'
+        );
+        
+        foreach ($columns_to_add as $column => $sql) {
+            $column_exists = $wpdb->get_results("
+                SELECT COLUMN_NAME 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = '$table_name' 
+                AND COLUMN_NAME = '$column'
+            ");
+            
+            if (empty($column_exists)) {
+                $wpdb->query($sql);
+            }
+        }
+        
+        // Add indexes if they don't exist
+        $indexes_to_add = array(
+            'conversion_status' => 'ALTER TABLE ' . $table_name . ' ADD KEY conversion_status (conversion_status)'
+        );
+        
+        foreach ($indexes_to_add as $index => $sql) {
+            $index_exists = $wpdb->get_results("
+                SELECT INDEX_NAME 
+                FROM information_schema.STATISTICS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = '$table_name' 
+                AND INDEX_NAME = '$index'
+            ");
+            
+            if (empty($index_exists)) {
+                $wpdb->query($sql);
+            }
+        }
+    }
+
     /**
      * Create the files table
      */
@@ -72,13 +130,18 @@ class CF7_Artist_Submissions_Metadata_Manager {
             submission_id varchar(255) NOT NULL,
             original_name text NOT NULL,
             s3_key text NOT NULL,
+            file_path text,
             mime_type varchar(255) NOT NULL,
             file_size int(11) NOT NULL,
             thumbnail_url text,
+            has_converted_versions tinyint(1) DEFAULT 0,
+            conversion_status varchar(50) DEFAULT 'pending',
             created_at timestamp DEFAULT CURRENT_TIMESTAMP,
+            updated_at timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY submission_id (submission_id),
-            KEY created_at (created_at)
+            KEY created_at (created_at),
+            KEY conversion_status (conversion_status)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -346,5 +409,63 @@ class CF7_Artist_Submissions_Metadata_Manager {
         );
         
         return $result === $this->table_name;
+    }
+    
+    /**
+     * Update conversion status for a file
+     * 
+     * @param int $file_id File ID
+     * @param string $status Conversion status
+     * @param bool $has_converted_versions Whether file has converted versions
+     * @return bool Success status
+     */
+    public function update_conversion_status($file_id, $status, $has_converted_versions = null) {
+        global $wpdb;
+        
+        $update_data = array('conversion_status' => $status);
+        $format = array('%s');
+        
+        if ($has_converted_versions !== null) {
+            $update_data['has_converted_versions'] = $has_converted_versions ? 1 : 0;
+            $format[] = '%d';
+        }
+        
+        $result = $wpdb->update(
+            $this->table_name,
+            $update_data,
+            array('id' => $file_id),
+            $format,
+            array('%d')
+        );
+        
+        return $result !== false;
+    }
+
+    /**
+     * Get the best display URL for a file
+     * For GIF files, always returns the original file to preserve animation
+     * For other files, returns converted version if available, otherwise original
+     * 
+     * @param int $file_id File ID
+     * @return string|false Display URL or false if not found
+     */
+    public function get_display_url($file_id) {
+        $file_data = $this->get_file_metadata($file_id);
+        if (!$file_data) {
+            return false;
+        }
+        
+        // For GIF files, always use original to preserve animation
+        if ($file_data['mime_type'] === 'image/gif') {
+            return $file_data['file_url'];
+        }
+        
+        // For other files, use converted version if available
+        if (!empty($file_data['converted_url'])) {
+            return $file_data['converted_url'];
+        }
+        
+        // Fallback to original file
+        return $file_data['file_url'];
     }
 }

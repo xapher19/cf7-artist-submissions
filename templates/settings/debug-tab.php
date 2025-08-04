@@ -121,6 +121,23 @@ if (!defined('ABSPATH')) {
                 }
                 ?>
             </div>
+
+            <!-- Video Thumbnail Debugging -->
+            <div class="cf7-debug-section">
+                <h3><?php _e('Video Thumbnail Debugging', 'cf7-artist-submissions'); ?></h3>
+                <p><?php _e('Debug video thumbnail detection and conversion issues.', 'cf7-artist-submissions'); ?></p>
+                
+                <div class="cf7-debug-actions">
+                    <div class="cf7-field-group">
+                        <label for="debug-submission-id"><?php _e('Submission ID:', 'cf7-artist-submissions'); ?></label>
+                        <input type="number" id="debug-submission-id" placeholder="<?php _e('Enter submission ID', 'cf7-artist-submissions'); ?>" min="1" />
+                    </div>
+                    <button type="button" class="cf7-test-btn" data-action="debug-video-thumbnail">
+                        <span class="dashicons dashicons-video-alt3"></span>
+                        <?php _e('Debug Video Thumbnails', 'cf7-artist-submissions'); ?>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- System Information -->

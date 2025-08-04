@@ -39,9 +39,7 @@ $options = get_option('cf7_artist_submissions_options', array());
         </p>
     </div>
 
-    <form method="post" action="options.php" class="cf7-settings-form">
-        <?php settings_fields('cf7_artist_submissions_options'); ?>
-        
+    <div class="cf7-settings-form-container" id="aws-settings-form-container">
         <div class="cf7-card-body">
             <!-- S3 Configuration Section -->
             <div class="cf7-form-section">
@@ -228,11 +226,28 @@ $options = get_option('cf7_artist_submissions_options', array());
                                id="mediaconvert_endpoint" 
                                name="cf7_artist_submissions_options[mediaconvert_endpoint]" 
                                value="<?php echo esc_attr(isset($options['mediaconvert_endpoint']) ? $options['mediaconvert_endpoint'] : ''); ?>" 
-                               placeholder="<?php _e('https://xxxxxxxx.mediaconvert.eu-west-1.amazonaws.com', 'cf7-artist-submissions'); ?>" />
+                               placeholder="<?php _e('https://mediaconvert.eu-west-1.amazonaws.com', 'cf7-artist-submissions'); ?>" />
                         <p class="cf7-field-help">
-                            <?php _e('Your MediaConvert account-specific endpoint URL. You can find this in the AWS MediaConvert console under "Account API endpoint".', 'cf7-artist-submissions'); ?>
+                            <?php _e('Your MediaConvert regional endpoint URL. For modern setup, use: https://mediaconvert.eu-west-1.amazonaws.com (replace eu-west-1 with your region).', 'cf7-artist-submissions'); ?>
                         </p>
                     </div>
+                </div>
+
+                <div class="cf7-field-group">
+                    <label class="cf7-field-label" for="mediaconvert_role_arn">
+                        <span class="dashicons dashicons-admin-network"></span>
+                        <?php _e('MediaConvert Service Role ARN', 'cf7-artist-submissions'); ?>
+                        <span class="cf7-required">*</span>
+                    </label>
+                    <input type="text" 
+                           class="cf7-field-input" 
+                           id="mediaconvert_role_arn" 
+                           name="cf7_artist_submissions_options[mediaconvert_role_arn]" 
+                           value="<?php echo esc_attr(isset($options['mediaconvert_role_arn']) ? $options['mediaconvert_role_arn'] : ''); ?>" 
+                           placeholder="<?php _e('arn:aws:iam::659942169281:role/CF7AS-MediaConvert-Role', 'cf7-artist-submissions'); ?>" />
+                    <p class="cf7-field-help">
+                        <?php _e('The ARN of your MediaConvert service role that allows MediaConvert to access your S3 bucket. Format: arn:aws:iam::YOUR-ACCOUNT-ID:role/CF7AS-MediaConvert-Role', 'cf7-artist-submissions'); ?>
+                    </p>
                 </div>
 
                 <div class="cf7-field-group">
@@ -285,6 +300,10 @@ $options = get_option('cf7_artist_submissions_options', array());
                             <span class="dashicons dashicons-cloud"></span>
                             <?php _e('Test Lambda Connection', 'cf7-artist-submissions'); ?>
                         </button>
+                        <button type="button" id="test-mediaconvert-connection" class="cf7-test-btn" style="margin-left: 10px;">
+                            <span class="dashicons dashicons-video-alt3"></span>
+                            <?php _e('Test MediaConvert Connection', 'cf7-artist-submissions'); ?>
+                        </button>
                         <button type="button" id="process-existing-files" class="cf7-test-btn" style="margin-left: 10px;">
                             <span class="dashicons dashicons-update"></span>
                             <?php _e('Process Existing Files', 'cf7-artist-submissions'); ?>
@@ -298,6 +317,7 @@ $options = get_option('cf7_artist_submissions_options', array());
                             <?php _e('Reset File Status', 'cf7-artist-submissions'); ?>
                         </button>
                         <div id="lambda-test-result" class="cf7-test-result" style="display: none;"></div>
+                        <div id="mediaconvert-test-result" class="cf7-test-result" style="display: none;"></div>
                         <div id="conversion-progress" class="cf7-conversion-progress" style="display: none;">
                             <div class="cf7-progress-bar">
                                 <div class="cf7-progress-fill" style="width: 0%"></div>
@@ -460,13 +480,18 @@ $options = get_option('cf7_artist_submissions_options', array());
                     <span class="dashicons dashicons-admin-tools"></span>
                     <?php _e('Test AWS Configuration', 'cf7-artist-submissions'); ?>
                 </button>
-                <button type="submit" class="cf7-btn cf7-btn-primary">
+                <button type="button" class="cf7-btn cf7-btn-primary" id="save-aws-settings">
                     <span class="dashicons dashicons-saved"></span>
                     <?php _e('Save AWS Settings', 'cf7-artist-submissions'); ?>
                 </button>
             </div>
         </div>
-    </form>
+    </div>
+
+    <!-- Loading indicator for save operations -->
+    <div id="aws-save-status" class="cf7-save-status" style="display: none;">
+        <div class="cf7-save-message"></div>
+    </div>
 </div>
 
 <script type="text/javascript">
@@ -722,6 +747,106 @@ jQuery(document).ready(function($) {
         });
     });
     
+    // Test MediaConvert connection
+    $('#test-mediaconvert-connection').on('click', function() {
+        const $button = $(this);
+        const $result = $('#mediaconvert-test-result');
+        const originalText = $button.html();
+        
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Testing...');
+        $result.hide();
+        
+        // Get MediaConvert configuration values
+        const mediaconvertConfig = {
+            aws_access_key: $('#aws_access_key').val(),
+            aws_secret_key: $('#aws_secret_key').val(),
+            aws_region: $('#aws_region').val(),
+            mediaconvert_endpoint: $('#mediaconvert_endpoint').val(),
+            mediaconvert_role_arn: $('#mediaconvert_role_arn').val(),
+            nonce: '<?php echo wp_create_nonce("cf7as_test_mediaconvert"); ?>'
+        };
+        
+        // Validate required fields
+        if (!mediaconvertConfig.aws_access_key || !mediaconvertConfig.aws_secret_key || !mediaconvertConfig.aws_region) {
+            $result.show().removeClass('success error').addClass('error')
+                   .html('<span class="dashicons dashicons-warning"></span> Please fill in AWS credentials and region before testing MediaConvert.');
+            $button.prop('disabled', false).html(originalText);
+            return;
+        }
+        
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'cf7as_test_mediaconvert_connection',
+                ...mediaconvertConfig
+            },
+            success: function(response) {
+                if (response.success) {
+                    const data = response.data;
+                    let html = '<div style="color: #008000; padding: 10px; background: #f0fff0; border: 1px solid #90EE90; border-radius: 4px;">';
+                    html += '<h4 style="color: #008000; margin-top: 0;">✅ MediaConvert Connection Test Results</h4>';
+                    
+                    if (data.connection_test) {
+                        html += '<p><strong>🎉 Connection Successful!</strong> MediaConvert is responding correctly.</p>';
+                    }
+                    
+                    html += '<ul>';
+                    html += '<li><strong>Endpoint Configured:</strong> ' + (data.endpoint_configured ? '✅ Yes' : '❌ No') + '</li>';
+                    html += '<li><strong>Credentials Configured:</strong> ' + (data.credentials_configured ? '✅ Yes' : '❌ No') + '</li>';
+                    html += '<li><strong>Service Role Configured:</strong> ' + (data.role_configured ? '✅ Yes' : '❌ No') + '</li>';
+                    html += '<li><strong>Connection Test:</strong> ' + (data.connection_test ? '✅ Success' : '❌ Failed') + '</li>';
+                    html += '</ul>';
+                    
+                    if (data.endpoint_url) {
+                        html += '<p><strong>Endpoint:</strong> ' + data.endpoint_url + '</p>';
+                    }
+                    if (data.role_arn) {
+                        html += '<p><strong>Service Role:</strong> ' + data.role_arn + '</p>';
+                    }
+                    
+                    html += '</div>';
+                    
+                    $result.html(html).show();
+                } else {
+                    const data = response.data;
+                    let html = '<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">';
+                    html += '<h4 style="color: #d63638; margin-top: 0;">❌ MediaConvert Connection Failed</h4>';
+                    
+                    if (data.error) {
+                        html += '<p><strong>Error:</strong> ' + data.error + '</p>';
+                    }
+                    
+                    if (data.suggestion) {
+                        html += '<p><strong>Suggestion:</strong> ' + data.suggestion + '</p>';
+                    }
+                    
+                    html += '<h5>🛠️ Setup Requirements:</h5>';
+                    html += '<ol>';
+                    html += '<li>Set MediaConvert endpoint: <code>https://mediaconvert.eu-west-1.amazonaws.com</code></li>';
+                    html += '<li>Configure MediaConvert service role ARN: <code>arn:aws:iam::659942169281:role/CF7AS-MediaConvert-Role</code></li>';
+                    html += '<li>Ensure service role has S3 permissions</li>';
+                    html += '<li>Verify IAM user has MediaConvert permissions</li>';
+                    html += '</ol>';
+                    html += '</div>';
+                    
+                    $result.html(html).show();
+                }
+            },
+            error: function(xhr, status, error) {
+                let html = '<div style="color: #d63638; padding: 10px; background: #fff5f5; border: 1px solid #ff9999; border-radius: 4px;">';
+                html += '<h4 style="color: #d63638; margin-top: 0;">❌ Test Request Failed</h4>';
+                html += '<p><strong>Error:</strong> ' + error + '</p>';
+                html += '</div>';
+                
+                $result.html(html).show();
+            },
+            complete: function() {
+                $button.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+    
     // Initialize secret field as hidden on page load
     const secretField = document.getElementById('aws_secret_key');
     if (secretField && secretField.value) {
@@ -852,11 +977,27 @@ jQuery(document).ready(function($) {
                     }
                     
                     html += '<div style="margin-top: 20px; text-align: center;">';
-                    html += '<button onclick="closeConversionModal()" style="background: #0073aa; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Close</button>';
+                    html += '<button onclick="closeConversionModal()" style="background: #0073aa; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Close</button>';
+                    
+                    // Add job management buttons if there are pending or failed jobs
+                    if (data.summary.pending > 0) {
+                        html += '<button onclick="clearPendingJobs()" style="background: #dba617; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px;">Clear ' + data.summary.pending + ' Pending Jobs</button>';
+                    }
+                    if (data.summary.failed > 0) {
+                        html += '<button onclick="clearFailedJobs()" style="background: #dc3232; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Clear ' + data.summary.failed + ' Failed Jobs</button>';
+                    }
+                    
                     html += '</div>';
                     html += '</div></div>';
                     
                     $('body').append(html);
+                    
+                    // Add keyboard support for closing modal
+                    $(document).on('keydown.conversionModal', function(e) {
+                        if (e.key === 'Escape') {
+                            closeConversionModal();
+                        }
+                    });
                 } else {
                     alert('Failed to load conversion status: ' + (response.data || 'Unknown error'));
                 }
@@ -1022,6 +1163,70 @@ jQuery(document).ready(function($) {
 
 }); // End of jQuery document ready
 
+// Handle AWS Settings Save
+jQuery(document).ready(function($) {
+    $('#save-aws-settings').on('click', function(e) {
+        e.preventDefault();
+        
+        const $button = $(this);
+        const $container = $('#aws-settings-form-container');
+        const $status = $('#aws-save-status');
+        const $message = $status.find('.cf7-save-message');
+        
+        // Show loading state
+        $button.prop('disabled', true).html('<span class="dashicons dashicons-update cf7-spin"></span> Saving...');
+        $status.removeClass('success error').hide();
+        
+        // Collect AWS form data
+        const formData = {
+            action: 'cf7_save_aws_settings',
+            nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>',
+            // S3 Settings
+            aws_access_key: $container.find('input[name="cf7_artist_submissions_options[aws_access_key]"]').val(),
+            aws_secret_key: $container.find('input[name="cf7_artist_submissions_options[aws_secret_key]"]').val(),
+            aws_region: $container.find('select[name="cf7_artist_submissions_options[aws_region]"]').val(),
+            s3_bucket: $container.find('input[name="cf7_artist_submissions_options[s3_bucket]"]').val(),
+            // MediaConvert Settings
+            mediaconvert_endpoint: $container.find('input[name="cf7_artist_submissions_options[mediaconvert_endpoint]"]').val(),
+            mediaconvert_role_arn: $container.find('input[name="cf7_artist_submissions_options[mediaconvert_role_arn]"]').val(),
+            // Lambda Settings  
+            pdf_lambda_function_arn: $container.find('input[name="cf7_artist_submissions_options[pdf_lambda_function_arn]"]').val()
+        };
+        
+        // Make AJAX request
+        $.ajax({
+            url: ajaxurl,
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    $status.addClass('success');
+                    $message.html('<strong>Success:</strong> ' + response.data.message);
+                } else {
+                    $status.addClass('error');
+                    $message.html('<strong>Error:</strong> ' + response.data.message);
+                }
+                $status.show();
+                
+                // Auto-hide success message after 3 seconds
+                if (response.success) {
+                    setTimeout(function() {
+                        $status.fadeOut();
+                    }, 3000);
+                }
+            },
+            error: function(xhr, status, error) {
+                $status.addClass('error');
+                $message.html('<strong>Error:</strong> Failed to save settings. Please try again.');
+                $status.show();
+            },
+            complete: function() {
+                $button.prop('disabled', false).html('<span class="dashicons dashicons-saved"></span> Save AWS Settings');
+            }
+        });
+    });
+});
+
 // Toggle secret field visibility
 function toggleSecretVisibility(fieldId) {
     const field = document.getElementById(fieldId);
@@ -1046,4 +1251,107 @@ function toggleSecretVisibility(fieldId) {
         button.title = 'Show Secret Key';
     }
 }
+
+// Close conversion status modal
+function closeConversionModal(event) {
+    if (event && event.target !== event.currentTarget) return;
+    const modal = document.getElementById('conversion-status-modal');
+    if (modal) {
+        modal.remove();
+        // Remove keyboard handler
+        jQuery(document).off('keydown.conversionModal');
+    }
+}
+
+// Clear pending conversion jobs
+function clearPendingJobs() {
+    if (!confirm('⚠️ CLEAR PENDING JOBS\n\nThis will permanently delete all pending conversion jobs.\nThese jobs will not be processed.\n\n⚠️ This action cannot be undone!\n\nContinue?')) {
+        return;
+    }
+    
+    jQuery.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'cf7as_clear_pending_jobs',
+            nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('✅ Success: ' + response.data.message);
+                closeConversionModal();
+                // Refresh the status if the button still exists
+                if (jQuery('#conversion-status').length) {
+                    jQuery('#conversion-status').click();
+                }
+            } else {
+                alert('❌ Error: ' + response.data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('❌ Error: Failed to clear pending jobs. Please try again.');
+        }
+    });
+}
+
+// Clear failed conversion jobs
+function clearFailedJobs() {
+    if (!confirm('⚠️ CLEAR FAILED JOBS\n\nThis will permanently delete all failed conversion jobs.\nYou can retry these files by reprocessing them.\n\n⚠️ This action cannot be undone!\n\nContinue?')) {
+        return;
+    }
+    
+    jQuery.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'cf7as_clear_failed_jobs',
+            nonce: '<?php echo wp_create_nonce("cf7_admin_nonce"); ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('✅ Success: ' + response.data.message);
+                closeConversionModal();
+                // Refresh the status if the button still exists
+                if (jQuery('#conversion-status').length) {
+                    jQuery('#conversion-status').click();
+                }
+            } else {
+                alert('❌ Error: ' + response.data.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            alert('❌ Error: Failed to clear failed jobs. Please try again.');
+        }
+    });
+}
 </script>
+
+<style>
+.cf7-save-status {
+    margin-top: 15px;
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid;
+}
+
+.cf7-save-status.success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.cf7-save-status.error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.cf7-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>

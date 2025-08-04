@@ -129,6 +129,11 @@ function cf7_artist_submissions_init() {
         CF7_Artist_Submissions_Metadata_Manager::init();
     }
     
+    // Initialize Media Converter
+    if (class_exists('CF7_Artist_Submissions_Media_Converter')) {
+        $media_converter = new CF7_Artist_Submissions_Media_Converter();
+    }
+    
     // Initialize Dashboard
     $dashboard = new CF7_Artist_Submissions_Dashboard();
     $dashboard->init();
@@ -158,6 +163,18 @@ function cf7_artist_submissions_init() {
 }
 
 add_action('plugins_loaded', 'cf7_artist_submissions_init');
+
+// Load text domain for translations at the proper time
+add_action('init', 'cf7_artist_submissions_load_textdomain');
+
+/**
+ * Load plugin text domain for translations
+ * 
+ * @since 1.2.0
+ */
+function cf7_artist_submissions_load_textdomain() {
+    load_plugin_textdomain('cf7-artist-submissions', false, dirname(plugin_basename(__FILE__)) . '/languages');
+}
 
 /**
  * Add custom cron schedule for email processing and action reminders.

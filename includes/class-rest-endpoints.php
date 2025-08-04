@@ -3,7 +3,19 @@
  * CF7 Artist Submissions - WordPress REST API Integration System
  *
  * Comprehensive REST API endpoint system providing secure file upload operations,
- * metadata management, admin file operations, and AJAX communication interfaces
+ * metadata management, admin file operations, and AJAX communication i        // Get file download URL (admin only)
+        register_rest_route($namespace, '/file/(?P<file_id>\d+)/download', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_download_url'),
+            'permission_callback' => array($this, 'check_admin_permissions')
+        ));
+        
+        // Get file display URL (admin only) - optimized for GIF preservation
+        register_rest_route($namespace, '/file/(?P<file_id>\d+)/display', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_display_url'),
+            'permission_callback' => array($this, 'check_admin_permissions')
+        ));ces
  * with advanced authentication, validation, and error handling capabilities.
  *
  * Features:
@@ -498,6 +510,28 @@ class CF7_Artist_Submissions_REST_Endpoints {
             'download_url' => $download_url,
             'filename' => $file_data['original_name'],
             'file_size' => $file_data['file_size']
+        );
+    }
+    
+    /**
+     * Get display URL for a file
+     * Returns the best URL for displaying the file (original for GIFs, converted for others)
+     */
+    public function get_display_url($request) {
+        $file_id = $request->get_param('file_id');
+        
+        $display_url = $this->get_metadata_manager()->get_display_url($file_id);
+        if (!$display_url) {
+            return new WP_Error('display_url_failed', 'Failed to get display URL', array('status' => 500));
+        }
+        
+        $file_data = $this->get_metadata_manager()->get_file_metadata($file_id);
+        
+        return array(
+            'display_url' => $display_url,
+            'filename' => $file_data['original_name'],
+            'mime_type' => $file_data['mime_type'],
+            'is_gif' => $file_data['mime_type'] === 'image/gif'
         );
     }
     

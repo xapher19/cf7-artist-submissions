@@ -49,15 +49,17 @@ class CF7_Artist_Submissions_Media_Converter {
         $this->s3_handler = new CF7_Artist_Submissions_S3_Handler();
         $init_result = $this->s3_handler->init(); // Initialize S3 handler with settings
         
-        
-        // Set up AWS MediaConvert and Lambda configuration
-        $this->setup_aws_configuration();
-        
-        // Set up conversion presets
-        $this->setup_conversion_presets();
-        
-        // Initialize system limits and detect image library
-        $this->init_system_limits();
+        // Only initialize MediaConvert if conversion is enabled
+        if ($this->is_conversion_enabled()) {
+            // Set up AWS MediaConvert and Lambda configuration
+            $this->setup_aws_configuration();
+            
+            // Set up conversion presets
+            $this->setup_conversion_presets();
+            
+            // Initialize system limits and detect image library
+            $this->init_system_limits();
+        }
         
         // Hook into file upload process
         add_action('cf7as_file_uploaded', array($this, 'trigger_conversion'), 10, 2);
@@ -76,6 +78,18 @@ class CF7_Artist_Submissions_Media_Converter {
         add_action('wp_ajax_cf7as_process_existing_files', array($this, 'ajax_process_existing_files'));
         add_action('wp_ajax_cf7as_get_conversion_status', array($this, 'ajax_get_conversion_status'));
         add_action('wp_ajax_cf7as_reset_file_status', array($this, 'ajax_reset_file_status'));
+        add_action('wp_ajax_cf7as_check_conversion_jobs', array($this, 'ajax_check_conversion_jobs'));
+        
+        // Set up cron job for checking conversion status
+        add_action('cf7as_check_conversion_jobs', array($this, 'process_conversion_queue'));
+        
+        // Schedule cron job if not already scheduled
+        if (!wp_next_scheduled('cf7as_check_conversion_jobs')) {
+            wp_schedule_event(time(), 'cf7as_every_5_minutes', 'cf7as_check_conversion_jobs');
+        }
+        
+        // Add custom cron interval
+        add_filter('cron_schedules', array($this, 'add_cron_intervals'));
     }
     
     /**
@@ -84,6 +98,15 @@ class CF7_Artist_Submissions_Media_Converter {
     public function create_tables() {
         $this->create_conversion_jobs_table();
         $this->create_converted_files_table();
+    }
+    
+    /**
+     * Check if conversion is enabled in settings
+     */
+    private function is_conversion_enabled() {
+        $options = get_option('cf7_artist_submissions_options', array());
+        $enabled = isset($options['enable_media_conversion']) && $options['enable_media_conversion'] === 'on';
+        return $enabled;
     }
     
     /**
@@ -96,14 +119,20 @@ class CF7_Artist_Submissions_Media_Converter {
         $this->mediaconvert_endpoint = isset($options['mediaconvert_endpoint']) ? $options['mediaconvert_endpoint'] : '';
         $this->lambda_function_name = isset($options['lambda_function_name']) ? $options['lambda_function_name'] : 'cf7as-image-converter';
         
-        // If MediaConvert endpoint is empty, construct default endpoint
+        // If MediaConvert endpoint is empty, construct the regional endpoint (no longer needs account-specific endpoints)
         if (empty($this->mediaconvert_endpoint)) {
             $this->mediaconvert_endpoint = "https://mediaconvert.{$this->aws_region}.amazonaws.com";
         }
         
-        error_log('CF7AS Media Converter: AWS Region = ' . $this->aws_region);
-        error_log('CF7AS Media Converter: MediaConvert Endpoint = ' . $this->mediaconvert_endpoint);
-        error_log('CF7AS Media Converter: Lambda Function = ' . $this->lambda_function_name);
+        // Ensure endpoint doesn't have trailing slash
+        $this->mediaconvert_endpoint = rtrim($this->mediaconvert_endpoint, '/');
+        
+        // Only log if in admin area or during file uploads to reduce log spam
+        if (is_admin() || wp_doing_ajax()) {
+            error_log('CF7AS Media Converter: AWS Region = ' . $this->aws_region);
+            error_log('CF7AS Media Converter: MediaConvert Endpoint = ' . $this->mediaconvert_endpoint);
+            error_log('CF7AS Media Converter: Lambda Function = ' . $this->lambda_function_name);
+        }
     }
     
     /**
@@ -190,7 +219,10 @@ class CF7_Artist_Submissions_Media_Converter {
             $this->image_library = 'none';
         }
         
-        error_log('CF7AS Media Converter: Detected image library = ' . $this->image_library);
+        // Only log if in admin area or during file uploads to reduce log spam
+        if (is_admin() || wp_doing_ajax()) {
+            error_log('CF7AS Media Converter: Detected image library = ' . $this->image_library);
+        }
     }
     
     /**
@@ -262,33 +294,56 @@ class CF7_Artist_Submissions_Media_Converter {
      * @param array $file_metadata File metadata
      */
     public function trigger_conversion($s3_key, $file_metadata) {
-        
-        if (!$this->is_conversion_enabled()) {
+        try {
+            error_log('CF7AS Media Converter: Starting conversion trigger for ' . $s3_key);
+            
+            if (!$this->is_conversion_enabled()) {
+                error_log('CF7AS Media Converter: Conversion not enabled, skipping ' . $s3_key);
+                return false;
+            }
+            
+            $file_type = $this->get_file_type($file_metadata['mime_type']);
+            
+            // Skip conversion for GIF files - preserve original animated GIFs
+            if ($file_metadata['mime_type'] === 'image/gif') {
+                error_log('CF7AS Media Converter: Skipping conversion for GIF file (preserving animation): ' . $s3_key);
+                return false;
+            }
+            
+            // Only convert images and videos
+            if (!in_array($file_type, array('image', 'video'))) {
+                error_log('CF7AS Media Converter: File type not supported for conversion: ' . $file_type . ' for ' . $s3_key);
+                return false;
+            }
+            
+            // Create conversion job record
+            $job_id = $this->create_conversion_job($s3_key, $file_metadata, $file_type);
+            
+            if (!$job_id) {
+                error_log('CF7AS Media Converter: Failed to create conversion job for ' . $s3_key);
+                return false;
+            }
+            
+            error_log('CF7AS Media Converter: Created conversion job ' . $job_id . ' for ' . $s3_key);
+            
+            // Trigger AWS service based on file type
+            if ($file_type === 'image') {
+                return $this->trigger_lambda_conversion($job_id, $s3_key, $file_metadata);
+            } elseif ($file_type === 'video') {
+                return $this->trigger_mediaconvert_job($job_id, $s3_key, $file_metadata);
+            }
+            
+            return false;
+            
+        } catch (Exception $e) {
+            error_log('CF7AS Media Converter: Exception in trigger_conversion for ' . $s3_key . ': ' . $e->getMessage());
+            error_log('CF7AS Media Converter: Stack trace: ' . $e->getTraceAsString());
+            return false;
+        } catch (Error $e) {
+            error_log('CF7AS Media Converter: Fatal error in trigger_conversion for ' . $s3_key . ': ' . $e->getMessage());
+            error_log('CF7AS Media Converter: Stack trace: ' . $e->getTraceAsString());
             return false;
         }
-        
-        $file_type = $this->get_file_type($file_metadata['mime_type']);
-        
-        // Only convert images and videos
-        if (!in_array($file_type, array('image', 'video'))) {
-            return false;
-        }
-        
-        // Create conversion job record
-        $job_id = $this->create_conversion_job($s3_key, $file_metadata, $file_type);
-        
-        if (!$job_id) {
-            return false;
-        }
-        
-        // Trigger AWS service based on file type
-        if ($file_type === 'image') {
-            return $this->trigger_lambda_conversion($job_id, $s3_key, $file_metadata);
-        } elseif ($file_type === 'video') {
-            return $this->trigger_mediaconvert_job($job_id, $s3_key, $file_metadata);
-        }
-        
-        return false;
     }
     
     /**
@@ -401,34 +456,69 @@ class CF7_Artist_Submissions_Media_Converter {
      * @return bool Success status
      */
     private function trigger_mediaconvert_job($job_id, $s3_key, $file_metadata) {
-        $options = get_option('cf7_artist_submissions_options', array());
-        $aws_access_key = isset($options['aws_access_key']) ? $options['aws_access_key'] : '';
-        $aws_secret_key = isset($options['aws_secret_key']) ? $options['aws_secret_key'] : '';
-        
-        if (empty($aws_access_key) || empty($aws_secret_key)) {
-            error_log('CF7AS Media Converter: Missing AWS credentials for MediaConvert');
-            return false;
-        }
-        
-        // Prepare MediaConvert job specification
-        $job_spec = $this->create_mediaconvert_job_spec($s3_key, $file_metadata);
-        
-        // Create MediaConvert job
-        $response = $this->create_mediaconvert_job($job_spec, $aws_access_key, $aws_secret_key);
-        
-        if ($response && isset($response['Job']['Id'])) {
-            // Update job record with MediaConvert job ID
-            global $wpdb;
-            $wpdb->update(
-                $wpdb->prefix . 'cf7as_conversion_jobs',
-                array('external_job_id' => $response['Job']['Id']),
-                array('id' => $job_id)
-            );
+        try {
+            error_log('CF7AS Media Converter: Starting MediaConvert job for ' . $s3_key . ' (job ID: ' . $job_id . ')');
             
-            error_log("CF7AS Media Converter: Successfully created MediaConvert job {$response['Job']['Id']} for job {$job_id}");
-            return true;
-        } else {
-            error_log("CF7AS Media Converter: Failed to create MediaConvert job for job {$job_id}");
+            $options = get_option('cf7_artist_submissions_options', array());
+            $aws_access_key = isset($options['aws_access_key']) ? $options['aws_access_key'] : '';
+            $aws_secret_key = isset($options['aws_secret_key']) ? $options['aws_secret_key'] : '';
+            
+            if (empty($aws_access_key) || empty($aws_secret_key)) {
+                error_log('CF7AS Media Converter: Missing AWS credentials for MediaConvert');
+                $this->update_job_status($job_id, 'failed', 'Missing AWS credentials');
+                return false;
+            }
+            
+            // Prepare MediaConvert job specification
+            $job_spec = $this->create_mediaconvert_job_spec($s3_key, $file_metadata);
+            
+            if (!$job_spec) {
+                error_log('CF7AS Media Converter: Failed to create MediaConvert job spec for ' . $s3_key);
+                $this->update_job_status($job_id, 'failed', 'Failed to create job specification');
+                return false;
+            }
+            
+            // Create MediaConvert job
+            $response = $this->create_mediaconvert_job($job_spec, $aws_access_key, $aws_secret_key);
+            
+            // Debug: Log the full response structure
+            error_log('CF7AS MediaConvert: Full response structure: ' . print_r($response, true));
+            
+            if ($response && isset($response['job']['id'])) {
+                // Update job record with MediaConvert job ID (lowercase 'job' and 'id' from actual response)
+                global $wpdb;
+                $result = $wpdb->update(
+                    $wpdb->prefix . 'cf7as_conversion_jobs',
+                    array(
+                        'external_job_id' => $response['job']['id'],
+                        'status' => 'processing'
+                    ),
+                    array('id' => $job_id)
+                );
+                
+                if ($result === false) {
+                    error_log('CF7AS Media Converter: Failed to update job status in database for job ' . $job_id);
+                }
+                
+                error_log("CF7AS Media Converter: Successfully created MediaConvert job {$response['job']['id']} for job {$job_id}");
+                return true;
+            } else {
+                // Enhanced error logging
+                error_log("CF7AS Media Converter: Failed to create MediaConvert job for job {$job_id}");
+                error_log("CF7AS Media Converter: Response structure check failed. Response: " . print_r($response, true));
+                $this->update_job_status($job_id, 'failed', 'MediaConvert job creation failed - invalid response structure');
+                return false;
+            }
+            
+        } catch (Exception $e) {
+            error_log("CF7AS Media Converter: MediaConvert job creation exception for job {$job_id}: " . $e->getMessage());
+            error_log("CF7AS Media Converter: Exception trace: " . $e->getTraceAsString());
+            $this->update_job_status($job_id, 'failed', 'MediaConvert error: ' . $e->getMessage());
+            return false;
+        } catch (Error $e) {
+            error_log("CF7AS Media Converter: MediaConvert job creation fatal error for job {$job_id}: " . $e->getMessage());
+            error_log("CF7AS Media Converter: Error trace: " . $e->getTraceAsString());
+            $this->update_job_status($job_id, 'failed', 'MediaConvert fatal error: ' . $e->getMessage());
             return false;
         }
     }
@@ -522,51 +612,167 @@ class CF7_Artist_Submissions_Media_Converter {
      * @return array Job specification
      */
     private function create_mediaconvert_job_spec($s3_key, $file_metadata) {
-        $input_s3_uri = "s3://{$this->s3_handler->get_bucket_name()}/{$s3_key}";
-        $output_path = dirname($s3_key) . '/';
+        $bucket_name = $this->s3_handler->get_bucket_name();
+        $input_s3_uri = "s3://{$bucket_name}/{$s3_key}";
+        $output_path = dirname($s3_key) . '/converted/';
         $filename = pathinfo($s3_key, PATHINFO_FILENAME);
+        
+        // Get MediaConvert service role ARN
+        $options = get_option('cf7_artist_submissions_options', array());
+        $mediaconvert_role = isset($options['mediaconvert_role_arn']) ? $options['mediaconvert_role_arn'] : '';
+        
+        if (empty($mediaconvert_role)) {
+            throw new Exception('MediaConvert service role ARN not configured');
+        }
         
         $outputs = array();
         
-        // Add video presets
+        // Add video presets with modern settings
         foreach ($this->conversion_presets as $preset_name => $preset) {
             if ($preset['type'] === 'video') {
                 if ($preset['format'] === 'mp4') {
-                    // Video output
+                    // Modern MP4 output configuration
                     $outputs[] = array(
                         'NameModifier' => $preset['suffix'],
-                        'Preset' => 'System-Generic_Hd_Mp4_Avc_Aac_16x9_1280x720p_24Hz_4.5Mbps',
-                        'Extension' => $preset['format']
+                        'ContainerSettings' => array(
+                            'Container' => 'MP4',
+                            'Mp4Settings' => array(
+                                'CslgAtom' => 'INCLUDE',
+                                'FreeSpaceBox' => 'EXCLUDE',
+                                'MoovPlacement' => 'PROGRESSIVE_DOWNLOAD'
+                            )
+                        ),
+                        'VideoDescription' => array(
+                            'Width' => $preset['width'],
+                            'Height' => $preset['height'],
+                            'ScalingBehavior' => 'DEFAULT',
+                            'TimecodeInsertion' => 'DISABLED',
+                            'AntiAlias' => 'ENABLED',
+                            'Sharpness' => 50,
+                            'CodecSettings' => array(
+                                'Codec' => 'H_264',
+                                'H264Settings' => array(
+                                    'InterlaceMode' => 'PROGRESSIVE',
+                                    'NumberReferenceFrames' => 3,
+                                    'Syntax' => 'DEFAULT',
+                                    'Softness' => 0,
+                                    'GopClosedCadence' => 1,
+                                    'GopSize' => 90,
+                                    'Slices' => 1,
+                                    'GopBReference' => 'DISABLED',
+                                    'SlowPal' => 'DISABLED',
+                                    'SpatialAdaptiveQuantization' => 'ENABLED',
+                                    'TemporalAdaptiveQuantization' => 'ENABLED',
+                                    'FlickerAdaptiveQuantization' => 'DISABLED',
+                                    'EntropyEncoding' => 'CABAC',
+                                    'Bitrate' => $preset['bitrate'] * 1000, // Convert to bps
+                                    'FramerateControl' => 'INITIALIZE_FROM_SOURCE',
+                                    'RateControlMode' => 'CBR',
+                                    'CodecProfile' => 'MAIN',
+                                    'Telecine' => 'NONE',
+                                    'MinIInterval' => 0,
+                                    'AdaptiveQuantization' => 'HIGH',
+                                    'CodecLevel' => 'AUTO',
+                                    'FieldEncoding' => 'PAFF',
+                                    'SceneChangeDetect' => 'ENABLED',
+                                    'QualityTuningLevel' => 'SINGLE_PASS',
+                                    'FramerateConversionAlgorithm' => 'DUPLICATE_DROP',
+                                    'UnregisteredSeiTimecode' => 'DISABLED',
+                                    'GopSizeUnits' => 'FRAMES',
+                                    'ParControl' => 'INITIALIZE_FROM_SOURCE',
+                                    'NumberBFramesBetweenReferenceFrames' => 2,
+                                    'RepeatPps' => 'DISABLED'
+                                )
+                            )
+                        ),
+                        'AudioDescriptions' => array(
+                            array(
+                                'AudioTypeControl' => 'FOLLOW_INPUT',
+                                'CodecSettings' => array(
+                                    'Codec' => 'AAC',
+                                    'AacSettings' => array(
+                                        'AudioDescriptionBroadcasterMix' => 'NORMAL',
+                                        'Bitrate' => 96000,
+                                        'RateControlMode' => 'CBR',
+                                        'CodecProfile' => 'LC',
+                                        'CodingMode' => 'CODING_MODE_2_0',
+                                        'RawFormat' => 'NONE',
+                                        'SampleRate' => 48000,
+                                        'Specification' => 'MPEG4'
+                                    )
+                                ),
+                                'LanguageCodeControl' => 'FOLLOW_INPUT'
+                            )
+                        )
                     );
                 } elseif ($preset['format'] === 'jpg') {
-                    // Thumbnail output
+                    // Thumbnail extraction configuration
                     $outputs[] = array(
                         'NameModifier' => $preset['suffix'],
-                        'Preset' => 'System-Generic_Thumbnail_Jpg_300x300',
-                        'Extension' => $preset['format']
+                        'ContainerSettings' => array(
+                            'Container' => 'RAW'
+                        ),
+                        'VideoDescription' => array(
+                            'Width' => $preset['width'],
+                            'Height' => $preset['height'],
+                            'ScalingBehavior' => 'DEFAULT',
+                            'TimecodeInsertion' => 'DISABLED',
+                            'AntiAlias' => 'ENABLED',
+                            'Sharpness' => 50,
+                            'CodecSettings' => array(
+                                'Codec' => 'FRAME_CAPTURE',
+                                'FrameCaptureSettings' => array(
+                                    'FramerateNumerator' => 1,
+                                    'FramerateDenominator' => $preset['time_offset'] ?? 5,
+                                    'MaxCaptures' => 1,
+                                    'Quality' => 80
+                                )
+                            )
+                        )
                     );
                 }
             }
         }
         
+        if (empty($outputs)) {
+            throw new Exception('No valid outputs configured for MediaConvert job');
+        }
+        
         return array(
-            'Role' => get_option('cf7_artist_submissions_mediaconvert_role', ''),
+            'Role' => $mediaconvert_role,
             'Settings' => array(
                 'Inputs' => array(array(
-                    'FileInput' => $input_s3_uri
+                    'FileInput' => $input_s3_uri,
+                    'AudioSelectors' => array(
+                        'Audio Selector 1' => array(
+                            'Offset' => 0,
+                            'DefaultSelection' => 'DEFAULT',
+                            'ProgramSelection' => 1
+                        )
+                    ),
+                    'VideoSelector' => array(
+                        'ColorSpace' => 'FOLLOW'
+                    ),
+                    'FilterEnable' => 'AUTO',
+                    'PsiControl' => 'USE_PSI',
+                    'FilterStrength' => 0,
+                    'DeblockFilter' => 'DISABLED',
+                    'DenoiseFilter' => 'DISABLED',
+                    'TimecodeSource' => 'EMBEDDED'
                 )),
                 'OutputGroups' => array(array(
                     'Name' => 'File Group',
                     'OutputGroupSettings' => array(
                         'Type' => 'FILE_GROUP_SETTINGS',
                         'FileGroupSettings' => array(
-                            'Destination' => "s3://{$this->s3_handler->get_bucket_name()}/{$output_path}"
+                            'Destination' => "s3://{$bucket_name}/{$output_path}"
                         )
                     ),
                     'Outputs' => $outputs
                 ))
             ),
-            'StatusUpdateInterval' => 'SECONDS_60'
+            'StatusUpdateInterval' => 'SECONDS_60',
+            'Priority' => 0
         );
     }
     
@@ -608,6 +814,10 @@ class CF7_Artist_Submissions_Media_Converter {
         
         $authorization = "AWS4-HMAC-SHA256 Credential={$access_key}/{$date}/{$this->aws_region}/mediaconvert/aws4_request, SignedHeaders=host;x-amz-date, Signature={$signature}";
         
+        // Log the request for debugging
+        error_log('CF7AS MediaConvert: Creating job with endpoint: ' . $this->mediaconvert_endpoint . $path);
+        error_log('CF7AS MediaConvert: Job payload: ' . $payload_json);
+        
         // Make request
         $response = wp_remote_post($this->mediaconvert_endpoint . $path, array(
             'headers' => array(
@@ -625,11 +835,31 @@ class CF7_Artist_Submissions_Media_Converter {
         }
         
         $status_code = wp_remote_retrieve_response_code($response);
-        if ($status_code === 201) {
-            return json_decode(wp_remote_retrieve_body($response), true);
-        }
+        $response_body = wp_remote_retrieve_body($response);
         
-        return false;
+        // Log response for debugging
+        error_log("CF7AS MediaConvert Response: HTTP $status_code");
+        error_log("CF7AS MediaConvert Response Body: $response_body");
+        
+        if ($status_code === 201) {
+            return json_decode($response_body, true);
+        } else {
+            // Parse error response
+            $error_data = json_decode($response_body, true);
+            $error_message = isset($error_data['message']) ? $error_data['message'] : 'Unknown MediaConvert error';
+            error_log("CF7AS MediaConvert Error: HTTP $status_code - $error_message");
+            
+            // Check for common error scenarios
+            if ($status_code === 400 && strpos($error_message, 'Role') !== false) {
+                error_log('CF7AS MediaConvert Error: Check MediaConvert service role ARN configuration');
+            } elseif ($status_code === 403) {
+                error_log('CF7AS MediaConvert Error: Check AWS credentials and permissions');
+            } elseif ($status_code === 404) {
+                error_log('CF7AS MediaConvert Error: Check endpoint URL - may need account-specific endpoint');
+            }
+            
+            return false;
+        }
     }
     
     /**
@@ -649,21 +879,15 @@ class CF7_Artist_Submissions_Media_Converter {
     }
     
     /**
-     * Check if conversion is enabled in settings
-     */
-    private function is_conversion_enabled() {
-        $options = get_option('cf7_artist_submissions_options', array());
-        $enabled = isset($options['enable_media_conversion']) && $options['enable_media_conversion'] === 'on';
-        return $enabled;
-    }
-    
-    /**
      * Process conversion queue (called by WordPress cron)
      */
     public function process_conversion_queue() {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        // Check processing MediaConvert jobs first
+        $this->check_mediaconvert_jobs();
         
         // Get pending jobs
         $jobs = $wpdb->get_results(
@@ -678,6 +902,386 @@ class CF7_Artist_Submissions_Media_Converter {
             
             // Small delay between jobs to prevent resource exhaustion
             usleep(500000); // 0.5 seconds
+        }
+    }
+    
+    /**
+     * Check status of processing MediaConvert jobs
+     */
+    private function check_mediaconvert_jobs() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        // Get processing MediaConvert jobs
+        $jobs = $wpdb->get_results(
+            "SELECT * FROM {$table_name} 
+             WHERE status = 'processing' 
+             AND file_type = 'video' 
+             AND external_job_id IS NOT NULL 
+             ORDER BY created_at ASC 
+             LIMIT 10"
+        );
+        
+        if (empty($jobs)) {
+            return;
+        }
+        
+        foreach ($jobs as $job) {
+            $this->check_mediaconvert_job_status($job);
+            
+            // Small delay between API calls
+            usleep(200000); // 0.2 seconds
+        }
+    }
+    
+    /**
+     * Check individual MediaConvert job status
+     * 
+     * @param object $job Job record from database
+     */
+    private function check_mediaconvert_job_status($job) {
+        $options = get_option('cf7_artist_submissions_options', array());
+        $aws_access_key = isset($options['aws_access_key']) ? $options['aws_access_key'] : '';
+        $aws_secret_key = isset($options['aws_secret_key']) ? $options['aws_secret_key'] : '';
+        
+        if (empty($aws_access_key) || empty($aws_secret_key) || empty($job->external_job_id)) {
+            return;
+        }
+        
+        try {
+            $job_status = $this->get_mediaconvert_job_status($job->external_job_id, $aws_access_key, $aws_secret_key);
+            
+            if ($job_status) {
+                $this->process_mediaconvert_job_status($job, $job_status);
+            }
+            
+        } catch (Exception $e) {
+            error_log("CF7AS Media Converter: Error checking MediaConvert job {$job->external_job_id}: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get MediaConvert job status from AWS
+     * 
+     * @param string $job_id MediaConvert job ID
+     * @param string $access_key AWS access key
+     * @param string $secret_key AWS secret key
+     * @return array|false Job status data or false on failure
+     */
+    private function get_mediaconvert_job_status($job_id, $access_key, $secret_key) {
+        // Create AWS signature for MediaConvert
+        $timestamp = gmdate('Ymd\THis\Z');
+        $date = gmdate('Ymd');
+        
+        // MediaConvert endpoint
+        $host = str_replace('https://', '', $this->mediaconvert_endpoint);
+        $path = "/2017-08-29/jobs/{$job_id}";
+        
+        $canonical_request = "GET\n" .
+                           $path . "\n" .
+                           "\n" .
+                           "host:{$host}\n" .
+                           "x-amz-date:{$timestamp}\n" .
+                           "\n" .
+                           "host;x-amz-date\n" .
+                           hash('sha256', '');
+        
+        $string_to_sign = "AWS4-HMAC-SHA256\n" .
+                         $timestamp . "\n" .
+                         "{$date}/{$this->aws_region}/mediaconvert/aws4_request\n" .
+                         hash('sha256', $canonical_request);
+        
+        $signing_key = $this->get_aws_signing_key($date, $this->aws_region, 'mediaconvert', $secret_key);
+        $signature = hash_hmac('sha256', $string_to_sign, $signing_key);
+        
+        $authorization = "AWS4-HMAC-SHA256 Credential={$access_key}/{$date}/{$this->aws_region}/mediaconvert/aws4_request, SignedHeaders=host;x-amz-date, Signature={$signature}";
+        
+        // Make request
+        $response = wp_remote_get($this->mediaconvert_endpoint . $path, array(
+            'headers' => array(
+                'Authorization' => $authorization,
+                'X-Amz-Date' => $timestamp,
+            ),
+            'timeout' => 30
+        ));
+        
+        if (is_wp_error($response)) {
+            error_log('CF7AS MediaConvert Status Error: ' . $response->get_error_message());
+            return false;
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+        
+        if ($status_code === 200) {
+            return json_decode($response_body, true);
+        } else {
+            error_log("CF7AS MediaConvert Status Error: HTTP $status_code - $response_body");
+            return false;
+        }
+    }
+    
+    /**
+     * Process MediaConvert job status response
+     * 
+     * @param object $job Job record from database
+     * @param array $job_status MediaConvert job status data
+     */
+    private function process_mediaconvert_job_status($job, $job_status) {
+        if (!isset($job_status['job']['status'])) {
+            return;
+        }
+        
+        $aws_status = $job_status['job']['status'];
+        $progress = isset($job_status['job']['jobPercentComplete']) ? (int)$job_status['job']['jobPercentComplete'] : 0;
+        
+        error_log("CF7AS MediaConvert: Job {$job->external_job_id} status: {$aws_status} ({$progress}%)");
+        
+        switch ($aws_status) {
+            case 'COMPLETE':
+                $this->handle_mediaconvert_completion($job, $job_status);
+                break;
+                
+            case 'ERROR':
+            case 'CANCELED':
+                $error_message = isset($job_status['job']['errorMessage']) ? $job_status['job']['errorMessage'] : "Job {$aws_status}";
+                $this->update_job_status($job->id, 'failed', $error_message);
+                break;
+                
+            case 'PROGRESSING':
+            case 'SUBMITTED':
+                // Update progress if available
+                if ($progress > 0) {
+                    $this->update_job_status($job->id, 'processing', null, array('progress' => $progress));
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Handle MediaConvert job completion
+     * 
+     * @param object $job Job record from database
+     * @param array $job_status MediaConvert job status data
+     */
+    private function handle_mediaconvert_completion($job, $job_status) {
+        // Extract output file information
+        $converted_files = array();
+        
+        if (isset($job_status['job']['outputGroupDetails'])) {
+            foreach ($job_status['job']['outputGroupDetails'] as $group) {
+                if (isset($group['outputDetails'])) {
+                    foreach ($group['outputDetails'] as $output) {
+                        if (isset($output['outputFilePaths'])) {
+                            foreach ($output['outputFilePaths'] as $file_path) {
+                                // Extract S3 key from s3://bucket/key format
+                                if (strpos($file_path, 's3://') === 0) {
+                                    $s3_parts = explode('/', substr($file_path, 5), 2);
+                                    if (count($s3_parts) === 2) {
+                                        $s3_key = $s3_parts[1];
+                                        
+                                        // Determine format and preset from file name and extension
+                                        $format = '';
+                                        $preset = '';
+                                        
+                                        // Check for video web format
+                                        if (strpos($s3_key, '_web.mp4') !== false) {
+                                            $format = 'mp4';
+                                            $preset = 'video_web';
+                                        }
+                                        // Check for video thumbnail format
+                                        elseif (strpos($s3_key, '_thumb.jpg') !== false || strpos($s3_key, '_thumb.jpeg') !== false) {
+                                            $format = 'jpg';
+                                            $preset = 'video_thumbnail';
+                                        }
+                                        // Check for WebP video thumbnail format
+                                        elseif (strpos($s3_key, '_webp.webp') !== false || strpos($s3_key, '_thumb_webp.webp') !== false) {
+                                            $format = 'webp';
+                                            $preset = 'video_thumbnail';
+                                        }
+                                        // Try to detect from MediaConvert output metadata
+                                        elseif (isset($output['nameModifier'])) {
+                                            if ($output['nameModifier'] === '_web') {
+                                                $format = 'mp4';
+                                                $preset = 'video_web';
+                                            } elseif ($output['nameModifier'] === '_thumb') {
+                                                $format = 'jpg';
+                                                $preset = 'video_thumbnail';
+                                            }
+                                        }
+                                        
+                                        $converted_files[] = array(
+                                            'original_s3_key' => $job->original_s3_key,
+                                            'converted_s3_key' => $s3_key,
+                                            'output_path' => $file_path,
+                                            'format' => $format,
+                                            'preset' => $preset
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Update job status
+        $additional_data = array(
+            'progress' => 100
+        );
+        
+        if (!empty($converted_files)) {
+            $additional_data['converted_files'] = json_encode($converted_files);
+            $this->store_converted_files($job->id, $converted_files);
+        }
+        
+        $this->update_job_status($job->id, 'completed', null, $additional_data);
+        
+        // Update original file record
+        if (!empty($converted_files)) {
+            $this->update_original_file_record($job->id, $converted_files);
+        }
+        
+        error_log("CF7AS Media Converter: MediaConvert job {$job->external_job_id} completed successfully with " . count($converted_files) . " converted files");
+        
+        // Post-process JPG thumbnails to WebP
+        $this->convert_thumbnails_to_webp($job->id, $converted_files);
+    }
+    
+    /**
+     * Convert JPG thumbnails to WebP format using Lambda
+     * 
+     * @param int $job_id Original conversion job ID
+     * @param array $converted_files Array of converted files from MediaConvert
+     */
+    private function convert_thumbnails_to_webp($job_id, $converted_files) {
+        foreach ($converted_files as $file) {
+            // Only process JPG thumbnails
+            if ($file['format'] === 'jpg' && $file['preset'] === 'video_thumbnail') {
+                error_log("CF7AS Media Converter: Converting JPG thumbnail to WebP: {$file['converted_s3_key']}");
+                
+                // Create a pseudo file metadata for the Lambda conversion
+                $thumbnail_metadata = array(
+                    'submission_id' => '', // Will be filled from original job
+                    'original_name' => basename($file['converted_s3_key']),
+                    'mime_type' => 'image/jpeg',
+                    'file_size' => 0 // Unknown at this point
+                );
+                
+                // Create a new conversion job for WebP conversion
+                $webp_job_id = $this->create_thumbnail_webp_job($job_id, $file['converted_s3_key'], $thumbnail_metadata);
+                
+                if ($webp_job_id) {
+                    // Trigger Lambda conversion for WebP
+                    $this->trigger_lambda_thumbnail_conversion($webp_job_id, $file['converted_s3_key'], $thumbnail_metadata);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Create a conversion job specifically for thumbnail WebP conversion
+     * 
+     * @param int $parent_job_id Original video conversion job ID
+     * @param string $jpg_s3_key S3 key of JPG thumbnail
+     * @param array $file_metadata File metadata
+     * @return int|false Job ID or false on failure
+     */
+    private function create_thumbnail_webp_job($parent_job_id, $jpg_s3_key, $file_metadata) {
+        global $wpdb;
+        
+        // Get parent job info
+        $parent_job = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}cf7as_conversion_jobs WHERE id = %d",
+            $parent_job_id
+        ));
+        
+        if (!$parent_job) {
+            return false;
+        }
+        
+        $table_name = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        $insert_data = array(
+            'original_s3_key' => $jpg_s3_key,
+            'submission_id' => $parent_job->submission_id,
+            'original_filename' => basename($jpg_s3_key),
+            'file_type' => 'image',
+            'mime_type' => 'image/jpeg',
+            'file_size' => 0,
+            'status' => 'pending',
+            'created_at' => current_time('mysql'),
+            'presets' => json_encode(array('webp_thumbnail' => array('format' => 'webp', 'suffix' => '_webp')))
+        );
+        
+        $result = $wpdb->insert($table_name, $insert_data);
+        
+        if ($result === false) {
+            return false;
+        }
+        
+        return $wpdb->insert_id;
+    }
+    
+    /**
+     * Trigger Lambda function for thumbnail WebP conversion
+     * 
+     * @param int $job_id Conversion job ID
+     * @param string $jpg_s3_key S3 key of JPG file
+     * @param array $file_metadata File metadata
+     * @return bool Success status
+     */
+    private function trigger_lambda_thumbnail_conversion($job_id, $jpg_s3_key, $file_metadata) {
+        $options = get_option('cf7_artist_submissions_options', array());
+        $aws_access_key = isset($options['aws_access_key']) ? $options['aws_access_key'] : '';
+        $aws_secret_key = isset($options['aws_secret_key']) ? $options['aws_secret_key'] : '';
+        
+        if (empty($aws_access_key) || empty($aws_secret_key)) {
+            error_log('CF7AS Media Converter: Missing AWS credentials for Lambda thumbnail conversion');
+            return false;
+        }
+        
+        $bucket_name = $this->s3_handler->get_bucket_name();
+        if (!$bucket_name) {
+            $options = get_option('cf7_artist_submissions_options', array());
+            $bucket_name = isset($options['s3_bucket']) ? $options['s3_bucket'] : '';
+        }
+        
+        // Create WebP conversion preset
+        $webp_presets = array(
+            'webp_thumbnail' => array(
+                'type' => 'image',
+                'width' => 300,
+                'height' => 300,
+                'format' => 'webp',
+                'quality' => 85,
+                'suffix' => '_webp'
+            )
+        );
+        
+        $payload = array(
+            'job_id' => $job_id,
+            's3_key' => $jpg_s3_key,
+            'bucket' => $bucket_name,
+            'presets' => $webp_presets,
+            'callback_url' => admin_url('admin-ajax.php?action=cf7as_conversion_callback'),
+            'file_metadata' => $file_metadata
+        );
+        
+        $lambda_endpoint = "https://lambda.{$this->aws_region}.amazonaws.com/2015-03-31/functions/{$this->lambda_function_name}/invocations";
+        
+        $response = $this->invoke_lambda_function($lambda_endpoint, $payload, $aws_access_key, $aws_secret_key);
+        
+        if ($response) {
+            error_log("CF7AS Media Converter: Successfully triggered Lambda for thumbnail WebP conversion job {$job_id}");
+            $this->process_lambda_response($job_id, $response);
+            return true;
+        } else {
+            error_log("CF7AS Media Converter: Failed to trigger Lambda for thumbnail WebP conversion job {$job_id}");
+            $this->update_job_status($job_id, 'failed', 'Lambda thumbnail WebP conversion failed');
+            return false;
         }
     }
     
@@ -904,6 +1508,7 @@ class CF7_Artist_Submissions_Media_Converter {
             status varchar(50) DEFAULT 'pending',
             lambda_job_id varchar(255) DEFAULT NULL,
             mediaconvert_job_id varchar(255) DEFAULT NULL,
+            external_job_id varchar(255) DEFAULT NULL,
             converted_files longtext DEFAULT NULL,
             error_message text DEFAULT NULL,
             progress int(3) DEFAULT 0,
@@ -916,11 +1521,31 @@ class CF7_Artist_Submissions_Media_Converter {
             KEY submission_id (submission_id),
             KEY status (status),
             KEY file_type (file_type),
-            KEY created_at (created_at)
+            KEY created_at (created_at),
+            KEY external_job_id (external_job_id)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+        
+        // Add missing column for existing installations
+        $this->add_missing_columns();
+    }
+    
+    /**
+     * Add missing columns to existing database tables
+     */
+    private function add_missing_columns() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        // Check if external_job_id column exists, if not add it
+        $column_exists = $wpdb->get_results("SHOW COLUMNS FROM $table_name LIKE 'external_job_id'");
+        if (empty($column_exists)) {
+            $wpdb->query("ALTER TABLE $table_name ADD COLUMN external_job_id varchar(255) DEFAULT NULL");
+            $wpdb->query("ALTER TABLE $table_name ADD KEY external_job_id (external_job_id)");
+        }
     }
     
     /**
@@ -966,7 +1591,13 @@ class CF7_Artist_Submissions_Media_Converter {
      * @return array Conversion presets
      */
     private function get_presets_for_type($file_type) {
-        return isset($this->conversion_presets[$file_type]) ? $this->conversion_presets[$file_type] : array();
+        $presets = array();
+        foreach ($this->conversion_presets as $name => $preset) {
+            if (isset($preset['type']) && $preset['type'] === $file_type) {
+                $presets[$name] = $preset;
+            }
+        }
+        return $presets;
     }
     
     /**
@@ -1281,21 +1912,27 @@ class CF7_Artist_Submissions_Media_Converter {
      * @return object|null Thumbnail file data or null if not available
      */
     public function get_thumbnail_version($original_s3_key) {
+        // First try to get image thumbnail (for image files)
         $thumbnail = $this->get_best_version_for_serving($original_s3_key, 'thumbnail');
         
         if (!$thumbnail) {
-            // Try to get video thumbnail
+            // Try to get video thumbnail - prefer WebP, then fall back to JPG
             $converted_versions = $this->get_converted_versions($original_s3_key);
+            $webp_thumbnail = null;
+            $jpg_thumbnail = null;
+            
             foreach ($converted_versions as $version) {
-                if (!empty($version->thumbnail_s3_key)) {
-                    // Create a pseudo-record for the thumbnail
-                    $thumbnail_record = clone $version;
-                    $thumbnail_record->converted_s3_key = $version->thumbnail_s3_key;
-                    $thumbnail_record->format = 'jpeg';
-                    $thumbnail_record->preset = 'thumbnail';
-                    return $thumbnail_record;
+                if ($version->preset === 'video_thumbnail') {
+                    if ($version->format === 'webp') {
+                        $webp_thumbnail = $version;
+                    } elseif ($version->format === 'jpg') {
+                        $jpg_thumbnail = $version;
+                    }
                 }
             }
+            
+            // Return WebP thumbnail if available, otherwise JPG
+            return $webp_thumbnail ?: $jpg_thumbnail;
         }
         
         return $thumbnail;
@@ -1343,11 +1980,12 @@ class CF7_Artist_Submissions_Media_Converter {
         // Get total count of files in table
         $total_files = $wpdb->get_var("SELECT COUNT(*) FROM $files_table");
         
-        // Get files that haven't been processed yet
+        // Get files that haven't been processed yet (excluding GIFs to preserve animation)
         $query = $wpdb->prepare("
             SELECT * FROM $files_table 
             WHERE (has_converted_versions IS NULL OR has_converted_versions = 0)
             AND (mime_type LIKE 'image/%' OR mime_type LIKE 'video/%' OR mime_type LIKE 'audio/%')
+            AND mime_type != 'image/gif'
             ORDER BY created_at DESC 
             LIMIT %d
         ", $limit);
@@ -1517,6 +2155,105 @@ class CF7_Artist_Submissions_Media_Converter {
         }
     }
     
+    /**
+     * Test MediaConvert connectivity and configuration
+     * 
+     * @return array Test results
+     */
+    public function test_mediaconvert_connection() {
+        $options = get_option('cf7_artist_submissions_options', array());
+        $aws_access_key = isset($options['aws_access_key']) ? $options['aws_access_key'] : '';
+        $aws_secret_key = isset($options['aws_secret_key']) ? $options['aws_secret_key'] : '';
+        $mediaconvert_role = isset($options['mediaconvert_role_arn']) ? $options['mediaconvert_role_arn'] : '';
+        
+        $results = array(
+            'endpoint_configured' => !empty($this->mediaconvert_endpoint),
+            'credentials_configured' => !empty($aws_access_key) && !empty($aws_secret_key),
+            'role_configured' => !empty($mediaconvert_role),
+            'endpoint_url' => $this->mediaconvert_endpoint,
+            'region' => $this->aws_region,
+            'role_arn' => $mediaconvert_role
+        );
+        
+        if (!$results['credentials_configured']) {
+            $results['error'] = 'AWS credentials not configured';
+            return $results;
+        }
+        
+        if (!$results['role_configured']) {
+            $results['error'] = 'MediaConvert service role ARN not configured';
+            return $results;
+        }
+        
+        // Test endpoint connectivity by trying to list jobs
+        try {
+            $timestamp = gmdate('Ymd\THis\Z');
+            $date = gmdate('Ymd');
+            $host = str_replace('https://', '', $this->mediaconvert_endpoint);
+            $path = '/2017-08-29/jobs';
+            
+            // Create GET request for listing jobs (this should work even with no jobs)
+            $canonical_request = "GET\n" .
+                               $path . "\n" .
+                               "\n" .
+                               "host:{$host}\n" .
+                               "x-amz-date:{$timestamp}\n" .
+                               "\n" .
+                               "host;x-amz-date\n" .
+                               hash('sha256', '');
+            
+            $string_to_sign = "AWS4-HMAC-SHA256\n" .
+                             $timestamp . "\n" .
+                             "{$date}/{$this->aws_region}/mediaconvert/aws4_request\n" .
+                             hash('sha256', $canonical_request);
+            
+            $signing_key = $this->get_aws_signing_key($date, $this->aws_region, 'mediaconvert', $aws_secret_key);
+            $signature = hash_hmac('sha256', $string_to_sign, $signing_key);
+            
+            $authorization = "AWS4-HMAC-SHA256 Credential={$aws_access_key}/{$date}/{$this->aws_region}/mediaconvert/aws4_request, SignedHeaders=host;x-amz-date, Signature={$signature}";
+            
+            $response = wp_remote_get($this->mediaconvert_endpoint . $path, array(
+                'headers' => array(
+                    'Authorization' => $authorization,
+                    'X-Amz-Date' => $timestamp
+                ),
+                'timeout' => 10
+            ));
+            
+            if (is_wp_error($response)) {
+                $results['connection_test'] = false;
+                $results['error'] = 'Connection failed: ' . $response->get_error_message();
+                return $results;
+            }
+            
+            $status_code = wp_remote_retrieve_response_code($response);
+            $response_body = wp_remote_retrieve_body($response);
+            
+            if ($status_code === 200) {
+                $results['connection_test'] = true;
+                $results['message'] = 'MediaConvert connection successful';
+            } else {
+                $results['connection_test'] = false;
+                $error_data = json_decode($response_body, true);
+                $error_message = isset($error_data['message']) ? $error_data['message'] : 'Unknown error';
+                $results['error'] = "HTTP $status_code: $error_message";
+                
+                // Provide specific guidance based on error
+                if ($status_code === 403) {
+                    $results['suggestion'] = 'Check AWS credentials and MediaConvert permissions';
+                } elseif ($status_code === 404) {
+                    $results['suggestion'] = 'Endpoint not found - you may need to use account-specific endpoint';
+                }
+            }
+            
+        } catch (Exception $e) {
+            $results['connection_test'] = false;
+            $results['error'] = 'Exception during test: ' . $e->getMessage();
+        }
+        
+        return $results;
+    }
+
     /**
      * Test Lambda connection and function availability
      * 
@@ -2160,7 +2897,7 @@ class CF7_Artist_Submissions_Media_Converter {
         
         $stats = $wpdb->get_row("
             SELECT 
-                (SELECT COUNT(*) FROM $files_table WHERE mime_type LIKE 'image/%' OR mime_type LIKE 'video/%' OR mime_type LIKE 'audio/%') as total_convertible,
+                (SELECT COUNT(*) FROM $files_table WHERE (mime_type LIKE 'image/%' OR mime_type LIKE 'video/%' OR mime_type LIKE 'audio/%') AND mime_type != 'image/gif') as total_convertible,
                 (SELECT COUNT(*) FROM $jobs_table WHERE status = 'completed') as completed,
                 (SELECT COUNT(*) FROM $jobs_table WHERE status = 'pending' OR status = 'processing') as pending,
                 (SELECT COUNT(*) FROM $jobs_table WHERE status = 'failed') as failed
@@ -2175,6 +2912,278 @@ class CF7_Artist_Submissions_Media_Converter {
             'failed_conversions' => intval($stats->failed),
             'conversion_rate' => round($conversion_rate, 1)
         );
+    }
+    
+    /**
+     * Clear pending conversion jobs
+     * 
+     * @return array Results with count of cleared jobs
+     */
+    public function clear_pending_jobs() {
+        global $wpdb;
+        
+        $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        // Count pending jobs first
+        $pending_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$jobs_table} WHERE status = %s",
+            'pending'
+        ));
+        
+        // Delete pending jobs
+        $deleted = $wpdb->delete(
+            $jobs_table,
+            array('status' => 'pending'),
+            array('%s')
+        );
+        
+        error_log("CF7AS Media Converter: Cleared {$deleted} pending conversion jobs");
+        
+        return array(
+            'success' => $deleted !== false,
+            'count' => $deleted,
+            'message' => $deleted !== false ? 
+                "Successfully cleared {$deleted} pending jobs" : 
+                'Failed to clear pending jobs'
+        );
+    }
+    
+    /**
+     * Clear failed conversion jobs
+     * 
+     * @return array Results with count of cleared jobs
+     */
+    public function clear_failed_jobs() {
+        global $wpdb;
+        
+        $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        // Count failed jobs first
+        $failed_count = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$jobs_table} WHERE status = %s",
+            'failed'
+        ));
+        
+        // Delete failed jobs and their converted file records
+        $deleted = $wpdb->delete(
+            $jobs_table,
+            array('status' => 'failed'),
+            array('%s')
+        );
+        
+        error_log("CF7AS Media Converter: Cleared {$deleted} failed conversion jobs");
+        
+        return array(
+            'success' => $deleted !== false,
+            'count' => $deleted,
+            'message' => $deleted !== false ? 
+                "Successfully cleared {$deleted} failed jobs" : 
+                'Failed to clear failed jobs'
+        );
+    }
+    
+    /**
+     * Add custom cron intervals
+     * 
+     * @param array $schedules Existing cron schedules
+     * @return array Modified cron schedules
+     */
+    public function add_cron_intervals($schedules) {
+        $schedules['cf7as_every_5_minutes'] = array(
+            'interval' => 300, // 5 minutes in seconds
+            'display' => __('Every 5 Minutes (CF7AS)')
+        );
+        
+        return $schedules;
+    }
+    
+    /**
+     * AJAX handler to manually check conversion jobs
+     */
+    public function ajax_check_conversion_jobs() {
+        // Verify user permissions
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Insufficient permissions');
+            return;
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'] ?? '', 'cf7as_admin_nonce')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+        
+        // Run the conversion queue check
+        $this->process_conversion_queue();
+        
+        // Get current status
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cf7as_conversion_jobs';
+        
+        $status_counts = $wpdb->get_results(
+            "SELECT status, COUNT(*) as count FROM {$table_name} GROUP BY status",
+            ARRAY_A
+        );
+        
+        $status_summary = array();
+        foreach ($status_counts as $row) {
+            $status_summary[$row['status']] = (int)$row['count'];
+        }
+        
+        wp_send_json_success(array(
+            'message' => 'Conversion jobs checked successfully',
+            'status_counts' => $status_summary
+        ));
+    }
+    
+    /**
+     * Debug method to check thumbnail detection for a video file
+     * 
+     * @param int $submission_id The submission ID to debug
+     * @return array Debug information about thumbnail detection
+     */
+    public function debug_video_thumbnail($submission_id) {
+        global $wpdb;
+        
+        $debug_info = array(
+            'submission_id' => $submission_id,
+            'submission_id_type' => gettype($submission_id),
+            'submission' => null,
+            'video_files' => array(),
+            'conversion_jobs' => array(),
+            'converted_files' => array(),
+            'thumbnail_detection' => array()
+        );
+        
+        // Get submission information from WordPress posts table
+        $submission = get_post($submission_id);
+        
+        if (!$submission || $submission->post_type !== 'cf7_submission') {
+            $debug_info['error'] = 'Submission not found';
+            
+            // See what submissions actually exist
+            $existing_submissions = get_posts(array(
+                'post_type' => 'cf7_submission',
+                'post_status' => 'any',
+                'numberposts' => 10,
+                'orderby' => 'ID',
+                'order' => 'DESC'
+            ));
+            
+            if (!empty($existing_submissions)) {
+                $debug_info['existing_submissions'] = array_map(function($post) {
+                    return "ID: {$post->ID} - {$post->post_title}";
+                }, $existing_submissions);
+            } else {
+                $debug_info['existing_submissions'] = array('No cf7_submission posts found');
+            }
+            
+            return $debug_info;
+        }
+        
+        $debug_info['submission'] = array(
+            'id' => $submission->ID,
+            'title' => $submission->post_title,
+            'created_at' => $submission->post_date,
+            'status' => $submission->post_status
+        );
+        
+        // Get video files for this submission
+        $files_table = $wpdb->prefix . 'cf7as_files';
+        
+        // First, let's see all files for this submission
+        $all_files = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $files_table 
+             WHERE submission_id = %d 
+             ORDER BY created_at DESC",
+            $submission_id
+        ));
+        
+        $debug_info['all_files'] = array_map(function($file) {
+            return $file->original_name . ' (' . $file->mime_type . ' - ' . $file->s3_key . ')';
+        }, $all_files);
+        
+        // Now get only video files
+        $video_files = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $files_table 
+             WHERE submission_id = %d 
+             AND mime_type LIKE 'video/%' 
+             ORDER BY created_at DESC",
+            $submission_id
+        ));
+        
+        $debug_info['video_files'] = array_map(function($file) {
+            return $file->original_name . ' (' . $file->s3_key . ')';
+        }, $video_files);
+        
+        // Check if the files table exists and has the right structure
+        $table_exists = $wpdb->get_var("SHOW TABLES LIKE '$files_table'");
+        $debug_info['files_table_exists'] = $table_exists ? true : false;
+        
+        if ($table_exists) {
+            $column_info = $wpdb->get_results("DESCRIBE $files_table");
+            $debug_info['table_columns'] = array_map(function($col) {
+                return $col->Field . ' (' . $col->Type . ')';
+            }, $column_info);
+            
+            // Show some sample files from the table
+            $sample_files = $wpdb->get_results("SELECT submission_id, original_name, mime_type FROM $files_table ORDER BY created_at DESC LIMIT 5");
+            $debug_info['sample_files'] = array_map(function($file) {
+                return "Submission ID: {$file->submission_id} - {$file->original_name} ({$file->mime_type})";
+            }, $sample_files);
+        }
+        
+        if (empty($video_files) && !empty($all_files)) {
+            $debug_info['error'] = 'Submission has files but no video files found';
+            return $debug_info;
+        } elseif (empty($all_files)) {
+            $debug_info['error'] = 'No files found for this submission';
+            return $debug_info;
+        }
+        
+        // Debug each video file
+        foreach ($video_files as $video_file) {
+            $original_s3_key = $video_file->s3_key;
+            
+            // Check conversion jobs for this file
+            $jobs_table = $wpdb->prefix . 'cf7as_conversion_jobs';
+            $jobs = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM $jobs_table WHERE original_s3_key = %s ORDER BY created_at DESC",
+                $original_s3_key
+            ));
+            
+            $debug_info['conversion_jobs'] = array_merge($debug_info['conversion_jobs'], $jobs);
+            
+            // Check converted files for this original file
+            $converted_files_table = $wpdb->prefix . 'cf7as_converted_files';
+            $converted_files = $wpdb->get_results($wpdb->prepare(
+                "SELECT cf.*, j.status as job_status, j.mediaconvert_job_id, j.created_at as job_created 
+                 FROM $converted_files_table cf
+                 INNER JOIN $jobs_table j ON cf.conversion_job_id = j.id
+                 WHERE j.original_s3_key = %s
+                 ORDER BY cf.id DESC",
+                $original_s3_key
+            ));
+            
+            $debug_info['converted_files'] = array_merge($debug_info['converted_files'], $converted_files);
+            
+            // Test thumbnail detection for this file
+            $thumbnail_version = $this->get_thumbnail_version($original_s3_key);
+            $video_thumbnails = $this->get_converted_versions($original_s3_key, null, 'video_thumbnail');
+            $webp_thumbnails = $this->get_converted_versions($original_s3_key, 'webp', 'video_thumbnail');
+            $jpg_thumbnails = $this->get_converted_versions($original_s3_key, 'jpg', 'video_thumbnail');
+            
+            $debug_info['thumbnail_detection'][] = array(
+                'original_file' => $video_file->original_name,
+                'original_s3_key' => $original_s3_key,
+                'webp_thumbnail' => $webp_thumbnails ? $webp_thumbnails[0]->file_path ?? 'Found but no path' : null,
+                'jpg_thumbnail' => $jpg_thumbnails ? $jpg_thumbnails[0]->file_path ?? 'Found but no path' : null,
+                'final_thumbnail' => $thumbnail_version ? $thumbnail_version->file_path ?? 'Found but no path' : null,
+                'thumbnail_count' => count($video_thumbnails)
+            );
+        }
+        
+        return $debug_info;
     }
 }
 
