@@ -21,7 +21,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage PDFExport
  * @since 1.2.0
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 /**

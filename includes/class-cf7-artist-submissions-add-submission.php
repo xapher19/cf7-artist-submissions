@@ -18,7 +18,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage AddSubmission
  * @since 1.0.1
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 /**

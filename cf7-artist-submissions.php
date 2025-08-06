@@ -2,7 +2,7 @@
 /**
  * Plugin Name: CF7 Artist Submissions
  * Description: Professional artist submission management system with modern dashboard, advanced field editing, task management, and conversation system for Contact Form 7.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Pup and Tiger
  * Requires at least: 5.6
  * Requires PHP: 7.4
@@ -12,7 +12,7 @@
  * Network: false
  *
  * @package CF7_Artist_Submissions
- * @version 1.2.0
+ * @version 1.3.0
  * @author Pup and Tiger
  * @copyright 2025 Pup and Tiger
  */
@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Plugin constants
-define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.2.0');
+define('CF7_ARTIST_SUBMISSIONS_VERSION', '1.3.0');
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));

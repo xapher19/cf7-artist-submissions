@@ -8,7 +8,7 @@
  * @package CF7_Artist_Submissions
  * @subpackage CoreSecurity
  * @since 1.0.0
- * @version 1.2.0
+ * @version 1.3.0
  */
 
 // Silence is golden.
