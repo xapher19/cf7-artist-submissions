@@ -51,8 +51,6 @@ class CF7_Artist_Submissions_Conversations {
         add_action('wp_ajax_cf7_check_new_messages', array(__CLASS__, 'ajax_check_new_messages'));
         add_action('wp_ajax_cf7_test_imap', array(__CLASS__, 'ajax_test_imap'));
         add_action('wp_ajax_cf7_check_replies_manual', array(__CLASS__, 'ajax_check_replies_manual'));
-        add_action('wp_ajax_cf7_debug_inbox', array(__CLASS__, 'ajax_debug_inbox'));
-        add_action('wp_ajax_cf7_clear_debug_messages', array(__CLASS__, 'ajax_clear_debug_messages'));
         add_action('wp_ajax_cf7_migrate_tokens', array(__CLASS__, 'ajax_migrate_tokens'));
         add_action('wp_ajax_cf7_toggle_message_read', array(__CLASS__, 'ajax_toggle_message_read'));
         add_action('wp_ajax_cf7_clear_messages', array(__CLASS__, 'ajax_clear_messages'));
@@ -1286,42 +1284,6 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * Provides comprehensive conversation database diagnostic information.
-     * Returns table status, message counts, and recent activity for troubleshooting.
-     */
-    public static function debug_database_status() {
-        global $wpdb;
-        
-        $table_name = $wpdb->prefix . 'cf7_conversations';
-        $debug_info = array();
-        
-        // Check if table exists
-        $table_exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table_name)) == $table_name;
-        $debug_info['table_exists'] = $table_exists;
-        $debug_info['table_name'] = $table_name;
-        
-        if (!$table_exists) {
-            $debug_info['error'] = 'Conversations table does not exist';
-            return $debug_info;
-        }
-        
-        // Count total messages
-        $total_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-        $debug_info['total_messages'] = $total_count;
-        
-        // Get recent messages
-        $recent_messages = $wpdb->get_results("SELECT * FROM $table_name ORDER BY sent_at DESC LIMIT 5");
-        $debug_info['recent_messages'] = $recent_messages;
-        
-        // Check for any database errors
-        if ($wpdb->last_error) {
-            $debug_info['db_error'] = $wpdb->last_error;
-        }
-        
-        return $debug_info;
-    }
-
-    /**
      * Validates conversation reply tokens against database records.
      * Ensures secure conversation threading and prevents unauthorized access.
      */
@@ -1713,25 +1675,6 @@ class CF7_Artist_Submissions_Conversations {
     }
     
     /**
-     * AJAX handler for administrative debug message log clearing.
-     * Provides administrative control over conversation debugging data.
-     */
-    public static function ajax_clear_debug_messages() {
-        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
-            wp_send_json_error(array('message' => 'Security check failed'));
-            return;
-        }
-
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Insufficient permissions'));
-            return;
-        }
-        
-        delete_option('cf7_debug_messages');
-        wp_send_json_success(array('message' => 'Debug messages cleared'));
-    }
-    
-    /**
      * AJAX handler for executing conversation token migration process.
      * Updates legacy conversation tokens to ensure threading consistency.
      */
@@ -1891,165 +1834,6 @@ class CF7_Artist_Submissions_Conversations {
                 'message' => 'Error checking replies: ' . $e->getMessage(),
                 'duration' => isset($duration) ? $duration . ' seconds' : 'unknown'
             ));
-        }
-    }
-    
-    /**
-     * AJAX handler for comprehensive IMAP inbox debugging and diagnostics.
-     * Provides detailed inbox analysis for troubleshooting email processing issues.
-     */
-    public static function ajax_debug_inbox() {
-        // Verify nonce
-        if (!wp_verify_nonce($_POST['nonce'], 'cf7_conversation_nonce')) {
-            wp_send_json_error(array('message' => 'Security check failed'));
-            return;
-        }
-        
-        // Check user permissions
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(array('message' => 'Insufficient permissions'));
-            return;
-        }
-        
-        $imap_settings = get_option('cf7_artist_submissions_imap_options', array());
-        
-        if (empty($imap_settings['server']) || empty($imap_settings['username']) || empty($imap_settings['password'])) {
-            wp_send_json_error(array('message' => 'IMAP not configured'));
-            return;
-        }
-        
-        try {
-            // Build connection string
-            $encryption = !empty($imap_settings['encryption']) ? '/' . $imap_settings['encryption'] : '/ssl';
-            $port = !empty($imap_settings['port']) ? $imap_settings['port'] : 993;
-            $connection_string = '{' . $imap_settings['server'] . ':' . $port . '/imap' . $encryption . '}';
-            
-            // Connect to IMAP server
-            $connection = imap_open(
-                $connection_string,
-                $imap_settings['username'],
-                $imap_settings['password']
-            );
-            
-            if (!$connection) {
-                wp_send_json_error(array('message' => 'IMAP connection failed'));
-                return;
-            }
-            
-            $debug_info = array();
-            
-            // Get list of all folders/mailboxes
-            $folders = imap_list($connection, $connection_string, '*');
-            $debug_info[] = 'Available folders:';
-            
-            if ($folders) {
-                foreach ($folders as $folder) {
-                    $folder_name = str_replace($connection_string, '', $folder);
-                    $debug_info[] = '  - ' . $folder_name;
-                }
-            } else {
-                $debug_info[] = '  No folders found';
-            }
-            
-            $debug_info[] = '';
-            
-            // Check INBOX and any plus-addressing folders
-            $folders_to_check = array('INBOX');
-            if ($folders) {
-                foreach ($folders as $folder) {
-                    $folder_name = str_replace($connection_string, '', $folder);
-                    if (preg_match('/(plus|tag|label|filter|sub|SUB)/i', $folder_name) || 
-                        strpos($folder_name, '+') !== false) {
-                        $folders_to_check[] = $folder_name;
-                    }
-                }
-            }
-            
-            foreach ($folders_to_check as $folder_name) {
-                $debug_info[] = 'Checking folder: ' . $folder_name;
-                
-                // Open specific folder
-                $folder_connection = imap_open(
-                    $connection_string . $folder_name,
-                    $imap_settings['username'],
-                    $imap_settings['password']
-                );
-                
-                if (!$folder_connection) {
-                    $debug_info[] = '  Failed to open folder';
-                    continue;
-                }
-                
-                $total_messages = imap_num_msg($folder_connection);
-                $debug_info[] = '  Total messages: ' . $total_messages;
-                
-                if ($total_messages > 0) {
-                    $recent_count = min(5, $total_messages);
-                    $emails_info = array();
-                    
-                    for ($i = $total_messages; $i > ($total_messages - $recent_count); $i--) {
-                        $header = imap_headerinfo($folder_connection, $i);
-                        $flags = imap_fetch_overview($folder_connection, $i);
-                        
-                        $email_info = array();
-                        $email_info['number'] = $i;
-                        $email_info['subject'] = isset($header->subject) ? $header->subject : 'No subject';
-                        $email_info['from'] = isset($header->from[0]) ? $header->from[0]->mailbox . '@' . $header->from[0]->host : 'Unknown';
-                        $email_info['date'] = isset($header->date) ? $header->date : 'Unknown date';
-                        $email_info['seen'] = (isset($flags[0]) && isset($flags[0]->seen)) ? ($flags[0]->seen ? 'Yes' : 'No') : 'Unknown';
-                        
-                        // Get all To addresses
-                        $to_addresses = array();
-                        if (isset($header->to) && is_array($header->to)) {
-                            foreach ($header->to as $to) {
-                                $to_addresses[] = $to->mailbox . '@' . $to->host;
-                            }
-                        }
-                        $email_info['to'] = implode(', ', $to_addresses);
-                        
-                        // Check if any To address matches our pattern
-                        $matches_pattern = false;
-                        foreach ($to_addresses as $to_addr) {
-                            if (preg_match('/([^+]+)\+SUB(\d+)_([a-f0-9]{32})@/', $to_addr)) {
-                                $matches_pattern = true;
-                                break;
-                            }
-                        }
-                        $email_info['matches_pattern'] = $matches_pattern ? 'Yes' : 'No';
-                        
-                        $emails_info[] = $email_info;
-                    }
-                    
-                    $debug_info[] = '  Recent emails:';
-                    foreach ($emails_info as $email) {
-                        $debug_info[] = sprintf(
-                            '    #%d | %s | From: %s | To: %s | Seen: %s | Matches: %s | Subject: %s',
-                            $email['number'],
-                            $email['date'],
-                            $email['from'],
-                            $email['to'],
-                            $email['seen'],
-                            $email['matches_pattern'],
-                            $email['subject']
-                        );
-                    }
-                } else {
-                    $debug_info[] = '  No messages in this folder';
-                }
-                
-                $debug_info[] = '';
-                imap_close($folder_connection);
-            }
-            
-            imap_close($connection);
-            
-            wp_send_json_success(array(
-                'debug_info' => $debug_info,
-                'folders_checked' => count($folders_to_check)
-            ));
-            
-        } catch (Exception $e) {
-            wp_send_json_error(array('message' => 'Debug failed: ' . $e->getMessage()));
         }
     }
     

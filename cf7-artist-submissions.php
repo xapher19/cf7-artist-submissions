@@ -131,7 +131,6 @@ function cf7_artist_submissions_init() {
     
     // Initialize Media Converter (singleton pattern)
     if (class_exists('CF7_Artist_Submissions_Media_Converter')) {
-        error_log('CF7AS Plugin: Initializing Media Converter from main plugin file');
         CF7_Artist_Submissions_Media_Converter::get_instance();
     }
     

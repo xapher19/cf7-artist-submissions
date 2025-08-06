@@ -312,25 +312,17 @@ jQuery(document).ready(function($) {
     $(document).on('click', '#check-replies-manual', function(e) {
         e.preventDefault();
         
-        console.log('Check replies manual clicked');
-        
         var button = $(this);
         var originalText = button.text();
         var submissionId = button.data('submission-id');
         
-        console.log('Submission ID:', submissionId);
-        
         // Check if cf7Conversations is available
         if (typeof cf7Conversations === 'undefined') {
-            console.error('cf7Conversations not available');
             alert('JavaScript configuration error - cf7Conversations not available');
             return;
         }
         
-        console.log('cf7Conversations available, proceeding with AJAX');
-        
         if (!submissionId) {
-            console.error('No submission ID found');
             alert('Error: No submission ID found.');
             return;
         }
@@ -343,8 +335,6 @@ jQuery(document).ready(function($) {
             $('.thread-controls .last-checked').text('Still checking... this may take a while for large inboxes.');
         }, 30000);
         
-        console.log('Starting AJAX request to check replies');
-        
         $.ajax({
             url: cf7Conversations.ajaxUrl,
             type: 'POST',
@@ -355,7 +345,6 @@ jQuery(document).ready(function($) {
                 submission_id: submissionId
             },
             success: function(response) {
-                console.log('Check replies AJAX success:', response);
                 clearTimeout(timeoutWarning);
                 
                 if (response.success) {
@@ -389,7 +378,6 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Check replies AJAX error:', {xhr: xhr, status: status, error: error});
                 clearTimeout(timeoutWarning);
                 
                 if (status === 'timeout') {
@@ -945,26 +933,19 @@ function hideClearMessagesModal() {
  * @since 1.0.0
  */
 function clearAllMessages() {
-    console.log('clearAllMessages function called');
     const submissionId = jQuery('#cf7-clear-messages-btn').data('submission-id');
     const confirmButton = jQuery('#cf7-clear-confirm');
     
-    console.log('Submission ID for clear:', submissionId);
-    
     if (!submissionId) {
-        console.error('No submission ID found for clear operation');
         alert('Error: No submission ID found.');
         return;
     }
     
     // Check if cf7Conversations is available
     if (typeof cf7Conversations === 'undefined') {
-        console.error('cf7Conversations not available in clearAllMessages');
         showNotice('JavaScript configuration error - cf7Conversations not available', 'error');
         return;
     }
-    
-    console.log('Starting AJAX request to clear messages');
     
     // Disable button and show loading
     confirmButton.prop('disabled', true).text('Clearing...');
@@ -978,7 +959,6 @@ function clearAllMessages() {
             nonce: cf7Conversations.nonce
         },
         success: function(response) {
-            console.log('Clear messages AJAX success:', response);
             
             if (response.success) {
                 // Hide modal
@@ -1006,12 +986,10 @@ function clearAllMessages() {
             }
         },
         error: function(xhr, status, error) {
-            console.error('Clear messages AJAX error:', xhr, status, error);
             let errorMessage = 'Error clearing messages. Please try again.';
             
             // Try to get more specific error information
             if (xhr.responseText) {
-                console.log('Error response text:', xhr.responseText);
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);
                     if (errorResponse.data && errorResponse.data.message) {

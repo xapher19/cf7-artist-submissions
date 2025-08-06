@@ -1334,37 +1334,6 @@ class CF7_Artist_Submissions_Tabs {
             (string) $post->ID, (int) $post->ID
         ));
         
-        // Debug: Log the query and results (only in admin or AJAX context to reduce spam)
-        if (is_admin() || wp_doing_ajax()) {
-            error_log("CF7AS DEBUG: Checking files for submission ID {$post->ID}");
-            error_log("CF7AS DEBUG: Table {$table_name} has {$total_files} total files");
-            error_log("CF7AS DEBUG: Found " . count($files) . " files for this submission");
-            if (!empty($files)) {
-                error_log("CF7AS DEBUG: Files found: " . print_r(array_column($files, 'original_name'), true));
-                
-                // Debug video files specifically
-                $video_files = array_filter($files, function($file) {
-                    return self::is_video_file(strtolower(pathinfo($file->original_name, PATHINFO_EXTENSION)));
-                });
-                
-                if (!empty($video_files)) {
-                    error_log("CF7AS DEBUG: Video files found: " . count($video_files));
-                    foreach ($video_files as $video_file) {
-                        error_log("CF7AS DEBUG: Video - " . $video_file->original_name . " (ID: {$video_file->id}, S3: {$video_file->s3_key})");
-                        
-                        // Check for conversion status
-                        if (isset($video_file->has_converted_versions)) {
-                            error_log("CF7AS DEBUG: Video has_converted_versions = " . $video_file->has_converted_versions);
-                        }
-                        
-                        if (isset($video_file->conversion_status)) {
-                            error_log("CF7AS DEBUG: Video conversion_status = " . $video_file->conversion_status);
-                        }
-                    }
-                }
-            }
-        }
-        
         if (empty($files)) {
             echo '<div class="cf7-works-list-view">';
             echo '<div class="cf7-works-list-header">';

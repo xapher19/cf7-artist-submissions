@@ -517,21 +517,8 @@ class CF7_Artist_Submissions_Form_Handler {
      */
     private function process_s3_uploaded_files($posted_data, $post_id) {
         if (empty($posted_data)) {
-            error_log("CF7AS DEBUG: No posted data for submission $post_id");
             return;
         }
-
-        // Log the full posted data for debugging
-        error_log("CF7AS DEBUG: Posted data for submission $post_id: " . print_r(array_keys($posted_data), true));
-        
-        // Look for any field names containing '_data'
-        $data_fields = array();
-        foreach ($posted_data as $field_name => $field_value) {
-            if (strpos($field_name, '_data') !== false) {
-                $data_fields[] = $field_name . ' => ' . (is_string($field_value) ? substr($field_value, 0, 100) . '...' : gettype($field_value));
-            }
-        }
-        error_log("CF7AS DEBUG: Found data fields: " . print_r($data_fields, true));
 
         $found_file_fields = 0;
         $processed_files = 0;
@@ -592,34 +579,25 @@ class CF7_Artist_Submissions_Form_Handler {
         $table_name = $wpdb->prefix . 'cf7as_files';
         $stored_count = 0;
         
-        error_log("CF7AS DEBUG: Attempting to store files for submission $post_id from field $field_name");
-        error_log("CF7AS DEBUG: File data received: " . print_r($file_data, true));
-        
         // Validate post_id
         if (!is_numeric($post_id) || $post_id <= 0) {
-            error_log("CF7AS DEBUG: Invalid post_id: $post_id");
             return $stored_count;
         }
         
         // Validate field_name
         $field_name = sanitize_key($field_name);
         if (empty($field_name)) {
-            error_log("CF7AS DEBUG: Empty field_name after sanitization");
             return $stored_count;
         }
         
         if (!is_array($file_data)) {
-            error_log("CF7AS DEBUG: File data is not an array: " . gettype($file_data));
             return $stored_count;
         }
         
         foreach ($file_data as $file) {
             if (!is_array($file)) {
-                error_log("CF7AS DEBUG: Skipping non-array file entry: " . print_r($file, true));
                 continue; // Skip invalid file entries
             }
-            
-            error_log("CF7AS DEBUG: Processing file: " . print_r($file, true));
             
             // Handle both old and new field formats with validation
             $s3_key = isset($file['s3_key']) ? $file['s3_key'] : (isset($file['s3Key']) ? $file['s3Key'] : null);
@@ -631,11 +609,8 @@ class CF7_Artist_Submissions_Form_Handler {
                         (isset($file['file_type']) ? $file['file_type'] :
                         (isset($file['mime_type']) ? $file['mime_type'] : 'application/octet-stream'));
             
-            error_log("CF7AS DEBUG: Extracted - s3_key: $s3_key, original_name: $original_name, mime_type: $mime_type");
-            
             // Security validation
             if (!$s3_key || !$original_name) {
-                error_log("CF7AS DEBUG: Missing required data - s3_key: $s3_key, original_name: $original_name");
                 continue; // Skip invalid file data
             }
             

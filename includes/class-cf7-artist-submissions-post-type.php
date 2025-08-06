@@ -1067,17 +1067,12 @@ class CF7_Artist_Submissions_Post_Type {
             return;
         }
         
-        // Log the cleanup attempt
-        error_log("CF7AS: Starting S3 cleanup for submission ID: {$post_id}");
-        
         // Get the metadata manager and S3 handler
         if (!class_exists('CF7_Artist_Submissions_Metadata_Manager')) {
-            error_log("CF7AS: Metadata Manager not available for S3 cleanup");
             return;
         }
         
         if (!class_exists('CF7_Artist_Submissions_S3_Handler')) {
-            error_log("CF7AS: S3 Handler not available for S3 cleanup");
             return;
         }
         
@@ -1088,7 +1083,6 @@ class CF7_Artist_Submissions_Post_Type {
         $files = $metadata_manager->get_submission_files($post_id);
         
         if (empty($files)) {
-            error_log("CF7AS: No files found for submission ID: {$post_id}");
             return;
         }
         
@@ -1103,46 +1097,36 @@ class CF7_Artist_Submissions_Post_Type {
             
             if ($deleted) {
                 $deleted_count++;
-                error_log("CF7AS: Successfully deleted S3 file: {$s3_key}");
                 
                 // Also delete thumbnail if it exists
                 if (!empty($file['thumbnail_url'])) {
                     $thumbnail_key = $s3_handler->generate_thumbnail_s3_key($post_id, $file['original_name']);
                     $thumbnail_deleted = $s3_handler->delete_file($thumbnail_key);
                     
-                    if ($thumbnail_deleted) {
-                        error_log("CF7AS: Successfully deleted S3 thumbnail: {$thumbnail_key}");
-                    } else {
-                        error_log("CF7AS: Failed to delete S3 thumbnail: {$thumbnail_key}");
+                    if (!$thumbnail_deleted) {
                         $error_count++;
                     }
                 }
             } else {
                 $error_count++;
-                error_log("CF7AS: Failed to delete S3 file: {$s3_key}");
             }
         }
         
         // Clean up database records
         $db_deleted = $metadata_manager->delete_submission_files($post_id);
         
-        if ($db_deleted) {
-            error_log("CF7AS: Successfully cleaned up database records for submission ID: {$post_id}");
-        } else {
-            error_log("CF7AS: Failed to clean up database records for submission ID: {$post_id}");
+        if (!$db_deleted) {
             $error_count++;
         }
         
         // Clean up actions (tasks) for this submission
         if (class_exists('CF7_Artist_Submissions_Actions')) {
             $deleted_actions = CF7_Artist_Submissions_Actions::delete_actions_for_submission($post_id);
-            error_log("CF7AS: Cleaned up {$deleted_actions} actions for submission ID: {$post_id}");
         }
         
         // Clean up action log entries
         if (class_exists('CF7_Artist_Submissions_Action_Log')) {
             CF7_Artist_Submissions_Action_Log::delete_logs_for_submission($post_id);
-            error_log("CF7AS: Cleaned up action log entries for submission ID: {$post_id}");
         }
         
         // Clean up conversation data
@@ -1150,11 +1134,12 @@ class CF7_Artist_Submissions_Post_Type {
             global $wpdb;
             $conversations_table = $wpdb->prefix . 'cf7_conversations';
             $wpdb->delete($conversations_table, array('submission_id' => $post_id), array('%d'));
-            error_log("CF7AS: Cleaned up conversation data for submission ID: {$post_id}");
         }
         
-        // Final cleanup summary
-        error_log("CF7AS: S3 cleanup completed for submission ID: {$post_id}. Files deleted: {$deleted_count}, Errors: {$error_count}");
+        // Log final cleanup summary only if there were errors or significant activity
+        if ($error_count > 0 || $deleted_count > 0) {
+            error_log("CF7AS: S3 cleanup completed for submission ID: {$post_id}. Files deleted: {$deleted_count}, Errors: {$error_count}");
+        }
     }
     
     /**

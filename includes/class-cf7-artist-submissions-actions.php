@@ -1518,6 +1518,9 @@ class CF7_Artist_Submissions_Actions {
      * test execution, user override capabilities, and detailed diagnostic
      * reporting for troubleshooting email delivery issues.
      * 
+     * NOTE: This function appears to be orphaned (not called from anywhere).
+     * Consider removing if it's no longer needed for debugging.
+     * 
      * @since 1.0.0
      */
     public static function debug_daily_summary_email($user_id = null, $test_email = null) {

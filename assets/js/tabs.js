@@ -138,13 +138,6 @@ jQuery(document).ready(function($) {
                     setTimeout(window.scrollToBottom, 300);
                     setTimeout(window.scrollToBottom, 600);
                 }
-                
-                // Debug: Check if conversation buttons exist after tab content loads
-                setTimeout(function() {
-                    console.log('Conversation tab loaded - checking for buttons:');
-                    console.log('  Check replies button:', $('#check-replies-manual').length);
-                    console.log('  Clear messages button:', $('#cf7-clear-messages-btn').length);
-                }, 500);
             }, 200);
         }
     });

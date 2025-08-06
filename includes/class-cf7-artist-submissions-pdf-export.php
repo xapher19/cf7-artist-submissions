@@ -75,16 +75,10 @@ class CF7_Artist_Submissions_PDF_Export {
         // Load AWS configuration
         $this->load_aws_config();
         
-        // Add global AJAX debug hook
-        add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'debug_ajax_call'), 1);
-        
         // AJAX handlers
         add_action('wp_ajax_cf7_export_submission_pdf', array($this, 'handle_pdf_export'));
         add_action('wp_ajax_cf7_pdf_export_callback', array($this, 'handle_lambda_callback'));
         add_action('wp_ajax_cf7_check_pdf_status', array($this, 'handle_pdf_status_check'));
-        
-        // Add a debug test endpoint
-        add_action('wp_ajax_cf7_pdf_debug_test', array($this, 'handle_debug_test'));
         
         // Script enqueuing
         add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts'));
@@ -97,22 +91,6 @@ class CF7_Artist_Submissions_PDF_Export {
         if (!wp_next_scheduled('cf7_cleanup_old_pdfs')) {
             wp_schedule_event(time(), 'daily', 'cf7_cleanup_old_pdfs');
         }
-    }
-    
-    /**
-     * Debug test method to verify AJAX is working
-     */
-    public function handle_debug_test() {
-        error_log('CF7AS: PDF Export - Debug test called successfully!');
-        error_log('CF7AS: $_POST: ' . print_r($_POST, true));
-        wp_send_json_success(array('message' => 'Debug test successful', 'timestamp' => current_time('mysql')));
-    }
-    
-    /**
-     * Debug AJAX call tracking
-     */
-    public function debug_ajax_call() {
-        // Don't exit - let other handlers run
     }
     
     /**
