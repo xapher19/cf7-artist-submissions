@@ -445,7 +445,7 @@ class CF7_Artist_Submissions_Tabs {
             <h3 class="cf7-tab-section-title"><?php _e('Curator Notes', 'cf7-artist-submissions'); ?></h3>
             <?php 
             // Render the notes content
-            self::render_curator_notes($post);
+            self::render_curator_notes_enhanced($post);
             ?>
         </div>
         <?php
@@ -1508,6 +1508,19 @@ class CF7_Artist_Submissions_Tabs {
         
         echo '</div>'; // .cf7-submission-viewer-container
         echo '</div>'; // .cf7-integrated-file-viewer
+    }
+
+    /**
+     * Render enhanced curator notes interface.
+     * Uses the new enhanced curator notes system.
+     */
+    public static function render_curator_notes_enhanced($post) {
+        if (class_exists('CF7_Artist_Submissions_Enhanced_Curator_Notes')) {
+            CF7_Artist_Submissions_Enhanced_Curator_Notes::render_enhanced_notes_interface($post->ID);
+        } else {
+            // Fallback to legacy system
+            self::render_curator_notes($post);
+        }
     }
 
     /**

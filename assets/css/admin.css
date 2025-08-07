@@ -1343,10 +1343,11 @@ span.status-rejected::before {
     color: #007cba;
 }
 
-/* Code Blocks */
+/* Code Blocks - Light Theme Consistent */
 .cf7-code-block {
-    background: #1f2937;
-    color: #f9fafb;
+    background: #f8f9fa;
+    color: #212529;
+    border: 1px solid #e9ecef;
     padding: 1rem;
     border-radius: 0.5rem;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;

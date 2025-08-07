@@ -1,0 +1,549 @@
+/**
+ * CF7 Artist Submissions - Guest Curators Admin CSS
+ *
+ * Styles for the guest curator management administrative interface.
+ * Provides modern, responsive design for curator management, modals, and forms.
+ *
+ * Features:
+ * • Modern admin table styling
+ * • Modal dialog interfaces
+ * • Responsive form layouts
+ * • Status badges and indicators
+ * • Loading states and animations
+ * • Accessible design patterns
+ *
+ * @package CF7_Artist_Submissions
+ * @subpackage GuestCuratorsAdminCSS
+ * @since 1.3.0
+ * @version 1.3.0
+ */
+
+/* ============================================================================
+   MAIN ADMIN PAGE
+   ============================================================================ */
+
+.cf7-guest-curator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+}
+
+.cf7-guest-curator-header p {
+    margin: 0;
+    flex: 1;
+    margin-right: 20px;
+    color: #1d2327;
+    line-height: 1.5;
+}
+
+#cf7-add-guest-curator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   ADMIN TABLE STYLING
+   ============================================================================ */
+
+.cf7-admin-table-container {
+    background: white;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.cf7-admin-table-container table {
+    margin: 0;
+    border: none;
+}
+
+.cf7-admin-table-container th,
+.cf7-admin-table-container td {
+    padding: 12px 16px;
+    vertical-align: middle;
+}
+
+.cf7-admin-table-container th {
+    background: #f6f7f7;
+    font-weight: 600;
+    color: #1d2327;
+    border-bottom: 1px solid #c3c4c7;
+}
+
+.cf7-admin-table-container td {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.cf7-admin-table-container tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.cf7-admin-table-container tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Status badges */
+.cf7-status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cf7-status-active {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.cf7-status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f1aeb5;
+}
+
+/* Action buttons in table */
+.cf7-admin-table-container .button {
+    margin-right: 4px;
+    font-size: 12px;
+    height: auto;
+    padding: 4px 8px;
+    line-height: 1.4;
+}
+
+.cf7-admin-table-container .button:last-child {
+    margin-right: 0;
+}
+
+/* ============================================================================
+   PORTAL INFO SECTION
+   ============================================================================ */
+
+.cf7-portal-info {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.cf7-portal-info h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #1d2327;
+}
+
+.cf7-portal-info p {
+    margin-bottom: 12px;
+    color: #646970;
+}
+
+#cf7-portal-url {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #f6f7f7;
+    border: 1px solid #c3c4c7;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+    color: #1d2327;
+    margin-right: 10px;
+    word-break: break-all;
+}
+
+#cf7-copy-portal-url {
+    vertical-align: top;
+}
+
+/* ============================================================================
+   MODAL DIALOGS
+   ============================================================================ */
+
+.cf7-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.cf7-modal-content {
+    background: white;
+    border-radius: 6px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: cf7-modal-appear 0.2s ease-out;
+}
+
+@keyframes cf7-modal-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.cf7-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.cf7-modal-header h3 {
+    margin: 0;
+    color: #1d2327;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.cf7-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #646970;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.cf7-modal-close:hover {
+    background: #f0f0f0;
+    color: #1d2327;
+}
+
+.cf7-modal-body {
+    padding: 24px;
+}
+
+.cf7-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 24px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+/* Body modal-open state */
+body.cf7-modal-open {
+    overflow: hidden;
+}
+
+/* ============================================================================
+   FORM STYLING
+   ============================================================================ */
+
+.cf7-form-group {
+    margin-bottom: 20px;
+}
+
+.cf7-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1d2327;
+}
+
+.cf7-form-group input[type="text"],
+.cf7-form-group input[type="email"],
+.cf7-form-group select,
+.cf7-form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #8c8f94;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+}
+
+.cf7-form-group input[type="text"]:focus,
+.cf7-form-group input[type="email"]:focus,
+.cf7-form-group select:focus,
+.cf7-form-group textarea:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
+}
+
+/* Permissions grid */
+.cf7-permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.cf7-permission-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px;
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.cf7-permission-item:hover {
+    background: #fff;
+}
+
+.cf7-permission-item input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+/* ============================================================================
+   LOADING STATES
+   ============================================================================ */
+
+.dashicons.spin {
+    animation: cf7-spin 1s linear infinite;
+}
+
+@keyframes cf7-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Loading overlay for table */
+.cf7-admin-table-container.loading {
+    position: relative;
+    opacity: 0.6;
+}
+
+.cf7-admin-table-container.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================================================
+   NOTICE STYLING
+   ============================================================================ */
+
+.cf7-temp-notice {
+    animation: cf7-notice-slide-in 0.3s ease-out;
+}
+
+@keyframes cf7-notice-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 1024px) {
+    .cf7-guest-curator-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+    
+    .cf7-guest-curator-header p {
+        margin-right: 0;
+        margin-bottom: 0;
+    }
+    
+    #cf7-add-guest-curator {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 782px) {
+    .cf7-modal {
+        padding: 10px;
+    }
+    
+    .cf7-modal-content {
+        max-height: 95vh;
+    }
+    
+    .cf7-modal-header,
+    .cf7-modal-body,
+    .cf7-modal-footer {
+        padding: 16px;
+    }
+    
+    .cf7-modal-footer {
+        flex-direction: column;
+    }
+    
+    .cf7-modal-footer .button {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .cf7-permissions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Table responsive adjustments */
+    .cf7-admin-table-container {
+        overflow-x: auto;
+    }
+    
+    .cf7-admin-table-container table {
+        min-width: 700px;
+    }
+    
+    .cf7-admin-table-container .button {
+        display: block;
+        margin-bottom: 2px;
+        margin-right: 0;
+        width: 100%;
+        text-align: center;
+    }
+    
+    /* Portal URL responsive */
+    #cf7-portal-url {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+    
+    #cf7-copy-portal-url {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .cf7-guest-curator-header {
+        padding: 12px;
+    }
+    
+    .cf7-admin-table-container th,
+    .cf7-admin-table-container td {
+        padding: 8px 12px;
+    }
+    
+    .cf7-portal-info {
+        padding: 16px;
+    }
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+.cf7-modal-close:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.cf7-permission-item:focus-within {
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.3);
+}
+
+.cf7-form-group input:focus,
+.cf7-form-group select:focus,
+.cf7-form-group textarea:focus {
+    outline: none;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .cf7-status-badge {
+        border-width: 2px;
+    }
+    
+    .cf7-modal-content {
+        border: 2px solid #000;
+    }
+    
+    .cf7-admin-table-container {
+        border-width: 2px;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .cf7-modal-content,
+    .cf7-temp-notice {
+        animation: none;
+    }
+    
+    .dashicons.spin {
+        animation: none;
+    }
+    
+    .cf7-modal-close,
+    .cf7-permission-item,
+    .cf7-form-group input,
+    .cf7-form-group select,
+    .cf7-form-group textarea {
+        transition: none;
+    }
+}
+
+/* Print styles */
+@media print {
+    .cf7-modal {
+        display: none;
+    }
+    
+    .cf7-admin-table-container .button {
+        display: none;
+    }
+    
+    .cf7-guest-curator-header button {
+        display: none;
+    }
+}

@@ -28,22 +28,41 @@ define('CF7_ARTIST_SUBMISSIONS_PLUGIN_FILE', __FILE__);
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CF7_ARTIST_SUBMISSIONS_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-// Include class files
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-post-type.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-form-handler.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-admin.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-settings.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-action-log.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-emails.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-conversations.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-tabs.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-dashboard.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-actions.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-pdf-export.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-updater.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-add-submission.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-pdf-viewer.php';
-require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-ratings.php';
+// Include files
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-post-type.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-form-handler.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-admin.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-settings.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-dashboard.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-guest-curator-portal.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-actions.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-ratings.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-pdf-export.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-conversations.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-add-submission.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-tabs.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-action-log.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-updater.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-emails.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-pdf-viewer.php';
+
+// S3 Handling
+require_once plugin_dir_path(__FILE__) . 'includes/class-s3-handler.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-thumbnail-generator.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-zip-downloader.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-metadata-manager.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-rest-endpoints.php';
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-media-converter.php';
+
+// SECURITY: Include secure API system
+require_once plugin_dir_path(__FILE__) . 'includes/class-cf7-artist-submissions-secure-api.php';
+
+// Enhanced Guest Curator System Classes
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-guest-curators.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-enhanced-curator-notes.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-enhanced-ratings.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-integration-manager.php';
+require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-cf7-artist-submissions-guest-curator-portal.php';
 
 // S3 Integration Classes
 require_once CF7_ARTIST_SUBMISSIONS_PLUGIN_DIR . 'includes/class-s3-handler.php';
@@ -112,6 +131,13 @@ function cf7_artist_submissions_init() {
     // Initialize Ratings System
     CF7_Artist_Submissions_Ratings::init();
     
+    // Initialize Enhanced Guest Curator Systems
+    CF7_Artist_Submissions_Guest_Curators::init();
+    CF7_Artist_Submissions_Enhanced_Curator_Notes::init();
+    CF7_Artist_Submissions_Enhanced_Ratings::init();
+    CF7_Artist_Submissions_Integration_Manager::init();
+    CF7_Artist_Submissions_Guest_Curator_Portal::init();
+    
     // Initialize S3 Handler
     if (class_exists('CF7_Artist_Submissions_S3_Handler')) {
         $s3_handler = new CF7_Artist_Submissions_S3_Handler();
@@ -122,6 +148,11 @@ function cf7_artist_submissions_init() {
     if (class_exists('CF7_Artist_Submissions_REST_Endpoints')) {
         $rest_endpoints = new CF7_Artist_Submissions_REST_Endpoints();
         $rest_endpoints->init();
+    }
+    
+    // Initialize Secure API System
+    if (class_exists('CF7_Artist_Submissions_Secure_API')) {
+        CF7_Artist_Submissions_Secure_API::init();
     }
     
     // Initialize Metadata Manager
@@ -167,6 +198,9 @@ add_action('plugins_loaded', 'cf7_artist_submissions_init');
 // Load text domain for translations at the proper time
 add_action('init', 'cf7_artist_submissions_load_textdomain');
 
+// Add AJAX handler for dismissing setup notice
+add_action('wp_ajax_cf7as_dismiss_setup_notice', array('CF7_Artist_Submissions_Integration_Manager', 'ajax_dismiss_setup_notice'));
+
 /**
  * Load plugin text domain for translations
  * 
@@ -206,7 +240,9 @@ function cf7_artist_submissions_activate() {
     $post_type->register_taxonomy();
     $post_type->register_mediums_taxonomy();
     $post_type->register_calls_taxonomy();
-    $post_type->register_text_mediums_taxonomy();    // Create action log table
+    $post_type->register_text_mediums_taxonomy();
+    
+    // Create action log table
     CF7_Artist_Submissions_Action_Log::create_log_table();
     
     // Update action log table schema if needed
@@ -220,6 +256,14 @@ function cf7_artist_submissions_activate() {
     
     // Create S3 files table
     CF7_Artist_Submissions_Metadata_Manager::create_files_table();
+    
+    // Initialize Guest Curator System tables
+    CF7_Artist_Submissions_Guest_Curators::maybe_create_tables();
+    
+    // Initialize the portal to register rewrite rules
+    if (class_exists('CF7_Artist_Submissions_Guest_Curator_Portal')) {
+        CF7_Artist_Submissions_Guest_Curator_Portal::init();
+    }
     
     // Flush rewrite rules
     flush_rewrite_rules();

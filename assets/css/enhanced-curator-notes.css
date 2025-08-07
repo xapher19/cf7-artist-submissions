@@ -1,0 +1,563 @@
+/**
+ * CF7 Artist Submissions - Enhanced Curator Notes CSS
+ *
+ * Styles for the enhanced curator notes system interface.
+ * Provides a modern, comment-like interface for curator notes.
+ * Consistent with dashboard, tabs, and settings interface styling.
+ *
+ * Features:
+ * • Modern comment-style layout with light theme consistency
+ * • Responsive design matching dashboard components
+ * • Loading states and animations following common patterns  
+ * • Status message styling aligned with other interfaces
+ * • Action button styling consistent with WordPress admin
+ * • Form styling consistency across all plugin interfaces
+ *
+ * @package CF7_Artist_Submissions
+ * @subpackage EnhancedCuratorNotesCSS
+ * @since 1.3.0
+ * @version 1.3.0
+ */
+
+/* ============================================================================
+   MAIN CONTAINER
+   ============================================================================ */
+
+.cf7-enhanced-curator-notes {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.cf7-notes-header {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.cf7-notes-header h3 {
+    margin: 0 0 8px 0;
+    color: #1d2327;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.cf7-notes-description {
+    margin: 0;
+    color: #646970;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* ============================================================================
+   ADD NOTE FORM
+   ============================================================================ */
+
+.cf7-add-note-form {
+    background: #f8f9fa;
+    border: 1px solid #e8e9ea;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.cf7-form-group {
+    margin-bottom: 12px;
+}
+
+.cf7-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #1d2327;
+    font-size: 14px;
+}
+
+.cf7-note-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    transition: border-color 0.2s;
+}
+
+.cf7-note-textarea:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.1);
+}
+
+.cf7-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#cf7-add-note-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #2271b1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#cf7-add-note-btn:hover {
+    background: #1d5f98;
+}
+
+#cf7-add-note-btn:disabled {
+    background: #c3c4c7;
+    cursor: not-allowed;
+}
+
+#cf7-add-note-btn .dashicons {
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+}
+
+/* Status Messages */
+.cf7-note-status {
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    display: none;
+}
+
+.cf7-note-status.cf7-status-success {
+    color: #00a32a;
+    background: #f0f6fc;
+    border: 1px solid #c9e4ca;
+}
+
+.cf7-note-status.cf7-status-error {
+    color: #d63638;
+    background: #fcf0f0;
+    border: 1px solid #f1adad;
+}
+
+.cf7-note-status.cf7-status-loading {
+    color: #646970;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+}
+
+/* ============================================================================
+   NOTES LIST
+   ============================================================================ */
+
+.cf7-notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cf7-no-notes {
+    text-align: center;
+    padding: 40px 20px;
+    color: #646970;
+    font-style: italic;
+}
+
+.cf7-no-notes p {
+    margin: 0;
+    font-size: 16px;
+}
+
+/* ============================================================================
+   NOTE ITEMS
+   ============================================================================ */
+
+.cf7-note-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px;
+    transition: box-shadow 0.2s;
+}
+
+.cf7-note-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.cf7-note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.cf7-note-author {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cf7-curator-name {
+    font-weight: 600;
+    color: #1d2327;
+    font-size: 14px;
+}
+
+.cf7-curator-type {
+    font-size: 12px;
+    color: #2271b1;
+    background: #f0f6fc;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.cf7-note-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #646970;
+    font-size: 12px;
+}
+
+.cf7-note-date {
+    cursor: help;
+}
+
+.cf7-note-edited {
+    font-style: italic;
+    color: #8c8f94;
+}
+
+.cf7-note-content {
+    margin-bottom: 12px;
+}
+
+.cf7-note-text {
+    color: #1d2327;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.cf7-note-text p {
+    margin: 0 0 12px 0;
+}
+
+.cf7-note-text p:last-child {
+    margin-bottom: 0;
+}
+
+/* ============================================================================
+   NOTE ACTIONS
+   ============================================================================ */
+
+.cf7-note-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.cf7-note-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: transparent;
+    color: #646970;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.cf7-note-action-btn:hover {
+    color: #2271b1;
+    background: #f0f6fc;
+    border-color: #c9e4ca;
+}
+
+.cf7-edit-note-btn:hover {
+    color: #00a32a;
+}
+
+.cf7-delete-note-btn:hover {
+    color: #d63638;
+    background: #fcf0f0;
+    border-color: #f1adad;
+}
+
+.cf7-note-action-btn .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+}
+
+/* ============================================================================
+   EDIT FORM
+   ============================================================================ */
+
+.cf7-note-edit-form {
+    margin-top: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e8e9ea;
+    border-radius: 4px;
+}
+
+.cf7-note-edit-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    margin-bottom: 8px;
+}
+
+.cf7-note-edit-textarea:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.2);
+}
+
+.cf7-note-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cf7-save-note-edit,
+.cf7-cancel-note-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 3px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.cf7-save-note-edit {
+    background: #00a32a;
+    color: white;
+}
+
+.cf7-save-note-edit:hover {
+    background: #008a20;
+}
+
+.cf7-save-note-edit:disabled {
+    background: #c3c4c7;
+    cursor: not-allowed;
+}
+
+.cf7-cancel-note-edit {
+    background: #f0f0f0;
+    color: #646970;
+}
+
+.cf7-cancel-note-edit:hover {
+    background: #e0e0e0;
+}
+
+.cf7-save-note-edit .dashicons,
+.cf7-cancel-note-edit .dashicons {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+}
+
+/* ============================================================================
+   TEMPORARY MESSAGES
+   ============================================================================ */
+
+.cf7-temporary-message {
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.cf7-message-success {
+    color: #00a32a;
+    background: #f0f6fc;
+    border: 1px solid #c9e4ca;
+}
+
+.cf7-message-error {
+    color: #d63638;
+    background: #fcf0f0;
+    border: 1px solid #f1adad;
+}
+
+/* ============================================================================
+   LOADING ANIMATIONS
+   ============================================================================ */
+
+.dashicons.spin {
+    animation: cf7-spin 1s linear infinite;
+}
+
+@keyframes cf7-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    .cf7-enhanced-curator-notes {
+        padding: 16px;
+    }
+    
+    .cf7-add-note-form {
+        padding: 12px;
+    }
+    
+    .cf7-note-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .cf7-note-actions {
+        flex-wrap: wrap;
+    }
+    
+    .cf7-form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #cf7-add-note-btn {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .cf7-enhanced-curator-notes {
+        padding: 12px;
+        margin: 10px 0;
+    }
+    
+    .cf7-note-item {
+        padding: 12px;
+    }
+    
+    .cf7-note-actions {
+        justify-content: center;
+    }
+    
+    .cf7-note-edit-actions {
+        flex-direction: column;
+    }
+    
+    .cf7-save-note-edit,
+    .cf7-cancel-note-edit {
+        justify-content: center;
+        width: 100%;
+    }
+}
+
+/* ============================================================================
+   INTEGRATION WITH EXISTING TABS SYSTEM
+   ============================================================================ */
+
+/* When used within the existing tabs system */
+.cf7-tab-content .cf7-enhanced-curator-notes {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+.cf7-tab-content .cf7-notes-header {
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+}
+
+.cf7-tab-content .cf7-notes-header h3 {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+.cf7-note-action-btn:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 1px;
+}
+
+.cf7-note-textarea:focus,
+.cf7-note-edit-textarea:focus {
+    outline: none;
+}
+
+#cf7-add-note-btn:focus,
+.cf7-save-note-edit:focus,
+.cf7-cancel-note-edit:focus {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(34, 113, 177, 0.3);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .cf7-note-item {
+        border-width: 2px;
+    }
+    
+    .cf7-note-action-btn:hover {
+        border-width: 2px;
+    }
+    
+    .cf7-note-textarea:focus,
+    .cf7-note-edit-textarea:focus {
+        border-width: 3px;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .cf7-note-item,
+    .cf7-note-action-btn,
+    .cf7-note-textarea,
+    #cf7-add-note-btn,
+    .cf7-save-note-edit,
+    .cf7-cancel-note-edit {
+        transition: none;
+    }
+    
+    .dashicons.spin {
+        animation: none;
+    }
+}

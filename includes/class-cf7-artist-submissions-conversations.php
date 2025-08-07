@@ -893,13 +893,6 @@ class CF7_Artist_Submissions_Conversations {
             'Reply-To: <' . $reply_to_email . '>'
         );
         
-        // Log what we're trying to send for debugging
-        error_log('CF7 Conversations: Attempting to send email');
-        error_log('From: ' . $from_name . ' <' . $from_email . '>');
-        error_log('To: ' . $to_email);
-        error_log('Subject: ' . $subject);
-        error_log('WooCommerce template: ' . ($use_wc_template ? 'Yes' : 'No'));
-        
         $mail_sent = wp_mail($to_email, $subject, $email_body, $headers);
         
         // Enhanced error reporting
